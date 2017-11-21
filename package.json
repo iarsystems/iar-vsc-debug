@@ -1,0 +1,127 @@
+{
+	"name": "mock-debug",
+	"displayName": "Mock Debug",
+	"version": "0.25.0",
+	"publisher": "andreweinand",
+	"description": "Starter extension for developing debug adapters for VS Code.",
+	"author": {
+		"name": "Microsoft Corporation",
+		"email": "aweinand@microsoft.com"
+	},
+	"keywords": [
+		"multi-root ready"
+	],
+	"engines": {
+		"vscode": "^1.17.0",
+		"node": "^7.9.0"
+	},
+	"icon": "images/mock-debug-icon.png",
+	"categories": [
+		"Debuggers"
+	],
+	"private": true,
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Microsoft/vscode-mock-debug.git"
+	},
+	"bugs": {
+		"url": "https://github.com/Microsoft/vscode-mock-debug/issues"
+	},
+	"dependencies": {
+		"@types/node": "^7.0.43",
+		"typescript": "^2.6.1",
+		"vscode": "^1.1.6",
+		"vscode-debugadapter": "^1.24.0",
+		"vscode-debugprotocol": "^1.24.0",
+		"vscode-languageserver": "^3.5.0"
+	},
+	"devDependencies": {
+		"@types/mocha": "^2.2.42",
+		"@types/node": "^7.0.43",
+		"mocha": "^3.5.0",
+		"tslint": "^5.8.0",
+		"typescript": "^2.6.1",
+		"vsce": "^1.31.2",
+		"vscode": "^1.1.6",
+		"vscode-debugadapter-testsupport": "^1.24.0"
+	},
+	"scripts": {
+		"prepublish": "tsc -p ./src",
+		"compile": "tsc -p ./src",
+		"tslint": "tslint ./src/**/*.ts",
+		"watch": "tsc -w -p ./src",
+		"test": "mocha -u tdd ./out/tests/",
+		"postinstall": "node ./node_modules/vscode/bin/install",
+		"package": "vsce package",
+		"publish": "vsce publish",
+		"pkgvars": "node ./node_modules/vscode/bin/install"
+	},
+	"main": "./out/extension",
+	"activationEvents": [
+		"onDebug",
+		"onCommand:extension.mock-debug.getProgramName"
+	],
+	"contributes": {
+		"breakpoints": [
+			{
+				"language": "markdown"
+			}
+		],
+		"debuggers": [
+			{
+				"type": "mock",
+				"label": "Mock Debug",
+				"program": "./out/mockDebug.js",
+				"runtime": "node",
+				"configurationAttributes": {
+					"launch": {
+						"required": [
+							"program"
+						],
+						"properties": {
+							"program": {
+								"type": "string",
+								"description": "Absolute path to a text file.",
+								"default": "${workspaceFolder}/${command:AskForProgramName}"
+							},
+							"stopOnEntry": {
+								"type": "boolean",
+								"description": "Automatically stop after launch.",
+								"default": true
+							},
+							"trace": {
+								"type": "boolean",
+								"description": "Enable logging of the Debug Adapter Protocol.",
+								"default": true
+							}
+						}
+					}
+				},
+				"initialConfigurations": [
+					{
+						"type": "mock",
+						"request": "launch",
+						"name": "Ask for file name",
+						"program": "${workspaceFolder}/${command:AskForProgramName}",
+						"stopOnEntry": true
+					}
+				],
+				"configurationSnippets": [
+					{
+						"label": "Mock Debug: Launch",
+						"description": "A new configuration for launching a mock debug program",
+						"body": {
+							"type": "mock",
+							"request": "launch",
+							"name": "${2:Launch Program}",
+							"program": "^\"\\${workspaceFolder}/${1:Program}\""
+						}
+					}
+				],
+				"variables": {
+					"AskForProgramName": "extension.mock-debug.getProgramName"
+				}
+			}
+		]
+	}
+}
