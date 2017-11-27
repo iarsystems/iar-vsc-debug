@@ -29,6 +29,7 @@
 	},
 	"dependencies": {
 		"@types/node": "^7.0.43",
+		"arraybuffer-to-string": "^1.0.1",
 		"typescript": "^2.6.1",
 		"vscode": "^1.1.6",
 		"vscode-debugadapter": "^1.24.0",

@@ -18,9 +18,34 @@ class MockRuntime extends events_1.EventEmitter {
         // since we want to send breakpoint events, we will assign an id to every event
         // so that the frontend can match events with breakpoints.
         this._breakpointId = 1;
+        this.net = require('net');
+        this.client = new this.net.Socket();
+        this.client.connect(28561, '127.0.0.1', function () {
+            console.log('Connected');
+        });
+        this.client.setMaxListeners(25);
     }
     get sourceFile() {
         return this._sourceFile;
+    }
+    eventCallback(data) {
+        var ab2str = require('arraybuffer-to-string');
+        var tmp = ab2str(data);
+        if (tmp != "\n") {
+            let callback = JSON.parse(tmp);
+            console.log('Received: ' + callback["command"] + callback["body"]);
+            if (callback["command"] == "continue") {
+                this._currentLine = parseInt(callback["body"], 10);
+                this.sendEvent('stopOnEntry');
+            }
+        }
+    }
+    sendResponseToCSpy(response) {
+        let responseString = JSON.stringify(response);
+        //logger.verbose(`To client: ${responseString }`);
+        this.client.write(responseString + '\n');
+        this.client.on('data', this.eventCallback);
+        //this.client.off('data', eventCallback);
     }
     /**
      * Start executing the given program.
@@ -31,7 +56,8 @@ class MockRuntime extends events_1.EventEmitter {
         this.verifyBreakpoints(this._sourceFile);
         if (stopOnEntry) {
             // we step once
-            this.step(false, 'stopOnEntry');
+            //this.step(false, 'stopOnEntry');
+            this.sendEvent('stopOnEntry');
         }
         else {
             // we just start to run until we hit a breakpoint or an exception
@@ -42,13 +68,16 @@ class MockRuntime extends events_1.EventEmitter {
      * Continue execution to the end/beginning.
      */
     continue(reverse = false) {
-        this.run(reverse, undefined);
+        if (reverse)
+            this._currentLine = 0;
+        else
+            this.run();
     }
     /**
      * Step to the next/previous non empty line.
      */
     step(reverse = false, event = 'stopOnStep') {
-        this.run(reverse, event);
+        this.run();
     }
     /**
      * Returns a fake 'stacktrace' where every 'stackframe' is a word from the current line.
@@ -117,28 +146,38 @@ class MockRuntime extends events_1.EventEmitter {
      * Run through the file.
      * If stepEvent is specified only run a single step and emit the stepEvent.
      */
-    run(reverse = false, stepEvent) {
-        if (reverse) {
-            for (let ln = this._currentLine - 1; ln >= 0; ln--) {
-                if (this.fireEventsForLine(ln, stepEvent)) {
-                    this._currentLine = ln;
-                    return;
-                }
+    // private run(reverse = false, stepEvent?: string) {
+    // 	if (reverse) {
+    // 		for (let ln = this._currentLine-1; ln >= 0; ln--) {
+    // 			if (this.fireEventsForLine(ln, stepEvent)) {
+    // 				this._currentLine = ln;
+    // 				return;
+    // 			}
+    // 		}
+    // 		// no more lines: stop at first line
+    // 		this._currentLine = 0;
+    // 		this.sendEvent('stopOnEntry');
+    // 	} else {
+    // 		for (let ln = this._currentLine+1; ln < this._sourceLines.length; ln++) {
+    // 			if (this.fireEventsForLine(ln, stepEvent)) {
+    // 				this._currentLine = ln;
+    // 				return true;
+    // 			}
+    // 		}
+    // 		// no more lines: run to end
+    // 		this.sendEvent('end');
+    // 	}
+    // }
+    run() {
+        //let response : DebugProtocol.ContinueResponse;
+        //const response = <DebugProtocol.ContinueResponse> new Response(false,undefined);
+        const response = {
+            command: "continue",
+            body: {
+                allThreadsContinued: true
             }
-            // no more lines: stop at first line
-            this._currentLine = 0;
-            this.sendEvent('stopOnEntry');
-        }
-        else {
-            for (let ln = this._currentLine + 1; ln < this._sourceLines.length; ln++) {
-                if (this.fireEventsForLine(ln, stepEvent)) {
-                    this._currentLine = ln;
-                    return true;
-                }
-            }
-            // no more lines: run to end
-            this.sendEvent('end');
-        }
+        };
+        this.sendResponseToCSpy(response);
     }
     verifyBreakpoints(path) {
         let bps = this._breakPoints.get(path);
@@ -169,42 +208,42 @@ class MockRuntime extends events_1.EventEmitter {
      * Fire events if line has a breakpoint or the word 'exception' is found.
      * Returns true is execution needs to stop.
      */
-    fireEventsForLine(ln, stepEvent) {
-        const line = this._sourceLines[ln].trim();
-        // if 'log(...)' found in source -> send argument to debug console
-        const matches = /log\((.*)\)/.exec(line);
-        if (matches && matches.length === 2) {
-            this.sendEvent('output', matches[1], this._sourceFile, ln, matches.index);
-        }
-        // if word 'exception' found in source -> throw exception
-        if (line.indexOf('exception') >= 0) {
-            this.sendEvent('stopOnException');
-            return true;
-        }
-        // is there a breakpoint?
-        const breakpoints = this._breakPoints.get(this._sourceFile);
-        if (breakpoints) {
-            const bps = breakpoints.filter(bp => bp.line === ln);
-            if (bps.length > 0) {
-                // send 'stopped' event
-                this.sendEvent('stopOnBreakpoint');
-                // the following shows the use of 'breakpoint' events to update properties of a breakpoint in the UI
-                // if breakpoint is not yet verified, verify it now and send a 'breakpoint' update event
-                if (!bps[0].verified) {
-                    bps[0].verified = true;
-                    this.sendEvent('breakpointValidated', bps[0]);
-                }
-                return true;
-            }
-        }
-        // non-empty line
-        if (stepEvent && line.length > 0) {
-            this.sendEvent(stepEvent);
-            return true;
-        }
-        // nothing interesting found -> continue
-        return false;
-    }
+    // private fireEventsForLine(ln: number, stepEvent?: string): boolean {
+    // 	const line = this._sourceLines[ln].trim();
+    // 	// if 'log(...)' found in source -> send argument to debug console
+    // 	const matches = /log\((.*)\)/.exec(line);
+    // 	if (matches && matches.length === 2) {
+    // 		this.sendEvent('output', matches[1], this._sourceFile, ln, matches.index)
+    // 	}
+    // 	// if word 'exception' found in source -> throw exception
+    // 	if (line.indexOf('exception') >= 0) {
+    // 		this.sendEvent('stopOnException');
+    // 		return true;
+    // 	}
+    // 	// is there a breakpoint?
+    // 	const breakpoints = this._breakPoints.get(this._sourceFile);
+    // 	if (breakpoints) {
+    // 		const bps = breakpoints.filter(bp => bp.line === ln);
+    // 		if (bps.length > 0) {
+    // 			// send 'stopped' event
+    // 			this.sendEvent('stopOnBreakpoint');
+    // 			// the following shows the use of 'breakpoint' events to update properties of a breakpoint in the UI
+    // 			// if breakpoint is not yet verified, verify it now and send a 'breakpoint' update event
+    // 			if (!bps[0].verified) {
+    // 				bps[0].verified = true;
+    // 				this.sendEvent('breakpointValidated', bps[0]);
+    // 			}
+    // 			return true;
+    // 		}
+    // 	}
+    // 	// non-empty line
+    // 	if (stepEvent && line.length > 0) {
+    // 		this.sendEvent(stepEvent);
+    // 		return true;
+    // 	}
+    // 	// nothing interesting found -> continue
+    // 	return false;
+    // }
     sendEvent(event, ...args) {
         setImmediate(_ => {
             this.emit(event, ...args);

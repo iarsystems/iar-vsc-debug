@@ -13,14 +13,7 @@ class MockDebugSession extends vscode_debugadapter_1.LoggingDebugSession {
      */
     constructor() {
         super("mock-debug.txt");
-        //private _envProvider = new EnviromentProvider();
         this._variableHandles = new vscode_debugadapter_1.Handles();
-        this.net = require('net');
-        this.client = new this.net.Socket();
-        this.client.connect(28561, '127.0.0.1', function () {
-            console.log('Connected');
-        });
-        this.client.setMaxListeners(25);
         // this debugger uses zero-based lines and columns
         this.setDebuggerLinesStartAt1(false);
         this.setDebuggerColumnsStartAt1(false);
@@ -52,34 +45,6 @@ class MockDebugSession extends vscode_debugadapter_1.LoggingDebugSession {
             this.sendEvent(new vscode_debugadapter_1.TerminatedEvent());
         });
     }
-    // public socketMess(mess){
-    // 	var net = require('net');
-    // 	var client = new net.Socket();
-    // 	client.connect(28561, '127.0.0.1', function() {
-    // 		console.log('Connected');
-    // 		client.write(mess + '\n');
-    // 	});
-    // 	client.on('data', function(data) {
-    // 		console.log('Received: ' + data);
-    // 		client.destroy(); // kill client after server's response
-    // 	});
-    // 	client.on('close', function() {
-    // 		console.log('Connection closed');
-    // 	});
-    // }
-    sendResponseToCSpy(response) {
-        let responseString = JSON.stringify(response);
-        vscode_debugadapter_1.logger.verbose(`To client: ${responseString}`);
-        this.client.write(responseString + '\n');
-        var dataFromCSpy;
-        var eventCallback = function (data) {
-            console.log('Received: ' + data);
-            dataFromCSpy = data;
-        };
-        this.client.on('data', eventCallback);
-        return dataFromCSpy;
-        //this.client.off('data', eventCallback);
-    }
     /**
      * The 'initialize' request is the first request called by the frontend
      * to interrogate the features the debug adapter provides.
@@ -105,7 +70,7 @@ class MockDebugSession extends vscode_debugadapter_1.LoggingDebugSession {
         // start the program in the runtime
         this._runtime.start(args.program, !!args.stopOnEntry);
         //this._envProvider.setPosition();
-        this.sendResponseToCSpy(response);
+        this._runtime.sendResponseToCSpy(response);
         this.sendResponse(response);
     }
     setBreakPointsRequest(response, args) {
@@ -125,7 +90,7 @@ class MockDebugSession extends vscode_debugadapter_1.LoggingDebugSession {
             breakpoints: actualBreakpoints
         };
         //this.socketMess(JSON.stringify(response));
-        this.sendResponseToCSpy(response);
+        this._runtime.sendResponseToCSpy(response);
         this.sendResponse(response);
     }
     threadsRequest(response) {
@@ -142,11 +107,11 @@ class MockDebugSession extends vscode_debugadapter_1.LoggingDebugSession {
         const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
         const endFrame = startFrame + maxLevels;
         const stk = this._runtime.stack(startFrame, endFrame);
+        this._runtime.sendResponseToCSpy(response);
         response.body = {
             stackFrames: stk.frames.map(f => new vscode_debugadapter_1.StackFrame(f.index, f.name, this.createSource(f.file), this.convertDebuggerLineToClient(f.line))),
             totalFrames: stk.count
         };
-        this.sendResponseToCSpy(response);
         this.sendResponse(response);
     }
     scopesRequest(response, args) {
@@ -195,12 +160,12 @@ class MockDebugSession extends vscode_debugadapter_1.LoggingDebugSession {
     }
     continueRequest(response, args) {
         this._runtime.continue();
-        this.sendResponseToCSpy(response);
+        //this._runtime.sendResponseToCSpy(response);
         this.sendResponse(response);
     }
     reverseContinueRequest(response, args) {
         this._runtime.continue(true);
-        this.sendResponseToCSpy(response);
+        this._runtime.sendResponseToCSpy(response);
         this.sendResponse(response);
     }
     nextRequest(response, args) {

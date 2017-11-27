@@ -12,7 +12,6 @@ import { basename } from 'path';
 import { MockRuntime, MockBreakpoint } from './mockRuntime';
 //import {EnviromentProvider} from './extension';
 
-
 /**
  * This interface describes the mock-debug specific launch attributes
  * (which are not part of the Debug Adapter Protocol).
@@ -28,6 +27,8 @@ interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
 	trace?: boolean;
 }
 
+
+
 class MockDebugSession extends LoggingDebugSession {
 
 	// we don't support multiple threads, so we can use a hardcoded ID for the default thread
@@ -36,49 +37,7 @@ class MockDebugSession extends LoggingDebugSession {
 	// a Mock runtime (or debugger)
 	private _runtime: MockRuntime;
 
-	//private _envProvider = new EnviromentProvider();
-
 	private _variableHandles = new Handles<string>();
-
-	private net = require('net');
-	private client = new this.net.Socket();
-
-	// public socketMess(mess){
-	// 	var net = require('net');
-	// 	var client = new net.Socket();
-
-	// 	client.connect(28561, '127.0.0.1', function() {
-	// 		console.log('Connected');
-	// 		client.write(mess + '\n');
-	// 	});
-
-	// 	client.on('data', function(data) {
-	// 		console.log('Received: ' + data);
-	// 		client.destroy(); // kill client after server's response
-	// 	});
-
-	// 	client.on('close', function() {
-	// 		console.log('Connection closed');
-	// 	});
-	// }
-
-	public sendResponseToCSpy(response: DebugProtocol.Response): string {
-		let responseString = JSON.stringify(response);
-		logger.verbose(`To client: ${responseString }`);
-
-		this.client.write(responseString + '\n');
-
-		var dataFromCSpy;
-		var eventCallback = function(data) {
-			console.log('Received: ' + data);
-			dataFromCSpy = data;
-		};
-
-		this.client.on('data', eventCallback)
-
-		return dataFromCSpy;
-		//this.client.off('data', eventCallback);
-	}
 
 	/**
 	 * Creates a new debug adapter that is used for one debug session.
@@ -86,11 +45,6 @@ class MockDebugSession extends LoggingDebugSession {
 	 */
 	public constructor() {
 		super("mock-debug.txt");
-		this.client.connect(28561, '127.0.0.1', function() {
-			console.log('Connected');
-		});
-
-		this.client.setMaxListeners(25);
 
 		// this debugger uses zero-based lines and columns
 		this.setDebuggerLinesStartAt1(false);
@@ -161,7 +115,7 @@ class MockDebugSession extends LoggingDebugSession {
 		this._runtime.start(args.program, !!args.stopOnEntry);
 
 		//this._envProvider.setPosition();
-		this.sendResponseToCSpy(response);
+		this._runtime.sendResponseToCSpy(response);
 		this.sendResponse(response);
 	}
 
@@ -187,7 +141,7 @@ class MockDebugSession extends LoggingDebugSession {
 		};
 		//this.socketMess(JSON.stringify(response));
 
-		this.sendResponseToCSpy(response);
+		this._runtime.sendResponseToCSpy(response);
 		this.sendResponse(response);
 	}
 
@@ -210,12 +164,14 @@ class MockDebugSession extends LoggingDebugSession {
 
 		const stk = this._runtime.stack(startFrame, endFrame);
 
+		this._runtime.sendResponseToCSpy(response);
+
+
 		response.body = {
 			stackFrames: stk.frames.map(f => new StackFrame(f.index, f.name, this.createSource(f.file), this.convertDebuggerLineToClient(f.line))),
 			totalFrames: stk.count
 		};
 
-		this.sendResponseToCSpy(response);
 		this.sendResponse(response);
 	}
 
@@ -271,13 +227,13 @@ class MockDebugSession extends LoggingDebugSession {
 
 	protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
 		this._runtime.continue();
-		this.sendResponseToCSpy(response);
+		//this._runtime.sendResponseToCSpy(response);
 		this.sendResponse(response);
 	}
 
 	protected reverseContinueRequest(response: DebugProtocol.ReverseContinueResponse, args: DebugProtocol.ReverseContinueArguments) : void {
 		this._runtime.continue(true);
-		this.sendResponseToCSpy(response);
+		this._runtime.sendResponseToCSpy(response);
 		this.sendResponse(response);
  	}
 
