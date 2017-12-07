@@ -20,6 +20,35 @@ class MockRuntime extends events_1.EventEmitter {
         this._breakpointId = 1;
         this.net = require('net');
         this.client = new this.net.Socket();
+        this.eventCallback = (data) => {
+            var ab2str = require('arraybuffer-to-string');
+            let callback = null;
+            try {
+                callback = JSON.parse(ab2str(data));
+            }
+            catch (e) {
+                // forget about it :)
+            }
+            if (callback) {
+                console.log('Received: ' + callback["command"] + "-> " + callback["body"]);
+                if (callback["command"] == "continue") {
+                    this._currentLine = parseInt(callback["body"], 10);
+                    console.log("----------> _currentLine: " + this._currentLine);
+                    this.sendEvent('stopOnBreakpoint');
+                }
+                else if (callback["command"] == "launch") {
+                    this._currentLine = parseInt(callback["body"], 10);
+                }
+                else if (callback["command"] == "reverseContinue") {
+                    this._currentLine = parseInt(callback["body"], 10);
+                    this.sendEvent('stopOnEntry');
+                }
+                else if (callback["command"] == "variables") {
+                    this._variables = callback["body"];
+                    //this.sendEvent('refresh');
+                }
+            }
+        };
         this.client.connect(28561, '127.0.0.1', function () {
             console.log('Connected');
         });
@@ -28,17 +57,10 @@ class MockRuntime extends events_1.EventEmitter {
     get sourceFile() {
         return this._sourceFile;
     }
-    eventCallback(data) {
-        var ab2str = require('arraybuffer-to-string');
-        var tmp = ab2str(data);
-        if (tmp != "\n") {
-            let callback = JSON.parse(tmp);
-            console.log('Received: ' + callback["command"] + callback["body"]);
-            if (callback["command"] == "continue") {
-                this._currentLine = parseInt(callback["body"], 10);
-                this.sendEvent('stopOnEntry');
-            }
-        }
+    sendEvent(event, ...args) {
+        setImmediate(_ => {
+            this.emit(event, ...args);
+        });
     }
     sendResponseToCSpy(response) {
         let responseString = JSON.stringify(response);
@@ -47,12 +69,24 @@ class MockRuntime extends events_1.EventEmitter {
         this.client.on('data', this.eventCallback);
         //this.client.off('data', eventCallback);
     }
+    getLocals() {
+        return this._locals;
+    }
+    getGlobals() {
+        return this._globals;
+    }
+    getVariables() {
+        return this._variables;
+    }
     /**
      * Start executing the given program.
      */
     start(program, stopOnEntry) {
+        this._locals = "";
+        this._globals = "";
+        this._variables = "*";
         this.loadSource(program);
-        this._currentLine = -1;
+        //this._currentLine = 0;
         this.verifyBreakpoints(this._sourceFile);
         if (stopOnEntry) {
             // we step once
@@ -146,31 +180,7 @@ class MockRuntime extends events_1.EventEmitter {
      * Run through the file.
      * If stepEvent is specified only run a single step and emit the stepEvent.
      */
-    // private run(reverse = false, stepEvent?: string) {
-    // 	if (reverse) {
-    // 		for (let ln = this._currentLine-1; ln >= 0; ln--) {
-    // 			if (this.fireEventsForLine(ln, stepEvent)) {
-    // 				this._currentLine = ln;
-    // 				return;
-    // 			}
-    // 		}
-    // 		// no more lines: stop at first line
-    // 		this._currentLine = 0;
-    // 		this.sendEvent('stopOnEntry');
-    // 	} else {
-    // 		for (let ln = this._currentLine+1; ln < this._sourceLines.length; ln++) {
-    // 			if (this.fireEventsForLine(ln, stepEvent)) {
-    // 				this._currentLine = ln;
-    // 				return true;
-    // 			}
-    // 		}
-    // 		// no more lines: run to end
-    // 		this.sendEvent('end');
-    // 	}
-    // }
     run() {
-        //let response : DebugProtocol.ContinueResponse;
-        //const response = <DebugProtocol.ContinueResponse> new Response(false,undefined);
         const response = {
             command: "continue",
             body: {
@@ -203,51 +213,6 @@ class MockRuntime extends events_1.EventEmitter {
                 }
             });
         }
-    }
-    /**
-     * Fire events if line has a breakpoint or the word 'exception' is found.
-     * Returns true is execution needs to stop.
-     */
-    // private fireEventsForLine(ln: number, stepEvent?: string): boolean {
-    // 	const line = this._sourceLines[ln].trim();
-    // 	// if 'log(...)' found in source -> send argument to debug console
-    // 	const matches = /log\((.*)\)/.exec(line);
-    // 	if (matches && matches.length === 2) {
-    // 		this.sendEvent('output', matches[1], this._sourceFile, ln, matches.index)
-    // 	}
-    // 	// if word 'exception' found in source -> throw exception
-    // 	if (line.indexOf('exception') >= 0) {
-    // 		this.sendEvent('stopOnException');
-    // 		return true;
-    // 	}
-    // 	// is there a breakpoint?
-    // 	const breakpoints = this._breakPoints.get(this._sourceFile);
-    // 	if (breakpoints) {
-    // 		const bps = breakpoints.filter(bp => bp.line === ln);
-    // 		if (bps.length > 0) {
-    // 			// send 'stopped' event
-    // 			this.sendEvent('stopOnBreakpoint');
-    // 			// the following shows the use of 'breakpoint' events to update properties of a breakpoint in the UI
-    // 			// if breakpoint is not yet verified, verify it now and send a 'breakpoint' update event
-    // 			if (!bps[0].verified) {
-    // 				bps[0].verified = true;
-    // 				this.sendEvent('breakpointValidated', bps[0]);
-    // 			}
-    // 			return true;
-    // 		}
-    // 	}
-    // 	// non-empty line
-    // 	if (stepEvent && line.length > 0) {
-    // 		this.sendEvent(stepEvent);
-    // 		return true;
-    // 	}
-    // 	// nothing interesting found -> continue
-    // 	return false;
-    // }
-    sendEvent(event, ...args) {
-        setImmediate(_ => {
-            this.emit(event, ...args);
-        });
     }
 }
 exports.MockRuntime = MockRuntime;

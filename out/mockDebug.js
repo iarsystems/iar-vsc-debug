@@ -31,6 +31,10 @@ class MockDebugSession extends vscode_debugadapter_1.LoggingDebugSession {
         this._runtime.on('stopOnException', () => {
             this.sendEvent(new vscode_debugadapter_1.StoppedEvent('exception', MockDebugSession.THREAD_ID));
         });
+        this._runtime.on('refresh', () => {
+            this.sendEvent(new vscode_debugadapter_1.ContinuedEvent(MockDebugSession.THREAD_ID));
+            this.sendEvent(new vscode_debugadapter_1.StoppedEvent('entry', MockDebugSession.THREAD_ID));
+        });
         this._runtime.on('breakpointValidated', (bp) => {
             this.sendEvent(new vscode_debugadapter_1.BreakpointEvent('changed', { verified: bp.verified, id: bp.id }));
         });
@@ -80,8 +84,10 @@ class MockDebugSession extends vscode_debugadapter_1.LoggingDebugSession {
         this._runtime.clearBreakpoints(path);
         // set and verify breakpoint locations
         const actualBreakpoints = clientLines.map(l => {
-            let { verified, line, id } = this._runtime.setBreakPoint(path, this.convertClientLineToDebugger(l));
-            const bp = new vscode_debugadapter_1.Breakpoint(verified, this.convertDebuggerLineToClient(line));
+            // let { verified, line, id } = this._runtime.setBreakPoint(path, this.convertClientLineToDebugger(l));
+            // const bp = <DebugProtocol.Breakpoint> new Breakpoint(verified, this.convertDebuggerLineToClient(line));
+            let { verified, line, id } = this._runtime.setBreakPoint(path, l);
+            const bp = new vscode_debugadapter_1.Breakpoint(verified, line);
             bp.id = id;
             return bp;
         });
@@ -107,7 +113,7 @@ class MockDebugSession extends vscode_debugadapter_1.LoggingDebugSession {
         const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
         const endFrame = startFrame + maxLevels;
         const stk = this._runtime.stack(startFrame, endFrame);
-        this._runtime.sendResponseToCSpy(response);
+        //this._runtime.sendResponseToCSpy(response);
         response.body = {
             stackFrames: stk.frames.map(f => new vscode_debugadapter_1.StackFrame(f.index, f.name, this.createSource(f.file), this.convertDebuggerLineToClient(f.line))),
             totalFrames: stk.count
@@ -125,33 +131,46 @@ class MockDebugSession extends vscode_debugadapter_1.LoggingDebugSession {
         this.sendResponse(response);
     }
     variablesRequest(response, args) {
+        // const locals: DebugProtocol.VariablesResponse = <DebugProtocol.VariablesResponse>{
+        // 	command:"locals",
+        // }
+        // this._runtime.sendResponseToCSpy(locals);
+        // const globals: DebugProtocol.VariablesResponse = <DebugProtocol.VariablesResponse>{
+        // 	command:"globals",
+        // }
+        // this._runtime.sendResponseToCSpy(globals);
+        const allvariables = {
+            command: "variables",
+        };
+        this._runtime.sendResponseToCSpy(allvariables);
         const variables = new Array();
         const id = this._variableHandles.get(args.variablesReference);
-        if (id !== null) {
-            variables.push({
-                name: id + "_i",
-                type: "integer",
-                value: "123",
-                variablesReference: 0
-            });
-            variables.push({
-                name: id + "_f",
-                type: "float",
-                value: "3.14",
-                variablesReference: 0
-            });
-            variables.push({
-                name: id + "_s",
-                type: "string",
-                value: "hello world",
-                variablesReference: 0
-            });
-            variables.push({
-                name: id + "_o",
-                type: "object",
-                value: "Object",
-                variablesReference: this._variableHandles.create("object_")
-            });
+        var allVariablesPairs = this._runtime.getVariables().split("*");
+        var localPairs = allVariablesPairs[0].split(" ");
+        var globalPairs = allVariablesPairs[1].split(" ");
+        // var localPairs = this._runtime.getLocals().split(" ");
+        // var globalPairs = this._runtime.getGlobals().split(" ");
+        if (id == "local_0") {
+            for (var i = 1; i < localPairs.length; i++) {
+                var splitItems = localPairs[i].split("-");
+                variables.push({
+                    name: splitItems[0],
+                    type: "From CSpy",
+                    value: splitItems[1],
+                    variablesReference: 0
+                });
+            }
+        }
+        else if (id !== null) {
+            for (var i = 1; i < globalPairs.length; i++) {
+                var splitItems = globalPairs[i].split("-");
+                variables.push({
+                    name: splitItems[0],
+                    type: "From CSpy",
+                    value: splitItems[2],
+                    variablesReference: 0
+                });
+            }
         }
         response.body = {
             variables: variables
@@ -164,7 +183,7 @@ class MockDebugSession extends vscode_debugadapter_1.LoggingDebugSession {
         this.sendResponse(response);
     }
     reverseContinueRequest(response, args) {
-        this._runtime.continue(true);
+        //this._runtime.continue(true);
         this._runtime.sendResponseToCSpy(response);
         this.sendResponse(response);
     }

@@ -37,6 +37,10 @@ export class MockRuntime extends EventEmitter {
 	// so that the frontend can match events with breakpoints.
 	private _breakpointId = 1;
 
+	private _locals: string;
+	private _globals: string;
+	private _variables: string
+
 	private net = require('net');
 	private client = new this.net.Socket();
 
@@ -49,17 +53,46 @@ export class MockRuntime extends EventEmitter {
 		this.client.setMaxListeners(25);
 	}
 
-	public eventCallback(data) {
-		var ab2str = require('arraybuffer-to-string')
-		var tmp = ab2str(data);
-		if(tmp !="\n")
-		{
-			let callback = JSON.parse(tmp)
-			console.log('Received: ' + callback["command"] + callback["body"]);
+	private sendEvent(event: string, ... args: any[]) {
+		setImmediate(_ => {
+			this.emit(event, ...args);
+		});
+	}
 
+	public eventCallback = (data)  => {
+		var ab2str = require('arraybuffer-to-string');
+		let callback = null;
+		try {
+			callback = JSON.parse(ab2str(data));
+		}
+		catch(e) {
+			// forget about it :)
+		}
+		if(callback){
+			console.log('Received: ' + callback["command"] + "-> " + callback["body"]);
 			if(callback["command"] == "continue") {
 				this._currentLine = parseInt(callback["body"], 10);
+				console.log("----------> _currentLine: " + this._currentLine);
+				this.sendEvent('stopOnBreakpoint');
+			}
+			else if(callback["command"] == "launch") {
+				this._currentLine = parseInt(callback["body"], 10);
+			}
+			else if(callback["command"] == "reverseContinue") {
+				this._currentLine = parseInt(callback["body"], 10);
 				this.sendEvent('stopOnEntry');
+			}
+			// else if(callback["command"] == "locals") {
+			// 	this._locals = callback["body"];
+			// 	this.sendEvent('stopOnEntry');
+			// }
+			// else if(callback["command"] == "globals") {
+			// 	this._globals = callback["body"];
+			// 	this.sendEvent('stopOnEntry');
+			// }
+			else if(callback["command"] == "variables") {
+				this._variables = callback["body"];
+				//this.sendEvent('refresh');
 			}
 		}
 	}
@@ -70,11 +103,21 @@ export class MockRuntime extends EventEmitter {
 
 		this.client.write(responseString + '\n');
 
-
-
 		this.client.on('data', this.eventCallback)
 
 		//this.client.off('data', eventCallback);
+	}
+
+	public getLocals():string
+	{
+		return this._locals;
+	}
+	public getGlobals():string
+	{
+		return this._globals;
+	}
+	public getVariables():string{
+		return this._variables;
 	}
 
 	/**
@@ -82,8 +125,12 @@ export class MockRuntime extends EventEmitter {
 	 */
 	public start(program: string, stopOnEntry: boolean) {
 
+		this._locals = "";
+		this._globals = "";
+		this._variables = "*";
+
 		this.loadSource(program);
-		this._currentLine = -1;
+		//this._currentLine = 0;
 
 		this.verifyBreakpoints(this._sourceFile);
 
@@ -192,32 +239,7 @@ export class MockRuntime extends EventEmitter {
 	 * Run through the file.
 	 * If stepEvent is specified only run a single step and emit the stepEvent.
 	 */
-	// private run(reverse = false, stepEvent?: string) {
-	// 	if (reverse) {
-	// 		for (let ln = this._currentLine-1; ln >= 0; ln--) {
-	// 			if (this.fireEventsForLine(ln, stepEvent)) {
-	// 				this._currentLine = ln;
-	// 				return;
-	// 			}
-	// 		}
-	// 		// no more lines: stop at first line
-	// 		this._currentLine = 0;
-	// 		this.sendEvent('stopOnEntry');
-	// 	} else {
-	// 		for (let ln = this._currentLine+1; ln < this._sourceLines.length; ln++) {
-	// 			if (this.fireEventsForLine(ln, stepEvent)) {
-	// 				this._currentLine = ln;
-	// 				return true;
-	// 			}
-	// 		}
-	// 		// no more lines: run to end
-	// 		this.sendEvent('end');
-	// 	}
-	// }
-
 	private run() {
-		//let response : DebugProtocol.ContinueResponse;
-		//const response = <DebugProtocol.ContinueResponse> new Response(false,undefined);
 		const response: DebugProtocol.ContinueResponse = <DebugProtocol.ContinueResponse>{
 			command:"continue",
 			body:{
@@ -303,10 +325,4 @@ export class MockRuntime extends EventEmitter {
 	// 	// nothing interesting found -> continue
 	// 	return false;
 	// }
-
-	private sendEvent(event: string, ... args: any[]) {
-		setImmediate(_ => {
-			this.emit(event, ...args);
-		});
-	}
 }

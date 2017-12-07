@@ -4,7 +4,7 @@
 import {
 	Logger, logger,
 	DebugSession, LoggingDebugSession,
-	InitializedEvent, TerminatedEvent, StoppedEvent, BreakpointEvent, OutputEvent,
+	InitializedEvent, TerminatedEvent, StoppedEvent, ContinuedEvent, BreakpointEvent, OutputEvent,
 	Thread, StackFrame, Scope, Source, Handles, Breakpoint
 } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
@@ -64,6 +64,10 @@ class MockDebugSession extends LoggingDebugSession {
 		});
 		this._runtime.on('stopOnException', () => {
 			this.sendEvent(new StoppedEvent('exception', MockDebugSession.THREAD_ID));
+		});
+		this._runtime.on('refresh', () => {
+			this.sendEvent(new ContinuedEvent(MockDebugSession.THREAD_ID));
+			this.sendEvent(new StoppedEvent('entry', MockDebugSession.THREAD_ID));
 		});
 		this._runtime.on('breakpointValidated', (bp: MockBreakpoint) => {
 			this.sendEvent(new BreakpointEvent('changed', <DebugProtocol.Breakpoint>{ verified: bp.verified, id: bp.id }));
@@ -129,8 +133,10 @@ class MockDebugSession extends LoggingDebugSession {
 
 		// set and verify breakpoint locations
 		const actualBreakpoints = clientLines.map(l => {
-			let { verified, line, id } = this._runtime.setBreakPoint(path, this.convertClientLineToDebugger(l));
-			const bp = <DebugProtocol.Breakpoint> new Breakpoint(verified, this.convertDebuggerLineToClient(line));
+			// let { verified, line, id } = this._runtime.setBreakPoint(path, this.convertClientLineToDebugger(l));
+			// const bp = <DebugProtocol.Breakpoint> new Breakpoint(verified, this.convertDebuggerLineToClient(line));
+			let { verified, line, id } = this._runtime.setBreakPoint(path, l);
+			const bp = <DebugProtocol.Breakpoint> new Breakpoint(verified, line);
 			bp.id= id;
 			return bp;
 		});
@@ -164,7 +170,7 @@ class MockDebugSession extends LoggingDebugSession {
 
 		const stk = this._runtime.stack(startFrame, endFrame);
 
-		this._runtime.sendResponseToCSpy(response);
+		//this._runtime.sendResponseToCSpy(response);
 
 
 		response.body = {
@@ -190,33 +196,51 @@ class MockDebugSession extends LoggingDebugSession {
 
 	protected variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments): void {
 
+		// const locals: DebugProtocol.VariablesResponse = <DebugProtocol.VariablesResponse>{
+		// 	command:"locals",
+		// }
+		// this._runtime.sendResponseToCSpy(locals);
+		// const globals: DebugProtocol.VariablesResponse = <DebugProtocol.VariablesResponse>{
+		// 	command:"globals",
+		// }
+		// this._runtime.sendResponseToCSpy(globals);
+
+		const allvariables: DebugProtocol.VariablesResponse = <DebugProtocol.VariablesResponse>{
+			command:"variables",
+		}
+		this._runtime.sendResponseToCSpy(allvariables);
+
 		const variables = new Array<DebugProtocol.Variable>();
 		const id = this._variableHandles.get(args.variablesReference);
-		if (id !== null) {
-			variables.push({
-				name: id + "_i",
-				type: "integer",
-				value: "123",
-				variablesReference: 0
-			});
-			variables.push({
-				name: id + "_f",
-				type: "float",
-				value: "3.14",
-				variablesReference: 0
-			});
-			variables.push({
-				name: id + "_s",
-				type: "string",
-				value: "hello world",
-				variablesReference: 0
-			});
-			variables.push({
-				name: id + "_o",
-				type: "object",
-				value: "Object",
-				variablesReference: this._variableHandles.create("object_")
-			});
+
+		var allVariablesPairs = this._runtime.getVariables().split("*");
+
+		var localPairs = allVariablesPairs[0].split(" ");
+		var globalPairs = allVariablesPairs[1].split(" ");
+
+		// var localPairs = this._runtime.getLocals().split(" ");
+		// var globalPairs = this._runtime.getGlobals().split(" ");
+		if (id == "local_0") {
+			for (var i=1;i<localPairs.length;i++) {
+				var splitItems = localPairs[i].split("-");
+				variables.push({
+					name: splitItems[0],
+					type: "From CSpy",
+					value: splitItems[1],
+					variablesReference: 0
+				});
+			}
+		}
+		else if (id !== null) {
+			for (var i=1;i<globalPairs.length;i++) {
+				var splitItems = globalPairs[i].split("-");
+				variables.push({
+					name: splitItems[0],
+					type: "From CSpy",
+					value: splitItems[2],
+					variablesReference: 0
+				});
+			}
 		}
 
 		response.body = {
@@ -232,7 +256,7 @@ class MockDebugSession extends LoggingDebugSession {
 	}
 
 	protected reverseContinueRequest(response: DebugProtocol.ReverseContinueResponse, args: DebugProtocol.ReverseContinueArguments) : void {
-		this._runtime.continue(true);
+		//this._runtime.continue(true);
 		this._runtime.sendResponseToCSpy(response);
 		this.sendResponse(response);
  	}
