@@ -48,6 +48,27 @@ class MockDebugSession extends vscode_debugadapter_1.LoggingDebugSession {
         this._runtime.on('end', () => {
             this.sendEvent(new vscode_debugadapter_1.TerminatedEvent());
         });
+        //spawn cpyruby
+        var spawn = require('child_process').execFile;
+        const ls = spawn('D:/EWARM_TRUNK/StageWin32_14/Debug/common/bin/CSpyRuby.exe', ['--ruby_file', 'setupt.rb', '--config', 'SIM_CORTEX_M4', '--sourcefile', 'D:/VSCODE_SVN/mock-test/main.c', '--program', 'D:/VSCODE_SVN/mock-test/Debug/Exe/ewproj.out'], { cwd: "D:/VSCODE_SVN/CSPYRubySetup" });
+        console.log("starting cspuruby, PID: " + ls.pid);
+        // sleep a little bit to make sure cspy ruby starts before continue
+        var sleep = require('system-sleep');
+        sleep(2000);
+        ls.stdout.on('data', (data) => {
+            console.log('stdout: ' + data);
+            const e = new vscode_debugadapter_1.OutputEvent(`${data}\n`);
+            // e.body.source = this.createSource(filePath);
+            // e.body.line = this.convertDebuggerLineToClient(line);
+            // e.body.column = this.convertDebuggerColumnToClient(column);
+            this.sendEvent(e);
+        });
+        ls.stderr.on('data', (data) => {
+            console.log('stderr: ' + data);
+        });
+        ls.on('close', (code) => {
+            console.log('child process exited with code ' + code);
+        });
     }
     /**
      * The 'initialize' request is the first request called by the frontend
@@ -64,8 +85,9 @@ class MockDebugSession extends vscode_debugadapter_1.LoggingDebugSession {
         response.body.supportsConfigurationDoneRequest = true;
         // make VS Code to use 'evaluate' when hovering over source
         response.body.supportsEvaluateForHovers = true;
+        response.body.supportsRestartRequest = true;
         // make VS Code to show a 'step back' button
-        response.body.supportsStepBack = true;
+        //response.body.supportsStepBack = true;
         this.sendResponse(response);
     }
     launchRequest(response, args) {
@@ -74,8 +96,17 @@ class MockDebugSession extends vscode_debugadapter_1.LoggingDebugSession {
         // start the program in the runtime
         this._runtime.start(args.program, !!args.stopOnEntry);
         //this._envProvider.setPosition();
-        this._runtime.sendResponseToCSpy(response);
+        let update = function () {
+            console.log("launchRequest");
+        };
+        this._runtime.sendResponseToCSpy(response, update);
         this.sendResponse(response);
+    }
+    pauseRequest(response) {
+        let update = function () {
+            console.log("pauserequest");
+        };
+        this._runtime.sendResponseToCSpy(response, update);
     }
     setBreakPointsRequest(response, args) {
         const path = args.source.path;
@@ -96,7 +127,10 @@ class MockDebugSession extends vscode_debugadapter_1.LoggingDebugSession {
             breakpoints: actualBreakpoints
         };
         //this.socketMess(JSON.stringify(response));
-        this._runtime.sendResponseToCSpy(response);
+        let update = function () {
+            console.log("setBreakPointsRequest");
+        };
+        this._runtime.sendResponseToCSpy(response, update);
         this.sendResponse(response);
     }
     threadsRequest(response) {
@@ -131,68 +165,83 @@ class MockDebugSession extends vscode_debugadapter_1.LoggingDebugSession {
         this.sendResponse(response);
     }
     variablesRequest(response, args) {
-        // const locals: DebugProtocol.VariablesResponse = <DebugProtocol.VariablesResponse>{
-        // 	command:"locals",
-        // }
-        // this._runtime.sendResponseToCSpy(locals);
-        // const globals: DebugProtocol.VariablesResponse = <DebugProtocol.VariablesResponse>{
-        // 	command:"globals",
-        // }
-        // this._runtime.sendResponseToCSpy(globals);
+        var newLocal = this;
+        let update = function () {
+            console.log("----> rel fungtion run???? <----");
+            const variables = new Array();
+            const id = newLocal._variableHandles.get(args.variablesReference);
+            var allVariablesPairs = newLocal._runtime.getVariables().split("*");
+            var localPairs = allVariablesPairs[0].split(" ");
+            var globalPairs = allVariablesPairs[1].split(" ");
+            // var localPairs = this._runtime.getLocals().split(" ");
+            // var globalPairs = this._runtime.getGlobals().split(" ");
+            if (id == "local_0") {
+                for (var i = 1; i < localPairs.length; i++) {
+                    var splitItems = localPairs[i].split("-");
+                    variables.push({
+                        name: splitItems[0],
+                        type: "From CSpy",
+                        value: splitItems[1],
+                        variablesReference: 0
+                    });
+                }
+            }
+            else if (id !== null) {
+                for (var i = 1; i < globalPairs.length; i++) {
+                    var splitItems = globalPairs[i].split("-");
+                    variables.push({
+                        name: splitItems[0],
+                        type: "From CSpy",
+                        value: splitItems[2],
+                        variablesReference: 0
+                    });
+                }
+            }
+            response.body = {
+                variables: variables
+            };
+            newLocal.sendResponse(response);
+        };
         const allvariables = {
             command: "variables",
         };
-        this._runtime.sendResponseToCSpy(allvariables);
-        const variables = new Array();
-        const id = this._variableHandles.get(args.variablesReference);
-        var allVariablesPairs = this._runtime.getVariables().split("*");
-        var localPairs = allVariablesPairs[0].split(" ");
-        var globalPairs = allVariablesPairs[1].split(" ");
-        // var localPairs = this._runtime.getLocals().split(" ");
-        // var globalPairs = this._runtime.getGlobals().split(" ");
-        if (id == "local_0") {
-            for (var i = 1; i < localPairs.length; i++) {
-                var splitItems = localPairs[i].split("-");
-                variables.push({
-                    name: splitItems[0],
-                    type: "From CSpy",
-                    value: splitItems[1],
-                    variablesReference: 0
-                });
-            }
-        }
-        else if (id !== null) {
-            for (var i = 1; i < globalPairs.length; i++) {
-                var splitItems = globalPairs[i].split("-");
-                variables.push({
-                    name: splitItems[0],
-                    type: "From CSpy",
-                    value: splitItems[2],
-                    variablesReference: 0
-                });
-            }
-        }
-        response.body = {
-            variables: variables
-        };
-        this.sendResponse(response);
+        this._runtime.sendResponseToCSpy(allvariables, update);
     }
     continueRequest(response, args) {
         this._runtime.continue();
-        //this._runtime.sendResponseToCSpy(response);
         this.sendResponse(response);
     }
     reverseContinueRequest(response, args) {
-        //this._runtime.continue(true);
-        this._runtime.sendResponseToCSpy(response);
-        this.sendResponse(response);
+        var localThis = this;
+        let update = function () {
+            localThis.sendResponse(response);
+        };
+        this._runtime.sendResponseToCSpy(response, update);
+    }
+    restartRequest(response, args) {
+        var localThis = this;
+        let updateresp = function () {
+            localThis.sendResponse(response);
+            console.log("#####----->Restart!!!one<-------####");
+        };
+        this._runtime.sendResponseToCSpy(response, updateresp);
     }
     nextRequest(response, args) {
-        this._runtime.step();
-        this.sendResponse(response);
+        var localThis = this;
+        let update = function () {
+            localThis.sendResponse(response);
+        };
+        this._runtime.sendResponseToCSpy(response, update);
+    }
+    stepInRequest(response, args) {
+        var localThis = this;
+        let update = function () {
+            localThis.sendResponse(response);
+        };
+        this._runtime.sendResponseToCSpy(response, update);
     }
     stepBackRequest(response, args) {
-        this._runtime.step(true);
+        //this._runtime.step(true);
         this.sendResponse(response);
     }
     evaluateRequest(response, args) {

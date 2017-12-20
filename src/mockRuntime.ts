@@ -23,7 +23,7 @@ export class MockRuntime extends EventEmitter {
 	public get sourceFile() {
 		return this._sourceFile;
 	}
-
+	stackTrace
 	// the contents (= lines) of the one and only file
 	private _sourceLines: string[];
 
@@ -50,7 +50,7 @@ export class MockRuntime extends EventEmitter {
 			console.log('Connected');
 		});
 
-		this.client.setMaxListeners(25);
+		//this.client.setMaxListeners(25);
 	}
 
 	private sendEvent(event: string, ... args: any[]) {
@@ -66,21 +66,30 @@ export class MockRuntime extends EventEmitter {
 			callback = JSON.parse(ab2str(data));
 		}
 		catch(e) {
+			console.log("unable to parce json (["+ data +"])<#------------------<< "+ e);
 			// forget about it :)
 		}
 		if(callback){
 			console.log('Received: ' + callback["command"] + "-> " + callback["body"]);
 			if(callback["command"] == "continue") {
-				this._currentLine = parseInt(callback["body"], 10);
+				this._currentLine = parseInt(callback["body"], 10) -1;
 				console.log("----------> _currentLine: " + this._currentLine);
 				this.sendEvent('stopOnBreakpoint');
 			}
 			else if(callback["command"] == "launch") {
-				this._currentLine = parseInt(callback["body"], 10);
+				this._currentLine = parseInt(callback["body"], 10) -1;
 			}
-			else if(callback["command"] == "reverseContinue") {
-				this._currentLine = parseInt(callback["body"], 10);
-				this.sendEvent('stopOnEntry');
+			else if(callback["command"] == "restart") {
+				this._currentLine = parseInt(callback["body"], 10) -1;
+				//this.sendEvent('stopOnBreakpoint');
+			}
+			else if(callback["command"] == "next") {
+				this._currentLine = parseInt(callback["body"], 10) -1;
+				this.sendEvent('stopOnBreakpoint');
+			}
+			else if(callback["command"] == "stepIn") {
+				this._currentLine = parseInt(callback["body"], 10) -1;
+				this.sendEvent('stopOnBreakpoint');
 			}
 			// else if(callback["command"] == "locals") {
 			// 	this._locals = callback["body"];
@@ -97,15 +106,28 @@ export class MockRuntime extends EventEmitter {
 		}
 	}
 
-	public sendResponseToCSpy(response: DebugProtocol.Response) {
+	// public sendResponseToCSpy(response: DebugProtocol.Response) {
+	// 	let responseString = JSON.stringify(response);
+	// 	//logger.verbose(`To client: ${responseString }`);
+
+	// 	this.client.write(responseString + '\n');
+
+	// 	this.client.on('data', this.eventCallback)
+
+	// 	//this.client.off('data', eventCallback);
+	// }
+
+	public sendResponseToCSpy(response: DebugProtocol.Response, update) {
 		let responseString = JSON.stringify(response);
-		//logger.verbose(`To client: ${responseString }`);
 
 		this.client.write(responseString + '\n');
+		var newLocal = this;
 
-		this.client.on('data', this.eventCallback)
+		this.client.on('data', function(data){
+			newLocal.eventCallback(data);
+			update();
+		})
 
-		//this.client.off('data', eventCallback);
 	}
 
 	public getLocals():string
@@ -152,13 +174,6 @@ export class MockRuntime extends EventEmitter {
 			this._currentLine = 0;
 		else
 			this.run();
-	}
-
-	/**
-	 * Step to the next/previous non empty line.
-	 */
-	public step(reverse = false, event = 'stopOnStep') {
-		this.run();
 	}
 
 	/**
@@ -245,9 +260,11 @@ export class MockRuntime extends EventEmitter {
 			body:{
 				allThreadsContinued:true
 			}
-
 		}
-		this.sendResponseToCSpy(response)
+		let update = function(){
+			console.log("Run");
+		}
+		this.sendResponseToCSpy(response,update)
 	}
 
 	private verifyBreakpoints(path: string) : void {
