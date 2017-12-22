@@ -99,10 +99,7 @@ class MockDebugSession extends LoggingDebugSession {
 
 		ls.stdout.on('data', (data) => {
 			console.log('stdout: ' + data);
-			const e: DebugProtocol.OutputEvent = new OutputEvent(`${data}\n`);
-			// e.body.source = this.createSource(filePath);
-			// e.body.line = this.convertDebuggerLineToClient(line);
-			// e.body.column = this.convertDebuggerColumnToClient(column);
+			const e: DebugProtocol.OutputEvent = new OutputEvent(data);
 			this.sendEvent(e);
 		});
 
@@ -321,6 +318,14 @@ class MockDebugSession extends LoggingDebugSession {
 
 
 	protected stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments): void {
+		var localThis = this;
+		let update = function(){
+			localThis.sendResponse(response);
+		}
+		this._runtime.sendResponseToCSpy(response,update);
+	}
+
+	protected stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments): void {
 		var localThis = this;
 		let update = function(){
 			localThis.sendResponse(response);

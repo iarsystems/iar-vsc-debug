@@ -52,6 +52,10 @@ class MockRuntime extends events_1.EventEmitter {
                     this._currentLine = parseInt(callback["body"], 10) - 1;
                     this.sendEvent('stopOnBreakpoint');
                 }
+                else if (callback["command"] == "stepOut") {
+                    this._currentLine = parseInt(callback["body"], 10) - 1;
+                    this.sendEvent('stopOnBreakpoint');
+                }
                 else if (callback["command"] == "variables") {
                     this._variables = callback["body"];
                     //this.sendEvent('refresh');
@@ -89,6 +93,9 @@ class MockRuntime extends events_1.EventEmitter {
     }
     getLocals() {
         return this._locals;
+    }
+    getLine() {
+        return this._currentLine;
     }
     getGlobals() {
         return this._globals;

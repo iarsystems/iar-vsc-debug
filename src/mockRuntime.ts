@@ -91,14 +91,10 @@ export class MockRuntime extends EventEmitter {
 				this._currentLine = parseInt(callback["body"], 10) -1;
 				this.sendEvent('stopOnBreakpoint');
 			}
-			// else if(callback["command"] == "locals") {
-			// 	this._locals = callback["body"];
-			// 	this.sendEvent('stopOnEntry');
-			// }
-			// else if(callback["command"] == "globals") {
-			// 	this._globals = callback["body"];
-			// 	this.sendEvent('stopOnEntry');
-			// }
+			else if(callback["command"] == "stepOut") {
+				this._currentLine = parseInt(callback["body"], 10) -1;
+				this.sendEvent('stopOnBreakpoint');
+			}
 			else if(callback["command"] == "variables") {
 				this._variables = callback["body"];
 				//this.sendEvent('refresh');
@@ -133,6 +129,10 @@ export class MockRuntime extends EventEmitter {
 	public getLocals():string
 	{
 		return this._locals;
+	}
+	public getLine()
+	{
+		return this._currentLine;
 	}
 	public getGlobals():string
 	{

@@ -57,10 +57,7 @@ class MockDebugSession extends vscode_debugadapter_1.LoggingDebugSession {
         sleep(2000);
         ls.stdout.on('data', (data) => {
             console.log('stdout: ' + data);
-            const e = new vscode_debugadapter_1.OutputEvent(`${data}\n`);
-            // e.body.source = this.createSource(filePath);
-            // e.body.line = this.convertDebuggerLineToClient(line);
-            // e.body.column = this.convertDebuggerColumnToClient(column);
+            const e = new vscode_debugadapter_1.OutputEvent(data);
             this.sendEvent(e);
         });
         ls.stderr.on('data', (data) => {
@@ -234,6 +231,13 @@ class MockDebugSession extends vscode_debugadapter_1.LoggingDebugSession {
         this._runtime.sendResponseToCSpy(response, update);
     }
     stepInRequest(response, args) {
+        var localThis = this;
+        let update = function () {
+            localThis.sendResponse(response);
+        };
+        this._runtime.sendResponseToCSpy(response, update);
+    }
+    stepOutRequest(response, args) {
         var localThis = this;
         let update = function () {
             localThis.sendResponse(response);
