@@ -164,7 +164,6 @@ class MockDebugSession extends vscode_debugadapter_1.LoggingDebugSession {
     variablesRequest(response, args) {
         var newLocal = this;
         let update = function () {
-            console.log("----> rel fungtion run???? <----");
             const variables = new Array();
             const id = newLocal._variableHandles.get(args.variablesReference);
             var allVariablesPairs = newLocal._runtime.getVariables().split("*");
@@ -249,35 +248,42 @@ class MockDebugSession extends vscode_debugadapter_1.LoggingDebugSession {
         this.sendResponse(response);
     }
     evaluateRequest(response, args) {
-        let reply = undefined;
-        if (args.context === 'repl') {
-            // 'evaluate' supports to create and delete breakpoints from the 'repl':
-            const matches = /new +([0-9]+)/.exec(args.expression);
-            if (matches && matches.length === 2) {
-                const mbp = this._runtime.setBreakPoint(this._runtime.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
-                const bp = new vscode_debugadapter_1.Breakpoint(mbp.verified, this.convertDebuggerLineToClient(mbp.line), undefined, this.createSource(this._runtime.sourceFile));
-                bp.id = mbp.id;
-                this.sendEvent(new vscode_debugadapter_1.BreakpointEvent('new', bp));
-                reply = `breakpoint created`;
-            }
-            else {
-                const matches = /del +([0-9]+)/.exec(args.expression);
-                if (matches && matches.length === 2) {
-                    const mbp = this._runtime.clearBreakPoint(this._runtime.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
-                    if (mbp) {
-                        const bp = new vscode_debugadapter_1.Breakpoint(false);
-                        bp.id = mbp.id;
-                        this.sendEvent(new vscode_debugadapter_1.BreakpointEvent('removed', bp));
-                        reply = `breakpoint deleted`;
-                    }
-                }
-            }
-        }
+        // let reply: string | undefined = undefined;
+        // if (args.context === 'repl') {
+        // 	// 'evaluate' supports to create and delete breakpoints from the 'repl':
+        // 	const matches = /new +([0-9]+)/.exec(args.expression);
+        // 	if (matches && matches.length === 2) {
+        // 		const mbp = this._runtime.setBreakPoint(this._runtime.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
+        // 		const bp = <DebugProtocol.Breakpoint> new Breakpoint(mbp.verified, this.convertDebuggerLineToClient(mbp.line), undefined, this.createSource(this._runtime.sourceFile));
+        // 		bp.id= mbp.id;
+        // 		this.sendEvent(new BreakpointEvent('new', bp));
+        // 		reply = `breakpoint created`;
+        // 	} else {
+        // 		const matches = /del +([0-9]+)/.exec(args.expression);
+        // 		if (matches && matches.length === 2) {
+        // 			const mbp = this._runtime.clearBreakPoint(this._runtime.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
+        // 			if (mbp) {
+        // 				const bp = <DebugProtocol.Breakpoint> new Breakpoint(false);
+        // 				bp.id= mbp.id;
+        // 				this.sendEvent(new BreakpointEvent('removed', bp));
+        // 				reply = `breakpoint deleted`;
+        // 			}
+        // 		}
+        // 	}
+        // }
         response.body = {
-            result: reply ? reply : `evaluate(context: '${args.context}', '${args.expression}')`,
+            result: args.expression,
             variablesReference: 0
         };
-        this.sendResponse(response);
+        console.log("evaluateRequest()----->" + args.expression);
+        var localThis = this;
+        let update = function () {
+            console.log("evaluateRequest() update----->" + args.expression);
+            let val = localThis._runtime.GetEvaluate();
+            response.body.result = val;
+            localThis.sendResponse(response);
+        };
+        this._runtime.sendResponseToCSpy(response, update);
     }
     //---- helpers
     createSource(filePath) {

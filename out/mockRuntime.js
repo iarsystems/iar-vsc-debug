@@ -34,7 +34,7 @@ class MockRuntime extends events_1.EventEmitter {
                 console.log('Received: ' + callback["command"] + "-> " + callback["body"]);
                 if (callback["command"] == "continue") {
                     this._currentLine = parseInt(callback["body"], 10) - 1;
-                    console.log("----------> _currentLine: " + this._currentLine);
+                    //console.log("----------> _currentLine: " + this._currentLine);
                     this.sendEvent('stopOnBreakpoint');
                 }
                 else if (callback["command"] == "launch") {
@@ -59,6 +59,9 @@ class MockRuntime extends events_1.EventEmitter {
                 else if (callback["command"] == "variables") {
                     this._variables = callback["body"];
                     //this.sendEvent('refresh');
+                }
+                else if (callback["command"] == "evaluate") {
+                    this._evaluate = callback["body"];
                 }
             }
         };
@@ -102,6 +105,9 @@ class MockRuntime extends events_1.EventEmitter {
     }
     getVariables() {
         return this._variables;
+    }
+    GetEvaluate() {
+        return this._evaluate;
     }
     /**
      * Start executing the given program.

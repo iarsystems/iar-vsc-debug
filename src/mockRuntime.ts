@@ -40,6 +40,7 @@ export class MockRuntime extends EventEmitter {
 	private _locals: string;
 	private _globals: string;
 	private _variables: string
+	private _evaluate: string
 
 	private net = require('net');
 	private client = new this.net.Socket();
@@ -73,7 +74,7 @@ export class MockRuntime extends EventEmitter {
 			console.log('Received: ' + callback["command"] + "-> " + callback["body"]);
 			if(callback["command"] == "continue") {
 				this._currentLine = parseInt(callback["body"], 10) -1;
-				console.log("----------> _currentLine: " + this._currentLine);
+				//console.log("----------> _currentLine: " + this._currentLine);
 				this.sendEvent('stopOnBreakpoint');
 			}
 			else if(callback["command"] == "launch") {
@@ -98,6 +99,9 @@ export class MockRuntime extends EventEmitter {
 			else if(callback["command"] == "variables") {
 				this._variables = callback["body"];
 				//this.sendEvent('refresh');
+			}
+			else if(callback["command"] == "evaluate") {
+				this._evaluate = callback["body"];
 			}
 		}
 	}
@@ -140,6 +144,9 @@ export class MockRuntime extends EventEmitter {
 	}
 	public getVariables():string{
 		return this._variables;
+	}
+	public GetEvaluate():string{
+		return this._evaluate;
 	}
 
 	/**
