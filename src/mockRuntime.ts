@@ -41,6 +41,7 @@ export class MockRuntime extends EventEmitter {
 	private _globals: string;
 	private _variables: string
 	private _evaluate: string
+	private _callStack: string[]
 
 	private net = require('net');
 	private client = new this.net.Socket();
@@ -49,7 +50,10 @@ export class MockRuntime extends EventEmitter {
 		super();
 		const newLocal = this;
 		this.client.connect(28561, '127.0.0.1', function() {
-			newLocal.log('Connected');
+			MockRuntime.log('Connected');
+			newLocal.client.on('data', function (data) {
+				newLocal.eventCallback(data);
+			})
 		});
 
 		//this.client.setMaxListeners(25);
@@ -68,15 +72,15 @@ export class MockRuntime extends EventEmitter {
 			callback = JSON.parse(ab2str(data));
 		}
 		catch(e) {
-			this.log("unable to parce json (["+ data +"])<#------------------<< "+ e);
+			MockRuntime.log("unable to parce json (["+ data +"])<#------------------<< "+ e);
 			// forget about it :)
 		}
 		if(callback){
-			this.log('Received: ' + callback["command"] + "-> " + callback["body"]);
+			MockRuntime.log('Received: ' + callback["command"] + "-> " + callback["body"]);
 			if(callback["command"] == "continue") {
 				this._currentLine = parseInt(callback["body"], 10) -1;
 				//console.log("----------> _currentLine: " + this._currentLine);
-				this.sendEvent('stopOnBreakpoint');
+				this.sendEvent('stopOnBreakpoint'); //TODO:
 			}
 			else if(callback["command"] == "launch") {
 				this._currentLine = parseInt(callback["body"], 10) -1;
@@ -87,15 +91,15 @@ export class MockRuntime extends EventEmitter {
 			}
 			else if(callback["command"] == "next") {
 				this._currentLine = parseInt(callback["body"], 10) -1;
-				this.sendEvent('stopOnBreakpoint');
+				this.sendEvent('stopOnStep');
 			}
 			else if(callback["command"] == "stepIn") {
 				this._currentLine = parseInt(callback["body"], 10) -1;
-				this.sendEvent('stopOnBreakpoint');
+				this.sendEvent('stopOnStep');
 			}
 			else if(callback["command"] == "stepOut") {
 				this._currentLine = parseInt(callback["body"], 10) -1;
-				this.sendEvent('stopOnBreakpoint');
+				this.sendEvent('stopOnStep');
 			}
 			else if(callback["command"] == "variables") {
 				this._variables = callback["body"];
@@ -103,6 +107,9 @@ export class MockRuntime extends EventEmitter {
 			}
 			else if(callback["command"] == "evaluate") {
 				this._evaluate = callback["body"];
+			}
+			else if(callback["command"] == "stackTrace") {
+				this._callStack = callback["body"];
 			}
 		}
 	}
@@ -118,15 +125,13 @@ export class MockRuntime extends EventEmitter {
 	// 	//this.client.off('data', eventCallback);
 	// }
 
-	public sendResponseToCSpy(response: DebugProtocol.Response, update) {
+	public sendResponseToCSpy(response: DebugProtocol.Response, callback: () => void) {
 		let responseString = JSON.stringify(response);
 
 		this.client.write(responseString + '\n');
-		var newLocal = this;
 
-		this.client.on('data', function(data){
-			newLocal.eventCallback(data);
-			update();
+		this.client.once('data', function(data){ // TODO: Handle overlapping requests
+			callback();
 		})
 
 	}
@@ -148,6 +153,9 @@ export class MockRuntime extends EventEmitter {
 	}
 	public GetEvaluate():string{
 		return this._evaluate;
+	}
+	public GetCallStack():string[]{
+		return this._callStack;
 	}
 
 	/**
@@ -269,9 +277,8 @@ export class MockRuntime extends EventEmitter {
 				allThreadsContinued:true
 			}
 		}
-		const newLocal = this;
 		let update = function(){
-			newLocal.log("Run");
+			MockRuntime.log("Run");
 		}
 		this.sendResponseToCSpy(response,update);
 	}
@@ -303,7 +310,7 @@ export class MockRuntime extends EventEmitter {
 		}
 	}
 
-	private log(msg: string) {
+	public static log(msg: string) {
 		writeFileSync("D:\\repos\\hampusad\\vscode-mock-debug\\runtime.log", msg + "\n", { flag: 'a' });
 	}
 

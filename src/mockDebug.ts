@@ -164,6 +164,7 @@ class MockDebugSession extends LoggingDebugSession {
 
 	protected setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): void {
 
+		MockRuntime.log(JSON.stringify(args.source));
 		const path = <string>args.source.path;
 		const clientLines = args.lines || [];
 
@@ -204,22 +205,17 @@ class MockDebugSession extends LoggingDebugSession {
 	}
 
 	protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
-
-		const startFrame = typeof args.startFrame === 'number' ? args.startFrame : 0;
-		const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
-		const endFrame = startFrame + maxLevels;
-
-		const stk = this._runtime.stack(startFrame, endFrame);
-
-		//this._runtime.sendResponseToCSpy(response);
-
-
-		response.body = {
-			stackFrames: stk.frames.map(f => new StackFrame(f.index, f.name, this.createSource(f.file), this.convertDebuggerLineToClient(f.line))),
-			totalFrames: stk.count
-		};
-
-		this.sendResponse(response);
+		const newLocal = this;
+		this._runtime.sendResponseToCSpy(response, function() {
+			const stk = newLocal._runtime.GetCallStack(); // TODO: handle args
+			const stackFrames = stk.map((f, i) => new StackFrame(i, f, newLocal.createSource(newLocal._runtime.sourceFile),
+																	newLocal.convertDebuggerLineToClient(newLocal._runtime.getLine())));
+			response.body = {
+				stackFrames: stackFrames,
+				totalFrames: stackFrames.length
+			}
+			newLocal.sendResponse(response);
+		});
 	}
 
 	protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments): void {
