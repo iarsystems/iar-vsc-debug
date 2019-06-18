@@ -90,7 +90,7 @@ class MockDebugSession extends LoggingDebugSession {
 		const ls = spawn('D:/EWARM_TRUNK/StageWin32_14/Debug/common/bin/CSpyRuby.exe',
 		['--ruby_file', 'setupt.rb','--config', 'SIM_CORTEX_M4', '--sourcefile', 'D:/VSCODE_SVN/mock-test/main.c', '--program', 'D:/VSCODE_SVN/mock-test/Debug/Exe/ewproj.out'],
 		{cwd:"D:/VSCODE_SVN/CSPYRubySetup"},
-		);
+		); // TODO:
 		console.log("starting cspuruby, PID: "+ ls.pid );
 
 		// sleep a little bit to make sure cspy ruby starts before continue

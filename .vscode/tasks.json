@@ -14,12 +14,5 @@
 				"isDefault": true
 			}
 		},
-		{
-			"type": "typescript",
-			"tsconfig": "src\\tsconfig.json",
-			"problemMatcher": [
-				"$tsc"
-			]
-		}
 	]
 }

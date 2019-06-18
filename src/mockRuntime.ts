@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { EventEmitter } from 'events';
 import { DebugProtocol } from 'vscode-debugprotocol';
 //import { Response } from 'vscode-debugadapter/lib/main';
@@ -47,8 +47,9 @@ export class MockRuntime extends EventEmitter {
 
 	constructor() {
 		super();
+		const newLocal = this;
 		this.client.connect(28561, '127.0.0.1', function() {
-			console.log('Connected');
+			newLocal.log('Connected');
 		});
 
 		//this.client.setMaxListeners(25);
@@ -67,11 +68,11 @@ export class MockRuntime extends EventEmitter {
 			callback = JSON.parse(ab2str(data));
 		}
 		catch(e) {
-			console.log("unable to parce json (["+ data +"])<#------------------<< "+ e);
+			this.log("unable to parce json (["+ data +"])<#------------------<< "+ e);
 			// forget about it :)
 		}
 		if(callback){
-			console.log('Received: ' + callback["command"] + "-> " + callback["body"]);
+			this.log('Received: ' + callback["command"] + "-> " + callback["body"]);
 			if(callback["command"] == "continue") {
 				this._currentLine = parseInt(callback["body"], 10) -1;
 				//console.log("----------> _currentLine: " + this._currentLine);
@@ -268,10 +269,11 @@ export class MockRuntime extends EventEmitter {
 				allThreadsContinued:true
 			}
 		}
+		const newLocal = this;
 		let update = function(){
-			console.log("Run");
+			newLocal.log("Run");
 		}
-		this.sendResponseToCSpy(response,update)
+		this.sendResponseToCSpy(response,update);
 	}
 
 	private verifyBreakpoints(path: string) : void {
@@ -299,6 +301,10 @@ export class MockRuntime extends EventEmitter {
 				}
 			});
 		}
+	}
+
+	private log(msg: string) {
+		writeFileSync("D:\\repos\\hampusad\\vscode-mock-debug\\runtime.log", msg + "\n", { flag: 'a' });
 	}
 
 	/**
