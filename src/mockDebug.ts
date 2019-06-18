@@ -251,7 +251,7 @@ class MockDebugSession extends LoggingDebugSession {
 			// var globalPairs = this._runtime.getGlobals().split(" ");
 			if (id == "local_0") {
 				for (var i=1;i<localPairs.length;i++) {
-					var splitItems = localPairs[i].split("-");
+					var splitItems = localPairs[i].split("|");
 					variables.push({
 						name: splitItems[0],
 						type: "From CSpy",
@@ -262,7 +262,7 @@ class MockDebugSession extends LoggingDebugSession {
 			}
 			else if (id !== null) {
 				for (var i=1;i<globalPairs.length;i++) {
-					var splitItems = globalPairs[i].split("-");
+					var splitItems = globalPairs[i].split("|");
 					variables.push({
 						name: splitItems[0],
 						type: "From CSpy",

@@ -24,3 +24,105 @@ Received: launch-> 11
 Received: variables-> Variable-Value i-<unavailable> local-<unavailable> sum-<unavailable> *Variable-Value global-<main/global>-0 testggg-<main/testggg>-0 
 Received: variables-> Variable-Value i-<unavailable> local-<unavailable> sum-<unavailable> *Variable-Value global-<main/global>-0 testggg-<main/testggg>-0 
 Received: variables-> Variable-Value i-<unavailable> local-<unavailable> sum-<unavailable> *Variable-Value global-<main/global>-0 testggg-<main/testggg>-0 
+Connected
+Received: setBreakpoints-> {main.c}.31,
+Received: setBreakpoints-> {main.c}.31,
+Received: launch-> 11
+Received: launch-> 11
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global-<main/global>|0 testggg-<main/testggg>|0 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global-<main/global>|0 testggg-<main/testggg>|0 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global-<main/global>|0 testggg-<main/testggg>|0 
+Received: continue-> 31
+Received: continue-> 31
+Received: continue-> 31
+Received: continue-> 31
+Run
+Received: variables-> Variable|Value i|633 local|100846 sum|-1621314695 *Variable|Value global-<main/global>|201747 testggg-<main/testggg>|100901 
+Received: variables-> Variable|Value i|633 local|100846 sum|-1621314695 *Variable|Value global-<main/global>|201747 testggg-<main/testggg>|100901 
+Received: variables-> Variable|Value i|633 local|100846 sum|-1621314695 *Variable|Value global-<main/global>|201747 testggg-<main/testggg>|100901 
+Received: variables-> Variable|Value i|633 local|100846 sum|-1621314695 *Variable|Value global-<main/global>|201747 testggg-<main/testggg>|100901 
+Run
+Received: variables-> Variable|Value i|633 local|100846 sum|-1621314695 *Variable|Value global-<main/global>|201747 testggg-<main/testggg>|100901 
+Connected
+Received: setBreakpoints-> {main.c}.31,
+Received: setBreakpoints-> {main.c}.31,
+Received: launch-> 11
+Received: launch-> 11
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|0 testggg|<main/testggg>|0 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|0 testggg|<main/testggg>|0 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|0 testggg|<main/testggg>|0 
+Received: continue-> 31
+Received: continue-> 31
+Received: continue-> 31
+Received: continue-> 31
+Run
+Received: variables-> Variable|Value i|633 local|100846 sum|-1621314695 *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|633 local|100846 sum|-1621314695 *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|633 local|100846 sum|-1621314695 *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|633 local|100846 sum|-1621314695 *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Run
+Received: variables-> Variable|Value i|633 local|100846 sum|-1621314695 *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Connected
+Received: setBreakpoints-> {main.c}.31,
+Received: setBreakpoints-> {main.c}.31,
+Received: launch-> 11
+Received: launch-> 11
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|0 testggg|<main/testggg>|0 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|0 testggg|<main/testggg>|0 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|0 testggg|<main/testggg>|0 
+Received: continue-> 31
+Received: continue-> 31
+Received: continue-> 31
+Received: continue-> 31
+Run
+Received: variables-> Variable|Value i|633 local|100846 sum|-1621314695 *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|633 local|100846 sum|-1621314695 *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|633 local|100846 sum|-1621314695 *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|633 local|100846 sum|-1621314695 *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Run
+Received: variables-> Variable|Value i|633 local|100846 sum|-1621314695 *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: next-> 32
+Received: next-> 32
+Received: next-> 32
+Received: next-> 32
+Run
+Received: next-> 32
+Received: next-> 32
+Received: variables-> Variable|Value i|633 local|<unavailable> sum|-1621314695 *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|633 local|<unavailable> sum|-1621314695 *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|633 local|<unavailable> sum|-1621314695 *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|633 local|<unavailable> sum|-1621314695 *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Run
+Received: variables-> Variable|Value i|633 local|<unavailable> sum|-1621314695 *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|633 local|<unavailable> sum|-1621314695 *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|633 local|<unavailable> sum|-1621314695 *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: next-> 33
+Received: next-> 33
+Received: next-> 33
+Received: next-> 33
+Run
+Received: next-> 33
+Received: next-> 33
+Received: next-> 33
+Received: next-> 33
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Run
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Run
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
+Received: variables-> Variable|Value i|<unavailable> local|<unavailable> sum|<unavailable> *Variable|Value global|<main/global>|201747 testggg|<main/testggg>|100901 
