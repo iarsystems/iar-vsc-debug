@@ -2,16 +2,12 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { readFileSync, writeFileSync } from 'fs';
+import { writeFileSync } from 'fs';
 import { EventEmitter } from 'events';
 import { DebugProtocol } from 'vscode-debugprotocol';
+import { StackFrame, Source } from 'vscode-debugadapter';
+import { basename } from 'path';
 //import { Response } from 'vscode-debugadapter/lib/main';
-
-export interface MockBreakpoint {
-	id: number;
-	line: number;
-	verified: boolean;
-}
 
 /**
  * A Mock runtime with minimal debugger functionality.
@@ -23,8 +19,6 @@ export class MockRuntime extends EventEmitter {
 	public get sourceFile() {
 		return this._sourceFile;
 	}
-	// the contents (= lines) of the one and only file
-	private _sourceLines: string[];
 
 	// This is the next line that will be 'executed'
 	private _currentLine = 0;
@@ -33,7 +27,7 @@ export class MockRuntime extends EventEmitter {
 	private _globals: string;
 	private _variables: string;
 	private _evaluate: string;
-	private _callStack: string[] = [];
+	private _callStack: StackFrame[] = [];
 	private _validBreakpointIds: number[] = [];
 
 	private net = require('net');
@@ -56,6 +50,7 @@ export class MockRuntime extends EventEmitter {
 		});
 	}
 
+	// ran with data received from CSpyRuby
 	public eventCallback = (data)  => {
 		var ab2str = require('arraybuffer-to-string');
 		let callback = null;
@@ -63,7 +58,7 @@ export class MockRuntime extends EventEmitter {
 			callback = JSON.parse(ab2str(data));
 		}
 		catch(e) {
-			MockRuntime.log("unable to parce json (["+ data +"])<#------------------<< "+ e);
+			MockRuntime.log("unable to parse json (["+ data +"])<#------------------<< "+ e);
 			// forget about it :)
 		}
 		if(callback){
@@ -86,7 +81,6 @@ export class MockRuntime extends EventEmitter {
 			}
 			else if(callback["command"] == "restart") {
 				this._currentLine = parseInt(callback["body"], 10);
-				//this.sendEvent('stopOnBreakpoint');
 				if (this._currentLine === -1) {
 					this.sendEvent('end');
 				} else {
@@ -125,7 +119,13 @@ export class MockRuntime extends EventEmitter {
 				this._evaluate = callback["body"];
 			}
 			else if(callback["command"] == "stackTrace") {
-				this._callStack = callback["body"];
+				this._callStack = [];
+				const frames: string[] = callback["body"];
+				frames.forEach((frame, index) => {
+					const info = frame.split("|");
+					const source = new Source(basename(info[1]), info[1]);
+					this._callStack.push(new StackFrame(index, info[0], source, Number(info[2]), Number(info[3])));
+				});
 			}
 			else if(callback["command"] == "setBreakpoints") {
 				this._validBreakpointIds = callback["body"];
@@ -162,7 +162,7 @@ export class MockRuntime extends EventEmitter {
 	public GetEvaluate():string{
 		return this._evaluate;
 	}
-	public GetCallStack():string[]{
+	public GetCallStack():StackFrame[]{
 		return this._callStack;
 	}
 	public GetVerifiedBpIds():number[]{
@@ -178,7 +178,6 @@ export class MockRuntime extends EventEmitter {
 		this._globals = "";
 		this._variables = "*";
 
-		this.loadSource(program);
 		//this._currentLine = 0;
 
 		if (stopOnEntry) {
@@ -202,13 +201,6 @@ export class MockRuntime extends EventEmitter {
 	}
 
 // private methods
-
-	private loadSource(file: string) {
-		if (this._sourceFile !== file) {
-			this._sourceFile = file;
-			this._sourceLines = readFileSync(this._sourceFile).toString().split('\n');
-		}
-	}
 
 	/**
 	 * Run through the file.

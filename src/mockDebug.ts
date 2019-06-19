@@ -9,7 +9,7 @@ import {
 } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { basename } from 'path';
-import { MockRuntime, MockBreakpoint } from './mockRuntime';
+import { MockRuntime } from './mockRuntime';
 //import {EnviromentProvider} from './extension';
 
 /**
@@ -201,14 +201,12 @@ class MockDebugSession extends LoggingDebugSession {
 	}
 
 	protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
-		const newLocal = this;
+		const newLocal = this;  // TODO: handle args
 		this._runtime.sendResponseToCSpy(response, function() {
-			const stk = newLocal._runtime.GetCallStack(); // TODO: handle args
-			const stackFrames = stk.map((f, i) => new StackFrame(i, f, newLocal.createSource(newLocal._runtime.sourceFile),
-																	newLocal.convertDebuggerLineToClient(newLocal._runtime.getLine())));
+			const stk = newLocal._runtime.GetCallStack();
 			response.body = {
-				stackFrames: stackFrames,
-				totalFrames: stackFrames.length
+				stackFrames: stk,
+				totalFrames: stk.length
 			}
 			newLocal.sendResponse(response);
 		});
