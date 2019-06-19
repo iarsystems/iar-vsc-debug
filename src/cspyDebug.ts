@@ -224,7 +224,7 @@ class CSpyDebugSession extends LoggingDebugSession {
 				var splitItems = requestedPairs[i].split("|");
 				variables.push({
 					name: splitItems[0],
-					type: "From CSpy", // TODO:
+					type: splitItems[2],
 					value: splitItems[1],
 					variablesReference: 0
 				});
@@ -233,6 +233,7 @@ class CSpyDebugSession extends LoggingDebugSession {
 			response.body = {
 				variables: variables
 			};
+			CSpyRubyServer.log(JSON.stringify(variables));
 			newLocal.sendResponse(response);
 		});
 	}

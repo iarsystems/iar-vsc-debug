@@ -14,5 +14,10 @@
 				"isDefault": true
 			}
 		},
+		{
+			"type": "npm",
+			"script": "compile",
+			"problemMatcher": []
+		}
 	]
 }

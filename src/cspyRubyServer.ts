@@ -53,7 +53,7 @@ export class CSpyRubyServer {
 	}
 
     public static log(msg: string) {
-        writeFileSync("D:\\repos\\hampusad\\vscode-mock-debug\\runtime.log", msg + "\n", { flag: 'a' });
+        writeFileSync("debug_adapter.log", msg + "\n", { flag: 'a' });
     }
 
 }
