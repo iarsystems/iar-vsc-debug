@@ -9,6 +9,7 @@ import { WorkspaceFolder, DebugConfiguration, ProviderResult, CancellationToken 
 
 export function activate(context: vscode.ExtensionContext) {
 
+	console.log("activating");
 	// context.subscriptions.push(vscode.commands.registerCommand('extension.mock-debug.getProgramName', config => {
 	// 	return vscode.window.showInputBox({
 	// 		placeHolder: "Please enter the name of a markdown file in the workspace folder",
@@ -31,7 +32,6 @@ class MockConfigurationProvider implements vscode.DebugConfigurationProvider {
 	 * e.g. add all missing attributes to the debug configuration.
 	 */
 	resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
-
 		// if launch.json is missing or empty
 		if (!config.type && !config.request && !config.name) {
 			const editor = vscode.window.activeTextEditor;
