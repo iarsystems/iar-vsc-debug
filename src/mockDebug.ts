@@ -27,7 +27,15 @@ interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
 	trace?: boolean;
 }
 
-
+/**
+ * Desribes a scope, i.e. a name (local or static) and a frame reference (the 'frame level')
+ */
+class ScopeReference {
+	constructor(
+		readonly name: "local" | "static",
+		readonly frameReference: number,
+	) {}
+}
 
 class MockDebugSession extends LoggingDebugSession {
 
@@ -37,7 +45,7 @@ class MockDebugSession extends LoggingDebugSession {
 	// a Mock runtime (or debugger)
 	private _runtime: MockRuntime;
 
-	private _variableHandles = new Handles<string>();
+	private _variableHandles = new Handles<ScopeReference>();
 
 	// Used to assign a unique Id to each breakpoint
 	private _bpIndex = 0;
@@ -154,8 +162,8 @@ class MockDebugSession extends LoggingDebugSession {
 		this._runtime.sendResponseToCSpy(response,update);
 		this.sendResponse(response);
 	}
-	protected pauseRequest(response: DebugProtocol.PauseResponse)
-	{
+
+	protected pauseRequest(response: DebugProtocol.PauseResponse) {
 		let update = function(){
 			console.log("pauserequest");
 		}
@@ -164,7 +172,6 @@ class MockDebugSession extends LoggingDebugSession {
 
 	protected setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): void {
 
-		const path = <string>args.source.path;
 		const clientLines = args.lines || [];
 
 		const localBreakpoints = clientLines.map(line => { // For sending to C-SPY
@@ -201,6 +208,7 @@ class MockDebugSession extends LoggingDebugSession {
 	}
 
 	protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
+
 		const newLocal = this;  // TODO: handle args
 		this._runtime.sendResponseToCSpy(response, function() {
 			const stk = newLocal._runtime.GetCallStack();
@@ -216,8 +224,8 @@ class MockDebugSession extends LoggingDebugSession {
 
 		const frameReference = args.frameId;
 		const scopes = new Array<Scope>();
-		scopes.push(new Scope("Local", this._variableHandles.create("local_" + frameReference), false));
-		scopes.push(new Scope("Global", this._variableHandles.create("global_" + frameReference), true));
+		scopes.push(new Scope("Local", this._variableHandles.create(new ScopeReference("local", frameReference)), false));
+		scopes.push(new Scope("Static", this._variableHandles.create(new ScopeReference("static", frameReference)), true));
 
 		response.body = {
 			scopes: scopes
@@ -227,19 +235,20 @@ class MockDebugSession extends LoggingDebugSession {
 
 	protected variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments): void {
 
+		const scopeRef = this._variableHandles.get(args.variablesReference);
+
 		var newLocal = this;
 		let update = function(){
 			const variables = new Array<DebugProtocol.Variable>();
-			const id = newLocal._variableHandles.get(args.variablesReference);
 
 			var allVariablesPairs = newLocal._runtime.getVariables().split("*");
 
 			var localPairs = allVariablesPairs[0].split(" ");
-			var globalPairs = allVariablesPairs[1].split(" ");
+			var staticPairs = allVariablesPairs[1].split(" ");
 
 			// var localPairs = this._runtime.getLocals().split(" ");
 			// var globalPairs = this._runtime.getGlobals().split(" ");
-			if (id == "local_0") {
+			if (scopeRef.name == "local") {
 				for (var i=1;i<localPairs.length;i++) {
 					var splitItems = localPairs[i].split("|");
 					variables.push({
@@ -250,9 +259,9 @@ class MockDebugSession extends LoggingDebugSession {
 					});
 				}
 			}
-			else if (id !== null) {
-				for (var i=1;i<globalPairs.length;i++) {
-					var splitItems = globalPairs[i].split("|");
+			else if (scopeRef.name == "static") {
+				for (var i=1;i<staticPairs.length;i++) {
+					var splitItems = staticPairs[i].split("|");
 					variables.push({
 						name: splitItems[0],
 						type: "From CSpy",
@@ -268,10 +277,11 @@ class MockDebugSession extends LoggingDebugSession {
 			newLocal.sendResponse(response);
 		};
 
-		const allvariables: DebugProtocol.VariablesResponse = <DebugProtocol.VariablesResponse>{
-			command:"variables",
+		const toCSPY = {
+			command: "variables",
+			body: scopeRef.frameReference
 		}
-		this._runtime.sendResponseToCSpy(allvariables,update);
+		this._runtime.sendResponseToCSpy(toCSPY,update);
 	}
 
 	protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
