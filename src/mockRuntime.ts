@@ -70,27 +70,52 @@ export class MockRuntime extends EventEmitter {
 			MockRuntime.log('Received: ' + callback["command"] + "-> " + callback["body"]);
 			if(callback["command"] == "continue") {
 				this._currentLine = parseInt(callback["body"], 10);
-				//console.log("----------> _currentLine: " + this._currentLine);
-				this.sendEvent('stopOnBreakpoint');
+				if (this._currentLine === -1) {
+					this.sendEvent('end');
+				} else {
+					this.sendEvent('stopOnBreakpoint');
+				}
 			}
 			else if(callback["command"] == "launch") {
 				this._currentLine = parseInt(callback["body"], 10);
+				if (this._currentLine === -1) {
+					this.sendEvent('end');
+				} else {
+					this.sendEvent('stopOnEntry');
+				}
 			}
 			else if(callback["command"] == "restart") {
 				this._currentLine = parseInt(callback["body"], 10);
 				//this.sendEvent('stopOnBreakpoint');
+				if (this._currentLine === -1) {
+					this.sendEvent('end');
+				} else {
+					this.sendEvent('stopOnEntry');
+				}
 			}
 			else if(callback["command"] == "next") {
 				this._currentLine = parseInt(callback["body"], 10);
-				this.sendEvent('stopOnStep');
+				if (this._currentLine === -1) {
+					this.sendEvent('end');
+				} else {
+					this.sendEvent('stopOnStep');
+				}
 			}
 			else if(callback["command"] == "stepIn") {
 				this._currentLine = parseInt(callback["body"], 10);
-				this.sendEvent('stopOnStep');
+				if (this._currentLine === -1) {
+					this.sendEvent('end');
+				} else {
+					this.sendEvent('stopOnStep');
+				}
 			}
 			else if(callback["command"] == "stepOut") {
 				this._currentLine = parseInt(callback["body"], 10);
-				this.sendEvent('stopOnStep');
+				if (this._currentLine === -1) {
+					this.sendEvent('end');
+				} else {
+					this.sendEvent('stopOnStep');
+				}
 			}
 			else if(callback["command"] == "variables") {
 				this._variables = callback["body"];
