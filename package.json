@@ -1,12 +1,12 @@
 {
-	"name": "mock-debug",
-	"displayName": "Mock Debug",
+	"name": "cspy-debug",
+	"displayName": "C-SPY Debug",
 	"version": "0.25.0",
-	"publisher": "andreweinand",
-	"description": "Starter extension for developing debug adapters for VS Code.",
+	"publisher": "hampusad",
+	"description": "An example extension & Debug Adapter for C-SPY with VS Code",
 	"author": {
-		"name": "Microsoft Corporation",
-		"email": "aweinand@microsoft.com"
+		"name": "Hampus Adolfsson",
+		"email": "hampusad@iar.com"
 	},
 	"keywords": [
 		"multi-root ready"
@@ -15,18 +15,10 @@
 		"vscode": "^1.17.0",
 		"node": "^7.9.0"
 	},
-	"icon": "images/mock-debug-icon.png",
 	"categories": [
 		"Debuggers"
 	],
 	"private": true,
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/Microsoft/vscode-mock-debug.git"
-	},
-	"bugs": {
-		"url": "https://github.com/Microsoft/vscode-mock-debug/issues"
-	},
 	"dependencies": {
 		"@types/node": "^7.0.43",
 		"arraybuffer-to-string": "^1.0.1",
@@ -61,8 +53,7 @@
 	},
 	"main": "./out/extension",
 	"activationEvents": [
-		"onDebug",
-		"onCommand:extension.mock-debug.getProgramName"
+		"onDebug"
 	],
 	"contributes": {
 		"breakpoints": [
@@ -72,7 +63,7 @@
 		],
 		"debuggers": [
 			{
-				"type": "mock",
+				"type": "cspy",
 				"label": "C-SPY Debug",
 				"program": "./out/cspyDebug.js",
 				"runtime": "node",
@@ -84,8 +75,8 @@
 						"properties": {
 							"program": {
 								"type": "string",
-								"description": "Absolute path to a text file.",
-								"default": "${workspaceFolder}/${command:AskForProgramName}"
+								"description": "Absolute path to a .c file.",
+								"default": "${workspaceFolder}/main.c"
 							},
 							"stopOnEntry": {
 								"type": "boolean",
@@ -102,28 +93,26 @@
 				},
 				"initialConfigurations": [
 					{
-						"type": "mock",
+						"type": "cspy",
 						"request": "launch",
-						"name": "Ask for file name",
-						"program": "${workspaceFolder}/${command:AskForProgramName}",
+						"name": "Debug with C-SPY",
+						"program": "${workspaceFolder}/main.c",
 						"stopOnEntry": true
 					}
 				],
 				"configurationSnippets": [
 					{
-						"label": "Mock Debug: Launch",
-						"description": "A new configuration for launching a mock debug program",
+						"label": "C-SPY Debug: Launch",
+						"description": "A new configuration for debugging a program with C-SPY",
 						"body": {
-							"type": "mock",
+							"type": "cspy",
 							"request": "launch",
-							"name": "${2:Launch Program}",
-							"program": "^\"\\${workspaceFolder}/${1:Program}\""
+							"name": "${2:Debug with C-SPY}",
+							"program": "^\"\\${workspaceFolder}/${1:Source}\"",
+							"stopOnEntry": true
 						}
 					}
-				],
-				"variables": {
-					"AskForProgramName": "extension.mock-debug.getProgramName"
-				}
+				]
 			}
 		]
 	}
