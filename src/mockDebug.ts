@@ -39,6 +39,9 @@ class MockDebugSession extends LoggingDebugSession {
 
 	private _variableHandles = new Handles<string>();
 
+	// Used to assign a unique Id to each breakpoint
+	private _bpIndex = 0;
+
 	/**
 	 * Creates a new debug adapter that is used for one debug session.
 	 * We configure the default implementation of a debug adapter here.
@@ -47,8 +50,8 @@ class MockDebugSession extends LoggingDebugSession {
 		super("mock-debug.txt");
 
 		// this debugger uses zero-based lines and columns
-		this.setDebuggerLinesStartAt1(false);
-		this.setDebuggerColumnsStartAt1(false);
+		this.setDebuggerLinesStartAt1(true);
+		this.setDebuggerColumnsStartAt1(true);
 
 		this._runtime = new MockRuntime();
 
@@ -68,9 +71,6 @@ class MockDebugSession extends LoggingDebugSession {
 		this._runtime.on('refresh', () => {
 			this.sendEvent(new ContinuedEvent(MockDebugSession.THREAD_ID));
 			this.sendEvent(new StoppedEvent('entry', MockDebugSession.THREAD_ID));
-		});
-		this._runtime.on('breakpointValidated', (bp: MockBreakpoint) => {
-			this.sendEvent(new BreakpointEvent('changed', <DebugProtocol.Breakpoint>{ verified: bp.verified, id: bp.id }));
 		});
 		this._runtime.on('output', (text, filePath, line, column) => {
 			const e: DebugProtocol.OutputEvent = new OutputEvent(`${text}\n`);
@@ -164,33 +164,29 @@ class MockDebugSession extends LoggingDebugSession {
 
 	protected setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): void {
 
-		MockRuntime.log(JSON.stringify(args.source));
 		const path = <string>args.source.path;
 		const clientLines = args.lines || [];
 
-		// clear all breakpoints for this file
-		this._runtime.clearBreakpoints(path);
-
-		// set and verify breakpoint locations
-		const actualBreakpoints = clientLines.map(l => {
-			// let { verified, line, id } = this._runtime.setBreakPoint(path, this.convertClientLineToDebugger(l));
-			// const bp = <DebugProtocol.Breakpoint> new Breakpoint(verified, this.convertDebuggerLineToClient(line));
-			let { verified, line, id } = this._runtime.setBreakPoint(path, l);
-			const bp = <DebugProtocol.Breakpoint> new Breakpoint(verified, line);
-			bp.id= id;
-			return bp;
+		const localBreakpoints = clientLines.map(line => { // For sending to C-SPY
+			return { line: this.convertClientLineToDebugger(line), id: this._bpIndex++ }
+			// return new Breakpoint(false, line);
 		});
 
-		// send back the actual breakpoint positions
-		response.body = {
-			breakpoints: actualBreakpoints
-		};
-		//this.socketMess(JSON.stringify(response));
+		const newLocal = this;
 		let update = function(){
 			console.log("setBreakPointsRequest");
+			const actualBreakpoints = localBreakpoints.map(b => { // For sending to DAP client
+				return new Breakpoint(newLocal._runtime.GetVerifiedBpIds().includes(b.id),
+										newLocal.convertDebuggerLineToClient(b.line));
+			})
+
+			response.body = {
+				breakpoints: actualBreakpoints
+			};
+			newLocal.sendResponse(response);
 		}
-		this._runtime.sendResponseToCSpy(response,update);
-		this.sendResponse(response);
+		const toCSPY = {command: response.command, body: localBreakpoints}
+		this._runtime.sendResponseToCSpy(toCSPY,update);
 	}
 
 	protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
