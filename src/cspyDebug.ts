@@ -12,10 +12,14 @@ import { basename } from "path";
 interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
 	/** An absolute path to the "program" to debug. */
 	program: string;
+	/** Absolute path to the .c file to debug. */
+	sourceFile: string;
 	/** Automatically stop target after launch. If not specified, target does not stop. */
 	stopOnEntry?: boolean;
 	/** enable logging the Debug Adapter Protocol */
 	trace?: boolean;
+	/** Path to the Embedded Workbench installation to use */
+	workbenchPath: string;
 }
 
 /**
@@ -46,39 +50,12 @@ class CSpyDebugSession extends LoggingDebugSession {
 	 */
 	public constructor() {
 		super("mock-debug.txt");
-		CSpyRubyServer.log("started");
 
 		this.setDebuggerLinesStartAt1(true);
 		this.setDebuggerColumnsStartAt1(true);
 
 		this._cSpyRServer = new CSpyRubyServer();
 
-		//spawn cspyruby
-		var spawn = require('child_process').execFile;
-
-		const ls = spawn('D:/EWARM_TRUNK/StageWin32_14/Debug/common/bin/CSpyRuby.exe',
-		['--ruby_file', 'setupt.rb','--config', 'SIM_CORTEX_M4', '--sourcefile', 'D:/VSCODE_SVN/mock-test/main.c', '--program', 'D:/VSCODE_SVN/mock-test/Debug/Exe/ewproj.out'],
-		{cwd:"D:/VSCODE_SVN/CSPYRubySetup"},
-		); // TODO:
-		console.log("starting cspuruby, PID: "+ ls.pid );
-
-		// sleep a little bit to make sure cspy ruby starts before continue
-		var sleep = require('system-sleep');
-		sleep(2000);
-
-		ls.stdout.on('data', (data) => {
-			console.log('stdout: ' + data);
-			const e: DebugProtocol.OutputEvent = new OutputEvent(data);
-			this.sendEvent(e);
-		});
-
-		ls.stderr.on('data', (data) => {
-			console.log('stderr: ' + data);
-		});
-
-		ls.on('close', (code) => {
-			console.log('child process exited with code ' + code);
-		});
 	}
 
 	/**
@@ -110,6 +87,34 @@ class CSpyDebugSession extends LoggingDebugSession {
 	protected launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): void {
 		// make sure to 'Stop' the buffered logging if 'trace' is not set
 		logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false);
+
+		//spawn cspyruby
+		var spawn = require('child_process').execFile;
+
+		let ewPath = args.workbenchPath;
+		if (!ewPath.endsWith('/')) ewPath += '/'
+		const ls = spawn(ewPath + 'common/bin/CSpyRuby.exe',
+		['--ruby_file', '../../CSPYRubySetup/setupt.rb','--config', 'SIM_CORTEX_M4', '--sourcefile', args.program, '--program', args.program],
+		{ cwd: __dirname }); // TODO:
+		CSpyRubyServer.log("starting cspuruby, PID: "+ ls.pid );
+
+		// sleep a little bit to make sure cspy ruby starts before continue
+		var sleep = require('system-sleep');
+		sleep(2000);
+
+		ls.stdout.on('data', (data) => {
+			CSpyRubyServer.log('stdout: ' + data);
+			const e: DebugProtocol.OutputEvent = new OutputEvent(data);
+			this.sendEvent(e);
+		});
+
+		ls.stderr.on('data', (data) => {
+			CSpyRubyServer.log('stderr: ' + data);
+		});
+
+		ls.on('close', (code) => {
+			CSpyRubyServer.log('child process exited with code ' + code);
+		});
 
 		// start the program in the runtime
 		if (!!args.stopOnEntry) {
@@ -190,7 +195,6 @@ class CSpyDebugSession extends LoggingDebugSession {
 				stackFrames: stk,
 				totalFrames: stk.length
 			}
-			CSpyRubyServer.log("res " + JSON.stringify(response));
 			newLocal.sendResponse(response);
 		});
 	}
@@ -233,7 +237,6 @@ class CSpyDebugSession extends LoggingDebugSession {
 			response.body = {
 				variables: variables
 			};
-			CSpyRubyServer.log(JSON.stringify(variables));
 			newLocal.sendResponse(response);
 		});
 	}

@@ -70,12 +70,19 @@
 				"configurationAttributes": {
 					"launch": {
 						"required": [
-							"program"
+							"program",
+							"sourceFile",
+							"workbenchPath"
 						],
 						"properties": {
 							"program": {
 								"type": "string",
-								"description": "Absolute path to a .c file.",
+								"description": "Absolute path to a .out file to debug.",
+								"default": "${workspaceFolder}/Debug/Exe/ewproj.out"
+							},
+							"sourceFile": {
+								"type": "string",
+								"description": "Absolute path to the .c file to debug.",
 								"default": "${workspaceFolder}/main.c"
 							},
 							"stopOnEntry": {
@@ -87,6 +94,14 @@
 								"type": "boolean",
 								"description": "Enable logging of the Debug Adapter Protocol.",
 								"default": true
+							},
+							"workbenchPath": {
+								"type": "string",
+								"description": "Path to the Embedded Workbench installation to use.",
+								"default": {
+									"windows": "c:/Program Files (x86)/IAR Systems/Embedded Workbench/",
+									"linux": "/usr/share/IARSystems/Embedded Workbench/"
+								}
 							}
 						}
 					}
@@ -96,8 +111,13 @@
 						"type": "cspy",
 						"request": "launch",
 						"name": "Debug with C-SPY",
-						"program": "${workspaceFolder}/main.c",
-						"stopOnEntry": true
+						"program": "${workspaceFolder}/Debug/Exe/ewproj.out",
+						"sourceFile": "${workspaceFolder}/main.c",
+						"stopOnEntry": true,
+						"workbenchPath": {
+							"windows": "c:/Program Files (x86)/IAR Systems/Embedded Workbench/",
+							"linux": "/usr/share/IARSystems/Embedded Workbench/"
+						}
 					}
 				],
 				"configurationSnippets": [
@@ -107,9 +127,11 @@
 						"body": {
 							"type": "cspy",
 							"request": "launch",
-							"name": "${2:Debug with C-SPY}",
-							"program": "^\"\\${workspaceFolder}/${1:Source}\"",
-							"stopOnEntry": true
+							"name": "${4:Debug with C-SPY}",
+							"program": "^\"\\${workspaceFolder}/Debug/Exe/${1:ewproj.out}\"",
+							"sourceFile": "^\"\\${workspaceFolder}/${2:main.c}\"",
+							"stopOnEntry": true,
+							"workbenchPath": "${3:Path to installation}"
 						}
 					}
 				]

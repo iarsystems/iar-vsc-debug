@@ -23,18 +23,13 @@ export class CSpyRubyServer {
 				try {
 					response = JSON.parse(ab2str(data));
 				} catch(e) {
-					console.log("unable to parse json (["+ data +"])<#------------------<< "+ e);
+					CSpyRubyServer.log("unable to parse json (["+ data +"])<#------------------<< "+ e);
 				}
 				if (response) {
-					CSpyRubyServer.log(JSON.stringify(response));
-					try {
-						const callback = newLocal.callbacks[response["command"]];
-						if (callback) {
-							const body = "body" in response ? response["body"] : "";
-							callback(body);
-						}
-					} catch(e) {
-						CSpyRubyServer.log(e.stack);
+					const callback = newLocal.callbacks[response["command"]];
+					if (callback) {
+						const body = "body" in response ? response["body"] : "";
+						callback(body);
 					}
 				}
 			});
@@ -53,7 +48,7 @@ export class CSpyRubyServer {
 	}
 
     public static log(msg: string) {
-        writeFileSync("debug_adapter.log", msg + "\n", { flag: 'a' });
+        writeFileSync(__dirname + "debug_adapter.log", msg + "\n", { flag: 'a' });
     }
 
 }
