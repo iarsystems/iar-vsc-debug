@@ -11,8 +11,9 @@ type CSpyCallback = (cspyResponse: any) => void;
  */
 export class CSpyRubyServer {
 	private client = new Socket();
+	private seq = 0;
 
-	private callbacks: CSpyCallback[] = [];
+	private callbacks: CSpyCallback[][] = [];
 
 	constructor() {
 		const newLocal = this;
@@ -26,8 +27,8 @@ export class CSpyRubyServer {
 					CSpyRubyServer.log("unable to parse json (["+ data +"])<#------------------<< "+ e);
 				}
 				if (response) {
-					const callback = newLocal.callbacks[response["command"]];
-					if (callback) {
+					const callback = newLocal.callbacks[response["command"]][response["seq"]];
+					if (callback != null) {
 						const body = "body" in response ? response["body"] : "";
 						callback(body);
 					}
@@ -38,12 +39,17 @@ export class CSpyRubyServer {
 
 	/** Sends a command with the given body to the ruby server, and runs the callback once the server replies */
 	sendCommandWithCallback(command: string, body: any, callback: CSpyCallback): void {
-		this.callbacks[command] = callback; // support multiple callbacks of same type? not sure if DAP is synchronous or not
+		if (!this.callbacks[command]) {
+			this.callbacks[command]= [];
+		}
+		this.callbacks[command][this.seq] = callback; // support multiple callbacks of same type? not sure if DAP is synchronous or not
 		const request = {
 			command: command,
+			seq: this.seq++,
 			body: body,
 		};
 		const reqString = JSON.stringify(request);
+		console.log(request);
 		this.client.write(reqString + '\n');
 	}
 

@@ -66,7 +66,6 @@ class CSpyDebugSession extends LoggingDebugSession {
 		// since this debug adapter can accept configuration requests like 'setBreakpoint' at any time,
 		// we request them early by sending an 'initializeRequest' to the frontend.
 		// The frontend will end the configuration sequence by calling 'configurationDone' request.
-		this.sendEvent(new InitializedEvent());
 
 		// build and return the capabilities of this debug adapter:
 		response.body = response.body || {};
@@ -82,6 +81,7 @@ class CSpyDebugSession extends LoggingDebugSession {
 		//response.body.supportsStepBack = true;
 
 		this.sendResponse(response);
+		this.sendEvent(new InitializedEvent());
 	}
 
 	protected launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): void {
@@ -128,25 +128,31 @@ class CSpyDebugSession extends LoggingDebugSession {
 
 	protected pauseRequest(response: DebugProtocol.PauseResponse) {
 		this._cSpyRServer.sendCommandWithCallback("pause", "", this.stepRunCallback("pause"));
+		this.sendResponse(response);
 	}
 	protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
 		this._cSpyRServer.sendCommandWithCallback("continue", "", this.stepRunCallback("breakpoint"));
+		this.sendResponse(response);
 	}
 
 	protected restartRequest(response: DebugProtocol.RestartResponse, args: DebugProtocol.RestartArguments): void {
 		this._cSpyRServer.sendCommandWithCallback("restart", "", this.stepRunCallback("entry"));
+		this.sendResponse(response);
 	}
 
 	protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
 		this._cSpyRServer.sendCommandWithCallback("next", "", this.stepRunCallback("step"));
+		this.sendResponse(response);
 	}
 
 	protected stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments): void {
 		this._cSpyRServer.sendCommandWithCallback("stepIn", "", this.stepRunCallback("step"));
+		this.sendResponse(response);
 	}
 
 	protected stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments): void {
 		this._cSpyRServer.sendCommandWithCallback("stepOut", "", this.stepRunCallback("step"));
+		this.sendResponse(response);
 	}
 
 	protected setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): void {
@@ -245,7 +251,9 @@ class CSpyDebugSession extends LoggingDebugSession {
 	protected evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments): void {
 		var newLocal = this;
 		this._cSpyRServer.sendCommandWithCallback("evaluate", args.expression, function (cspyResponse) {
-			response.body.result = cspyResponse;
+			if (response.body != null) {
+				response.body.result = cspyResponse;
+			}
 			newLocal.sendResponse(response);
 		});
 	}
