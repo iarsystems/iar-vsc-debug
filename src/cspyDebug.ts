@@ -27,7 +27,7 @@ interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
  */
 class ScopeReference {
 	constructor(
-		readonly name: "local" | "static",
+		readonly name: "local" | "static" | "registers",
 		readonly frameReference: number,
 	) {}
 }
@@ -94,8 +94,8 @@ class CSpyDebugSession extends LoggingDebugSession {
 		let ewPath = args.workbenchPath;
 		if (!ewPath.endsWith('/')) ewPath += '/'
 		const ls = spawn(ewPath + 'common/bin/CSpyRuby.exe',
-		['--ruby_file', '../../CSPYRubySetup/setupt.rb','--config', 'SIM_CORTEX_M4', '--sourcefile', args.program, '--program', args.program],
-		{ cwd: __dirname }); // TODO:
+		['--ruby_file', '../../CSPYRubySetup/setupt.rb','--config', 'SIM_CORTEX_M4', '--sourcefile', args.sourceFile, '--program', args.program],
+		{ cwd: __dirname });
 		CSpyRubyServer.log("starting cspuruby, PID: "+ ls.pid );
 
 		// sleep a little bit to make sure cspy ruby starts before continue
@@ -201,6 +201,7 @@ class CSpyDebugSession extends LoggingDebugSession {
 				stackFrames: stk,
 				totalFrames: stk.length
 			}
+			CSpyRubyServer.log(JSON.stringify(stk));
 			newLocal.sendResponse(response);
 		});
 	}
@@ -209,11 +210,13 @@ class CSpyDebugSession extends LoggingDebugSession {
 		const frameReference = args.frameId;
 		const scopes = new Array<Scope>();
 		scopes.push(new Scope("Local", this._variableHandles.create(new ScopeReference("local", frameReference)), false));
-		scopes.push(new Scope("Static", this._variableHandles.create(new ScopeReference("static", frameReference)), true));
+		scopes.push(new Scope("Static", this._variableHandles.create(new ScopeReference("static", frameReference)), false));
+		scopes.push(new Scope("Registers", this._variableHandles.create(new ScopeReference("registers", frameReference)), false));
 
 		response.body = {
 			scopes: scopes
 		};
+		CSpyRubyServer.log(JSON.stringify(scopes));
 		this.sendResponse(response);
 	}
 
@@ -221,6 +224,7 @@ class CSpyDebugSession extends LoggingDebugSession {
 		const scopeRef = this._variableHandles.get(args.variablesReference);
 
 		var newLocal = this;
+		CSpyRubyServer.log("Received variables request");
 		this._cSpyRServer.sendCommandWithCallback("variables", scopeRef.frameReference, function(cspyResponse) {
 			const variables: DebugProtocol.Variable[] = [];
 
@@ -228,8 +232,21 @@ class CSpyDebugSession extends LoggingDebugSession {
 
 			const localPairs = allVariablesPairs[0].split(" ");
 			const staticPairs = allVariablesPairs[1].split(" ");
+			const registerPairs = allVariablesPairs[2].split(" ");
 
-			const requestedPairs = scopeRef.name == "local" ? localPairs : staticPairs;
+			let requestedPairs: string[] = [];
+			switch(scopeRef.name) {
+				case "local":
+					requestedPairs = localPairs;
+					break;
+				case "static":
+					requestedPairs = staticPairs;
+					break;
+				case "registers":
+					requestedPairs = registerPairs;
+					break;
+			}
+			scopeRef.name == "local" ? localPairs : staticPairs;
 			for (var i = 1; i < requestedPairs.length; i++) {
 				var splitItems = requestedPairs[i].split("|");
 				variables.push({
