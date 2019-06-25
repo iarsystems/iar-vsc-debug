@@ -6,11 +6,6 @@ thus enabling some rudimentary C-SPY debugging functionality in VS Code.
 
 <!-- TODO: något om att detta inte är produktionsfärdigt, att CSpyRuby inte heller kan användas i produktion -->
 
-Some things are missing from CSpyRuby that would improve the debugging experience. These are:
-
-+ Stack trace line numbers. VS Code requires a line number for each stack frame, denoting what line in that stack frame is being executed.
-+ Data breakpoints are supported by both C-SPY and VS Code, but are not implemented in CSpyRuby.
-
 ## Using this extension
 
 To use this extension, first make sure `CSpyRuby` is installed and the `CSpyRuby.exe` file is in the `common/bin` folder of your EW installation.
