@@ -79,6 +79,7 @@ class CSpyDebugSession extends LoggingDebugSession {
 		// make VS Code to use 'evaluate' when hovering over source
 		response.body.supportsEvaluateForHovers = true;
 		response.body.supportsRestartRequest = true;
+		response.body.supportsSetVariable = true;
 
 		// make VS Code to show a 'step back' button
 		//response.body.supportsStepBack = true;
@@ -283,6 +284,32 @@ class CSpyDebugSession extends LoggingDebugSession {
 		});
 	}
 
+	protected setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments) {
+		const scopeRef = this._variableHandles.get(args.variablesReference);
+
+		var requestBody = {
+			name: args.name,
+			value: args.value,
+			frame: scopeRef.frameReference
+		};
+		var newLocal = this;
+		this._cSpyRServer.sendCommandWithCallback("setVariable", requestBody, function (cspyResponse) {
+			if (cspyResponse.success) {
+				if (scopeRef.name === "registers") {
+					// C-SPY returns the new value as decimal, even when it's a register.
+					// We want it as hex. TODO: fix formatting
+					// cspyResponse.response = parseInt(cspyResponse.response, 10).toString(16);
+				}
+				response.body = {
+					value: cspyResponse.response,
+				}
+			} else {
+				response.success = false;
+			}
+			newLocal.sendResponse(response);
+		});
+	}
+
 
 	protected evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments): void {
 		var newLocal = this;
@@ -295,22 +322,6 @@ class CSpyDebugSession extends LoggingDebugSession {
 			CSpyRubyServer.log(JSON.stringify(response));
 			newLocal.sendResponse(response);
 		});
-	}
-
-	protected customRequest(command: string, response: DebugProtocol.Response, args: any) {
-		CSpyRubyServer.log(args);
-		if (command === "memory") {
-			this._cSpyRServer.sendCommandWithCallback("memory", "", (cspyResponse) => {
-				response.body = cspyResponse;
-				this.sendResponse(response);
-			});
-			this.sendEvent({
-				event: "testev",
-				body: "testevb",
-				seq: 1337,
-				type: "event",
-			});
-		}
 	}
 
 	// Generic callback for events like run/step etc., that should send back a StoppedEvent on return
