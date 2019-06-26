@@ -56,6 +56,19 @@
 		"onDebug"
 	],
 	"contributes": {
+		"languages": [
+			{
+				"id": "iarmemory",
+				"extensions": [".iarmem"]
+			}
+		],
+		"grammars": [
+			{
+				"language": "iarmemory",
+				"scopeName": "source.iarmemory",
+				"path": "./syntaxes/iarmemory.tmLanguage.json"
+			}
+		],
 		"breakpoints": [
 			{
 				"language": "c"

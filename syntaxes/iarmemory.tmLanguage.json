@@ -1,0 +1,16 @@
+{
+	"name": "IAR Debugger Memory View",
+	"scopeName": "source.iarmemory",
+	"patterns": [
+		{
+			"comment": "Address",
+			"name": "keyword.address.hex",
+			"match": "^(0x[[A-F]\\d]+)"
+		},
+		{
+			"comment": "Value",
+			"name": "constant.numeric",
+			"match": "\\t(0x[[A-F]\\d]+)"
+		}
+	]
+}

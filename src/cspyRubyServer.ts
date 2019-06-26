@@ -27,6 +27,7 @@ export class CSpyRubyServer {
 					CSpyRubyServer.log("unable to parse json (["+ data +"])<#------------------<< "+ e);
 				}
 				if (response) {
+					// TODO: maybe remove callback after it is used?
 					const callback = newLocal.callbacks[response["command"]][response["seq"]];
 					if (callback != null) {
 						const body = "body" in response ? response["body"] : "";
@@ -42,7 +43,7 @@ export class CSpyRubyServer {
 		if (!this.callbacks[command]) {
 			this.callbacks[command]= [];
 		}
-		this.callbacks[command][this.seq] = callback; // support multiple callbacks of same type? not sure if DAP is synchronous or not
+		this.callbacks[command][this.seq] = callback;
 		const request = {
 			command: command,
 			seq: this.seq++,

@@ -203,6 +203,15 @@ class CSpyDebugSession extends LoggingDebugSession {
 			}
 			CSpyRubyServer.log(JSON.stringify(stk));
 			newLocal.sendResponse(response);
+			newLocal.sendRequest("test", [], 2000, (r) => {console.log(r)});
+			newLocal.sendResponse({
+				seq: 1338,
+				type: "response",
+				request_seq: 1337,
+				success: true,
+				command: "test",
+				body: {},
+			});
 		});
 	}
 
@@ -224,7 +233,6 @@ class CSpyDebugSession extends LoggingDebugSession {
 		const scopeRef = this._variableHandles.get(args.variablesReference);
 
 		var newLocal = this;
-		CSpyRubyServer.log("Received variables request");
 		this._cSpyRServer.sendCommandWithCallback("variables", scopeRef.frameReference, function(cspyResponse) {
 			const variables: DebugProtocol.Variable[] = [];
 
@@ -246,7 +254,7 @@ class CSpyDebugSession extends LoggingDebugSession {
 					requestedPairs = registerPairs;
 					break;
 			}
-			scopeRef.name == "local" ? localPairs : staticPairs;
+
 			for (var i = 1; i < requestedPairs.length; i++) {
 				var splitItems = requestedPairs[i].split("|");
 				variables.push({
@@ -273,6 +281,22 @@ class CSpyDebugSession extends LoggingDebugSession {
 			}
 			newLocal.sendResponse(response);
 		});
+	}
+
+	protected customRequest(command: string, response: DebugProtocol.Response, args: any) {
+		CSpyRubyServer.log(args);
+		if (command === "memory") {
+			this._cSpyRServer.sendCommandWithCallback("memory", "", (cspyResponse) => {
+				response.body = cspyResponse;
+				this.sendResponse(response);
+			});
+			this.sendEvent({
+				event: "testev",
+				body: "testevb",
+				seq: 1337,
+				type: "event",
+			});
+		}
 	}
 
 	// Generic callback for events like run/step etc., that should send back a StoppedEvent on return

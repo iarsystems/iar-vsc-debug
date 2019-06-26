@@ -6,6 +6,7 @@
 
 import * as vscode from 'vscode';
 import { WorkspaceFolder, DebugConfiguration, ProviderResult, CancellationToken } from 'vscode';
+import { MemoryDocumentProvider } from './memoryDocumentProvider';
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -19,6 +20,16 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// register a configuration provider for 'mock' debug type
 	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('mock', new MockConfigurationProvider()));
+
+	context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider("memory", new MemoryDocumentProvider()));
+
+	context.subscriptions.push(vscode.debug.onDidReceiveDebugSessionCustomEvent((e: vscode.DebugSessionCustomEvent) => {
+		console.log("received custom event:", e.event);
+	}));
+	context.subscriptions.push(vscode.debug.onDidStartDebugSession(async (e: vscode.DebugSession) => {
+		const document = await vscode.workspace.openTextDocument(vscode.Uri.parse("memory:Symbolic Memory.iarmem"));
+		await vscode.window.showTextDocument(document, { preview: false, preserveFocus: true, viewColumn: vscode.ViewColumn.Three });
+	}));
 }
 
 export function deactivate() {
