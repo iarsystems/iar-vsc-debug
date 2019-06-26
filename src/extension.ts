@@ -11,24 +11,22 @@ import { MemoryDocumentProvider } from './memoryDocumentProvider';
 export function activate(context: vscode.ExtensionContext) {
 
 	console.log("activating");
-	// context.subscriptions.push(vscode.commands.registerCommand('extension.mock-debug.getProgramName', config => {
-	// 	return vscode.window.showInputBox({
-	// 		placeHolder: "Please enter the name of a markdown file in the workspace folder",
-	// 		value: "main.c"
-	// 	});
-	// }));
-
-	// register a configuration provider for 'mock' debug type
+	// register a configuration provider for 'mock' debug type TODO:
 	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('mock', new MockConfigurationProvider()));
 
-	context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider("memory", new MemoryDocumentProvider()));
 
-	context.subscriptions.push(vscode.debug.onDidReceiveDebugSessionCustomEvent((e: vscode.DebugSessionCustomEvent) => {
-		console.log("received custom event:", e.event);
-	}));
-	context.subscriptions.push(vscode.debug.onDidStartDebugSession(async (e: vscode.DebugSession) => {
-		const document = await vscode.workspace.openTextDocument(vscode.Uri.parse("memory:Symbolic Memory.iarmem"));
-		await vscode.window.showTextDocument(document, { preview: false, preserveFocus: true, viewColumn: vscode.ViewColumn.Three });
+	let memoryDocumentProvider: MemoryDocumentProvider;
+	context.subscriptions.push(vscode.debug.onDidReceiveDebugSessionCustomEvent(async (e: vscode.DebugSessionCustomEvent) => {
+		if (e.event === "memory") {
+			if (!memoryDocumentProvider) {
+				memoryDocumentProvider = new MemoryDocumentProvider();
+				context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider("memory", memoryDocumentProvider));
+				// TODO: should probably not open automatically (maybe add a settings for it)
+				const document = await vscode.workspace.openTextDocument(vscode.Uri.parse("memory:Symbolic Memory.iarmem"));
+				await vscode.window.showTextDocument(document, { preview: false, preserveFocus: true, viewColumn: vscode.ViewColumn.Three });
+			}
+			memoryDocumentProvider.data = e.body;
+		}
 	}));
 }
 

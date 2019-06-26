@@ -44,6 +44,9 @@ class CSpyDebugSession extends LoggingDebugSession {
 	// Used to assign a unique Id to each breakpoint
 	private _bpIndex = 0;
 
+	// Sequence number for custom events
+	private _eventSeq = 0;
+
 	/**
 	 * Creates a new debug adapter that is used for one debug session.
 	 * We configure the default implementation of a debug adapter here.
@@ -213,6 +216,14 @@ class CSpyDebugSession extends LoggingDebugSession {
 				body: {},
 			});
 		});
+		this._cSpyRServer.sendCommandWithCallback("memory", "", (cspyResponse) => { // also update memory whenever stacktrace is updated
+			this.sendEvent({
+				event: "memory",
+				body: cspyResponse,
+				seq: this._eventSeq++,
+				type: "event",
+			});
+		});
 	}
 
 	protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments): void {
@@ -275,10 +286,13 @@ class CSpyDebugSession extends LoggingDebugSession {
 
 	protected evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments): void {
 		var newLocal = this;
-		this._cSpyRServer.sendCommandWithCallback("evaluate", args.expression, function (cspyResponse) {
-			if (response.body != null) {
-				response.body.result = cspyResponse;
+		CSpyRubyServer.log("expr: " + args.expression);
+		this._cSpyRServer.sendCommandWithCallback("evaluate", args.expression, function (cspyResponse) { // TODO: handle frameId argument
+			response.body = {
+				result: cspyResponse,
+				variablesReference: 0
 			}
+			CSpyRubyServer.log(JSON.stringify(response));
 			newLocal.sendResponse(response);
 		});
 	}
