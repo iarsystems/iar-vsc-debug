@@ -15,16 +15,16 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('mock', new MockConfigurationProvider()));
 
 
-	let memoryDocumentProvider: MemoryDocumentProvider;
+	let memoryDocumentProvider: MemoryDocumentProvider = new MemoryDocumentProvider;
+	context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider("memory", memoryDocumentProvider));
+	context.subscriptions.push(vscode.debug.onDidStartDebugSession(async () => {
+			// TODO: should probably not open automatically (maybe add a setting for it)
+		const memoryDocument = await vscode.workspace.openTextDocument(vscode.Uri.parse("memory:Symbolic Memory.iarmem"));
+		await vscode.window.showTextDocument(memoryDocument, { preview: false, preserveFocus: true, viewColumn: vscode.ViewColumn.Three });
+	}));
+
 	context.subscriptions.push(vscode.debug.onDidReceiveDebugSessionCustomEvent(async (e: vscode.DebugSessionCustomEvent) => {
 		if (e.event === "memory") {
-			if (!memoryDocumentProvider) {
-				memoryDocumentProvider = new MemoryDocumentProvider();
-				context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider("memory", memoryDocumentProvider));
-				// TODO: should probably not open automatically (maybe add a settings for it)
-				const document = await vscode.workspace.openTextDocument(vscode.Uri.parse("memory:Symbolic Memory.iarmem"));
-				await vscode.window.showTextDocument(document, { preview: false, preserveFocus: true, viewColumn: vscode.ViewColumn.Three });
-			}
 			memoryDocumentProvider.data = e.body;
 		}
 	}));
