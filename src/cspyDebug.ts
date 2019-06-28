@@ -179,6 +179,7 @@ class CSpyDebugSession extends LoggingDebugSession {
 			};
 			newLocal.sendResponse(response);
 		});
+		this.performDisassemblyEvent();
 	}
 
 	protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
@@ -205,19 +206,10 @@ class CSpyDebugSession extends LoggingDebugSession {
 				stackFrames: stk,
 				totalFrames: stk.length
 			}
-			CSpyRubyServer.log(JSON.stringify(stk));
 			newLocal.sendResponse(response);
-			newLocal.sendRequest("test", [], 2000, (r) => {console.log(r)});
-			newLocal.sendResponse({
-				seq: 1338,
-				type: "response",
-				request_seq: 1337,
-				success: true,
-				command: "test",
-				body: {},
-			});
 		});
-		this._cSpyRServer.sendCommandWithCallback("memory", "", (cspyResponse) => { // also update memory whenever stacktrace is updated
+		// also update memory whenever stacktrace is updated
+		this._cSpyRServer.sendCommandWithCallback("memory", "", (cspyResponse) => {
 			this.sendEvent({
 				event: "memory",
 				body: cspyResponse,
@@ -225,6 +217,7 @@ class CSpyDebugSession extends LoggingDebugSession {
 				type: "event",
 			});
 		});
+		this.performDisassemblyEvent();
 	}
 
 	protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments): void {
@@ -287,12 +280,12 @@ class CSpyDebugSession extends LoggingDebugSession {
 	protected setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments) {
 		const scopeRef = this._variableHandles.get(args.variablesReference);
 
-		var requestBody = {
+		const requestBody = {
 			name: args.name,
 			value: args.value,
 			frame: scopeRef.frameReference
 		};
-		var newLocal = this;
+		const newLocal = this;
 		this._cSpyRServer.sendCommandWithCallback("setVariable", requestBody, function (cspyResponse) {
 			if (cspyResponse.success) {
 				if (scopeRef.name === "registers") {
@@ -312,9 +305,13 @@ class CSpyDebugSession extends LoggingDebugSession {
 
 
 	protected evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments): void {
-		var newLocal = this;
+		const newLocal = this;
 		CSpyRubyServer.log("expr: " + args.expression);
-		this._cSpyRServer.sendCommandWithCallback("evaluate", args.expression, function (cspyResponse) { // TODO: handle frameId argument
+		const requestBody = {
+			expression: args.expression,
+			frame: args.frameId
+		};
+		this._cSpyRServer.sendCommandWithCallback("evaluate", requestBody, function (cspyResponse) { // TODO: handle frameId argument
 			response.body = {
 				result: cspyResponse,
 				variablesReference: 0
@@ -335,6 +332,17 @@ class CSpyDebugSession extends LoggingDebugSession {
 				newLocal.sendEvent(new TerminatedEvent());
 			}
 		}
+	}
+
+	private performDisassemblyEvent() {
+		this._cSpyRServer.sendCommandWithCallback("disassembly", "", (cspyResponse) => {
+			this.sendEvent({
+				event: "disassembly",
+				body: cspyResponse,
+				seq: this._eventSeq++,
+				type: "event",
+			});
+		});
 	}
 }
 DebugSession.run(CSpyDebugSession);
