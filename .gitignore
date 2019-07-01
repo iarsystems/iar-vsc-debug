@@ -5,3 +5,5 @@ npm-debug.log
 mock-debug.txt
 *.vsix
 runtime.log
+outdebug_adapter.log
+package-lock.json
