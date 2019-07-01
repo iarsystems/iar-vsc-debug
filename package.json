@@ -93,11 +93,6 @@
 								"description": "Absolute path to a .out file to debug.",
 								"default": "${workspaceFolder}/Debug/Exe/ewproj.out"
 							},
-							"sourceFile": {
-								"type": "string",
-								"description": "Absolute path to the .c file to debug.",
-								"default": "${workspaceFolder}/main.c"
-							},
 							"stopOnEntry": {
 								"type": "boolean",
 								"description": "Automatically stop after launch.",
@@ -125,7 +120,6 @@
 						"request": "launch",
 						"name": "Debug with C-SPY",
 						"program": "${workspaceFolder}/Debug/Exe/ewproj.out",
-						"sourceFile": "${workspaceFolder}/main.c",
 						"stopOnEntry": true,
 						"workbenchPath": {
 							"windows": "c:/Program Files (x86)/IAR Systems/Embedded Workbench/",
@@ -142,7 +136,6 @@
 							"request": "launch",
 							"name": "${4:Debug with C-SPY}",
 							"program": "^\"\\${workspaceFolder}/Debug/Exe/${1:ewproj.out}\"",
-							"sourceFile": "^\"\\${workspaceFolder}/${2:main.c}\"",
 							"stopOnEntry": true,
 							"workbenchPath": "${3:Path to installation}"
 						}
