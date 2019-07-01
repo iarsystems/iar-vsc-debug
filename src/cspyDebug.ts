@@ -12,8 +12,6 @@ import { basename } from "path";
 interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
 	/** An absolute path to the "program" to debug. */
 	program: string;
-	/** Absolute path to the .c file to debug. */
-	sourceFile: string;
 	/** Automatically stop target after launch. If not specified, target does not stop. */
 	stopOnEntry?: boolean;
 	/** enable logging the Debug Adapter Protocol */
@@ -98,7 +96,7 @@ class CSpyDebugSession extends LoggingDebugSession {
 		let ewPath = args.workbenchPath;
 		if (!ewPath.endsWith('/')) ewPath += '/'
 		const ls = spawn(ewPath + 'common/bin/CSpyRuby.exe',
-		['--ruby_file', '../../CSPYRubySetup/setupt.rb','--config', 'SIM_CORTEX_M4', '--sourcefile', args.sourceFile, '--program', args.program],
+		['--ruby_file', '../../CSPYRubySetup/setupt.rb','--config', 'SIM_CORTEX_M4', '--program', args.program],
 		{ cwd: __dirname });
 		CSpyRubyServer.log("starting cspuruby, PID: "+ ls.pid );
 
@@ -165,9 +163,13 @@ class CSpyDebugSession extends LoggingDebugSession {
 		const localBreakpoints = clientLines.map(line => { // For sending to C-SPY
 			return { line: this.convertClientLineToDebugger(line), id: this._bpIndex++ }
 		});
+		const cspyRequest = {
+			breakpoints: localBreakpoints,
+			file: basename(args.source.path!!)
+		};
 
 		const newLocal = this;
-		this._cSpyRServer.sendCommandWithCallback("setBreakpoints", localBreakpoints, function(cspyResponse) {
+		this._cSpyRServer.sendCommandWithCallback("setBreakpoints", cspyRequest, function(cspyResponse) {
 			const actualBreakpoints = localBreakpoints.map(b => { // For sending to DAP client
 				const verifiedBps: number[] = cspyResponse;
 				return new Breakpoint(verifiedBps.includes(b.id),

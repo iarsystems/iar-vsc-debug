@@ -48,7 +48,7 @@ export class DisassemblyView {
 		this.updateContent();
 	}
 
-	setData(content: string[], breakpointRows: number[], pcRow: number) {
+	setData(content: string[], breakpointRows: number[], pcRow: number | undefined) {
 		this._bps = breakpointRows;
 		this._pcRow = pcRow;
 		if (this._content.join() != content.join()) {

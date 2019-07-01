@@ -34,7 +34,7 @@ export function activate(context: vscode.ExtensionContext) {
 		if (e.event === "memory") {
 			memoryDocumentProvider.setData(e.body, vscode.Uri.parse("memory:Symbolic Memory.iarmem"));
 		} else if (e.event === "disassembly") {
-			disasmView.setData(e.body.disasm, e.body.bp_rows, e.body.cur_row);
+			disasmView.setData(e.body.disasm, e.body.bp_rows, e.body.cur_row >= 0 ? e.body.cur_row : undefined);
 		}
 	}));
 }
