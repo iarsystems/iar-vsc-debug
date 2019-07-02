@@ -69,6 +69,30 @@
 				"path": "./syntaxes/iarmemory.tmLanguage.json"
 			}
 		],
+		"menus": {
+			"debug/toolBar": [
+				{
+					"command": "iar.stepOverInstruction"
+				},
+				{
+					"command": "iar.stepIntoInstruction"
+				}
+			]
+		},
+		"commands": [
+			{
+				"command": "iar.stepOverInstruction",
+				"icon": "images/istepover.png",
+				"category": "IAR Debug",
+				"title": "Intstruction Step Over"
+			},
+			{
+				"command": "iar.stepIntoInstruction",
+				"icon": "images/istepin.png",
+				"category": "IAR Debug",
+				"title": "Intstruction Step Into"
+			}
+		],
 		"breakpoints": [
 			{
 				"language": "c"

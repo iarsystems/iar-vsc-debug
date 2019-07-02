@@ -17,6 +17,13 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('mock', new MockConfigurationProvider()));
 
 
+	context.subscriptions.push(vscode.commands.registerCommand("iar.stepOverInstruction", () => {
+		vscode.debug.activeDebugSession!!.customRequest("istepOver");
+	}));
+	context.subscriptions.push(vscode.commands.registerCommand("iar.stepIntoInstruction", () => {
+		vscode.debug.activeDebugSession!!.customRequest("istepInto");
+	}));
+
 	let memoryDocumentProvider = new MemoryDocumentProvider();
 	context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider("memory", memoryDocumentProvider));
 	let disasmView: DisassemblyView = new DisassemblyView(context);
@@ -30,7 +37,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Note: sometimes, VS Code calls this handler before onDidStartDebugSession
 	context.subscriptions.push(vscode.debug.onDidReceiveDebugSessionCustomEvent(async (e: vscode.DebugSessionCustomEvent) => {
-		console.log(e.event);
 		if (e.event === "memory") {
 			memoryDocumentProvider.setData(e.body, vscode.Uri.parse("memory:Symbolic Memory.iarmem"));
 		} else if (e.event === "disassembly") {

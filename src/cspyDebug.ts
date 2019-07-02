@@ -96,7 +96,7 @@ class CSpyDebugSession extends LoggingDebugSession {
 		let ewPath = args.workbenchPath;
 		if (!ewPath.endsWith('/')) ewPath += '/'
 		const ls = spawn(ewPath + 'common/bin/CSpyRuby.exe',
-		['--ruby_file', '../../CSPYRubySetup/setupt.rb','--config', 'SIM_CORTEX_M4', '--program', args.program],
+		['--ruby_file', '../../CSPYRubySetup/setupt.rb', '--config', 'SIM_CORTEX_M4', '--program', args.program],
 		{ cwd: __dirname });
 		CSpyRubyServer.log("starting cspuruby, PID: "+ ls.pid );
 
@@ -321,6 +321,17 @@ class CSpyDebugSession extends LoggingDebugSession {
 			CSpyRubyServer.log(JSON.stringify(response));
 			newLocal.sendResponse(response);
 		});
+	}
+
+	protected customRequest(command: string, response: DebugProtocol.Response, _: any): void {
+		switch (command) {
+			case "istepOver":
+				this._cSpyRServer.sendCommandWithCallback("istepOver", "", this.stepRunCallback("step"));
+				break;
+			case "istepInto":
+				this._cSpyRServer.sendCommandWithCallback("istepInto", "", this.stepRunCallback("step"));
+				break;
+		}
 	}
 
 	// Generic callback for events like run/step etc., that should send back a StoppedEvent on return
