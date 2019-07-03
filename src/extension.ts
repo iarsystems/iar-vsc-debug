@@ -9,19 +9,17 @@ import { WorkspaceFolder, DebugConfiguration, ProviderResult, CancellationToken 
 import { MemoryDocumentProvider } from './memoryDocumentProvider';
 import { DisassemblyView } from './disassemblyView';
 
-
 export function activate(context: vscode.ExtensionContext) {
-	// TODO add decorators, scroll to relevant lines
 	console.log("activating");
-	// register a configuration provider for 'mock' debug type TODO:
-	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('mock', new MockConfigurationProvider()));
+	// register a configuration provider for 'cspy' debug type
+	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('cspy', new MockConfigurationProvider()));
 
-
+	// register commands to be called when pressing instruction step buttons
 	context.subscriptions.push(vscode.commands.registerCommand("iar.stepOverInstruction", () => {
-		vscode.debug.activeDebugSession!!.customRequest("istepOver");
+		vscode.debug.activeDebugSession!!.customRequest("istepOver"); //TODO: avoid coercing activeDebugSession
 	}));
 	context.subscriptions.push(vscode.commands.registerCommand("iar.stepIntoInstruction", () => {
-		vscode.debug.activeDebugSession!!.customRequest("istepInto");
+		vscode.debug.activeDebugSession!!.customRequest("istepInto"); //TODO: avoid coercing activeDebugSession
 	}));
 
 	let memoryDocumentProvider = new MemoryDocumentProvider();
@@ -49,6 +47,7 @@ export function deactivate() {
 	// nothing to do
 }
 
+// TODO: change to c-spy
 class MockConfigurationProvider implements vscode.DebugConfigurationProvider {
 
 	/**
@@ -60,7 +59,7 @@ class MockConfigurationProvider implements vscode.DebugConfigurationProvider {
 		if (!config.type && !config.request && !config.name) {
 			const editor = vscode.window.activeTextEditor;
 			if (editor && editor.document.languageId === 'c' ) {
-				config.type = 'mock';
+				config.type = 'cspy';
 				config.name = 'Launch';
 				config.request = 'launch';
 				config.program = '${file}';
@@ -79,4 +78,3 @@ class MockConfigurationProvider implements vscode.DebugConfigurationProvider {
 		return config;
 	}
 }
-

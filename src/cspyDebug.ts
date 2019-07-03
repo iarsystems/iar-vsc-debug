@@ -1,12 +1,14 @@
 import { DebugProtocol } from "vscode-debugprotocol";
 import { LoggingDebugSession, Handles, StoppedEvent, OutputEvent, TerminatedEvent, InitializedEvent, logger, Logger, Breakpoint, Thread, Source, StackFrame, Scope, DebugSession } from "vscode-debugadapter";
-import { CSpyRubyServer } from "./cspyRubyServer";
+import { CSpyRubyClient } from "./cspyRubyClient";
 import { basename } from "path";
+import { execFile, ChildProcess } from "child_process";
+const { Subject } = require('await-notify')
 
 /**
- * This interface describes the mock-debug specific launch attributes
+ * This interface describes the cspy-debug specific launch attributes
  * (which are not part of the Debug Adapter Protocol).
- * The schema for these attributes lives in the package.json of the mock-debug extension.
+ * The schema for these attributes lives in the package.json of the this extension.
  * The interface should always match this schema.
  */
 interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
@@ -21,7 +23,7 @@ interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
 }
 
 /**
- * Desribes a scope, i.e. a name (local or static) and a frame reference (the 'frame level')
+ * Desribes a scope, i.e. a name/type (local, static or register) and a frame reference (the 'frame level')
  */
 class ScopeReference {
 	constructor(
@@ -30,12 +32,20 @@ class ScopeReference {
 	) {}
 }
 
-class CSpyDebugSession extends LoggingDebugSession {
+/**
+ * Manages a debugging session between VS Code and C-SPY (via CSpyRuby)
+ * This is the class that implements the Debug Adapter Protocol (at least the
+ * parts that aren't already implemented by the DAP SDK)
+ */
+export class CSpyDebugSession extends LoggingDebugSession {
 	// we don't support multiple threads, so we can use a hardcoded ID for the default thread
 	private static THREAD_ID = 1;
 
-	// a Mock runtime (or debugger)
-	private _cSpyRServer: CSpyRubyServer;
+	// the cspyruby process we use to control C-SPY
+	private _cspyRubyProc: ChildProcess;
+
+	// our communication channel with the cspyruby instance
+	private _cSpyRClient: CSpyRubyClient;
 
 	private _variableHandles = new Handles<ScopeReference>();
 
@@ -45,9 +55,10 @@ class CSpyDebugSession extends LoggingDebugSession {
 	// Sequence number for custom events
 	private _eventSeq = 0;
 
+	private _configurationDone = new Subject();
+
 	/**
 	 * Creates a new debug adapter that is used for one debug session.
-	 * We configure the default implementation of a debug adapter here.
 	 */
 	public constructor() {
 		super("mock-debug.txt");
@@ -55,8 +66,7 @@ class CSpyDebugSession extends LoggingDebugSession {
 		this.setDebuggerLinesStartAt1(true);
 		this.setDebuggerColumnsStartAt1(true);
 
-		this._cSpyRServer = new CSpyRubyServer();
-
+		this._cSpyRClient = new CSpyRubyClient();
 	}
 
 	/**
@@ -64,10 +74,6 @@ class CSpyDebugSession extends LoggingDebugSession {
 	 * to interrogate the features the debug adapter provides.
 	 */
 	protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
-		// since this debug adapter can accept configuration requests like 'setBreakpoint' at any time,
-		// we request them early by sending an 'initializeRequest' to the frontend.
-		// The frontend will end the configuration sequence by calling 'configurationDone' request.
-
 		// build and return the capabilities of this debug adapter:
 		response.body = response.body || {};
 
@@ -79,81 +85,90 @@ class CSpyDebugSession extends LoggingDebugSession {
 		response.body.supportsRestartRequest = true;
 		response.body.supportsSetVariable = true;
 
-		// make VS Code to show a 'step back' button
-		//response.body.supportsStepBack = true;
-
 		this.sendResponse(response);
 		this.sendEvent(new InitializedEvent());
 	}
 
-	protected launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): void {
+	protected configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments) {
+		super.configurationDoneRequest(response, args);
+		this._configurationDone.notify();
+	}
+
+	protected async launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments) {
 		// make sure to 'Stop' the buffered logging if 'trace' is not set
 		logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false);
 
 		//spawn cspyruby
-		var spawn = require('child_process').execFile;
-
 		let ewPath = args.workbenchPath;
 		if (!ewPath.endsWith('/')) ewPath += '/'
-		const ls = spawn(ewPath + 'common/bin/CSpyRuby.exe',
+		this._cspyRubyProc = execFile(ewPath + 'common/bin/CSpyRuby.exe',
 		['--ruby_file', '../../CSPYRubySetup/setupt.rb', '--config', 'SIM_CORTEX_M4', '--program', args.program],
 		{ cwd: __dirname });
-		CSpyRubyServer.log("starting cspuruby, PID: "+ ls.pid );
+		CSpyRubyClient.log("starting cspuruby, PID: "+ this._cspyRubyProc.pid );
 
+
+		// wait until configuration is done
+		await this._configurationDone.wait(1000);
 		// sleep a little bit to make sure cspy ruby starts before continue
-		var sleep = require('system-sleep');
-		sleep(2000);
+/* 		var sleep = require('system-sleep');
+		sleep(2000); */
 
-		ls.stdout.on('data', (data) => {
-			CSpyRubyServer.log('stdout: ' + data);
-			const e: DebugProtocol.OutputEvent = new OutputEvent(data);
+		this._cspyRubyProc.stdout.on('data', (data) => {
+			CSpyRubyClient.log('stdout: ' + data);
+			const e: DebugProtocol.OutputEvent = new OutputEvent(data.toString());
 			this.sendEvent(e);
 		});
 
-		ls.stderr.on('data', (data) => {
-			CSpyRubyServer.log('stderr: ' + data);
+		this._cspyRubyProc.stderr.on('data', (data) => {
+			CSpyRubyClient.log('stderr: ' + data);
 		});
 
-		ls.on('close', (code) => {
-			CSpyRubyServer.log('child process exited with code ' + code);
+		this._cspyRubyProc.on('close', (code) => {
+			CSpyRubyClient.log('child process exited with code ' + code);
 		});
 
-		// start the program in the runtime
+		// tell cspy to start the program
 		if (!!args.stopOnEntry) {
-			this._cSpyRServer.sendCommandWithCallback("launch", "", this.stepRunCallback("entry"));
+			this._cSpyRClient.sendCommandWithCallback("launch", "", this.stepRunCallback("entry"));
 		} else {
-			this._cSpyRServer.sendCommandWithCallback("continue", "", this.stepRunCallback("breakpoint"));
+			this._cSpyRClient.sendCommandWithCallback("continue", "", this.stepRunCallback("breakpoint"));
 		}
 
 		this.sendResponse(response);
 	}
 
+	protected terminateRequest(reponse: DebugProtocol.TerminateResponse, args: DebugProtocol.TerminateArguments) {
+		if (this._cspyRubyProc && !this._cspyRubyProc.killed) {
+			this._cspyRubyProc.kill();
+		}
+	}
+
 	protected pauseRequest(response: DebugProtocol.PauseResponse) {
-		this._cSpyRServer.sendCommandWithCallback("pause", "", this.stepRunCallback("pause"));
+		this._cSpyRClient.sendCommandWithCallback("pause", "", this.stepRunCallback("pause"));
 		this.sendResponse(response);
 	}
 	protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
-		this._cSpyRServer.sendCommandWithCallback("continue", "", this.stepRunCallback("breakpoint"));
+		this._cSpyRClient.sendCommandWithCallback("continue", "", this.stepRunCallback("breakpoint"));
 		this.sendResponse(response);
 	}
 
 	protected restartRequest(response: DebugProtocol.RestartResponse, args: DebugProtocol.RestartArguments): void {
-		this._cSpyRServer.sendCommandWithCallback("restart", "", this.stepRunCallback("entry"));
+		this._cSpyRClient.sendCommandWithCallback("restart", "", this.stepRunCallback("entry"));
 		this.sendResponse(response);
 	}
 
 	protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
-		this._cSpyRServer.sendCommandWithCallback("next", "", this.stepRunCallback("step"));
+		this._cSpyRClient.sendCommandWithCallback("next", "", this.stepRunCallback("step"));
 		this.sendResponse(response);
 	}
 
 	protected stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments): void {
-		this._cSpyRServer.sendCommandWithCallback("stepIn", "", this.stepRunCallback("step"));
+		this._cSpyRClient.sendCommandWithCallback("stepIn", "", this.stepRunCallback("step"));
 		this.sendResponse(response);
 	}
 
 	protected stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments): void {
-		this._cSpyRServer.sendCommandWithCallback("stepOut", "", this.stepRunCallback("step"));
+		this._cSpyRClient.sendCommandWithCallback("stepOut", "", this.stepRunCallback("step"));
 		this.sendResponse(response);
 	}
 
@@ -169,7 +184,7 @@ class CSpyDebugSession extends LoggingDebugSession {
 		};
 
 		const newLocal = this;
-		this._cSpyRServer.sendCommandWithCallback("setBreakpoints", cspyRequest, function(cspyResponse) {
+		this._cSpyRClient.sendCommandWithCallback("setBreakpoints", cspyRequest, function(cspyResponse) {
 			const actualBreakpoints = localBreakpoints.map(b => { // For sending to DAP client
 				const verifiedBps: number[] = cspyResponse;
 				return new Breakpoint(verifiedBps.includes(b.id),
@@ -196,7 +211,7 @@ class CSpyDebugSession extends LoggingDebugSession {
 
 	protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
 		const newLocal = this;  // TODO: handle args
-		this._cSpyRServer.sendCommandWithCallback("stackTrace", "", function (cspyResponse) {
+		this._cSpyRClient.sendCommandWithCallback("stackTrace", "", function (cspyResponse) {
 			const stk: StackFrame[] = [];
 			const frames: string[] = cspyResponse;
 			for (let i = 0; i < frames.length; i++) {
@@ -211,7 +226,7 @@ class CSpyDebugSession extends LoggingDebugSession {
 			newLocal.sendResponse(response);
 		});
 		// also update memory whenever stacktrace is updated
-		this._cSpyRServer.sendCommandWithCallback("memory", "", (cspyResponse) => {
+		this._cSpyRClient.sendCommandWithCallback("memory", "", (cspyResponse) => {
 			this.sendEvent({
 				event: "memory",
 				body: cspyResponse,
@@ -232,7 +247,6 @@ class CSpyDebugSession extends LoggingDebugSession {
 		response.body = {
 			scopes: scopes
 		};
-		CSpyRubyServer.log(JSON.stringify(scopes));
 		this.sendResponse(response);
 	}
 
@@ -240,7 +254,7 @@ class CSpyDebugSession extends LoggingDebugSession {
 		const scopeRef = this._variableHandles.get(args.variablesReference);
 
 		var newLocal = this;
-		this._cSpyRServer.sendCommandWithCallback("variables", scopeRef.frameReference, function(cspyResponse) {
+		this._cSpyRClient.sendCommandWithCallback("variables", scopeRef.frameReference, function(cspyResponse) {
 			const variables: DebugProtocol.Variable[] = [];
 
 			const allVariablesPairs: string[] = cspyResponse.split("*");
@@ -288,7 +302,7 @@ class CSpyDebugSession extends LoggingDebugSession {
 			frame: scopeRef.frameReference
 		};
 		const newLocal = this;
-		this._cSpyRServer.sendCommandWithCallback("setVariable", requestBody, function (cspyResponse) {
+		this._cSpyRClient.sendCommandWithCallback("setVariable", requestBody, function (cspyResponse) {
 			if (cspyResponse.success) {
 				if (scopeRef.name === "registers") {
 					// C-SPY returns the new value as decimal, even when it's a register.
@@ -308,17 +322,15 @@ class CSpyDebugSession extends LoggingDebugSession {
 
 	protected evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments): void {
 		const newLocal = this;
-		CSpyRubyServer.log("expr: " + args.expression);
 		const requestBody = {
 			expression: args.expression,
 			frame: args.frameId
 		};
-		this._cSpyRServer.sendCommandWithCallback("evaluate", requestBody, function (cspyResponse) { // TODO: handle frameId argument
+		this._cSpyRClient.sendCommandWithCallback("evaluate", requestBody, function (cspyResponse) { // TODO: handle frameId argument
 			response.body = {
 				result: cspyResponse,
 				variablesReference: 0
 			}
-			CSpyRubyServer.log(JSON.stringify(response));
 			newLocal.sendResponse(response);
 		});
 	}
@@ -326,10 +338,10 @@ class CSpyDebugSession extends LoggingDebugSession {
 	protected customRequest(command: string, response: DebugProtocol.Response, _: any): void {
 		switch (command) {
 			case "istepOver":
-				this._cSpyRServer.sendCommandWithCallback("istepOver", "", this.stepRunCallback("step"));
+				this._cSpyRClient.sendCommandWithCallback("istepOver", "", this.stepRunCallback("step"));
 				break;
 			case "istepInto":
-				this._cSpyRServer.sendCommandWithCallback("istepInto", "", this.stepRunCallback("step"));
+				this._cSpyRClient.sendCommandWithCallback("istepInto", "", this.stepRunCallback("step"));
 				break;
 		}
 	}
@@ -348,7 +360,7 @@ class CSpyDebugSession extends LoggingDebugSession {
 	}
 
 	private performDisassemblyEvent() {
-		this._cSpyRServer.sendCommandWithCallback("disassembly", "", (cspyResponse) => {
+		this._cSpyRClient.sendCommandWithCallback("disassembly", "", (cspyResponse) => {
 			this.sendEvent({
 				event: "disassembly",
 				body: cspyResponse,

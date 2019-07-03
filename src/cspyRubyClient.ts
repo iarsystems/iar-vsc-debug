@@ -9,7 +9,7 @@ type CSpyCallback = (cspyResponse: any) => void;
 /**
  * Handles communication to a TCP server running CSpyRuby
  */
-export class CSpyRubyServer {
+export class CSpyRubyClient {
 	private client = new Socket();
 	private seq = 0;
 
@@ -24,7 +24,7 @@ export class CSpyRubyServer {
 				try {
 					response = JSON.parse(ab2str(data));
 				} catch(e) {
-					CSpyRubyServer.log("unable to parse json (["+ data +"])<#------------------<< "+ e);
+					CSpyRubyClient.log("unable to parse json (["+ data +"])<#------------------<< "+ e);
 				}
 				if (response) {
 					// TODO: maybe remove callback after it is used?
@@ -41,7 +41,7 @@ export class CSpyRubyServer {
 	/** Sends a command with the given body to the ruby server, and runs the callback once the server replies */
 	sendCommandWithCallback(command: string, body: any, callback: CSpyCallback): void {
 		if (!this.callbacks[command]) {
-			this.callbacks[command]= [];
+			this.callbacks[command] = [];
 		}
 		this.callbacks[command][this.seq] = callback;
 		const request = {
