@@ -1,10 +1,13 @@
 # vscode-mock-debug
 
-This is a VS Code extension based on `vscode-mock-debug`, an example project from Microsoft for developing a Debug Adapter.
+This is a VS Code extension based on `vscode-mock-debug`, an example project
+from Microsoft for developing a Debug Adapter using the TypeScript SDK.
 The extension provides a Debug Adapter that connects to a C-SPY instance via a CSpyRuby script,
 thus enabling some C-SPY debugging functionality in VS Code.
 
-<!-- TODO: något om att detta inte är produktionsfärdigt, att CSpyRuby inte heller kan användas i produktion -->
+The Debug Adapter implementation can be found in `src/cspyDebug.ts`. Also of
+interest is `src/disassemblyView.ts`, which demonstrates how a virtual document
+and decorations can be used to provide custom text-based views.
 
 ## Using this extension
 
@@ -12,7 +15,9 @@ To use this extension, first make sure `CSpyRuby` is installed and the `CSpyRuby
 Then, make sure `CSPYRubySetup` is a sibling to the root directory of this project (if you've cloned the repo, it should already be).
 To run the extension, open this folder in VS Code, press `F5`, and launch the `Extension + Server` configuration.
 In the new window, you may open an EW project folder, such as `ew-test-project` in this repository.
-Then, open up `.vscode/launch.json` within the project folder and make sure `workbenchPath` points to your EW installation (if the file isn't there, press `F5` and it should be generated).
+Then, open up `.vscode/launch.json` within the project folder and make sure
+`workbenchPath` points to your EW installation (if the file isn't there, press
+`F5` and you should be given the option to generate it).
 The project may then be debugged by pressing `F5` or from the debugging menu in the panel on the left.
 
 ## Integrating specific functionality
