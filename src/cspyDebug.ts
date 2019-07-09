@@ -137,7 +137,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 		this.sendResponse(response);
 	}
 
-	protected terminateRequest(reponse: DebugProtocol.TerminateResponse, args: DebugProtocol.TerminateArguments) {
+	protected terminateRequest(response: DebugProtocol.TerminateResponse, args: DebugProtocol.TerminateArguments) {
 		if (this._cspyRubyProc && !this._cspyRubyProc.killed) {
 			this._cspyRubyProc.kill();
 		}
@@ -257,31 +257,29 @@ export class CSpyDebugSession extends LoggingDebugSession {
 		this._cSpyRClient.sendCommandWithCallback("variables", scopeRef.frameReference, function(cspyResponse) {
 			const variables: DebugProtocol.Variable[] = [];
 
-			const allVariablesPairs: string[] = cspyResponse.split("*");
+			const localVars = cspyResponse["locals"];
+			const staticVars = cspyResponse["statics"];
+			const registerVars = cspyResponse["registers"];
 
-			const localPairs = allVariablesPairs[0].split(" ");
-			const staticPairs = allVariablesPairs[1].split(" ");
-			const registerPairs = allVariablesPairs[2].split(" ");
-
-			let requestedPairs: string[] = [];
+			let requestedVars = [];
 			switch(scopeRef.name) {
 				case "local":
-					requestedPairs = localPairs;
+					requestedVars = localVars;
 					break;
 				case "static":
-					requestedPairs = staticPairs;
+					requestedVars = staticVars;
 					break;
 				case "registers":
-					requestedPairs = registerPairs;
+					requestedVars = registerVars;
 					break;
 			}
 
-			for (var i = 1; i < requestedPairs.length; i++) {
-				var splitItems = requestedPairs[i].split("|");
+			for (var i = 1; i < requestedVars.length; i++) {
+				const variable = requestedVars[i];
 				variables.push({
-					name: splitItems[0],
-					type: splitItems[2],
-					value: splitItems[1],
+					name: variable["name"],
+					type: variable["type"],
+					value: variable["value"],
 					variablesReference: 0
 				});
 			}

@@ -20,20 +20,23 @@ export class CSpyRubyClient {
 		this.client.connect(28561, '127.0.0.1', function() {
 			newLocal.client.on('data', function(data) {
 				var ab2str = require('arraybuffer-to-string');
-				let response = null;
-				try {
-					response = JSON.parse(ab2str(data));
-				} catch(e) {
-					CSpyRubyClient.log("unable to parse json (["+ data +"])<#------------------<< "+ e);
-				}
-				if (response) {
-					// TODO: maybe remove callback after it is used?
-					const callback = newLocal.callbacks[response["command"]][response["seq"]];
-					if (callback != null) {
-						const body = "body" in response ? response["body"] : "";
-						callback(body);
+				ab2str(data).split("\n").forEach((line: string) => {
+					let response = null;
+					try {
+						response = JSON.parse(line);
+					} catch(e) {
+						CSpyRubyClient.log("unable to parse json (["+ data +"])<#------------------<< "+ e);
 					}
-				}
+					if (response) {
+						CSpyRubyClient.log(ab2str(data));
+						// TODO: maybe remove callback after it is used?
+						const callback = newLocal.callbacks[response["command"]][response["seq"]];
+						if (callback != null) {
+							const body = "body" in response ? response["body"] : "";
+							callback(body);
+						}
+					}
+				});
 			});
 		});
 	}
