@@ -20,15 +20,15 @@ export class CSpyRubyClient {
 		this.client.connect(28561, '127.0.0.1', function() {
 			newLocal.client.on('data', function(data) {
 				var ab2str = require('arraybuffer-to-string');
-				ab2str(data).split("\n").forEach((line: string) => {
+				ab2str(data).split("\n").filter(l => l !== "").forEach((line: string) => {
 					let response = null;
 					try {
 						response = JSON.parse(line);
 					} catch(e) {
-						CSpyRubyClient.log("unable to parse json (["+ data +"])<#------------------<< "+ e);
+						CSpyRubyClient.log("unable to parse json (["+ line +"])<#------------------<< "+ e);
 					}
 					if (response) {
-						CSpyRubyClient.log(ab2str(data));
+						CSpyRubyClient.log(ab2str(line));
 						// TODO: maybe remove callback after it is used?
 						const callback = newLocal.callbacks[response["command"]][response["seq"]];
 						if (callback != null) {
