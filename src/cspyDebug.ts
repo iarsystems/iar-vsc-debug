@@ -274,7 +274,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 					break;
 			}
 
-			for (var i = 1; i < requestedVars.length; i++) {
+			for (var i = 0; i < requestedVars.length; i++) {
 				const variable = requestedVars[i];
 				variables.push({
 					name: variable["name"],
