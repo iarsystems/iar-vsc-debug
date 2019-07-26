@@ -65,6 +65,7 @@ export class DisassemblyView {
 	}
 
 	private updateDecorations() {
+		// TODO: check if _editor is set before doing anything
 		const bpDecorations: vscode.DecorationOptions[] = [];
 		this._bps.forEach((row: number) => {
 			const range = new vscode.Range(new vscode.Position(row, 0), new vscode.Position(row, 1));

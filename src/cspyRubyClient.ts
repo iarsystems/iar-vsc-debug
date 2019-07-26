@@ -53,12 +53,13 @@ export class CSpyRubyClient {
 			body: body,
 		};
 		const reqString = JSON.stringify(request);
-		console.log(request);
+		CSpyRubyClient.log("sending request: " + reqString);
 		this.client.write(reqString + '\n');
 	}
 
+	// There's no particular reason this function is in this file/class
     public static log(msg: string) {
-        writeFileSync(__dirname + "debug_adapter.log", msg + "\n", { flag: 'a' });
+        writeFileSync(__dirname + "/debug_adapter.log", msg + "\n", { flag: 'a' });
     }
 
 }

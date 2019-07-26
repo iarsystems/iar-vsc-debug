@@ -35,7 +35,9 @@ class ScopeReference {
 /**
  * Manages a debugging session between VS Code and C-SPY (via CSpyRuby)
  * This is the class that implements the Debug Adapter Protocol (at least the
- * parts that aren't already implemented by the DAP SDK)
+ * parts that aren't already implemented by the DAP SDK).
+ * Basically, it just overrides a ton of methods that are called when a DAP
+ * request is received from VS Code.
  */
 export class CSpyDebugSession extends LoggingDebugSession {
 	// we don't support multiple threads, so we can use a hardcoded ID for the default thread
@@ -129,9 +131,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
 		// tell cspy to start the program
 		if (!!args.stopOnEntry) {
-			this._cSpyRClient.sendCommandWithCallback("launch", "", this.stepRunCallback("entry"));
+			this._cSpyRClient.sendCommandWithCallback("launch", "", this.stopEventCallback("entry"));
 		} else {
-			this._cSpyRClient.sendCommandWithCallback("continue", "", this.stepRunCallback("breakpoint"));
+			this._cSpyRClient.sendCommandWithCallback("continue", "", this.stopEventCallback("breakpoint"));
 		}
 
 		this.sendResponse(response);
@@ -144,31 +146,31 @@ export class CSpyDebugSession extends LoggingDebugSession {
 	}
 
 	protected pauseRequest(response: DebugProtocol.PauseResponse) {
-		this._cSpyRClient.sendCommandWithCallback("pause", "", this.stepRunCallback("pause"));
+		this._cSpyRClient.sendCommandWithCallback("pause", "", this.stopEventCallback("pause"));
 		this.sendResponse(response);
 	}
 	protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
-		this._cSpyRClient.sendCommandWithCallback("continue", "", this.stepRunCallback("breakpoint"));
+		this._cSpyRClient.sendCommandWithCallback("continue", "", this.stopEventCallback("breakpoint"));
 		this.sendResponse(response);
 	}
 
 	protected restartRequest(response: DebugProtocol.RestartResponse, args: DebugProtocol.RestartArguments): void {
-		this._cSpyRClient.sendCommandWithCallback("restart", "", this.stepRunCallback("entry"));
+		this._cSpyRClient.sendCommandWithCallback("restart", "", this.stopEventCallback("entry"));
 		this.sendResponse(response);
 	}
 
 	protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
-		this._cSpyRClient.sendCommandWithCallback("next", "", this.stepRunCallback("step"));
+		this._cSpyRClient.sendCommandWithCallback("next", "", this.stopEventCallback("step"));
 		this.sendResponse(response);
 	}
 
 	protected stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments): void {
-		this._cSpyRClient.sendCommandWithCallback("stepIn", "", this.stepRunCallback("step"));
+		this._cSpyRClient.sendCommandWithCallback("stepIn", "", this.stopEventCallback("step"));
 		this.sendResponse(response);
 	}
 
 	protected stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments): void {
-		this._cSpyRClient.sendCommandWithCallback("stepOut", "", this.stepRunCallback("step"));
+		this._cSpyRClient.sendCommandWithCallback("stepOut", "", this.stopEventCallback("step"));
 		this.sendResponse(response);
 	}
 
@@ -196,7 +198,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 			};
 			newLocal.sendResponse(response);
 		});
-		this.performDisassemblyEvent();
+		this.performDisassemblyEvent(); // update disassembly to reflect changed breakpoints
 	}
 
 	protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
@@ -225,7 +227,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 			}
 			newLocal.sendResponse(response);
 		});
-		// also update memory whenever stacktrace is updated
+		// also update memory and disasm whenever stacktrace is updated
 		this._cSpyRClient.sendCommandWithCallback("memory", "", (cspyResponse) => {
 			this.sendEvent({
 				event: "memory",
@@ -336,16 +338,16 @@ export class CSpyDebugSession extends LoggingDebugSession {
 	protected customRequest(command: string, response: DebugProtocol.Response, _: any): void {
 		switch (command) {
 			case "istepOver":
-				this._cSpyRClient.sendCommandWithCallback("istepOver", "", this.stepRunCallback("step"));
+				this._cSpyRClient.sendCommandWithCallback("istepOver", "", this.stopEventCallback("step"));
 				break;
 			case "istepInto":
-				this._cSpyRClient.sendCommandWithCallback("istepInto", "", this.stepRunCallback("step"));
+				this._cSpyRClient.sendCommandWithCallback("istepInto", "", this.stopEventCallback("step"));
 				break;
 		}
 	}
 
 	// Generic callback for events like run/step etc., that should send back a StoppedEvent on return
-	private stepRunCallback(stopReason: "entry" | "step" | "breakpoint" | "pause") {
+	private stopEventCallback(stopReason: "entry" | "step" | "breakpoint" | "pause") {
 		const newLocal = this;
 		return function(debugeeTerminated: boolean) {
 			if (!debugeeTerminated) {
