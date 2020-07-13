@@ -13,6 +13,14 @@ export function activate(context: vscode.ExtensionContext) {
 	console.log("activating");
 	// register a configuration provider for 'cspy' debug type
 	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('cspy', new CSpyConfigurationProvider()));
+	vscode.debug.registerDebugAdapterDescriptorFactory("cspy", {
+		createDebugAdapterDescriptor(session: vscode.DebugSession, executable: vscode.DebugAdapterExecutable | undefined): ProviderResult<vscode.DebugAdapterDescriptor> {
+			return new vscode.DebugAdapterServer(4711);
+			// 	port: 4711,
+			// 	host: "localhost"
+			// }
+		}
+	});
 
 	// register commands to be called when pressing instruction step buttons
 	context.subscriptions.push(vscode.commands.registerCommand("iar.stepOverInstruction", () => {

@@ -1,3 +1,4 @@
+import * as Path from "path";
 import { DebugProtocol } from "vscode-debugprotocol";
 import { LoggingDebugSession, Handles, StoppedEvent, OutputEvent, TerminatedEvent, InitializedEvent, logger, Logger, Breakpoint, Thread, Source, StackFrame, Scope, DebugSession } from "vscode-debugadapter";
 import { CSpyRubyClient } from "./cspyRubyClient";
@@ -63,7 +64,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 	 * Creates a new debug adapter that is used for one debug session.
 	 */
 	public constructor() {
-		super("mock-debug.txt");
+		super();
 
 		this.setDebuggerLinesStartAt1(true);
 		this.setDebuggerColumnsStartAt1(true);
@@ -102,11 +103,27 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
 		//spawn cspyruby
 		let ewPath = args.workbenchPath;
-		if (!ewPath.endsWith('/')) ewPath += '/'
-		this._cspyRubyProc = execFile(ewPath + 'common/bin/CSpyRuby.exe',
+		const cspyRubyPath = Path.join(ewPath, "common/bin/CSpyRuby.exe");
+		this._cspyRubyProc = execFile(cspyRubyPath,
 		['--ruby_file', '../../CSPYRubySetup/setupt.rb', '--config', 'SIM_CORTEX_M4', '--program', args.program],
 		{ cwd: __dirname });
 		CSpyRubyClient.log("starting cspuruby, PID: "+ this._cspyRubyProc.pid );
+
+		this._cspyRubyProc.stdout?.on('data', (data) => {
+			CSpyRubyClient.log('stdout: ' + data);
+			const e: DebugProtocol.OutputEvent = new OutputEvent(data.toString());
+			this.sendEvent(e);
+		});
+
+		this._cspyRubyProc.stderr?.on('data', (data) => {
+			CSpyRubyClient.log('stderr: ' + data);
+			const e: DebugProtocol.OutputEvent = new OutputEvent(data.toString());
+			this.sendEvent(e);
+		});
+
+		this._cspyRubyProc.on('close', (code) => {
+			CSpyRubyClient.log('child process exited with code ' + code);
+		});
 
 
 		// wait until configuration is done
@@ -114,20 +131,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
 		// sleep a little bit to make sure cspy ruby starts before continue
 /* 		var sleep = require('system-sleep');
 		sleep(2000); */
-
-		this._cspyRubyProc.stdout.on('data', (data) => {
-			CSpyRubyClient.log('stdout: ' + data);
-			const e: DebugProtocol.OutputEvent = new OutputEvent(data.toString());
-			this.sendEvent(e);
-		});
-
-		this._cspyRubyProc.stderr.on('data', (data) => {
-			CSpyRubyClient.log('stderr: ' + data);
-		});
-
-		this._cspyRubyProc.on('close', (code) => {
-			CSpyRubyClient.log('child process exited with code ' + code);
-		});
 
 		// tell cspy to start the program
 		if (!!args.stopOnEntry) {
@@ -255,7 +258,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 	protected variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments): void {
 		const scopeRef = this._variableHandles.get(args.variablesReference);
 
-		var newLocal = this;
+		const newLocal = this;
 		this._cSpyRClient.sendCommandWithCallback("variables", scopeRef.frameReference, function(cspyResponse) {
 			const variables: DebugProtocol.Variable[] = [];
 
@@ -276,7 +279,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 					break;
 			}
 
-			for (var i = 0; i < requestedVars.length; i++) {
+			for (let i = 0; i < requestedVars.length; i++) {
 				const variable = requestedVars[i];
 				variables.push({
 					name: variable["name"],
