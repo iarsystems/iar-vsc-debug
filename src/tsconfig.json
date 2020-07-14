@@ -2,7 +2,7 @@
 	"compilerOptions": {
 		"module": "commonjs",
 		"target": "es6",
-		"lib": ["es2017"],
+		"lib": ["es2017", "DOM"],
 
 		"noImplicitAny": false,
 		"removeComments": false,

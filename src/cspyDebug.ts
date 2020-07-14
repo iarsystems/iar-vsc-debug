@@ -3,7 +3,15 @@ import { DebugProtocol } from "vscode-debugprotocol";
 import { LoggingDebugSession, Handles, StoppedEvent, OutputEvent, TerminatedEvent, InitializedEvent, logger, Logger, Breakpoint, Thread, Source, StackFrame, Scope, DebugSession } from "vscode-debugadapter";
 import { CSpyRubyClient } from "./cspyRubyClient";
 import { basename } from "path";
-import { execFile, ChildProcess } from "child_process";
+import { ThriftServiceManager } from "./thrift/thriftservicemanager";
+import * as Debugger from "./thrift/bindings/Debugger";
+import * as Breakpoints from "./thrift/bindings/Breakpoints";
+import { ThriftClient } from "./thrift/thriftclient";
+import { SessionConfiguration, DEBUGEVENT_SERVICE, DebugSettings, DEBUGGER_SERVICE } from "./thrift/bindings/cspy_types";
+import { StackSettings, Location, Zone } from "./thrift/bindings/shared_types";
+import { DebugEventListenerService } from "./debugEventListenerService";
+import { ServiceLocation, Protocol, Transport } from "./thrift/bindings/ServiceRegistry_types";
+import { BREAKPOINTS_SERVICE } from "./thrift/bindings/breakpoints_types";
 const { Subject } = require('await-notify')
 
 /**
@@ -21,6 +29,8 @@ interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
 	trace?: boolean;
 	/** Path to the Embedded Workbench installation to use */
 	workbenchPath: string;
+	/** Options to pass on to the debugger */
+	options: string[];
 }
 
 /**
@@ -44,8 +54,11 @@ export class CSpyDebugSession extends LoggingDebugSession {
 	// we don't support multiple threads, so we can use a hardcoded ID for the default thread
 	private static THREAD_ID = 1;
 
-	// the cspyruby process we use to control C-SPY
-	private _cspyRubyProc: ChildProcess;
+	private _serviceManager: ThriftServiceManager;
+
+	// cspy services
+	private _cspyDebugger: ThriftClient<Debugger.Client>;
+	private _cspyBreakpoints: ThriftClient<Breakpoints.Client>;
 
 	// our communication channel with the cspyruby instance
 	private _cSpyRClient: CSpyRubyClient;
@@ -87,6 +100,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 		response.body.supportsEvaluateForHovers = true;
 		response.body.supportsRestartRequest = true;
 		response.body.supportsSetVariable = true;
+		// TODO: implement some extra capabilites, like disassemble and readmemory
 
 		this.sendResponse(response);
 		this.sendEvent(new InitializedEvent());
@@ -101,54 +115,89 @@ export class CSpyDebugSession extends LoggingDebugSession {
 		// make sure to 'Stop' the buffered logging if 'trace' is not set
 		logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false);
 
-		//spawn cspyruby
-		let ewPath = args.workbenchPath;
-		const cspyRubyPath = Path.join(ewPath, "common/bin/CSpyRuby.exe");
-		this._cspyRubyProc = execFile(cspyRubyPath,
-		['--ruby_file', '../../CSPYRubySetup/setupt.rb', '--config', 'SIM_CORTEX_M4', '--program', args.program],
-		{ cwd: __dirname });
-		CSpyRubyClient.log("starting cspuruby, PID: "+ this._cspyRubyProc.pid );
+		this._serviceManager = await ThriftServiceManager.fromWorkbench(args.workbenchPath);
+		DebugEventListenerService.create(11112); // TODO: how to decide on a port number? should be able to run multiple simultaneous sessions...
+		await this._serviceManager.registerService(DEBUGEVENT_SERVICE, new ServiceLocation({ host: "localhost", port: 11112, protocol: Protocol.Binary, transport: Transport.Socket }));
 
-		this._cspyRubyProc.stdout?.on('data', (data) => {
-			CSpyRubyClient.log('stdout: ' + data);
-			const e: DebugProtocol.OutputEvent = new OutputEvent(data.toString());
-			this.sendEvent(e);
+		this._cspyDebugger = await this._serviceManager.findService(DEBUGGER_SERVICE, Debugger);
+		this._cspyBreakpoints = await this._serviceManager.findService(BREAKPOINTS_SERVICE, Breakpoints);
+		this.sendEvent(new OutputEvent("Using C-SPY version: " + await this._cspyDebugger.service.getVersionString() + "\n"));
+
+		// TODO: find some way to generate this
+		const config: SessionConfiguration = new SessionConfiguration({
+			attachToTarget: false,
+			driverName: "armsim2",
+			processorName: "armproc",
+			type: "simulator",
+			executable: args.program,
+			configName: "Debug",
+			leaveRunning: true,
+			enableCRun: false,
+			options: args.options,
+			plugins: ["armbat"],
+			projectDir: Path.resolve(Path.join(Path.parse(args.program).dir, "../../")),
+			projectName: "ewproj.ewp",
+			setupMacros: [],
+			target: "arm",
+			toolkitDir: Path.join(args.workbenchPath, "arm"),
+			stackSettings: new StackSettings( {
+				fillEnabled: false,
+				displayLimit: 50,
+				limitDisplay: false,
+				overflowWarningsEnabled: true,
+				spWarningsEnabled: true,
+				triggerName: "main",
+				useTrigger: true,
+				warnLogOnly: true,
+				warningThreshold: 90,
+			}),
 		});
-
-		this._cspyRubyProc.stderr?.on('data', (data) => {
-			CSpyRubyClient.log('stderr: ' + data);
-			const e: DebugProtocol.OutputEvent = new OutputEvent(data.toString());
-			this.sendEvent(e);
-		});
-
-		this._cspyRubyProc.on('close', (code) => {
-			CSpyRubyClient.log('child process exited with code ' + code);
-		});
-
+		try {
+			await this._cspyDebugger.service.setDebugSettings(new DebugSettings({
+				alwaysPickAllInstances: false,
+				enterFunctionsWithoutSource: true,
+				stlDepth: 10,
+				memoryWindowUpdateInterval: 1000,
+				staticWatchUpdateInterval: 1000,
+				globalIntegerFormat: 2,
+			}));
+			await this._cspyDebugger.service.startSession(config);
+			await this._cspyDebugger.service.loadModule(args.program);
+			this.sendEvent(new OutputEvent(`Loaded module '${args.program}'\n`));
+		} catch (e) {
+			response.success = false;
+			response.message = e.toString();
+			this.sendResponse(response);
+			await this.endSession();
+			return;
+		}
 
 		// wait until configuration is done
 		await this._configurationDone.wait(1000);
-		// sleep a little bit to make sure cspy ruby starts before continue
-/* 		var sleep = require('system-sleep');
-		sleep(2000); */
 
 		// tell cspy to start the program
+		await this._cspyDebugger.service.runToULE("main", false);
+
 		if (!!args.stopOnEntry) {
-			this._cSpyRClient.sendCommandWithCallback("launch", "", this.stopEventCallback("entry"));
+			this.sendEvent(new StoppedEvent("entry"));
+			// await this._cspyDebugger.service.setBreakOnThrow(true);
+			// await this._cspyDebugger.service.step(false);
+			// this._cSpyRClient.sendCommandWithCallback("launch", "", this.stopEventCallback("entry"));
 		} else {
-			this._cSpyRClient.sendCommandWithCallback("continue", "", this.stopEventCallback("breakpoint"));
+			await this._cspyDebugger.service.go();
 		}
 
 		this.sendResponse(response);
 	}
 
-	protected terminateRequest(response: DebugProtocol.TerminateResponse, args: DebugProtocol.TerminateArguments) {
-		if (this._cspyRubyProc && !this._cspyRubyProc.killed) {
-			this._cspyRubyProc.kill();
-		}
+	protected async terminateRequest(response: DebugProtocol.TerminateResponse, args: DebugProtocol.TerminateArguments) {
+		await this._cspyDebugger.service.stopSession();
+		await this.endSession();
+		this.sendResponse(response);
 	}
 
-	protected pauseRequest(response: DebugProtocol.PauseResponse) {
+	protected async pauseRequest(response: DebugProtocol.PauseResponse) {
+		await this._cspyDebugger.service.stop();
 		this._cSpyRClient.sendCommandWithCallback("pause", "", this.stopEventCallback("pause"));
 		this.sendResponse(response);
 	}
@@ -352,11 +401,12 @@ export class CSpyDebugSession extends LoggingDebugSession {
 	// Generic callback for events like run/step etc., that should send back a StoppedEvent on return
 	private stopEventCallback(stopReason: "entry" | "step" | "breakpoint" | "pause") {
 		const newLocal = this;
-		return function(debugeeTerminated: boolean) {
+		return async function(debugeeTerminated: boolean) {
 			if (!debugeeTerminated) {
 				// ideally, the stop reason should be determined from C-SPY, but this is good enough
 				newLocal.sendEvent(new StoppedEvent(stopReason, CSpyDebugSession.THREAD_ID));
 			} else {
+				await newLocal.endSession();
 				newLocal.sendEvent(new TerminatedEvent());
 			}
 		}
@@ -371,6 +421,13 @@ export class CSpyDebugSession extends LoggingDebugSession {
 				type: "event",
 			});
 		});
+	}
+
+	private async endSession() {
+		console.log("Killing session");
+		this._cspyBreakpoints.close();
+		this._cspyDebugger.close();
+		await this._serviceManager.stop();
 	}
 }
 DebugSession.run(CSpyDebugSession);
