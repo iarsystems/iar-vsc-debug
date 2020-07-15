@@ -1,4 +1,3 @@
-import * as Path from "path";
 import { DebugProtocol } from "vscode-debugprotocol";
 import { LoggingDebugSession, Handles, StoppedEvent, OutputEvent, TerminatedEvent, InitializedEvent, logger, Logger, Breakpoint, Thread, Source, StackFrame, Scope, DebugSession } from "vscode-debugadapter";
 import { ThriftServiceManager } from "./thrift/thriftservicemanager";
@@ -6,14 +5,14 @@ import * as Debugger from "./thrift/bindings/Debugger";
 import * as Breakpoints from "./thrift/bindings/Breakpoints";
 import * as ContextManager from "./thrift/bindings/ContextManager";
 import { ThriftClient } from "./thrift/thriftclient";
-import { SessionConfiguration, DEBUGEVENT_SERVICE, DebugSettings, DEBUGGER_SERVICE, CONTEXT_MANAGER_SERVICE, DkNotifyConstant } from "./thrift/bindings/cspy_types";
-import { StackSettings, Symbol, ContextRef, ContextType, ExprFormat } from "./thrift/bindings/shared_types";
+import { DEBUGEVENT_SERVICE, DebugSettings, DEBUGGER_SERVICE, CONTEXT_MANAGER_SERVICE, DkNotifyConstant } from "./thrift/bindings/cspy_types";
 import { DebugEventListenerService, DebugEventListenerHandler } from "./debugEventListenerService";
 import { ServiceLocation, Protocol, Transport } from "./thrift/bindings/ServiceRegistry_types";
 import { BREAKPOINTS_SERVICE } from "./thrift/bindings/breakpoints_types";
 import { CSpyStackManager } from "./cspyStackManager";
 import { MockConfigurationResolver } from "./mockConfigurationResolver";
 import { Server } from "net";
+import { CSpyBreakpointManager } from "./cspyBreakpointManager";
 const { Subject } = require('await-notify')
 
 
@@ -57,15 +56,16 @@ export class CSpyDebugSession extends LoggingDebugSession {
     private cspyEventServer: Server; // keep a reference to this so we can close it at the end of the session
 
     private stackManager: CSpyStackManager;
-
-
-    // Used to assign a unique Id to each breakpoint
-    private bpIndex = 0;
+    private breakpointManager: CSpyBreakpointManager;
 
     // Sequence number for custom events
     private eventSeq = 0;
 
     private configurationDone = new Subject();
+
+    // Need to keep track of this for when we initialize the breakpoint manager
+    private clientLinesStartAt1 = false;
+    private clientColumnsStartAt1 = false;
 
 	/**
 	 * Creates a new debug adapter that is used for one debug session.
@@ -94,8 +94,10 @@ export class CSpyDebugSession extends LoggingDebugSession {
         response.body.supportsSetVariable = true;
         // TODO: implement some extra capabilites, like disassemble and readmemory
 
+        this.clientLinesStartAt1 = args.linesStartAt1 || false;
+        this.clientColumnsStartAt1 = args.columnsStartAt1 || false;
+
         this.sendResponse(response);
-        this.sendEvent(new InitializedEvent());
     }
 
     protected configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments) {
@@ -115,8 +117,10 @@ export class CSpyDebugSession extends LoggingDebugSession {
         await this.serviceManager.registerService(DEBUGEVENT_SERVICE, new ServiceLocation({ host: "localhost", port: 11112, protocol: Protocol.Binary, transport: Transport.Socket }));
 
         this.cspyDebugger = await this.serviceManager.findService(DEBUGGER_SERVICE, Debugger);
-        this.cspyBreakpoints = await this.serviceManager.findService(BREAKPOINTS_SERVICE, Breakpoints);
         this.sendEvent(new OutputEvent("Using C-SPY version: " + await this.cspyDebugger.service.getVersionString() + "\n"));
+
+        this.cspyBreakpoints = await this.serviceManager.findService(BREAKPOINTS_SERVICE, Breakpoints);
+        this.breakpointManager = new CSpyBreakpointManager(this.cspyBreakpoints.service, this.clientLinesStartAt1, this.clientColumnsStartAt1);
 
         this.cspyContexts = await this.serviceManager.findService(CONTEXT_MANAGER_SERVICE, ContextManager);
         this.stackManager = new CSpyStackManager(this.cspyContexts.service);
@@ -144,8 +148,11 @@ export class CSpyDebugSession extends LoggingDebugSession {
             return;
         }
 
+        // we are ready to receive configuration requests (e.g. breakpoints)
+        this.sendEvent(new InitializedEvent());
         // wait until configuration is done
         await this.configurationDone.wait(1000);
+
         this.sendResponse(response);
 
         // tell cspy to start the program
@@ -206,32 +213,22 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.sendResponse(response);
     }
 
-    protected setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments) {
+    protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments) {
         console.log("SetBPs");
-        // TODO: implement
-        // const clientLines = args.lines || [];
-
-        // const localBreakpoints = clientLines.map(line => { // For sending to C-SPY
-        //     return { line: this.convertClientLineToDebugger(line), id: this.bpIndex++ }
-        // });
-        // const cspyRequest = {
-        //     breakpoints: localBreakpoints,
-        //     file: basename(args.source.path!!)
-        // };
-
-        // const newLocal = this;
-        // this.cSpyRClient.sendCommandWithCallback("setBreakpoints", cspyRequest, function (cspyResponse) {
-        //     const actualBreakpoints = localBreakpoints.map(b => { // For sending to DAP client
-        //         const verifiedBps: number[] = cspyResponse;
-        //         return new Breakpoint(verifiedBps.includes(b.id),
-        //             newLocal.convertDebuggerLineToClient(b.line));
-        //     })
-
-        //     response.body = {
-        //         breakpoints: actualBreakpoints
-        //     };
-        //     newLocal.sendResponse(response);
-        // });
+        if (args.breakpoints) {
+            try {
+                const bps = await this.breakpointManager.setBreakpointsFor(args.source, args.breakpoints);
+                console.log(bps);
+                response.body = {
+                    breakpoints: bps,
+                };
+            } catch (e) {
+                console.error(e);
+                response.success = false;
+                response.message = e.toString();
+            }
+        }
+        this.sendResponse(response);
         this.performDisassemblyEvent(); // update disassembly to reflect changed breakpoints
     }
 

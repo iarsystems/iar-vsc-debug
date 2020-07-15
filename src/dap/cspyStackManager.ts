@@ -67,7 +67,7 @@ export class CSpyStackManager {
         let requestedVars: Symbol[] = [];
         switch (scope.name) {
             case "local":
-                requestedVars = await this.contextManager.getLocals(scope.context);
+                requestedVars = await this.contextManager.getLocals(scope.context); // TODO: also get parameters?
                 break;
             case "static":
                 requestedVars = [];
