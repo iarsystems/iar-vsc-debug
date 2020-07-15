@@ -17,7 +17,7 @@
 			"request": "launch",
 			"name": "Server",
 			"cwd": "${workspaceFolder}",
-			"program": "${workspaceFolder}/src/cspyDebug.ts",
+			"program": "${workspaceFolder}/src/dap/cspyDebug.ts",
 			"args": [ "--server=4711" ],
 			"outFiles": [ "${workspaceFolder}/out/**/*.js" ]
 		},
@@ -36,13 +36,6 @@
 			"outFiles": [ "${workspaceFolder}/out/**/*.js" ],
 			"internalConsoleOptions": "openOnSessionStart"
 		},
-		{
-			"type": "mock",
-			"request": "launch",
-			"name": "Mock Sample",
-			"program": "${workspaceFolder}/${command:AskForProgramName}",
-			"stopOnEntry": true
-		}
 	],
 	"compounds": [
 		{

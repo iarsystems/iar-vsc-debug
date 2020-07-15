@@ -12,7 +12,7 @@
 		"multi-root ready"
 	],
 	"engines": {
-		"vscode": "^1.30.0",
+		"vscode": "^1.46.0",
 		"node": "^14.4.0"
 	},
 	"categories": [
@@ -24,20 +24,21 @@
 		"arraybuffer-to-string": "^1.0.1",
 		"async-mutex": "^0.1.3",
 		"mutex-promise": "^0.1.0",
-		"vscode-debugadapter": "^1.35.0",
-		"vscode-debugprotocol": "^1.35.0",
+		"vscode-debugadapter": "^1.41.1",
+		"vscode-debugprotocol": "^1.41.0",
 		"vscode-languageserver": "^3.5.0",
 		"thrift": "^0.12.0",
 		"@types/thrift": "^0.10.9"
 	},
 	"devDependencies": {
+		"@types/vscode": "^1.46.0",
 		"@types/mocha": "^2.2.42",
 		"@types/node": "^14.0.0",
 		"mocha": "^3.5.0",
 		"tslint": "^5.8.0",
 		"typescript": "^3.8.0",
 		"vsce": "^1.63.0",
-		"vscode": "^1.1.34",
+		"vscode-test": "^1.3.0",
 		"vscode-debugadapter-testsupport": "^1.33.0"
 	},
 	"scripts": {
@@ -46,7 +47,6 @@
 		"tslint": "tslint ./src/**/*.ts",
 		"watch": "tsc -w -p ./src",
 		"test": "mocha -u tdd ./out/tests/",
-		"postinstall": "node ./node_modules/vscode/bin/install",
 		"package": "vsce package",
 		"publish": "vsce publish",
 		"pkgvars": "node ./node_modules/vscode/bin/install"
@@ -104,7 +104,7 @@
 			{
 				"type": "cspy",
 				"label": "C-SPY Debug",
-				"program": "./out/cspyDebug.js",
+				"program": "./out/dap/cspyDebug.js",
 				"runtime": "node",
 				"languages": ["c"],
 				"configurationAttributes": {

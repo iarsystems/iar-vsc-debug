@@ -89,7 +89,7 @@ export class CSpyStackManager {
     }
 
     async setVariable(scopeReference: number): Promise<string> {
-        const scope = this.scopeHandles.get(scopeReference);
+        // const scope = this.scopeHandles.get(scopeReference);
         return Promise.reject("Not implemented");
     }
 

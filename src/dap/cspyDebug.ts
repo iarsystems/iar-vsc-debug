@@ -1,8 +1,6 @@
 import * as Path from "path";
 import { DebugProtocol } from "vscode-debugprotocol";
 import { LoggingDebugSession, Handles, StoppedEvent, OutputEvent, TerminatedEvent, InitializedEvent, logger, Logger, Breakpoint, Thread, Source, StackFrame, Scope, DebugSession } from "vscode-debugadapter";
-import { CSpyRubyClient } from "./cspyRubyClient";
-import { basename } from "path";
 import { ThriftServiceManager } from "./thrift/thriftservicemanager";
 import * as Debugger from "./thrift/bindings/Debugger";
 import * as Breakpoints from "./thrift/bindings/Breakpoints";
