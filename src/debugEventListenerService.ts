@@ -47,7 +47,8 @@ export class DebugEventListenerHandler {
 	 * Triggered on kDkInspectionContextChanged.
 	 */
 	postInspectionContextChangedEvent(event: InspectionContextChangedEvent): Q.Promise<void> {
-		console.log("INSPECTIONCONTEXT", event.context.type);
+		console.log("ASDF");
+		console.log("INSPECTIONCONTEXT", event.context);
 		return Q.resolve();
 	}
 
@@ -56,7 +57,7 @@ export class DebugEventListenerHandler {
 	 * Triggered on kDkBaseContextChanged.
 	 */
 	postBaseContextChangedEvent(event: BaseContextChangedEvent): Q.Promise<void> {
-		console.log("BASECONTEXT", event.context.type);
+		console.log("BASECONTEXT", event.context);
 		return Q.resolve();
 	}
 

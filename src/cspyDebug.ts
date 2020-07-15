@@ -6,9 +6,10 @@ import { basename } from "path";
 import { ThriftServiceManager } from "./thrift/thriftservicemanager";
 import * as Debugger from "./thrift/bindings/Debugger";
 import * as Breakpoints from "./thrift/bindings/Breakpoints";
+import * as ContextManager from "./thrift/bindings/ContextManager";
 import { ThriftClient } from "./thrift/thriftclient";
-import { SessionConfiguration, DEBUGEVENT_SERVICE, DebugSettings, DEBUGGER_SERVICE } from "./thrift/bindings/cspy_types";
-import { StackSettings, Location, Zone } from "./thrift/bindings/shared_types";
+import { SessionConfiguration, DEBUGEVENT_SERVICE, DebugSettings, DEBUGGER_SERVICE, CONTEXT_MANAGER_SERVICE } from "./thrift/bindings/cspy_types";
+import { StackSettings, Symbol, ContextRef, ContextType, ExprFormat } from "./thrift/bindings/shared_types";
 import { DebugEventListenerService } from "./debugEventListenerService";
 import { ServiceLocation, Protocol, Transport } from "./thrift/bindings/ServiceRegistry_types";
 import { BREAKPOINTS_SERVICE } from "./thrift/bindings/breakpoints_types";
@@ -44,11 +45,9 @@ class ScopeReference {
 }
 
 /**
- * Manages a debugging session between VS Code and C-SPY (via CSpyRuby)
+ * Manages a debugging session between VS Code and C-SPY (via CSpyServer2)
  * This is the class that implements the Debug Adapter Protocol (at least the
  * parts that aren't already implemented by the DAP SDK).
- * Basically, it just overrides a ton of methods that are called when a DAP
- * request is received from VS Code.
  */
 export class CSpyDebugSession extends LoggingDebugSession {
 	// we don't support multiple threads, so we can use a hardcoded ID for the default thread
@@ -59,8 +58,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
 	// cspy services
 	private _cspyDebugger: ThriftClient<Debugger.Client>;
 	private _cspyBreakpoints: ThriftClient<Breakpoints.Client>;
+	private _cspyContexts: ThriftClient<ContextManager.Client>;
 
-	// our communication channel with the cspyruby instance
+	// our communication channel with the cspyruby instance TODO: remove
 	private _cSpyRClient: CSpyRubyClient;
 
 	private _variableHandles = new Handles<ScopeReference>();
@@ -72,6 +72,12 @@ export class CSpyDebugSession extends LoggingDebugSession {
 	private _eventSeq = 0;
 
 	private _configurationDone = new Subject();
+
+	// References to all current stack contexts
+	private contextReferences: ContextRef[] = [];
+
+	// TODO: We should get this from the event service, I think, but it doesn't seem to receive any contexts. This works for now.
+	private readonly currentInspectionContext = new ContextRef({ core: 0, level: 0, task: 0, type: ContextType.CurrentInspection });
 
 	/**
 	 * Creates a new debug adapter that is used for one debug session.
@@ -108,6 +114,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
 	protected configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments) {
 		super.configurationDoneRequest(response, args);
+		console.log("ConfigDone");
 		this._configurationDone.notify();
 	}
 
@@ -121,6 +128,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
 		this._cspyDebugger = await this._serviceManager.findService(DEBUGGER_SERVICE, Debugger);
 		this._cspyBreakpoints = await this._serviceManager.findService(BREAKPOINTS_SERVICE, Breakpoints);
+		this._cspyContexts = await this._serviceManager.findService(CONTEXT_MANAGER_SERVICE, ContextManager);
 		this.sendEvent(new OutputEvent("Using C-SPY version: " + await this._cspyDebugger.service.getVersionString() + "\n"));
 
 		// TODO: find some way to generate this
@@ -174,20 +182,18 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
 		// wait until configuration is done
 		await this._configurationDone.wait(1000);
+		this.sendResponse(response);
 
 		// tell cspy to start the program
+		console.log("Running to main...");
 		await this._cspyDebugger.service.runToULE("main", false);
 
+
 		if (!!args.stopOnEntry) {
-			this.sendEvent(new StoppedEvent("entry"));
-			// await this._cspyDebugger.service.setBreakOnThrow(true);
-			// await this._cspyDebugger.service.step(false);
-			// this._cSpyRClient.sendCommandWithCallback("launch", "", this.stopEventCallback("entry"));
+			this.sendEvent(new StoppedEvent("entry", CSpyDebugSession.THREAD_ID));
 		} else {
 			await this._cspyDebugger.service.go();
 		}
-
-		this.sendResponse(response);
 	}
 
 	protected async terminateRequest(response: DebugProtocol.TerminateResponse, args: DebugProtocol.TerminateArguments) {
@@ -198,35 +204,37 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
 	protected async pauseRequest(response: DebugProtocol.PauseResponse) {
 		await this._cspyDebugger.service.stop();
-		this._cSpyRClient.sendCommandWithCallback("pause", "", this.stopEventCallback("pause"));
 		this.sendResponse(response);
 	}
 	protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
-		this._cSpyRClient.sendCommandWithCallback("continue", "", this.stopEventCallback("breakpoint"));
 		this.sendResponse(response);
 	}
 
 	protected restartRequest(response: DebugProtocol.RestartResponse, args: DebugProtocol.RestartArguments): void {
-		this._cSpyRClient.sendCommandWithCallback("restart", "", this.stopEventCallback("entry"));
 		this.sendResponse(response);
 	}
 
 	protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
-		this._cSpyRClient.sendCommandWithCallback("next", "", this.stopEventCallback("step"));
 		this.sendResponse(response);
 	}
 
 	protected stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments): void {
-		this._cSpyRClient.sendCommandWithCallback("stepIn", "", this.stopEventCallback("step"));
 		this.sendResponse(response);
 	}
 
 	protected stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments): void {
-		this._cSpyRClient.sendCommandWithCallback("stepOut", "", this.stopEventCallback("step"));
 		this.sendResponse(response);
 	}
 
 	protected setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): void {
+		console.log("SetBPs");
+		// if (args.breakpoints) {
+		// 	response.body = {
+		// 		breakpoints: [{ verified: false, id: 0 }],
+		// 	};
+		// }
+		// this.sendResponse(response);
+		// return;
 		const clientLines = args.lines || [];
 
 		const localBreakpoints = clientLines.map(line => { // For sending to C-SPY
@@ -263,35 +271,35 @@ export class CSpyDebugSession extends LoggingDebugSession {
 		this.sendResponse(response);
 	}
 
-	protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
-		const newLocal = this;  // TODO: handle args
-		this._cSpyRClient.sendCommandWithCallback("stackTrace", "", function (cspyResponse) {
-			const stk: StackFrame[] = [];
-			const frames: string[] = cspyResponse;
-			for (let i = 0; i < frames.length; i++) {
-				const frameData = frames[i].split("|");
-				const source = new Source(basename(frameData[1]), frameData[1]);
-				stk.push(new StackFrame(i, frameData[0], source, Number(frameData[2]), Number(frameData[3])));
+	protected async stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments) {
+		console.log("StackTrace");
+		const contextInfos = await this._cspyContexts.service.getStack(this.currentInspectionContext, 0, -1);
+		console.log(contextInfos);
+
+		this.contextReferences = contextInfos.map(contextInfo => contextInfo.context);
+
+		const frames = contextInfos.map((contextInfo, i) => {
+			if (contextInfo.sourceRanges.length > 0) {
+				const filename = contextInfo.sourceRanges[0].filename;
+				return new StackFrame(
+					i, contextInfo.functionName, new Source(basename(filename), filename), contextInfo.sourceRanges[0].first.line, contextInfo.sourceRanges[0].first.col
+				);
+			} else {
+				return new StackFrame(
+					i, contextInfo.functionName // TODO: maybe add a Source that points to memory or disasm window
+				);
 			}
-			response.body = {
-				stackFrames: stk,
-				totalFrames: stk.length
-			}
-			newLocal.sendResponse(response);
 		});
-		// also update memory and disasm whenever stacktrace is updated
-		this._cSpyRClient.sendCommandWithCallback("memory", "", (cspyResponse) => {
-			this.sendEvent({
-				event: "memory",
-				body: cspyResponse,
-				seq: this._eventSeq++,
-				type: "event",
-			});
-		});
+		response.body = {
+			stackFrames: frames,
+			totalFrames: frames.length,
+		}
+		this.sendResponse(response);
 		this.performDisassemblyEvent();
 	}
 
 	protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments): void {
+		console.log("Scopes");
 		const frameReference = args.frameId;
 		const scopes = new Array<Scope>();
 		scopes.push(new Scope("Local", this._variableHandles.create(new ScopeReference("local", frameReference)), false));
@@ -304,45 +312,43 @@ export class CSpyDebugSession extends LoggingDebugSession {
 		this.sendResponse(response);
 	}
 
-	protected variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments): void {
+	protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments): void {
+		console.log("Variables");
 		const scopeRef = this._variableHandles.get(args.variablesReference);
+		const context = this.contextReferences[scopeRef.frameReference];
 
-		const newLocal = this;
-		this._cSpyRClient.sendCommandWithCallback("variables", scopeRef.frameReference, function(cspyResponse) {
-			const variables: DebugProtocol.Variable[] = [];
+		const variables: DebugProtocol.Variable[] = [];
 
-			const localVars = cspyResponse["locals"];
-			const staticVars = cspyResponse["statics"];
-			const registerVars = cspyResponse["registers"];
+		const staticVars = [];
+		const registerVars = [];
 
-			let requestedVars = [];
-			switch(scopeRef.name) {
-				case "local":
-					requestedVars = localVars;
-					break;
-				case "static":
-					requestedVars = staticVars;
-					break;
-				case "registers":
-					requestedVars = registerVars;
-					break;
-			}
+		let requestedVars: Symbol[] = [];
+		switch(scopeRef.name) {
+			case "local":
+				requestedVars = await this._cspyContexts.service.getLocals(context);
+				break;
+			case "static":
+				requestedVars = staticVars;
+				break;
+			case "registers":
+				requestedVars = registerVars;
+				break;
+		}
 
-			for (let i = 0; i < requestedVars.length; i++) {
-				const variable = requestedVars[i];
-				variables.push({
-					name: variable["name"],
-					type: variable["type"],
-					value: variable["value"],
-					variablesReference: 0
-				});
-			}
+		for (let i = 0; i < requestedVars.length; i++) {
+			const variable = requestedVars[i];
+			variables.push({
+				name: variable.name,
+				type: "", // technically, we should only porivde this if the client has specified that it supports it
+				value: "", // (await this._cspyDebugger.service.evalExpression(context, variable.name, [], ExprFormat.kNoCustom, false)).value,
+				variablesReference: 0
+			});
+		}
 
-			response.body = {
-				variables: variables
-			};
-			newLocal.sendResponse(response);
-		});
+		response.body = {
+			variables: variables
+		};
+		this.sendResponse(response);
 	}
 
 	protected setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments) {
@@ -373,7 +379,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
 
 	protected evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments): void {
+		console.log("Eval");
 		const newLocal = this;
+		// return this._cspyDebugger.service.evalExpression();
 		const requestBody = {
 			expression: args.expression,
 			frame: args.frameId
@@ -406,8 +414,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
 				// ideally, the stop reason should be determined from C-SPY, but this is good enough
 				newLocal.sendEvent(new StoppedEvent(stopReason, CSpyDebugSession.THREAD_ID));
 			} else {
-				await newLocal.endSession();
 				newLocal.sendEvent(new TerminatedEvent());
+				await newLocal.endSession();
 			}
 		}
 	}
@@ -425,6 +433,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
 	private async endSession() {
 		console.log("Killing session");
+		this._cspyContexts.close();
 		this._cspyBreakpoints.close();
 		this._cspyDebugger.close();
 		await this._serviceManager.stop();
