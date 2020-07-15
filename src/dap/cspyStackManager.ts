@@ -34,7 +34,6 @@ export class CSpyStackManager {
 
     async fetchStackFrames(): Promise<StackFrame[]> {
         const contextInfos = await this.contextManager.getStack(this.currentInspectionContext, 0, -1);
-        console.log(contextInfos);
 
         this.contextReferences = contextInfos.map(contextInfo => contextInfo.context);
 
@@ -80,6 +79,7 @@ export class CSpyStackManager {
 
         return requestedVars.map(variable => {
             return {
+                // TODO: get value (and ideally type) from cspyserver (use a listwindow service?)
                 name: variable.name,
                 type: "", // technically, we should only provide this if the client has specified that it supports it
                 value: "", // (await this._cspyDebugger.service.evalExpression(context, variable.name, [], ExprFormat.kNoCustom, false)).value,
@@ -90,6 +90,7 @@ export class CSpyStackManager {
 
     async setVariable(scopeReference: number): Promise<string> {
         // const scope = this.scopeHandles.get(scopeReference);
+        // TODO: implement
         return Promise.reject("Not implemented");
     }
 

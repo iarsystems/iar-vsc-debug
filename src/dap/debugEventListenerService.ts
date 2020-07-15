@@ -2,6 +2,7 @@ import * as Thrift from "thrift";
 import * as DebugEventListener from "./thrift/bindings/DebugEventListener";
 import { DebugEvent, LogEvent, InspectionContextChangedEvent, BaseContextChangedEvent, DkNotifyConstant } from "./thrift/bindings/cspy_types";
 import * as Q from "q";
+import { Server } from "net";
 
 type DebugEventCallback = (event: DebugEvent) => any;
 
@@ -10,7 +11,7 @@ type DebugEventCallback = (event: DebugEvent) => any;
  * and provides ways for others to listen for specific events
  */
 export class DebugEventListenerHandler {
-    private readonly debugEventCallbacks: Record<DkNotifyConstant, DebugEventCallback[]>;
+    private readonly debugEventCallbacks: Map<DkNotifyConstant, DebugEventCallback[]> = new Map();
 
 
 	/**
@@ -30,6 +31,9 @@ export class DebugEventListenerHandler {
 	 */
     postDebugEvent(event: DebugEvent): Q.Promise<void> {
         console.log(`DEBUGEVENT (${event.note}): ${event.descr}`, event.params);
+        if (this.debugEventCallbacks[event.note]) {
+            this.debugEventCallbacks[event.note].forEach(callback => callback(event));
+        }
         return Q.resolve();
     }
 
@@ -47,7 +51,6 @@ export class DebugEventListenerHandler {
 	 * Triggered on kDkInspectionContextChanged.
 	 */
     postInspectionContextChangedEvent(event: InspectionContextChangedEvent): Q.Promise<void> {
-        console.log("ASDF");
         console.log("INSPECTIONCONTEXT", event.context);
         return Q.resolve();
     }
@@ -64,13 +67,15 @@ export class DebugEventListenerHandler {
 }
 
 export namespace DebugEventListenerService {
-    export function create(port: number) {
+    export function create(port: number): [Server, DebugEventListenerHandler] {
         const serverOpt: Thrift.ServerOptions<DebugEventListener.Processor, DebugEventListenerHandler> = {
             transport: Thrift.TBufferedTransport,
             protocol: Thrift.TBinaryProtocol,
         };
-        return Thrift.createServer(DebugEventListener, new DebugEventListenerHandler(), serverOpt)
+        const handler = new DebugEventListenerHandler();
+        const server = Thrift.createServer(DebugEventListener, handler, serverOpt)
             .on('error', console.log)
             .listen(port);
+        return [server, handler];
     }
 }

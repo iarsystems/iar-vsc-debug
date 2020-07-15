@@ -6,21 +6,25 @@ import * as Debugger from "./thrift/bindings/Debugger";
 import * as Breakpoints from "./thrift/bindings/Breakpoints";
 import * as ContextManager from "./thrift/bindings/ContextManager";
 import { ThriftClient } from "./thrift/thriftclient";
-import { SessionConfiguration, DEBUGEVENT_SERVICE, DebugSettings, DEBUGGER_SERVICE, CONTEXT_MANAGER_SERVICE } from "./thrift/bindings/cspy_types";
+import { SessionConfiguration, DEBUGEVENT_SERVICE, DebugSettings, DEBUGGER_SERVICE, CONTEXT_MANAGER_SERVICE, DkNotifyConstant } from "./thrift/bindings/cspy_types";
 import { StackSettings, Symbol, ContextRef, ContextType, ExprFormat } from "./thrift/bindings/shared_types";
-import { DebugEventListenerService } from "./debugEventListenerService";
+import { DebugEventListenerService, DebugEventListenerHandler } from "./debugEventListenerService";
 import { ServiceLocation, Protocol, Transport } from "./thrift/bindings/ServiceRegistry_types";
 import { BREAKPOINTS_SERVICE } from "./thrift/bindings/breakpoints_types";
 import { CSpyStackManager } from "./cspyStackManager";
+import { MockConfigurationResolver } from "./mockConfigurationResolver";
+import { Server } from "net";
 const { Subject } = require('await-notify')
+
 
 /**
  * This interface describes the cspy-debug specific launch attributes
- * (which are not part of the Debug Adapter Protocol).
- * The schema for these attributes lives in the package.json of the this extension.
- * The interface should always match this schema.
+ * (which are not part of the Debug Adapter Protocol), which the DAP client
+ * should provide at launch (e.g. via a `launch.json` file).
+ * The schema for these attributes lives in the package.json of this extension,
+ * and this interface should always match that schema.
  */
-interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
+export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
     /** An absolute path to the "program" to debug. */
     program: string;
     /** Automatically stop target after launch. If not specified, target does not stop. */
@@ -32,7 +36,6 @@ interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
     /** Options to pass on to the debugger */
     options: string[];
 }
-
 
 /**
  * Manages a debugging session between VS Code and C-SPY (via CSpyServer2)
@@ -49,6 +52,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
     private cspyDebugger: ThriftClient<Debugger.Client>;
     private cspyBreakpoints: ThriftClient<Breakpoints.Client>;
     private cspyContexts: ThriftClient<ContextManager.Client>;
+
+    private cspyEventHandler: DebugEventListenerHandler;
+    private cspyEventServer: Server; // keep a reference to this so we can close it at the end of the session
 
     private stackManager: CSpyStackManager;
 
@@ -98,12 +104,14 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.configurationDone.notify();
     }
 
-    protected async launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments) {
+    protected async launchRequest(response: DebugProtocol.LaunchResponse, args: CSpyLaunchRequestArguments) {
         // make sure to 'Stop' the buffered logging if 'trace' is not set
         logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false);
 
+        // initialize all the services we need
         this.serviceManager = await ThriftServiceManager.fromWorkbench(args.workbenchPath);
-        DebugEventListenerService.create(11112); // TODO: how to decide on a port number? should be able to run multiple simultaneous sessions...
+        // TODO: how to decide on a port number? should be able to run multiple simultaneous sessions...
+        [this.cspyEventServer, this.cspyEventHandler] = DebugEventListenerService.create(11112);
         await this.serviceManager.registerService(DEBUGEVENT_SERVICE, new ServiceLocation({ host: "localhost", port: 11112, protocol: Protocol.Binary, transport: Transport.Socket }));
 
         this.cspyDebugger = await this.serviceManager.findService(DEBUGGER_SERVICE, Debugger);
@@ -113,36 +121,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.cspyContexts = await this.serviceManager.findService(CONTEXT_MANAGER_SERVICE, ContextManager);
         this.stackManager = new CSpyStackManager(this.cspyContexts.service);
 
-        // TODO: find some way to generate this
-        const config: SessionConfiguration = new SessionConfiguration({
-            attachToTarget: false,
-            driverName: "armsim2",
-            processorName: "armproc",
-            type: "simulator",
-            executable: args.program,
-            configName: "Debug",
-            leaveRunning: true,
-            enableCRun: false,
-            options: args.options,
-            plugins: ["armbat"],
-            projectDir: Path.resolve(Path.join(Path.parse(args.program).dir, "../../")),
-            projectName: "ewproj.ewp",
-            setupMacros: [],
-            target: "arm",
-            toolkitDir: Path.join(args.workbenchPath, "arm"),
-            stackSettings: new StackSettings({
-                fillEnabled: false,
-                displayLimit: 50,
-                limitDisplay: false,
-                overflowWarningsEnabled: true,
-                spWarningsEnabled: true,
-                triggerName: "main",
-                useTrigger: true,
-                warnLogOnly: true,
-                warningThreshold: 90,
-            }),
-        });
         try {
+            // These are the default settings in the eclipse plugin
             await this.cspyDebugger.service.setDebugSettings(new DebugSettings({
                 alwaysPickAllInstances: false,
                 enterFunctionsWithoutSource: true,
@@ -151,7 +131,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 staticWatchUpdateInterval: 1000,
                 globalIntegerFormat: 2,
             }));
-            await this.cspyDebugger.service.startSession(config);
+
+            const sessionConfig = await new MockConfigurationResolver().resolveLaunchArguments(args);
+            await this.cspyDebugger.service.startSession(sessionConfig);
             await this.cspyDebugger.service.loadModule(args.program);
             this.sendEvent(new OutputEvent(`Loaded module '${args.program}'\n`));
         } catch (e) {
@@ -170,12 +152,21 @@ export class CSpyDebugSession extends LoggingDebugSession {
         console.log("Running to main...");
         await this.cspyDebugger.service.runToULE("main", false);
 
+        this.addHandlers();
 
         if (!!args.stopOnEntry) {
             this.sendEvent(new StoppedEvent("entry", CSpyDebugSession.THREAD_ID));
         } else {
             await this.cspyDebugger.service.go();
         }
+    }
+
+    private addHandlers() {
+        this.cspyEventHandler.observeDebugEvent(DkNotifyConstant.kDkTargetStopped, (event) => {
+            // TODO: figure out if it's feasible to give a precise reason for stopping
+            console.log("Target stopped, sending StoppedEvent");
+            this.sendEvent(new StoppedEvent("breakpoint", CSpyDebugSession.THREAD_ID));
+        });
     }
 
     protected async terminateRequest(response: DebugProtocol.TerminateResponse, args: DebugProtocol.TerminateArguments) {
@@ -188,27 +179,34 @@ export class CSpyDebugSession extends LoggingDebugSession {
         await this.cspyDebugger.service.stop();
         this.sendResponse(response);
     }
-    protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
+    protected async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments) {
+        await this.cspyDebugger.service.go();
         this.sendResponse(response);
     }
 
-    protected restartRequest(response: DebugProtocol.RestartResponse, args: DebugProtocol.RestartArguments): void {
+    protected async restartRequest(response: DebugProtocol.RestartResponse, args: DebugProtocol.RestartArguments) {
+        await this.cspyDebugger.service.reset();
+        await this.cspyDebugger.service.runToULE("main", false);
+        // TODO: should we call 'go' here? Maybe the launch argument 'stopOnEntry' should be stored, so we have it here
         this.sendResponse(response);
     }
 
-    protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
+    protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments) {
+        this.cspyDebugger.service.stepOver(true);
         this.sendResponse(response);
     }
 
-    protected stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments): void {
+    protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments) {
+        this.cspyDebugger.service.step(true);
         this.sendResponse(response);
     }
 
-    protected stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments): void {
+    protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments) {
+        this.cspyDebugger.service.stepOut();
         this.sendResponse(response);
     }
 
-    protected setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): void {
+    protected setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments) {
         console.log("SetBPs");
         // TODO: implement
         // const clientLines = args.lines || [];
@@ -345,6 +343,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.cspyBreakpoints.close();
         this.cspyDebugger.close();
         await this.serviceManager.stop();
+        this.cspyEventServer.close();
     }
 }
 DebugSession.run(CSpyDebugSession);
