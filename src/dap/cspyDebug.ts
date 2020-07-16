@@ -67,6 +67,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
     private clientLinesStartAt1 = false;
     private clientColumnsStartAt1 = false;
 
+    private expectedStoppingReason: "entry" | "breakpoint" | "step" | "pause" = "entry";
+
 	/**
 	 * Creates a new debug adapter that is used for one debug session.
 	 */
@@ -170,9 +172,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     private addHandlers() {
         this.cspyEventHandler.observeDebugEvent(DkNotifyConstant.kDkTargetStopped, (event) => {
-            // TODO: figure out if it's feasible to give a precise reason for stopping
+            // TODO: figure out if it's feasible to get a precise reason for stopping from C-SPY
             console.log("Target stopped, sending StoppedEvent");
-            this.sendEvent(new StoppedEvent("breakpoint", CSpyDebugSession.THREAD_ID));
+            this.sendEvent(new StoppedEvent(this.expectedStoppingReason, CSpyDebugSession.THREAD_ID));
         });
     }
 
@@ -183,32 +185,38 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     protected async pauseRequest(response: DebugProtocol.PauseResponse) {
-        await this.cspyDebugger.service.stop();
+        this.expectedStoppingReason = "pause";
+        this.cspyDebugger.service.stop();
         this.sendResponse(response);
     }
     protected async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments) {
-        await this.cspyDebugger.service.go();
+        this.expectedStoppingReason = "breakpoint";
+        this.cspyDebugger.service.go();
         this.sendResponse(response);
     }
 
     protected async restartRequest(response: DebugProtocol.RestartResponse, args: DebugProtocol.RestartArguments) {
+        this.expectedStoppingReason = "entry";
         await this.cspyDebugger.service.reset();
-        await this.cspyDebugger.service.runToULE("main", false);
+        this.cspyDebugger.service.runToULE("main", false);
         // TODO: should we call 'go' here? Maybe the launch argument 'stopOnEntry' should be stored, so we have it here
         this.sendResponse(response);
     }
 
     protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments) {
+        this.expectedStoppingReason = "step";
         this.cspyDebugger.service.stepOver(true);
         this.sendResponse(response);
     }
 
     protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments) {
+        this.expectedStoppingReason = "step";
         this.cspyDebugger.service.step(true);
         this.sendResponse(response);
     }
 
     protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments) {
+        this.expectedStoppingReason = "step";
         this.cspyDebugger.service.stepOut();
         this.sendResponse(response);
     }
