@@ -205,13 +205,21 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments) {
         this.expectedStoppingReason = "step";
-        this.cspyDebugger.service.stepOver(true);
+        if (args.granularity === "instruction") {
+            this.cspyDebugger.service.instructionStepOver();
+        } else {
+            this.cspyDebugger.service.stepOver(true);
+        }
         this.sendResponse(response);
     }
 
     protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments) {
         this.expectedStoppingReason = "step";
-        this.cspyDebugger.service.step(true);
+        if (args.granularity === "instruction") {
+            this.cspyDebugger.service.instructionStep();
+        } else {
+            this.cspyDebugger.service.step(true);
+        }
         this.sendResponse(response);
     }
 
@@ -316,26 +324,15 @@ export class CSpyDebugSession extends LoggingDebugSession {
     protected customRequest(command: string, response: DebugProtocol.Response, _: any): void {
         switch (command) {
             case "istepOver":
-                // TODO: implement
+                this.expectedStoppingReason = "step";
+                this.cspyDebugger.service.instructionStepOver();
                 break;
             case "istepInto":
-                // TODO: implement
+                this.expectedStoppingReason = "step";
+                this.cspyDebugger.service.instructionStep();
                 break;
         }
-    }
-
-    // Generic callback for events like run/step etc., that should send back a StoppedEvent on return
-    private stopEventCallback(stopReason: "entry" | "step" | "breakpoint" | "pause") {
-        const newLocal = this;
-        return async function (debugeeTerminated: boolean) {
-            if (!debugeeTerminated) {
-                // ideally, the stop reason should be determined from C-SPY, but this is good enough
-                newLocal.sendEvent(new StoppedEvent(stopReason, CSpyDebugSession.THREAD_ID));
-            } else {
-                newLocal.sendEvent(new TerminatedEvent());
-                await newLocal.endSession();
-            }
-        }
+        this.sendResponse(response);
     }
 
     private performDisassemblyEvent() {
