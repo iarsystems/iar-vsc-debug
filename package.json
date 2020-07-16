@@ -134,10 +134,7 @@
 							"workbenchPath": {
 								"type": "string",
 								"description": "Path to the Embedded Workbench installation to use.",
-								"default": {
-									"windows": "c:/Program Files (x86)/IAR Systems/Embedded Workbench/",
-									"linux": "/usr/share/IARSystems/Embedded Workbench/"
-								}
+								"default": "${command:iar-settings.workbench}"
 							},
 							"options": {
 								"type": "array",
