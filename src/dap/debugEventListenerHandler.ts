@@ -1,8 +1,5 @@
-import * as Thrift from "thrift";
-import * as DebugEventListener from "./thrift/bindings/DebugEventListener";
 import { DebugEvent, LogEvent, InspectionContextChangedEvent, BaseContextChangedEvent, DkNotifyConstant } from "./thrift/bindings/cspy_types";
 import * as Q from "q";
-import { Server } from "net";
 
 type DebugEventCallback = (event: DebugEvent) => any;
 
@@ -64,18 +61,4 @@ export class DebugEventListenerHandler {
         return Q.resolve();
     }
 
-}
-
-export namespace DebugEventListenerService {
-    export function create(port: number): [Server, DebugEventListenerHandler] {
-        const serverOpt: Thrift.ServerOptions<DebugEventListener.Processor, DebugEventListenerHandler> = {
-            transport: Thrift.TBufferedTransport,
-            protocol: Thrift.TBinaryProtocol,
-        };
-        const handler = new DebugEventListenerHandler();
-        const server = Thrift.createServer(DebugEventListener, handler, serverOpt)
-            .on('error', console.log)
-            .listen(port);
-        return [server, handler];
-    }
 }

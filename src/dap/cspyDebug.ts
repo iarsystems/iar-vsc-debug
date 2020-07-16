@@ -4,9 +4,10 @@ import { ThriftServiceManager } from "./thrift/thriftservicemanager";
 import * as Debugger from "./thrift/bindings/Debugger";
 import * as Breakpoints from "./thrift/bindings/Breakpoints";
 import * as ContextManager from "./thrift/bindings/ContextManager";
+import * as DebugEventListener from "./thrift/bindings/DebugEventListener";
 import { ThriftClient } from "./thrift/thriftclient";
 import { DEBUGEVENT_SERVICE, DebugSettings, DEBUGGER_SERVICE, CONTEXT_MANAGER_SERVICE, DkNotifyConstant } from "./thrift/bindings/cspy_types";
-import { DebugEventListenerService, DebugEventListenerHandler } from "./debugEventListenerService";
+import { DebugEventListenerHandler } from "./debugEventListenerHandler";
 import { ServiceLocation, Protocol, Transport } from "./thrift/bindings/ServiceRegistry_types";
 import { BREAKPOINTS_SERVICE } from "./thrift/bindings/breakpoints_types";
 import { CSpyContextManager } from "./cspyContextManager";
@@ -114,9 +115,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
         // initialize all the services we need
         this.serviceManager = await ThriftServiceManager.fromWorkbench(args.workbenchPath);
-        // TODO: how to decide on a port number? should be able to run multiple simultaneous sessions...
-        [this.cspyEventServer, this.cspyEventHandler] = DebugEventListenerService.create(11112);
-        await this.serviceManager.registerService(DEBUGEVENT_SERVICE, new ServiceLocation({ host: "localhost", port: 11112, protocol: Protocol.Binary, transport: Transport.Socket }));
+
+        this.cspyEventHandler = new DebugEventListenerHandler();
+        await this.serviceManager.startService(DEBUGEVENT_SERVICE, DebugEventListener, this.cspyEventHandler);
 
         this.cspyDebugger = await this.serviceManager.findService(DEBUGGER_SERVICE, Debugger);
         this.sendEvent(new OutputEvent("Using C-SPY version: " + await this.cspyDebugger.service.getVersionString() + "\n"));
@@ -128,19 +129,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.stackManager = new CSpyContextManager(this.cspyContexts.service, this.cspyDebugger.service);
 
         try {
-            // These are the default settings in the eclipse plugin
-            await this.cspyDebugger.service.setDebugSettings(new DebugSettings({
-                alwaysPickAllInstances: false,
-                enterFunctionsWithoutSource: true,
-                stlDepth: 10,
-                memoryWindowUpdateInterval: 1000,
-                staticWatchUpdateInterval: 1000,
-                globalIntegerFormat: 2,
-            }));
-
             const sessionConfig = await new MockConfigurationResolver().resolveLaunchArguments(args);
             await this.cspyDebugger.service.startSession(sessionConfig);
-            // TODO: consider reporting progress
+            // TODO: consider reporting progress using a fake frontend
             this.sendEvent(new OutputEvent("Loading module...\n"));
             await this.cspyDebugger.service.loadModule(args.program);
             this.sendEvent(new OutputEvent(`Loaded module '${args.program}'\n`));
@@ -163,7 +154,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         // tell cspy to start the program
         await this.cspyDebugger.service.runToULE("main", false);
 
-        this.addHandlers();
+        this.addCSpyEventHandlers();
 
         if (args.stopOnEntry) {
             this.sendEvent(new StoppedEvent("entry", CSpyDebugSession.THREAD_ID));
@@ -172,7 +163,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         }
     }
 
-    private addHandlers() {
+    private addCSpyEventHandlers() {
         this.cspyEventHandler.observeDebugEvent(DkNotifyConstant.kDkTargetStopped, (event) => {
             // TODO: figure out if it's feasible to get a precise reason for stopping from C-SPY
             console.log("Target stopped, sending StoppedEvent");
