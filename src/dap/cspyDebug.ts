@@ -9,7 +9,7 @@ import { DEBUGEVENT_SERVICE, DebugSettings, DEBUGGER_SERVICE, CONTEXT_MANAGER_SE
 import { DebugEventListenerService, DebugEventListenerHandler } from "./debugEventListenerService";
 import { ServiceLocation, Protocol, Transport } from "./thrift/bindings/ServiceRegistry_types";
 import { BREAKPOINTS_SERVICE } from "./thrift/bindings/breakpoints_types";
-import { CSpyStackManager } from "./cspyStackManager";
+import { CSpyContextManager } from "./cspyContextManager";
 import { MockConfigurationResolver } from "./mockConfigurationResolver";
 import { Server } from "net";
 import { CSpyBreakpointManager } from "./cspyBreakpointManager";
@@ -55,7 +55,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     private cspyEventHandler: DebugEventListenerHandler;
     private cspyEventServer: Server; // keep a reference to this so we can close it at the end of the session
 
-    private stackManager: CSpyStackManager;
+    private stackManager: CSpyContextManager;
     private breakpointManager: CSpyBreakpointManager;
 
     // Sequence number for custom events
@@ -125,7 +125,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.breakpointManager = new CSpyBreakpointManager(this.cspyBreakpoints.service, this.clientLinesStartAt1, this.clientColumnsStartAt1);
 
         this.cspyContexts = await this.serviceManager.findService(CONTEXT_MANAGER_SERVICE, ContextManager);
-        this.stackManager = new CSpyStackManager(this.cspyContexts.service);
+        this.stackManager = new CSpyContextManager(this.cspyContexts.service, this.cspyDebugger.service);
 
         try {
             // These are the default settings in the eclipse plugin
@@ -140,9 +140,12 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
             const sessionConfig = await new MockConfigurationResolver().resolveLaunchArguments(args);
             await this.cspyDebugger.service.startSession(sessionConfig);
+            // TODO: consider reporting progress
+            this.sendEvent(new OutputEvent("Loading module...\n"));
             await this.cspyDebugger.service.loadModule(args.program);
             this.sendEvent(new OutputEvent(`Loaded module '${args.program}'\n`));
         } catch (e) {
+            // TODO: provide clearer error messages for common errors (e.g. if module does not exist)
             response.success = false;
             response.message = e.toString();
             this.sendResponse(response);
@@ -158,7 +161,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.sendResponse(response);
 
         // tell cspy to start the program
-        console.log("Running to main...");
         await this.cspyDebugger.service.runToULE("main", false);
 
         this.addHandlers();
@@ -304,7 +306,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     protected async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments) {
         try {
-            const newVal = await this.stackManager.setVariable(args.variablesReference);
+            const newVal = await this.stackManager.setVariable(args.variablesReference, args.name, args.value);
             response.body = {
                 value: newVal,
             };
@@ -316,9 +318,23 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
 
-    protected evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments): void {
+    protected async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments) {
         console.log("Eval");
-        // TODO: implement
+        try {
+            const val = await this.stackManager.evalExpression(args.frameId || 0, args.expression);
+            // TODO: expandable variables using subexpressions
+            response.body = {
+                result: val.value,
+                type: val.type,
+                memoryReference: val.hasLocation ? val.location.address.toString() : undefined,
+                variablesReference: 0,
+            };
+        } catch (e) {
+            console.log(e);
+            response.success = false;
+            response.message = e.toString();
+        }
+        this.sendResponse(response);
     }
 
     protected customRequest(command: string, response: DebugProtocol.Response, _: any): void {
