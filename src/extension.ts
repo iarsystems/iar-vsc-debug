@@ -24,10 +24,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     // register commands to be called when pressing instruction step buttons
     context.subscriptions.push(vscode.commands.registerCommand("iar.stepOverInstruction", () => {
-        vscode.debug.activeDebugSession!!.customRequest("istepOver"); //TODO: avoid coercing activeDebugSession
+        vscode.debug.activeDebugSession!!.customRequest("next", {granularity: "instruction"}); //TODO: avoid coercing activeDebugSession
     }));
     context.subscriptions.push(vscode.commands.registerCommand("iar.stepIntoInstruction", () => {
-        vscode.debug.activeDebugSession!!.customRequest("istepInto"); //TODO: avoid coercing activeDebugSession
+        vscode.debug.activeDebugSession!!.customRequest("stepIn", {granularity: "instruction"}); //TODO: avoid coercing activeDebugSession
     }));
 
     let memoryDocumentProvider = new MemoryDocumentProvider();

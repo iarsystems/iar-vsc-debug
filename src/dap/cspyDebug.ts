@@ -165,7 +165,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
         this.addHandlers();
 
-        if (!!args.stopOnEntry) {
+        if (args.stopOnEntry) {
             this.sendEvent(new StoppedEvent("entry", CSpyDebugSession.THREAD_ID));
         } else {
             await this.cspyDebugger.service.go();
@@ -333,20 +333,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
             console.log(e);
             response.success = false;
             response.message = e.toString();
-        }
-        this.sendResponse(response);
-    }
-
-    protected customRequest(command: string, response: DebugProtocol.Response, _: any): void {
-        switch (command) {
-            case "istepOver":
-                this.expectedStoppingReason = "step";
-                this.cspyDebugger.service.instructionStepOver();
-                break;
-            case "istepInto":
-                this.expectedStoppingReason = "step";
-                this.cspyDebugger.service.instructionStep();
-                break;
         }
         this.sendResponse(response);
     }
