@@ -119,6 +119,10 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
         this.cspyEventHandler = new DebugEventListenerHandler();
         await this.serviceManager.startService(DEBUGEVENT_SERVICE, DebugEventListener, this.cspyEventHandler);
+        this.cspyEventHandler.observeLogEvents(event => {
+            if (!event.text.endsWith("\n")) { event.text += "\n"; }
+            this.sendEvent(new OutputEvent(event.text));
+        });
 
         this.cspyDebugger = await this.serviceManager.findService(DEBUGGER_SERVICE, Debugger);
         this.sendEvent(new OutputEvent("Using C-SPY version: " + await this.cspyDebugger.service.getVersionString() + "\n"));
@@ -133,9 +137,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
             const sessionConfig = await new XclConfigurationResolver().resolveLaunchArguments(args);
             await this.cspyDebugger.service.startSession(sessionConfig);
             // TODO: consider reporting progress using a fake frontend
-            this.sendEvent(new OutputEvent("Loading module...\n"));
             await this.cspyDebugger.service.loadModule(args.program);
-            this.sendEvent(new OutputEvent(`Loaded module '${args.program}'\n`));
+            this.sendEvent(new OutputEvent("Session started"));
         } catch (e) {
             response.success = false;
             response.message = e.toString();
@@ -164,7 +167,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     private addCSpyEventHandlers() {
-        this.cspyEventHandler.observeDebugEvent(DkNotifyConstant.kDkTargetStopped, (event) => {
+        this.cspyEventHandler.observeDebugEvents(DkNotifyConstant.kDkTargetStopped, (event) => {
             // TODO: figure out if it's feasible to get a precise reason for stopping from C-SPY
             console.log("Target stopped, sending StoppedEvent");
             this.sendEvent(new StoppedEvent(this.expectedStoppingReason, CSpyDebugSession.THREAD_ID));
