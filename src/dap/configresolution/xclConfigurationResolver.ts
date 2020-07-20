@@ -1,7 +1,6 @@
 'use strict';
 
 import { CSpyLaunchRequestArguments } from "../cspyDebug";
-import { SessionConfiguration } from "../thrift/bindings/cspy_types";
 import { BaseConfigurationResolver, PartialSessionConfiguration } from "./baseConfigurationResolver";
 import * as Path from "path";
 import * as Fs from "fs";
@@ -14,19 +13,12 @@ import * as Fs from "fs";
 export class XclConfigurationResolver extends BaseConfigurationResolver {
 
     resolveLaunchArgumentsPartial(args: CSpyLaunchRequestArguments): Promise<PartialSessionConfiguration> {
-        ///
-        /// This can be worked on _a lot_ to support every possible command line argument.
-        /// See p.52 here: http://ftp.iar.se/WWWfiles/arm/webic/doc/EWARM_DebuggingGuide.ENU.pdf
-        ///
 
         const settingsFolder = Path.join(Path.parse(args.projectPath).dir, "settings");
         const projectName = Path.parse(args.projectPath).name;
 
         const argsFile = Path.join(settingsFolder, `${projectName}.${args.projectConfiguration}.general.xcl`);
-        const argsLines = Fs.readFileSync(argsFile).toString()
-                                .split(/\r\n|\n/)
-                                .map(this.stripQuotes)
-                                .filter(line => line !== "");
+        const argsLines = this.readLinesFromXclFile(argsFile);
         const processorLib = argsLines[0];
         const driverLib = argsLines[1];
 
@@ -52,10 +44,7 @@ export class XclConfigurationResolver extends BaseConfigurationResolver {
         }
 
         const driverFile = Path.join(settingsFolder, `${projectName}.${args.projectConfiguration}.driver.xcl`);
-        const driverLines = Fs.readFileSync(driverFile).toString()
-                                .split(/\r\n|\n/)
-                                .map(this.stripQuotes)
-                                .filter(line => line !== "");
+        const driverLines = this.readLinesFromXclFile(driverFile);
 
         const config: PartialSessionConfiguration = {
             attachToTarget: attachToTarget,
@@ -66,9 +55,16 @@ export class XclConfigurationResolver extends BaseConfigurationResolver {
             plugins: plugins,
             setupMacros: macros,
             target: Path.basename(Path.resolve(Path.join(Path.dirname(processorLib), "../"))),
-		};
+        };
 
-		return Promise.resolve(config);
+        return Promise.resolve(config);
+    }
+
+    private readLinesFromXclFile(xclPath: string): string[] {
+        return Fs.readFileSync(xclPath).toString()
+                    .split(/\r\n|\n/)
+                    .map(this.stripQuotes)
+                    .filter(line => line !== "");
     }
 
     private stripQuotes(str: string): string {

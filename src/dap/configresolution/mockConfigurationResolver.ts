@@ -12,7 +12,7 @@ import { BaseConfigurationResolver, PartialSessionConfiguration } from "./baseCo
  */
 export class MockConfigurationResolver extends BaseConfigurationResolver {
 
-	resolveLaunchArgumentsPartial(args: CSpyLaunchRequestArguments): Promise<PartialSessionConfiguration> {
+    resolveLaunchArgumentsPartial(args: CSpyLaunchRequestArguments): Promise<PartialSessionConfiguration> {
         const config: PartialSessionConfiguration = {
             attachToTarget: false,
             driverName: "armsim2",
@@ -22,9 +22,9 @@ export class MockConfigurationResolver extends BaseConfigurationResolver {
             plugins: ["armbat"],
             setupMacros: [],
             target: "arm",
-		};
+        };
 
-		return Promise.resolve(config);
-	}
+        return Promise.resolve(config);
+    }
 
 }

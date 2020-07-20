@@ -1,17 +1,15 @@
 import { DebugProtocol } from "vscode-debugprotocol";
-import { LoggingDebugSession, Handles, StoppedEvent, OutputEvent, TerminatedEvent, InitializedEvent, logger, Logger, Breakpoint, Thread, Source, StackFrame, Scope, DebugSession } from "vscode-debugadapter";
+import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, DebugSession } from "vscode-debugadapter";
 import { ThriftServiceManager } from "./thrift/thriftservicemanager";
 import * as Debugger from "./thrift/bindings/Debugger";
 import * as Breakpoints from "./thrift/bindings/Breakpoints";
 import * as ContextManager from "./thrift/bindings/ContextManager";
 import * as DebugEventListener from "./thrift/bindings/DebugEventListener";
 import { ThriftClient } from "./thrift/thriftclient";
-import { DEBUGEVENT_SERVICE, DebugSettings, DEBUGGER_SERVICE, CONTEXT_MANAGER_SERVICE, DkNotifyConstant } from "./thrift/bindings/cspy_types";
+import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, CONTEXT_MANAGER_SERVICE, DkNotifyConstant } from "./thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
-import { ServiceLocation, Protocol, Transport } from "./thrift/bindings/ServiceRegistry_types";
 import { BREAKPOINTS_SERVICE } from "./thrift/bindings/breakpoints_types";
 import { CSpyContextManager } from "./cspyContextManager";
-import { MockConfigurationResolver } from "./configresolution/mockConfigurationResolver";
 import { Server } from "net";
 import { CSpyBreakpointManager } from "./cspyBreakpointManager";
 import { XclConfigurationResolver } from "./configresolution/xclConfigurationResolver";
@@ -73,9 +71,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     private expectedStoppingReason: "entry" | "breakpoint" | "step" | "pause" = "entry";
 
-	/**
-	 * Creates a new debug adapter that is used for one debug session.
-	 */
+    /**
+     * Creates a new debug adapter that is used for one debug session.
+     */
     public constructor() {
         super();
 
@@ -83,10 +81,10 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.setDebuggerColumnsStartAt1(true);
     }
 
-	/**
-	 * The 'initialize' request is the first request called by the frontend
-	 * to interrogate the features the debug adapter provides.
-	 */
+    /**
+     * The 'initialize' request is the first request called by the frontend
+     * to interrogate the features the debug adapter provides.
+     */
     protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
         // build and return the capabilities of this debug adapter:
         response.body = response.body || {};

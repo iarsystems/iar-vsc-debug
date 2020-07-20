@@ -9,7 +9,7 @@ import { AccessType } from "./thrift/bindings/shared_types";
  * Sets, unsets and verifies C-SPY breakpoints.
  */
 export class CSpyBreakpointManager {
-    // TODO: allow setting single breakpoints, data breakpoints etc, and enable those DAP capabilities
+    // TODO: allow setting logpoints, data breakpoints etc, and enable those DAP capabilities
     // TODO: cspyserver seems to automatically set breakpoints from the .ewp file (i.e. from the EW). We probably don't want that.
 
     constructor(private breakpointService: Breakpoints.Client,
@@ -52,29 +52,6 @@ export class CSpyBreakpointManager {
                 }
             }
         }));
-        // const clientLines = args.lines || [];
-
-        // const localBreakpoints = clientLines.map(line => { // For sending to C-SPY
-        //     return { line: this.convertClientLineToDebugger(line), id: this.bpIndex++ }
-        // });
-        // const cspyRequest = {
-        //     breakpoints: localBreakpoints,
-        //     file: basename(args.source.path!!)
-        // };
-
-        // const newLocal = this;
-        // this.cSpyRClient.sendCommandWithCallback("setBreakpoints", cspyRequest, function (cspyResponse) {
-        //     const actualBreakpoints = localBreakpoints.map(b => { // For sending to DAP client
-        //         const verifiedBps: number[] = cspyResponse;
-        //         return new Breakpoint(verifiedBps.includes(b.id),
-        //             newLocal.convertDebuggerLineToClient(b.line));
-        //     })
-
-        //     response.body = {
-        //         breakpoints: actualBreakpoints
-        //     };
-        //     newLocal.sendResponse(response);
-        // });
     }
 
     private parseUle(ule: string): [string, number, number] {

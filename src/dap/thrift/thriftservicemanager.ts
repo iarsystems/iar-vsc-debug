@@ -24,7 +24,7 @@ export class ThriftServiceManager {
     private readonly activeServers: Server[];
 
     /**
-     *
+     * Create a new service manager from the given service registry.
      * @param registryLocationPath Path to a file containing a valid {@link ServiceLocation} pointing to a service registry
      */
     constructor(private registryLocationPath: fs.PathLike) {
@@ -32,7 +32,7 @@ export class ThriftServiceManager {
 
     /**
      * Stops the service manager and all services created by it.
-     * After this, the manager and its services is to be
+     * After this, the manager and its services are to be
      * considered invalid, and may not be used again.
      */
     public async stop() {
@@ -45,6 +45,8 @@ export class ThriftServiceManager {
     /**
      * Connects to a service with the given name. The service must already be started
      * (or in the process of starting), otherwise this method will reject.
+     * @param serviceId The name to give the service
+     * @param serviceType The type of service to register (usually given as the top-level import of the service module)
      */
     public async findService<T>(serviceId: string, serviceType: Thrift.TClientConstructor<T>): Promise<ThriftClient<T>> {
         const registry = await this.getServiceAt(this.getRegistryLocation(), CSpyServiceRegistry);

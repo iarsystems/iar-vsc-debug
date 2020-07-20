@@ -13,10 +13,10 @@ import { CSpyLaunchRequestArguments } from "../cspyDebug";
  */
 export interface ConfigurationResolver {
 
-	/**
-	 * Creates a valid {@link SessionConfiguration} from a {@link CSpyLaunchRequestArguments}.
-	 * May reject if no resolution is possible.
-	 * @param launchArguments The launch arguments to turn into a SessionConfiguration
-	 */
-	resolveLaunchArguments(launchArguments: CSpyLaunchRequestArguments): Promise<SessionConfiguration>;
+    /**
+     * Creates a valid {@link SessionConfiguration} from a {@link CSpyLaunchRequestArguments}.
+     * May reject if no resolution is possible.
+     * @param launchArguments The launch arguments to turn into a SessionConfiguration
+     */
+    resolveLaunchArguments(launchArguments: CSpyLaunchRequestArguments): Promise<SessionConfiguration>;
 }

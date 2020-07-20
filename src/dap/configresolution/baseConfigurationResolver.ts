@@ -69,9 +69,9 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
                 warnLogOnly: true,
                 warningThreshold: 90,
             }),
-		});
+        });
 
-		return Promise.resolve(config);
+        return Promise.resolve(config);
     }
 
     /**
