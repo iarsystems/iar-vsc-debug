@@ -1,7 +1,7 @@
 'use strict';
 
-import { SessionConfiguration } from "./thrift/bindings/cspy_types";
-import { CSpyLaunchRequestArguments } from "./cspyDebug";
+import { SessionConfiguration } from "../thrift/bindings/cspy_types";
+import { CSpyLaunchRequestArguments } from "../cspyDebug";
 
 
 /**
@@ -12,9 +12,11 @@ import { CSpyLaunchRequestArguments } from "./cspyDebug";
  * and will likely need to change (especially LaunchRequestArguments).
  */
 export interface ConfigurationResolver {
+
 	/**
 	 * Creates a valid {@link SessionConfiguration} from a {@link CSpyLaunchRequestArguments}.
 	 * May reject if no resolution is possible.
+	 * @param launchArguments The launch arguments to turn into a SessionConfiguration
 	 */
 	resolveLaunchArguments(launchArguments: CSpyLaunchRequestArguments): Promise<SessionConfiguration>;
 }

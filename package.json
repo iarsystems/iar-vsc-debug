@@ -113,7 +113,8 @@
 							"program",
 							"sourceFile",
 							"workbenchPath",
-							"options"
+							"projectPath",
+							"projectConfiguration"
 						],
 						"properties": {
 							"program": {
@@ -136,12 +137,15 @@
 								"description": "Path to the Embedded Workbench installation to use.",
 								"default": "${command:iar-settings.workbench}"
 							},
-							"options": {
-								"type": "array",
-								"items": {
-									"type": "string"
-								},
-								"description": "Command-line options to pass to the debugger."
+							"projectPath": {
+								"type": "string",
+								"description": "Path to the .ewp file of the project to debug.",
+								"default": "${command:iar-settings.project-file}"
+							},
+							"projectConfiguration": {
+								"type": "string",
+								"description": "Name of the project configuration to debug (e.g. Debug).",
+								"default": "${command:iar-settings.project-configuration}"
 							}
 						}
 					}

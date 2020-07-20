@@ -11,9 +11,10 @@ import { DebugEventListenerHandler } from "./debugEventListenerHandler";
 import { ServiceLocation, Protocol, Transport } from "./thrift/bindings/ServiceRegistry_types";
 import { BREAKPOINTS_SERVICE } from "./thrift/bindings/breakpoints_types";
 import { CSpyContextManager } from "./cspyContextManager";
-import { MockConfigurationResolver } from "./mockConfigurationResolver";
+import { MockConfigurationResolver } from "./configresolution/mockConfigurationResolver";
 import { Server } from "net";
 import { CSpyBreakpointManager } from "./cspyBreakpointManager";
+import { XclConfigurationResolver } from "./configresolution/xclConfigurationResolver";
 const { Subject } = require('await-notify')
 
 
@@ -33,8 +34,10 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     trace?: boolean;
     /** Path to the Embedded Workbench installation to use */
     workbenchPath: string;
-    /** Options to pass on to the debugger */
-    options: string[];
+    /** Path to the .ewp file of the project to debug */
+    projectPath: string;
+    /** Name of the project configuration to debug (e.g. Debug) */
+    projectConfiguration: string;
 }
 
 /**
@@ -129,14 +132,13 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.stackManager = new CSpyContextManager(this.cspyContexts.service, this.cspyDebugger.service);
 
         try {
-            const sessionConfig = await new MockConfigurationResolver().resolveLaunchArguments(args);
+            const sessionConfig = await new XclConfigurationResolver().resolveLaunchArguments(args);
             await this.cspyDebugger.service.startSession(sessionConfig);
             // TODO: consider reporting progress using a fake frontend
             this.sendEvent(new OutputEvent("Loading module...\n"));
             await this.cspyDebugger.service.loadModule(args.program);
             this.sendEvent(new OutputEvent(`Loaded module '${args.program}'\n`));
         } catch (e) {
-            // TODO: provide clearer error messages for common errors (e.g. if module does not exist)
             response.success = false;
             response.message = e.toString();
             this.sendResponse(response);
