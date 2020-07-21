@@ -69,7 +69,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     private clientLinesStartAt1 = false;
     private clientColumnsStartAt1 = false;
 
-    private expectedStoppingReason: "entry" | "breakpoint" | "step" | "pause" = "entry";
+    private expectedStoppingReason: "entry" | "exit" | "breakpoint" | "step" | "pause" = "entry";
 
     /**
      * Creates a new debug adapter that is used for one debug session.
@@ -162,15 +162,20 @@ export class CSpyDebugSession extends LoggingDebugSession {
         if (args.stopOnEntry) {
             this.sendEvent(new StoppedEvent("entry", CSpyDebugSession.THREAD_ID));
         } else {
+            this.expectedStoppingReason = "breakpoint";
             await this.cspyDebugger.service.go();
         }
     }
 
     private addCSpyEventHandlers() {
-        this.cspyEventHandler.observeDebugEvents(DkNotifyConstant.kDkTargetStopped, (event) => {
+        this.cspyEventHandler.observeDebugEvents(DkNotifyConstant.kDkTargetStopped, () => {
             // TODO: figure out if it's feasible to get a precise reason for stopping from C-SPY
             console.log("Target stopped, sending StoppedEvent");
             this.sendEvent(new StoppedEvent(this.expectedStoppingReason, CSpyDebugSession.THREAD_ID));
+        });
+
+        this.cspyEventHandler.observeDebugEvents(DkNotifyConstant.kDkForcedStop, () => {
+            this.expectedStoppingReason = "exit";
         });
     }
 
