@@ -1,5 +1,5 @@
 import { DebugProtocol } from "vscode-debugprotocol";
-import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, DebugSession } from "vscode-debugadapter";
+import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, DebugSession, TerminatedEvent } from "vscode-debugadapter";
 import { ThriftServiceManager } from "./thrift/thriftservicemanager";
 import * as Debugger from "./thrift/bindings/Debugger";
 import * as Breakpoints from "./thrift/bindings/Breakpoints";
@@ -13,6 +13,7 @@ import { CSpyContextManager } from "./cspyContextManager";
 import { Server } from "net";
 import { CSpyBreakpointManager } from "./cspyBreakpointManager";
 import { XclConfigurationResolver } from "./configresolution/xclConfigurationResolver";
+import { CSpyException } from "./thrift/bindings/shared_types";
 const { Subject } = require('await-notify')
 
 
@@ -55,7 +56,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
     private cspyContexts: ThriftClient<ContextManager.Client>;
 
     private cspyEventHandler: DebugEventListenerHandler;
-    private cspyEventServer: Server; // keep a reference to this so we can close it at the end of the session
 
     private stackManager: CSpyContextManager;
     private breakpointManager: CSpyBreakpointManager;
@@ -96,6 +96,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         response.body.supportsEvaluateForHovers = true;
         response.body.supportsRestartRequest = true;
         response.body.supportsSetVariable = true;
+        response.body.supportsTerminateRequest = true;
         // TODO: implement some extra capabilites, like disassemble and readmemory
 
         this.clientLinesStartAt1 = args.linesStartAt1 || false;
@@ -142,6 +143,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
         } catch (e) {
             response.success = false;
             response.message = e.toString();
+            if (e instanceof CSpyException) {
+                response.message += ` (${e.culprit})`;
+            }
             this.sendResponse(response);
             await this.endSession();
             return;
@@ -180,6 +184,14 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     protected async terminateRequest(response: DebugProtocol.TerminateResponse, args: DebugProtocol.TerminateArguments) {
+        this.sendResponse(response);
+        try {
+            await this.cspyDebugger.service.stopSession();
+            await this.endSession();
+        } catch (e) {console.log(e);}
+        this.sendEvent(new TerminatedEvent());
+    }
+    protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments) {
         await this.cspyDebugger.service.stopSession();
         await this.endSession();
         this.sendResponse(response);
@@ -341,12 +353,10 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     private async endSession() {
-        console.log("Killing session");
         this.cspyContexts.close();
         this.cspyBreakpoints.close();
         this.cspyDebugger.close();
         await this.serviceManager.stop();
-        this.cspyEventServer.close();
     }
 }
 DebugSession.run(CSpyDebugSession);
