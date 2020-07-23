@@ -4,9 +4,10 @@
 		"target": "es6",
 		"lib": ["es2019", "DOM"],
 
+		"allowJs": true,
 		"noImplicitAny": false,
 		"removeComments": false,
-		"noUnusedLocals": true,
+		"noUnusedLocals": false,
 		"noImplicitThis": true,
 		"inlineSourceMap": false,
 		"sourceMap": true,
@@ -14,5 +15,11 @@
 		"preserveConstEnums": true,
 		"strictNullChecks": true,
 		"noUnusedParameters": false
-	}
+	},
+	"include": [
+		"../src/**/*",
+	],
+	"exclude": [
+		"../out/**/*"
+	]
 }
