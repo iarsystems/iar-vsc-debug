@@ -101,6 +101,9 @@ export class ThriftServiceManager {
     }
 
     private getServiceAt<T>(location: ServiceLocation, serviceType: Thrift.TClientConstructor<T>): Promise<ThriftClient<T>> {
+        if (location.transport !== Transport.Socket) {
+            return Promise.reject(new Error("Trying to connect to service with unsupported transport."));
+        }
         const options: Thrift.ConnectOptions = {
             transport: Thrift.TBufferedTransport,
             protocol: location.protocol === Protocol.Binary ? Thrift.TBinaryProtocol : Thrift.TJSONProtocol,
