@@ -55,8 +55,9 @@ export class CSpyContextManager {
     }
 
     async fetchScopes(frameIndex: number): Promise<Scope[]> {
-        const scopes = new Array<Scope>();
         const context = this.contextReferences[frameIndex];
+
+        const scopes = new Array<Scope>();
         scopes.push(new Scope("Local", this.scopeHandles.create(new ScopeReference("local", context)), false));
         scopes.push(new Scope("Static", this.scopeHandles.create(new ScopeReference("static", context)), false));
         scopes.push(new Scope("Registers", this.scopeHandles.create(new ScopeReference("registers", context)), false));
@@ -93,13 +94,22 @@ export class CSpyContextManager {
 
     async setVariable(scopeReference: number, variable: string, value: string): Promise<string> {
         const context = this.scopeHandles.get(scopeReference).context;
+        await this.contextManager.setInspectionContext(context);
         const exprVal = await this.dbgr.evalExpression(context, `${variable}=${value}`, [], ExprFormat.kDefault, true);
+        if (this.contextReferences.length > 0) {
+            await this.contextManager.setInspectionContext(this.contextReferences[0]);
+        }
         return exprVal.value;
     }
 
     async evalExpression(frameIndex: number, expression: string): Promise<ExprValue> {
         const context = this.contextReferences[frameIndex];
-        return await this.dbgr.evalExpression(context, expression, [], ExprFormat.kDefault, true);
+        await this.contextManager.setInspectionContext(context);
+        const result = await this.dbgr.evalExpression(context, expression, [], ExprFormat.kDefault, true);
+        if (this.contextReferences.length > 0) {
+            await this.contextManager.setInspectionContext(this.contextReferences[0]);
+        }
+        return result;
     }
 
 }
