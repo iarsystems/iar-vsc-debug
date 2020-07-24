@@ -97,7 +97,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         response.body.supportsRestartRequest = true;
         response.body.supportsSetVariable = true;
         response.body.supportsTerminateRequest = true;
-        // TODO: implement some extra capabilites, like disassemble and readmemory
+        response.body.supportsSteppingGranularity = true;
 
         this.clientLinesStartAt1 = args.linesStartAt1 || false;
         this.clientColumnsStartAt1 = args.columnsStartAt1 || false;
@@ -128,11 +128,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.cspyDebugger = await this.serviceManager.findService(DEBUGGER_SERVICE, Debugger);
         this.sendEvent(new OutputEvent("Using C-SPY version: " + await this.cspyDebugger.service.getVersionString() + "\n"));
 
-        this.cspyBreakpoints = await this.serviceManager.findService(BREAKPOINTS_SERVICE, Breakpoints);
-        this.breakpointManager = new CSpyBreakpointManager(this.cspyBreakpoints.service, this.clientLinesStartAt1, this.clientColumnsStartAt1);
-
-        this.cspyContexts = await this.serviceManager.findService(CONTEXT_MANAGER_SERVICE, ContextManager);
-        this.stackManager = new CSpyContextManager(this.cspyContexts.service, this.cspyDebugger.service);
+        this.breakpointManager = await CSpyBreakpointManager.instantiate(this.serviceManager, this.clientLinesStartAt1, this.clientColumnsStartAt1);
+        this.stackManager = await CSpyContextManager.instantiate(this.serviceManager);
 
         try {
             const sessionConfig = await new XclConfigurationResolver().resolveLaunchArguments(args);
@@ -353,10 +350,10 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     private async endSession() {
-        this.cspyContexts.close();
-        this.cspyBreakpoints.close();
-        this.cspyDebugger.close();
-        await this.serviceManager.stop();
+        this.stackManager.dispose();
+        this.breakpointManager.dispose();
+        this.cspyDebugger.dispose();
+        await this.serviceManager.dispose();
     }
 }
 DebugSession.run(CSpyDebugSession);

@@ -15,11 +15,12 @@ import { SERVICE_MANAGER_SERVICE } from "./bindings/ServiceManager_types";
 import { createHash } from "crypto";
 import { tmpdir } from "os";
 import { Server, AddressInfo } from "net";
+import { Disposable } from "../disposable";
 
 /**
  * Provides and manages a set of thrift services.
  */
-export class ThriftServiceManager {
+export class ThriftServiceManager implements Disposable {
     private static readonly SERVICE_LOOKUP_TIMEOUT = 1000;
     private readonly activeServers: Server[];
 
@@ -35,10 +36,10 @@ export class ThriftServiceManager {
      * After this, the manager and its services are to be
      * considered invalid, and may not be used again.
      */
-    public async stop() {
+    async dispose() {
         const serviceMgr = await this.findService(SERVICE_MANAGER_SERVICE, CSpyServiceManager);
         await serviceMgr.service.shutdown();
-        serviceMgr.close();
+        serviceMgr.dispose();
         this.activeServers.forEach(server => server.close());
     }
 
@@ -48,14 +49,14 @@ export class ThriftServiceManager {
      * @param serviceId The name to give the service
      * @param serviceType The type of service to register (usually given as the top-level import of the service module)
      */
-    public async findService<T>(serviceId: string, serviceType: Thrift.TClientConstructor<T>): Promise<ThriftClient<T>> {
+    async findService<T>(serviceId: string, serviceType: Thrift.TClientConstructor<T>): Promise<ThriftClient<T>> {
         const registry = await this.getServiceAt(this.getRegistryLocation(), CSpyServiceRegistry);
 
         const location = await registry.service.waitForService(serviceId, ThriftServiceManager.SERVICE_LOOKUP_TIMEOUT);
         const service = await this.getServiceAt(location, serviceType);
         console.log(await registry.service.getServices());
 
-        registry.close();
+        registry.dispose();
 
         return service;
     }
@@ -68,7 +69,7 @@ export class ThriftServiceManager {
      * @typeParam Pr The processor type for the service, usually serviceType.Processor
      * @typeParam Ha The handler type for the service, usually object (thrift doesn't provide typescript types for service handlers)
      */
-    public async startService<Pr, Ha>(serviceId: string, serviceType: Thrift.TProcessorConstructor<Pr, Ha>, handler: Ha): Promise<void> {
+    async startService<Pr, Ha>(serviceId: string, serviceType: Thrift.TProcessorConstructor<Pr, Ha>, handler: Ha): Promise<void> {
         const serverOpt = {
             transport: Thrift.TBufferedTransport,
             protocol: Thrift.TBinaryProtocol,
@@ -82,7 +83,7 @@ export class ThriftServiceManager {
         const registry = await this.getServiceAt(this.getRegistryLocation(), CSpyServiceRegistry);
         await registry.service.registerService(serviceId, location);
 
-        registry.close();
+        registry.dispose();
     }
 
     private getRegistryLocation(): ServiceLocation {

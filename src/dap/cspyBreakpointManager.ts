@@ -1,18 +1,31 @@
 'use strict';
 
-import { Breakpoint } from "vscode-debugadapter";
 import * as Breakpoints from "./thrift/bindings/Breakpoints";
 import { DebugProtocol } from "vscode-debugprotocol";
 import { AccessType } from "./thrift/bindings/shared_types";
+import { Disposable } from "./disposable";
+import { ThriftServiceManager } from "./thrift/thriftservicemanager";
+import { BREAKPOINTS_SERVICE } from "./thrift/bindings/breakpoints_types";
+import { ThriftClient } from "./thrift/thriftclient";
 
 /**
  * Sets, unsets and verifies C-SPY breakpoints.
  */
-export class CSpyBreakpointManager {
+export class CSpyBreakpointManager implements Disposable {
     // TODO: allow setting logpoints, data breakpoints etc, and enable those DAP capabilities
     // TODO: cspyserver seems to automatically set breakpoints from the .ewp file (i.e. from the EW). We probably don't want that.
 
-    constructor(private breakpointService: Breakpoints.Client,
+    static async instantiate(serviceMgr: ThriftServiceManager,
+                                clientLinesStartAt1: boolean,
+                                clientColumnsStartAt1: boolean): Promise<CSpyBreakpointManager> {
+        return new CSpyBreakpointManager(
+            await serviceMgr.findService(BREAKPOINTS_SERVICE, Breakpoints.Client),
+            clientLinesStartAt1,
+            clientColumnsStartAt1
+        );
+    }
+
+    private constructor(private breakpointService: ThriftClient<Breakpoints.Client>,
                 private clientLinesStartAt1: boolean,
                 private clientColumnsStartAt1: boolean) {
     }
@@ -20,22 +33,23 @@ export class CSpyBreakpointManager {
     async setBreakpointsFor(source: DebugProtocol.Source, bps: DebugProtocol.SourceBreakpoint[]): Promise<DebugProtocol.Breakpoint[]> {
         // remove all bps for this source file, and replace with the new ones
         const sourcePath = source.path ? source.path : source.name;
-        const currentBps = await this.breakpointService.getBreakpoints();
+        const currentBps = await this.breakpointService.service.getBreakpoints();
         const toRemove = currentBps.filter(bp => {
             if (!bp.isUleBased) { return false; } // Not sure how to handle these
             const uleData = this.parseUle(bp.ule);
             return uleData[0] === sourcePath;
         });
-        await Promise.all(toRemove.map(bp => this.breakpointService.removeBreakpoint(bp.id) ));
+        await Promise.all(toRemove.map(bp => this.breakpointService.service.removeBreakpoint(bp.id) ));
 
         return Promise.all(bps.map(async bp => {
             try {
                 const dbgrLine = this.convertClientLineToDebugger(bp.line);
                 const dbgrCol = bp.column ? this.convertClientColumnToDebugger(bp.column) : 1;
-                const newBp = await this.breakpointService.setBreakpointOnUle(`{${sourcePath}}.${dbgrLine}.${dbgrCol}`, AccessType.kDkReadWriteAccess); // does the access type even matter for code bps?
+                const newBp = await this.breakpointService.service.setBreakpointOnUle(`{${sourcePath}}.${dbgrLine}.${dbgrCol}`, AccessType.kDkReadWriteAccess); // does the access type even matter for code bps?
+
+                // TODO: the debugger doesn't seem to adjust the line on the ule, e.g. if the line is empty. If we parse the descriptor, we can get the actual line of the bp.
                 const [_, newLine, newCol] = this.parseUle(newBp.ule);
                 console.log(newBp);
-                // TODO: the debugger doesn't seem to adjust the line on the ule, e.g. if the line is empty. If we parse the descriptor, we can get the actual line of the bp.
                 return {
                     verified: newBp.valid,
                     line: this.convertDebuggerLineToClient(newLine),
@@ -52,6 +66,10 @@ export class CSpyBreakpointManager {
                 }
             }
         }));
+    }
+
+    dispose(): void {
+        this.breakpointService.dispose();
     }
 
     private parseUle(ule: string): [string, number, number] {
