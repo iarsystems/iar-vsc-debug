@@ -9,6 +9,7 @@ import { ExprValue, CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE } from "./thrift/b
 import { Disposable } from "./disposable";
 import { ThriftServiceManager } from "./thrift/thriftservicemanager";
 import { ThriftClient } from "./thrift/thriftclient";
+import { CSpyRegistersManager } from "./cspyRegistersManager";
 
 /**
  * Desribes a scope, i.e. a name/type (local, static or register) and a context.
@@ -33,6 +34,7 @@ export class CSpyContextManager implements Disposable {
         return new CSpyContextManager(
             await serviceMgr.findService(CONTEXT_MANAGER_SERVICE, ContextManager.Client),
             await serviceMgr.findService(DEBUGGER_SERVICE, Debugger.Client),
+            await CSpyRegistersManager.instantiate(serviceMgr),
         );
     }
 
@@ -45,7 +47,9 @@ export class CSpyContextManager implements Disposable {
     // TODO: We should get this from the event service, I think, but it doesn't seem to receive any contexts. This works for now.
     private readonly currentInspectionContext = new ContextRef({ core: 0, level: 0, task: 0, type: ContextType.CurrentInspection });
 
-    private constructor(private contextManager: ThriftClient<ContextManager.Client>, private dbgr: ThriftClient<Debugger.Client>) {
+    private constructor(private contextManager: ThriftClient<ContextManager.Client>,
+                        private dbgr: ThriftClient<Debugger.Client>,
+                        private registersManager: CSpyRegistersManager) {
     }
 
     /**
@@ -94,28 +98,24 @@ export class CSpyContextManager implements Disposable {
     async fetchVariables(scopeReference: number): Promise<Variable[]> {
         const scope = this.scopeHandles.get(scopeReference);
 
-        let requestedVars: Symbol[] = [];
         switch (scope.name) {
             case "local":
-                requestedVars = await this.contextManager.service.getLocals(scope.context); // TODO: also get parameters?
-                break;
+                const localSymbols = await this.contextManager.service.getLocals(scope.context); // TODO: also get parameters?
+                return localSymbols.map(symbol => {
+                    return {
+                        // TODO: get value (and ideally type) from cspyserver (use a listwindow service?)
+                        name: symbol.name,
+                        type: "", // technically, we should only provide this if the client has specified that it supports it
+                        value: "", // (await this._cspyDebugger.service.evalExpression(context, variable.name, [], ExprFormat.kNoCustom, false)).value,
+                        variablesReference: 0,
+                    }
+                });
             case "static":
-                requestedVars = [];
-                break;
+                return [];
             case "registers":
-                requestedVars = [];
-                break;
+                return this.registersManager.getRegisters();
         }
 
-        return requestedVars.map(variable => {
-            return {
-                // TODO: get value (and ideally type) from cspyserver (use a listwindow service?)
-                name: variable.name,
-                type: "", // technically, we should only provide this if the client has specified that it supports it
-                value: "", // (await this._cspyDebugger.service.evalExpression(context, variable.name, [], ExprFormat.kNoCustom, false)).value,
-                variablesReference: 0,
-            }
-        });
     }
 
     /**

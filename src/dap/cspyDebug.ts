@@ -6,11 +6,9 @@ import * as Breakpoints from "./thrift/bindings/Breakpoints";
 import * as ContextManager from "./thrift/bindings/ContextManager";
 import * as DebugEventListener from "./thrift/bindings/DebugEventListener";
 import { ThriftClient } from "./thrift/thriftclient";
-import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, CONTEXT_MANAGER_SERVICE, DkNotifyConstant } from "./thrift/bindings/cspy_types";
+import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant } from "./thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
-import { BREAKPOINTS_SERVICE } from "./thrift/bindings/breakpoints_types";
 import { CSpyContextManager } from "./cspyContextManager";
-import { Server } from "net";
 import { CSpyBreakpointManager } from "./cspyBreakpointManager";
 import { XclConfigurationResolver } from "./configresolution/xclConfigurationResolver";
 import { CSpyException } from "./thrift/bindings/shared_types";
@@ -50,10 +48,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     private serviceManager: ThriftServiceManager;
 
-    // cspy services
     private cspyDebugger: ThriftClient<Debugger.Client>;
-    private cspyBreakpoints: ThriftClient<Breakpoints.Client>;
-    private cspyContexts: ThriftClient<ContextManager.Client>;
 
     private cspyEventHandler: DebugEventListenerHandler;
 
@@ -128,15 +123,15 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.cspyDebugger = await this.serviceManager.findService(DEBUGGER_SERVICE, Debugger);
         this.sendEvent(new OutputEvent("Using C-SPY version: " + await this.cspyDebugger.service.getVersionString() + "\n"));
 
-        this.breakpointManager = await CSpyBreakpointManager.instantiate(this.serviceManager, this.clientLinesStartAt1, this.clientColumnsStartAt1);
-        this.stackManager = await CSpyContextManager.instantiate(this.serviceManager);
-
         try {
             const sessionConfig = await new XclConfigurationResolver().resolveLaunchArguments(args);
             await this.cspyDebugger.service.startSession(sessionConfig);
             // TODO: consider reporting progress using a fake frontend
             await this.cspyDebugger.service.loadModule(args.program);
             this.sendEvent(new OutputEvent("Session started"));
+            // only after loading modules can we initialize services using listwindows
+            this.stackManager = await CSpyContextManager.instantiate(this.serviceManager);
+            this.breakpointManager = await CSpyBreakpointManager.instantiate(this.serviceManager, this.clientLinesStartAt1, this.clientColumnsStartAt1);
         } catch (e) {
             response.success = false;
             response.message = e.toString();

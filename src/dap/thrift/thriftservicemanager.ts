@@ -69,7 +69,7 @@ export class ThriftServiceManager implements Disposable {
      * @typeParam Pr The processor type for the service, usually serviceType.Processor
      * @typeParam Ha The handler type for the service, usually object (thrift doesn't provide typescript types for service handlers)
      */
-    async startService<Pr, Ha>(serviceId: string, serviceType: Thrift.TProcessorConstructor<Pr, Ha>, handler: Ha): Promise<void> {
+    async startService<Pr, Ha>(serviceId: string, serviceType: Thrift.TProcessorConstructor<Pr, Ha>, handler: Ha): Promise<ServiceLocation> {
         const serverOpt = {
             transport: Thrift.TBufferedTransport,
             protocol: Thrift.TBinaryProtocol,
@@ -84,6 +84,7 @@ export class ThriftServiceManager implements Disposable {
         await registry.service.registerService(serviceId, location);
 
         registry.dispose();
+        return location;
     }
 
     private getRegistryLocation(): ServiceLocation {
