@@ -19,7 +19,7 @@ import { ListWindowRow } from "./listWindowClient";
  */
 class ScopeReference {
     constructor(
-        readonly provider: VariablesProvider,
+        readonly provider: VariablesProvider | undefined,
         readonly context: ContextRef,
     ) { }
 }
@@ -44,12 +44,16 @@ export class CSpyContextManager implements Disposable {
      * Creates a new context manager using services from the given service manager.
      */
     static async instantiate(serviceMgr: ThriftServiceManager): Promise<CSpyContextManager> {
+        const onProviderUnavailable = (reason) => {
+            console.error("VariablesProvider failed to load: ", reason);
+            return undefined;
+        }
         return new CSpyContextManager(
             await serviceMgr.findService(CONTEXT_MANAGER_SERVICE, ContextManager.Client),
             await serviceMgr.findService(DEBUGGER_SERVICE, Debugger.Client),
-            await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.LOCALS, RowToVariableConverters.locals),
-            await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.STATICS, RowToVariableConverters.statics),
-            await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.REGISTERS, RowToVariableConverters.registers),
+            await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.LOCALS, RowToVariableConverters.locals).catch(onProviderUnavailable),
+            await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.STATICS, RowToVariableConverters.statics).catch(onProviderUnavailable),
+            await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.REGISTERS, RowToVariableConverters.registers).catch(onProviderUnavailable),
         );
     }
 
@@ -67,9 +71,9 @@ export class CSpyContextManager implements Disposable {
 
     private constructor(private contextManager: ThriftClient<ContextManager.Client>,
                         private dbgr: ThriftClient<Debugger.Client>,
-                        private localsProvider: ListWindowVariablesProvider,
-                        private staticsProvider: ListWindowVariablesProvider,
-                        private registersProvider: ListWindowVariablesProvider) {
+                        private localsProvider: ListWindowVariablesProvider | undefined,
+                        private staticsProvider: ListWindowVariablesProvider | undefined,
+                        private registersProvider: ListWindowVariablesProvider | undefined) {
     }
 
     /**
@@ -118,10 +122,16 @@ export class CSpyContextManager implements Disposable {
      */
     async fetchVariables(handle: number): Promise<Variable[]> {
         const reference = this.scopeAndVariableHandles.get(handle);
+
         if (reference instanceof ScopeReference) {
+            const varProvider = reference.provider;
+            if (!varProvider) {
+                throw new Error("Backend is not available for this scope.");
+            }
             await this.contextManager.service.setInspectionContext(reference.context);
-            const vars = await reference.provider.getVariables();
-            return vars.map(v => this.replaceVariableReference(reference.provider, v));
+            const vars = await varProvider.getVariables();
+            return vars.map(v => this.replaceVariableReference(varProvider, v));
+
         } else if (reference instanceof VariableReference) {
             const subVars = await reference.source.getSubvariables(reference.sourceReference);
             return subVars.map(v => this.replaceVariableReference(reference.source, v));
@@ -154,9 +164,9 @@ export class CSpyContextManager implements Disposable {
     }
 
     async dispose() {
-        await this.localsProvider.dispose();
-        await this.staticsProvider.dispose();
-        await this.registersProvider.dispose();
+        await this.localsProvider?.dispose();
+        await this.staticsProvider?.dispose();
+        await this.registersProvider?.dispose();
         this.contextManager.dispose();
         this.dbgr.dispose();
     }
@@ -188,7 +198,7 @@ namespace RowToVariableConverters {
     }
     export function statics(row: ListWindowRow) {
         return {
-            name: row.values[0],
+            name: row.values[0].split(" ")[0],
             value: row.values[1],
             type: `${row.values[3]} @ ${row.values[2]}`,
             variablesReference: 0,
