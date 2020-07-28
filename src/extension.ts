@@ -31,17 +31,17 @@ export function activate(context: vscode.ExtensionContext) {
     let disasmView: DisassemblyView = new DisassemblyView(context);
 
     context.subscriptions.push(vscode.debug.onDidStartDebugSession(async session => {
-        if (session.type == "cspy") {
+        if (session.type === "cspy") {
             // TODO: should probably not open automatically (maybe add a setting for it)
-            const memoryDocument = await vscode.workspace.openTextDocument(vscode.Uri.parse("memory:Symbolic Memory.iarmem"));
-            await vscode.window.showTextDocument(memoryDocument, { preview: false, preserveFocus: true, viewColumn: vscode.ViewColumn.Three });
-            disasmView.open();
+            // const memoryDocument = await vscode.workspace.openTextDocument(vscode.Uri.parse("memory:Symbolic Memory.iarmem"));
+            // await vscode.window.showTextDocument(memoryDocument, { preview: false, preserveFocus: true, viewColumn: vscode.ViewColumn.Three });
+            // disasmView.open();
         }
     }));
 
     // Note: sometimes, VS Code calls this handler before onDidStartDebugSession
     context.subscriptions.push(vscode.debug.onDidReceiveDebugSessionCustomEvent(async (e: vscode.DebugSessionCustomEvent) => {
-        if (e.session.type == "cspy") {
+        if (e.session.type === "cspy") {
             if (e.event === "memory") {
                 memoryDocumentProvider.setData(e.body, vscode.Uri.parse("memory:Symbolic Memory.iarmem"));
             } else if (e.event === "disassembly") {
