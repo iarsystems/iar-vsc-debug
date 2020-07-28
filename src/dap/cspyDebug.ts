@@ -126,7 +126,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         try {
             const sessionConfig = await new XclConfigurationResolver().resolveLaunchArguments(args);
             await this.cspyDebugger.service.startSession(sessionConfig);
-            // TODO: consider reporting progress using a fake frontend
+            // TODO: report progress using a frontend service and the Progress(Start|Update|End) DAP events
             await this.cspyDebugger.service.loadModule(args.program);
             this.sendEvent(new OutputEvent("Session started"));
             // only after loading modules can we initialize services using listwindows

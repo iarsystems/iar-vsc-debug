@@ -9,16 +9,17 @@ import { ExprValue, CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE } from "./thrift/b
 import { Disposable } from "./disposable";
 import { ThriftServiceManager } from "./thrift/thriftservicemanager";
 import { ThriftClient } from "./thrift/thriftclient";
-import { ListWindowClient, ListWindowRow } from "./listWindowClient";
 import { WindowNames } from "./listWindowConstants";
 import { ListWindowVariablesProvider, VariablesProvider } from "./variablesProvider";
+import { ListWindowRow } from "./listWindowClient";
 
 /**
- * Describes a scope, i.e. a name/type (local, static or register) and a C-SPY context used to access the scope.
+ * Describes a scope, i.e. a C-SPY context used to access the scope,
+ * and a provider giving the variables in that scope.
  */
 class ScopeReference {
     constructor(
-        readonly name: "local" | "static" | "registers",
+        readonly provider: VariablesProvider,
         readonly context: ContextRef,
     ) { }
 }
@@ -46,7 +47,9 @@ export class CSpyContextManager implements Disposable {
         return new CSpyContextManager(
             await serviceMgr.findService(CONTEXT_MANAGER_SERVICE, ContextManager.Client),
             await serviceMgr.findService(DEBUGGER_SERVICE, Debugger.Client),
-            await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.REGISTERS, (row) => new Variable(row.values[0], row.values[1])),
+            await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.LOCALS, RowToVariableConverters.locals),
+            await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.STATICS, RowToVariableConverters.statics),
+            await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.REGISTERS, RowToVariableConverters.registers),
         );
     }
 
@@ -64,6 +67,8 @@ export class CSpyContextManager implements Disposable {
 
     private constructor(private contextManager: ThriftClient<ContextManager.Client>,
                         private dbgr: ThriftClient<Debugger.Client>,
+                        private localsProvider: ListWindowVariablesProvider,
+                        private staticsProvider: ListWindowVariablesProvider,
                         private registersProvider: ListWindowVariablesProvider) {
     }
 
@@ -100,9 +105,9 @@ export class CSpyContextManager implements Disposable {
         const context = this.contextReferences[frameIndex];
 
         const scopes = new Array<Scope>();
-        scopes.push(new Scope("Local", this.scopeAndVariableHandles.create(new ScopeReference("local", context)), false));
-        scopes.push(new Scope("Static", this.scopeAndVariableHandles.create(new ScopeReference("static", context)), false));
-        scopes.push(new Scope("Registers", this.scopeAndVariableHandles.create(new ScopeReference("registers", context)), false));
+        scopes.push(new Scope("Local", this.scopeAndVariableHandles.create(new ScopeReference(this.localsProvider, context)), false));
+        scopes.push(new Scope("Static", this.scopeAndVariableHandles.create(new ScopeReference(this.staticsProvider, context)), false));
+        scopes.push(new Scope("Registers", this.scopeAndVariableHandles.create(new ScopeReference(this.registersProvider, context)), false));
 
         return scopes;
     }
@@ -114,24 +119,9 @@ export class CSpyContextManager implements Disposable {
     async fetchVariables(handle: number): Promise<Variable[]> {
         const reference = this.scopeAndVariableHandles.get(handle);
         if (reference instanceof ScopeReference) {
-            switch (reference.name) {
-                case "local":
-                    const localSymbols = await this.contextManager.service.getLocals(reference.context); // TODO: also get parameters?
-                    return localSymbols.map(symbol => {
-                        return {
-                            // TODO: get value (and ideally type) from cspyserver (use a listwindow service?)
-                            name: symbol.name,
-                            type: "", // technically, we should only provide this if the client has specified that it supports it
-                            value: "", // (await this._cspyDebugger.service.evalExpression(context, variable.name, [], ExprFormat.kNoCustom, false)).value,
-                            variablesReference: 0,
-                        }
-                    });
-                case "static":
-                    return [];
-                case "registers":
-                    const vars = await this.registersProvider.getVariables();
-                    return vars.map(v => this.replaceVariableReference(this.registersProvider, v));
-            }
+            await this.contextManager.service.setInspectionContext(reference.context);
+            const vars = await reference.provider.getVariables();
+            return vars.map(v => this.replaceVariableReference(reference.provider, v));
         } else if (reference instanceof VariableReference) {
             const subVars = await reference.source.getSubvariables(reference.sourceReference);
             return subVars.map(v => this.replaceVariableReference(reference.source, v));
@@ -150,9 +140,6 @@ export class CSpyContextManager implements Disposable {
         const context = scope.context;
         await this.contextManager.service.setInspectionContext(context);
         const exprVal = await this.dbgr.service.evalExpression(context, `${variable}=${value}`, [], ExprFormat.kDefault, true);
-        if (this.contextReferences.length > 0) {
-            await this.contextManager.service.setInspectionContext(this.contextReferences[0]);
-        }
         return exprVal.value;
     }
 
@@ -163,13 +150,12 @@ export class CSpyContextManager implements Disposable {
         const context = this.contextReferences[frameIndex];
         await this.contextManager.service.setInspectionContext(context);
         const result = await this.dbgr.service.evalExpression(context, expression, [], ExprFormat.kDefault, true);
-        if (this.contextReferences.length > 0) {
-            await this.contextManager.service.setInspectionContext(this.contextReferences[0]);
-        }
         return result;
     }
 
     async dispose() {
+        await this.localsProvider.dispose();
+        await this.staticsProvider.dispose();
         await this.registersProvider.dispose();
         this.contextManager.dispose();
         this.dbgr.dispose();
@@ -181,11 +167,39 @@ export class CSpyContextManager implements Disposable {
     // {@link VariableReference} that lets us later access the original value.
     private replaceVariableReference(source: VariablesProvider, variable: Variable): Variable {
         if (variable.variablesReference > 0) {
-            const a = variable.variablesReference;
             variable.variablesReference = this.scopeAndVariableHandles.create(new VariableReference(source, variable.variablesReference));
-            const b = variable.variablesReference;
             return variable;
         }
         return variable;
+    }
+}
+
+/**
+ * Describes how the columns of these windows are laid out, and how to convert them to variables
+ */
+namespace RowToVariableConverters {
+    export function locals(row: ListWindowRow) {
+        return {
+            name: row.values[0],
+            value: row.values[1],
+            type: `${row.values[3]} @ ${row.values[2]}`,
+            variablesReference: 0,
+        }
+    }
+    export function statics(row: ListWindowRow) {
+        return {
+            name: row.values[0],
+            value: row.values[1],
+            type: `${row.values[3]} @ ${row.values[2]}`,
+            variablesReference: 0,
+        }
+    }
+    export function registers(row: ListWindowRow) {
+        return {
+            name: row.values[0],
+            value: row.values[1],
+            type: row.values[2],
+            variablesReference: 0,
+        }
     }
 }

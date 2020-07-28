@@ -87,8 +87,10 @@ export class ListWindowClient implements Disposable {
                 return this.backend.service.getRow(note.row).then(row => {
                     this.rows[note.row.toNumber()] = row;
                 });
+            // TODO: is this an acceptable way to handle thawing (and freezing)?
             case What.kNormalUpdate:
             case What.kFullUpdate:
+            case What.kThaw:
                 return this.updateAllRows();
         }
         return Q.resolve();
