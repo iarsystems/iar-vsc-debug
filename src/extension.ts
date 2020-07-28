@@ -60,6 +60,7 @@ class CSpyConfigurationProvider implements vscode.DebugConfigurationProvider {
 	/**
 	 * Massage a debug configuration just before a debug session is being launched,
 	 * e.g. add all missing attributes to the debug configuration.
+     * TODO: this needs some work
 	 */
     resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
         // if launch.json is missing or empty
