@@ -10,12 +10,12 @@ import { ServiceLocation, Transport, Protocol } from "./bindings/ServiceRegistry
 import { ThriftClient } from "./thriftclient";
 
 import * as CSpyServiceRegistry from "./bindings/CSpyServiceRegistry";
-import * as CSpyServiceManager from "./bindings/CSpyServiceManager";
-import { SERVICE_MANAGER_SERVICE } from "./bindings/ServiceManager_types";
+import * as Debugger from "./bindings/Debugger";
 import { createHash } from "crypto";
 import { tmpdir } from "os";
 import { Server, AddressInfo } from "net";
 import { Disposable } from "../disposable";
+import { DEBUGGER_SERVICE } from "./bindings/cspy_types";
 
 /**
  * Provides and manages a set of thrift services.
@@ -37,9 +37,10 @@ export class ThriftServiceManager implements Disposable {
      * considered invalid, and may not be used again.
      */
     async dispose() {
-        const serviceMgr = await this.findService(SERVICE_MANAGER_SERVICE, CSpyServiceManager);
-        await serviceMgr.service.shutdown();
-        serviceMgr.dispose();
+        // Since we're using cspyserver, we close the process from the debugger service
+        const dgbr = await this.findService(DEBUGGER_SERVICE, Debugger);
+        await dgbr.service.exit();
+        dgbr.dispose();
         this.activeServers.forEach(server => server.close());
     }
 
@@ -128,7 +129,6 @@ export namespace ThriftServiceManager {
      */
     export async function fromWorkbench(workbenchPath: string): Promise<ThriftServiceManager> {
         let registryPath = path.join(workbenchPath, "common/bin/CSpyServer2.exe"); // TODO: cross-platform-ify
-        // for now needs to load projectmanager at launch, otherwise it seems to behave strangely
         const tmpDir = getTmpDir(workbenchPath);
         const serviceRegistryProcess = spawn(registryPath, ["-standalone", "-sockets"],
                                                 { cwd: tmpDir });
@@ -152,13 +152,14 @@ export namespace ThriftServiceManager {
     }
 
     // reads stdout as a hacky way to wait until cspyserver has launched
+    // TODO: find a more robust way to detect when cspyserver is ready
     function waitUntilReady(process: ChildProcess): Promise<void> {
         return new Promise(async (resolve, reject) => {
             let output: string = "";
             const onData = (data: Buffer | string) => {
                 output += data;
                 if (output.includes("running")) {
-                    console.log("Service Launcher has launched.");
+                    console.log("CSpyServer has launched.");
                     process.stdout?.removeListener("data", onData);
                     resolve();
                 }
