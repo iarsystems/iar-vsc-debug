@@ -32,11 +32,14 @@ export class CSpyBreakpointManager implements Disposable {
 
     async setBreakpointsFor(source: DebugProtocol.Source, bps: DebugProtocol.SourceBreakpoint[]): Promise<DebugProtocol.Breakpoint[]> {
         // remove all bps for this source file, and replace with the new ones
+        // TODO: instead, maybe try to match existing bps with new ones, and only remove/add those
+        // that are not in both sets.
         const sourcePath = source.path ? source.path : source.name;
         const currentBps = await this.breakpointService.service.getBreakpoints();
         const toRemove = currentBps.filter(bp => {
-            if (!bp.isUleBased) { return false; } // Not sure how to handle these
-            const uleData = this.parseUle(bp.ule);
+            if (!bp.isUleBased) { return true; } // Not sure how to handle these
+            if (bp.category !== "STD_CODE2" && bp.category !== "STD_CODE") { return true; }
+            const uleData = this.parseSourceUle(bp.ule);
             return uleData[0] === sourcePath;
         });
         await Promise.all(toRemove.map(bp => this.breakpointService.service.removeBreakpoint(bp.id) ));
@@ -45,11 +48,10 @@ export class CSpyBreakpointManager implements Disposable {
             try {
                 const dbgrLine = this.convertClientLineToDebugger(bp.line);
                 const dbgrCol = bp.column ? this.convertClientColumnToDebugger(bp.column) : 1;
-                const newBp = await this.breakpointService.service.setBreakpointOnUle(`{${sourcePath}}.${dbgrLine}.${dbgrCol}`, AccessType.kDkReadWriteAccess); // does the access type even matter for code bps?
+                const newBp = await this.breakpointService.service.setBreakpointOnUle(`{${sourcePath}}.${dbgrLine}.${dbgrCol}`, AccessType.kDkFetchAccess);
 
                 // TODO: the debugger doesn't seem to adjust the line on the ule, e.g. if the line is empty. If we parse the descriptor, we can get the actual line of the bp.
-                const [_, newLine, newCol] = this.parseUle(newBp.ule);
-                console.log(newBp);
+                const [_, newLine, newCol] = this.parseSourceUle(newBp.ule);
                 return {
                     verified: newBp.valid,
                     line: this.convertDebuggerLineToClient(newLine),
@@ -72,10 +74,10 @@ export class CSpyBreakpointManager implements Disposable {
         this.breakpointService.dispose();
     }
 
-    private parseUle(ule: string): [string, number, number] {
+    private parseSourceUle(ule: string): [string, number, number] {
         const match = /^{(.+)}\.(\d+)\.(\d+)$/.exec(ule);
         if (!match || match.length !== 4) {
-            throw new Error("Invalid ULE: " + ule);
+            throw new Error("Invalid source ULE: " + ule);
         }
         return [match[1], Number(match[2]), Number(match[3])];
     }
