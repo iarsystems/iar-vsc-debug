@@ -21,6 +21,10 @@ The project may then be debugged by pressing `F5` or from the debugging panel.
 In order for the default launch configuration to work, you should install the extension
 `IAR for Visual Studio Code` from the marketplace.
 
+Note that the variables window only works on very recent EW builds (i.e. builds from aug 2020 and later).
+Previous EW versions I tested had bugs where some C-SPY services either wouldn't start, or would start with pipes
+instead of sockets.
+
 ## The CSpyRuby version
 
 I previously implemented the Debug Adapter with CSpyRuby. That version can be found in commit

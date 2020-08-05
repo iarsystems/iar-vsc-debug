@@ -2,8 +2,6 @@ import { DebugProtocol } from "vscode-debugprotocol";
 import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, DebugSession, TerminatedEvent } from "vscode-debugadapter";
 import { ThriftServiceManager } from "./thrift/thriftservicemanager";
 import * as Debugger from "./thrift/bindings/Debugger";
-import * as Breakpoints from "./thrift/bindings/Breakpoints";
-import * as ContextManager from "./thrift/bindings/ContextManager";
 import * as DebugEventListener from "./thrift/bindings/DebugEventListener";
 import { ThriftClient } from "./thrift/thriftclient";
 import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant } from "./thrift/bindings/cspy_types";
@@ -128,7 +126,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             await this.cspyDebugger.service.startSession(sessionConfig);
             // TODO: report progress using a frontend service and the Progress(Start|Update|End) DAP events
             await this.cspyDebugger.service.loadModule(args.program);
-            this.sendEvent(new OutputEvent("Session started"));
+            this.sendEvent(new OutputEvent("Session started\n"));
             // only after loading modules can we initialize services using listwindows
             this.stackManager = await CSpyContextManager.instantiate(this.serviceManager);
             this.breakpointManager = await CSpyBreakpointManager.instantiate(this.serviceManager, this.clientLinesStartAt1, this.clientColumnsStartAt1);
