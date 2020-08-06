@@ -3,6 +3,7 @@ import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logg
 import { ThriftServiceManager } from "./thrift/thriftservicemanager";
 import * as Debugger from "./thrift/bindings/Debugger";
 import * as DebugEventListener from "./thrift/bindings/DebugEventListener";
+import * as LibSupportService2 from "./thrift/bindings/LibSupportService2";
 import { ThriftClient } from "./thrift/thriftclient";
 import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant } from "./thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
@@ -10,6 +11,8 @@ import { CSpyContextManager } from "./cspyContextManager";
 import { CSpyBreakpointManager } from "./cspyBreakpointManager";
 import { XclConfigurationResolver } from "./configresolution/xclConfigurationResolver";
 import { CSpyException } from "./thrift/bindings/shared_types";
+import { LIBSUPPORT_SERVICE } from "./thrift/bindings/libsupport_types";
+import { LibSupportHandler } from "./libSupportHandler";
 const { Subject } = require('await-notify')
 
 
@@ -118,15 +121,25 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.sendEvent(new OutputEvent(event.text));
         });
 
-        this.cspyDebugger = await this.serviceManager.findService(DEBUGGER_SERVICE, Debugger);
-        this.sendEvent(new OutputEvent("Using C-SPY version: " + await this.cspyDebugger.service.getVersionString() + "\n"));
+        const libSupportHandler = new LibSupportHandler();
+        libSupportHandler.observeOutput(data => {
+            this.sendEvent(new OutputEvent(data, "stdout"));
+        });
+        libSupportHandler.observeExit(code => {
+            this.sendEvent(new OutputEvent("Target program terminated, exit code " + code));
+        });
+        this.serviceManager.startService(LIBSUPPORT_SERVICE, LibSupportService2, libSupportHandler);
 
         try {
             const sessionConfig = await new XclConfigurationResolver().resolveLaunchArguments(args);
+
+            this.cspyDebugger = await this.serviceManager.findService(DEBUGGER_SERVICE, Debugger);
+            this.sendEvent(new OutputEvent("Using C-SPY version: " + await this.cspyDebugger.service.getVersionString() + "\n"));
             await this.cspyDebugger.service.startSession(sessionConfig);
             // TODO: report progress using a frontend service and the Progress(Start|Update|End) DAP events
             await this.cspyDebugger.service.loadModule(args.program);
             this.sendEvent(new OutputEvent("Session started\n"));
+
             // only after loading modules can we initialize services using listwindows
             this.stackManager = await CSpyContextManager.instantiate(this.serviceManager);
             this.breakpointManager = await CSpyBreakpointManager.instantiate(this.serviceManager, this.clientLinesStartAt1, this.clientColumnsStartAt1);

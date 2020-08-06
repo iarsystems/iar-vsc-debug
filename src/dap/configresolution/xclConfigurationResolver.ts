@@ -31,9 +31,11 @@ export class XclConfigurationResolver extends BaseConfigurationResolver {
                 const pluginMatch = /--plugin=(.+)$/.exec(arg);
                 const macroMatch = /--macro=(.+)$/.exec(arg);
                 if (pluginMatch) {
-                    plugins.push(Path.parse(pluginMatch[1]).name);
+                    if (!/bat.(dll|so)$/.test(pluginMatch[1])) { // remove e.g. armbat plugin
+                        plugins.push(Path.parse(pluginMatch[1]).name);
+                    }
                 } else if (macroMatch) {
-                    plugins.push(macroMatch[1]); // not tested
+                    macros.push(macroMatch[1]); // not tested
                 } else if (/\s*--attach_to_running_target\s*/.test(arg)) {
                     attachToTarget = true;
                 } else {

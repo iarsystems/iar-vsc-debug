@@ -41,6 +41,8 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
         }
 
         const partialValues = await this.resolveLaunchArgumentsPartial(launchArguments);
+        // TODO: cross-platform-ify
+        const libsupportPath = Path.join(launchArguments.workbenchPath, partialValues.target, "bin", partialValues.target + "LibSupportEclipse.dll");
 
         const config: SessionConfiguration = new SessionConfiguration({
             attachToTarget: partialValues.attachToTarget,
@@ -52,7 +54,7 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
             leaveRunning: false,
             enableCRun: false,
             options: partialValues.options,
-            plugins: partialValues.plugins,
+            plugins: partialValues.plugins.concat([libsupportPath]),
             projectDir: Path.parse(launchArguments.projectPath).dir,
             projectName: Path.basename(launchArguments.projectPath),
             setupMacros: partialValues.setupMacros,
