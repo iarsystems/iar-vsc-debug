@@ -36,6 +36,8 @@ export class LibSupportHandler {
         // console input from the user. Instead, we have to set some state indicating that we're waiting
         // on user input, which tells the 'Evaluate' request handler to send the next REPL input here,
         // so we can send it back to C-SPY.
+        // A better way might be to use cspybat instead of the thrift libsupport, and use the RunInTerminal
+        // reverse request to create a terminal we can use for user I/O.
         return Q.resolve("");
     }
 
