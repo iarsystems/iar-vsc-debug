@@ -50,9 +50,10 @@ VS Code; it's not really in the spirit of VS Code to have too much complex, IDE-
 
 ## Thoughts on the (thrift) C-SPY API
 
-The C-SPY API tends to present data as abstract cells in list windows with loosely defined columns,
-and the frontend doesn't normally need to be aware of what the data represents.
-Conversely, the DAP purposefully avoids GUI abstractions. Instead it requires data to be
+Parts of the C-SPY thrift API presents data as abstract cells in list windows with loosely defined columns,
+and the idea is that the frontend doesn't need to be aware of what the data represents, only how
+to render it.
+The DAP, on the other hand, purposefully avoids GUI abstractions. Instead it requires data to be
 formatted in very specific ways and with very specific meanings. This places the Debug Adapter
 in an inconvenient position where it has to make assumptions about and parse the contents of these
 abstract windows, in order to generate DAP-formatted data.
@@ -68,7 +69,9 @@ with fresh data,
 and there is no way to update or amend the data after it has been sent to the frontend.
 
 Parts of the thrift API that do not use list windows have neither of these problems, of course,
-and generally work very well with the DAP.
+and generally work very well with the DAP. I could probably have relied less on list windows
+and more on synchronous thrift calls, but some list window data did not seem to be available from
+synchronous calls (e.g. variable locations).
 
 ## Generating debug configurations
 
@@ -79,3 +82,22 @@ to replicate the debug configuration the user has defined in EW. My solution par
 in *some* cases, but it would very helpful if there was a proper and easy way for a client
 to configure the debugger from a set of project files without having to know too much about the
 process (maybe there could be a thrift procedure for this?).
+
+## How this relates to `iar-vsc`
+
+The debugging project consists of two parts:
+
+* The Debug Adapter described above.
+* A small VS Code extension that tells VS Code how to launch the Debug Adapter.
+
+The extension shares virtually no code with `iar-vsc` (the other VS Code extension I have worked on,
+which is open-source and maintained by someone not affiliated with IAR).
+This means that if we wanted to release this, we could release it as a totally separate, debugging-only
+extension. That way, we wouldn't have to open-source it and we'd be more in control of the development and
+release process. It'd be slightly confusing to users, though.
+
+Extensions are usually published to the VS Code marketplace using a command-line tool called `vsce`.
+The official documentation has examples on [how to build, test and publish an extension](https://code.visualstudio.com/api/working-with-extensions/continuous-integration)
+using Azure Pipelines, but it probably also applies to Jenkins.
+
+The code for this project is in [my git repo](http://git.iar.se/gitweb.cgi?p=user/hampusad.git;a=tree;f=vscode-mock-debug;hb=HEAD).
