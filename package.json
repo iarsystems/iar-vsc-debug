@@ -106,7 +106,9 @@
 				"label": "C-SPY Debug",
 				"program": "./out/dap/cspyDebug.js",
 				"runtime": "node",
-				"languages": ["c"],
+				"languages": [
+					"c"
+				],
 				"configurationAttributes": {
 					"launch": {
 						"required": [
@@ -157,10 +159,9 @@
 						"name": "Debug with C-SPY",
 						"program": "${workspaceFolder}/Debug/Exe/ewproj.out",
 						"stopOnEntry": true,
-						"workbenchPath": {
-							"windows": "c:/Program Files (x86)/IAR Systems/Embedded Workbench/",
-							"linux": "/usr/share/IARSystems/Embedded Workbench/"
-						}
+						"workbenchPath":  "${command:iar-settings.workbench}",
+						"projectPath": "${command:iar-settings.project-file}",
+						"projectConfiguration": "${command:iar-settings.project-configuration}"
 					}
 				],
 				"configurationSnippets": [
@@ -173,7 +174,9 @@
 							"name": "${4:Debug with C-SPY}",
 							"program": "^\"\\${workspaceFolder}/Debug/Exe/${1:ewproj.out}\"",
 							"stopOnEntry": true,
-							"workbenchPath": "${3:Path to installation}"
+							"workbenchPath":  "${command:iar-settings.workbench}",
+							"projectPath": "${command:iar-settings.project-file}",
+							"projectConfiguration": "${command:iar-settings.project-configuration}"
 						}
 					}
 				]
