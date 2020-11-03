@@ -113,7 +113,6 @@
 					"launch": {
 						"required": [
 							"program",
-							"sourceFile",
 							"workbenchPath",
 							"projectPath",
 							"projectConfiguration"
