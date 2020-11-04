@@ -17,7 +17,8 @@ export class XclConfigurationResolver extends BaseConfigurationResolver {
         const settingsFolder = Path.join(Path.parse(args.projectPath).dir, "settings");
         const projectName = Path.parse(args.projectPath).name;
 
-        const argsFile = Path.join(settingsFolder, `${projectName}.${args.projectConfiguration}.general.xcl`);
+        const programFile = Path.parse(args.program).name;
+        const argsFile = Path.join(settingsFolder, `${programFile}.${args.projectConfiguration}.general.xcl`);
         const argsLines = this.readLinesFromXclFile(argsFile);
         const processorLib = argsLines[0];
         const driverLib = argsLines[1];
