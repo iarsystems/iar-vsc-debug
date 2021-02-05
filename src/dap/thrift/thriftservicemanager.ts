@@ -38,6 +38,7 @@ export class ThriftServiceManager implements Disposable {
      */
     async dispose() {
         // Since we're using cspyserver, we close the process from the debugger service
+        // VSC-3 CSpyServer will stop the C-Spy session before exiting
         const dgbr = await this.findService(DEBUGGER_SERVICE, Debugger);
         await dgbr.service.exit();
         dgbr.dispose();

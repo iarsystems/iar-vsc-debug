@@ -189,7 +189,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
     protected async terminateRequest(response: DebugProtocol.TerminateResponse, args: DebugProtocol.TerminateArguments) {
         this.sendResponse(response);
         try {
-            await this.cspyDebugger.service.stopSession();
             await this.endSession();
         } catch (e) {console.log(e);}
         this.sendEvent(new TerminatedEvent());
@@ -358,7 +357,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
     private async endSession() {
         await this.stackManager.dispose();
         this.breakpointManager.dispose();
+        // Will disconnect this DAP debugger client
         this.cspyDebugger.dispose();
+        // VSC-3 This will take care of orderly shutting down CSpyServer
         await this.serviceManager.dispose();
     }
 }
