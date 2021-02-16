@@ -8,7 +8,8 @@
 			"preLaunchTask": "npm",
 			"runtimeExecutable": "${execPath}",
 			"args": [
-				"--extensionDevelopmentPath=${workspaceFolder}"
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"${workspaceFolder}/samples/GettingStarted"
 			],
 			"outFiles": [ "${workspaceFolder}/out/**/*.js" ]
 		},

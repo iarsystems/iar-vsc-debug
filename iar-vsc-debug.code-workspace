@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"javascript.validate.enable": false,
+		"typescript.tsdk": "node_modules/typescript/lib"
+	},
+	"extensions": {
+		"recommendations": [
+			"pluyckx.iar-vsc"
+		]
+	}
+}

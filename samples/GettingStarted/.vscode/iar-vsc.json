@@ -1,0 +1,6 @@
+{
+    "ewp": "e:\\iar-vscode-github\\iar-vsc-debug\\samples\\GettingStarted\\BasicDebugging.ewp",
+    "configuration": "Debug",
+    "compiler": "E:\\Program Files (x86)\\IAR Systems\\Embedded Workbench for ARM 8.50.6\\arm\\bin\\iccarm.exe",
+    "workbench": "E:/Program Files (x86)/IAR Systems/Embedded Workbench for ARM 8.50.6"
+}
