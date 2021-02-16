@@ -315,6 +315,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
             response.message = e.toString();
         }
         this.sendResponse(response);
+
+        // Variable requests are also performed when the target is idle
+        this.performDisassemblyEvent();
     }
 
     protected async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments) {
@@ -350,8 +353,20 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.sendResponse(response);
     }
 
+    protected async disassembleRequest(response: DebugProtocol.DisassembleResponse, args: DebugProtocol.DisassembleArguments, request?: DebugProtocol.Request) {
+        console.log("DAP Disassemble", args);
+    }
+
     private performDisassemblyEvent() {
-        // TODO: implement
+        // This relies on some other call to have set a suitable "inspection context" in C-SPY
+        this.stackManager.fetchDisassembly().then((disasmBlock)=>{
+            this.sendEvent({
+                event: "disassembly",
+                body: disasmBlock,
+                seq: this.eventSeq++,
+                type: "event",
+            })
+        });
     }
 
     private async endSession() {
