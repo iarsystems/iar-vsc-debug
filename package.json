@@ -4,6 +4,10 @@
 	"version": "0.25.0",
 	"publisher": "hampusad",
 	"description": "An example extension & Debug Adapter for C-SPY with VS Code",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/mario-pi/iar-vsc-debug"
+	},
 	"author": {
 		"name": "Hampus Adolfsson",
 		"email": "hampusad@iar.com"
