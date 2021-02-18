@@ -10,6 +10,7 @@ The Debug Adapter implementation for C-SPY can be found in `src/dap/cspyDebug.ts
 
 Please note that this is only a prototype and it is not meant for public distribution.
 
+![Screenshot](md-images/debug-session-screenshot.png)
 
 ## Setup
 Open the workspace `iar-vsc-debug.vscode-workspace` in VS Code, and run `npm install` in the terminal. You should be prompted to install the recommended extension `iar-vsc`, described below.
@@ -44,3 +45,7 @@ the `settings` folder in your project is populated with configuration files.
 
 Then, open up `.vscode/launch.json` created by the debug extension within the project folder and make sure
 you have a valid C-SPY launch configuration.
+
+## Architectural overview
+A "birds eye" view of the extension code follows:
+![Architecture diagram](md-images/artchitecture-overview.png)
