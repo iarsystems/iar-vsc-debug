@@ -39,17 +39,16 @@ class VariableReference {
 
 /**
  * A disassembled block of instructions
+ *
+ * TODO: Port to standard DAP types
  */
 export class DisassembledBlock {
     public currentRow: number;
-    public breakpointRows: number[];
     public instructions: string[];
     constructor(){
         this.currentRow = 0;
-        this.breakpointRows = [];
         this.instructions = [];
     }
-
 }
 
 
@@ -210,17 +209,17 @@ export class CSpyContextManager implements Disposable {
     async fetchDisassembly(): Promise<DisassembledBlock> {
         const currentInspectionContextInfo = await this.contextManager.service.getContextInfo(this.currentInspectionContext);
         const currAddress = currentInspectionContextInfo.execLocation.address;
-        var startLocation = new Location();
-        startLocation.zone = currentInspectionContextInfo.execLocation.zone;
-        startLocation.address = currentInspectionContextInfo.execLocation.address + new Int64(-20);
-        var endLocation = new Location();
-        endLocation.zone = currentInspectionContextInfo.execLocation.zone;
-        endLocation.address = currentInspectionContextInfo.execLocation.address + new Int64(40);
+        const startLocation = new Location({
+            zone: currentInspectionContextInfo.execLocation.zone,
+            address: currentInspectionContextInfo.execLocation.address + new Int64(-20)
+        });
+        const endLocation = new Location({
+            zone: currentInspectionContextInfo.execLocation.zone,
+            address: currentInspectionContextInfo.execLocation.address + new Int64(40)
+        });
 
         const disasmLocations = await this.disasm.service.disassembleRange(startLocation, endLocation,
             this.currentInspectionContext);
-        var result: string[];
-
         // Reduce a DisassembledBlock from the array of disassembled locations
         return disasmLocations
                .reduce((result, dloc) => {

@@ -56,10 +56,17 @@ export function activate(context: vscode.ExtensionContext) {
             if (ENABLE_MEMORY_VIEW && e.event === "memory") {
                 memoryDocumentProvider.setData(e.body, vscode.Uri.parse("memory:Symbolic Memory.iarmem"));
             } else if (ENABLE_DISASSEMBLY_VIEW && e.event === "disassembly") {
+                /*
+                 * This event is sent by performDisassemblyEvent(), and carries a
+                 * disassembled block as its <tt>body</tt>.
+                 *
+                 * Unlike with CSpyRuby, breakpoint markers are not available here.
+                 * They should be updated by listening to VSCode breakpoint events.
+                 */
                 const disasmBlock: DisassembledBlock = e.body;
                 disasmView.setData(
                     disasmBlock.instructions,
-                    disasmBlock.breakpointRows,
+                    [], // We cannot update breakpoints at this time
                     disasmBlock.currentRow >= 0 ? disasmBlock.currentRow : undefined);
             }
         }
