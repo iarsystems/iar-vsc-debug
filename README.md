@@ -31,11 +31,11 @@ The debug extension has been tested with Embedded Workbench for ARM version 8.50
 
 ## Debugging the sample workspace
 
-Launch the `Extension + Server` configuration from the debugging panel.
+Launch the `Extension` configuration from the debugging panel (the DAP adapter runs 'inline' in the extension and thus does not need a `Server` launch).
 The launch will default to an the `samples/GettingStarted` VSCode workspace, containing an
 Embedded Workbench project.
 
-You can build the project using `Terminal > Run Task > iar > Build` and then debug it
+For some reason the `iar-vsc` build extension might clean the example project when you open the sample project. You can then build the project again using `Terminal > Run Task > iar > Build` and then debug it
 selecting the `Debug with C-SPY` launch type.
 
 ## Debugging your own projects

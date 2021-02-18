@@ -6,6 +6,7 @@ import { MemoryDocumentProvider } from './memoryDocumentProvider';
 import { DisassemblyView } from './disassemblyView';
 import { getEnabledCategories } from 'trace_events';
 import { DisassembledBlock } from './dap/cspyContextManager';
+import { CSpyDebugSession } from './dap/cspyDebug';
 
 /** Set to <tt>true</tt> to enable the Disassembly view */
 const ENABLE_DISASSEMBLY_VIEW = true;
@@ -18,10 +19,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('cspy', new CSpyConfigurationProvider()));
     vscode.debug.registerDebugAdapterDescriptorFactory("cspy", {
         createDebugAdapterDescriptor(session: vscode.DebugSession, executable: vscode.DebugAdapterExecutable | undefined): ProviderResult<vscode.DebugAdapterDescriptor> {
-            return new vscode.DebugAdapterServer(4711);
-            // 	port: 4711,
-            // 	host: "localhost"
-            // }
+            return new vscode.DebugAdapterInlineImplementation(new CSpyDebugSession());
         }
     });
 
