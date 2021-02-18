@@ -10,10 +10,14 @@ The Debug Adapter implementation for C-SPY can be found in `src/dap/cspyDebug.ts
 
 Please note that this is only a prototype and it is not meant for public distribution.
 
-## Installing the `iar-vsc` extension
+![Screenshot](md-images/debug-session-screenshot.png)
+
+## Setup
+Open the workspace `iar-vsc-debug.vscode-workspace` in VS Code, and run `npm install` in the terminal. You should be prompted to install the recommended extension `iar-vsc`, described below.
+### Installing the `iar-vsc` extension
 
 To simplify the setup of a C-SPY launch for new projects, you should install the extension
-`IAR for Visual Studio Code` (`iar-vsc`) from the marketplace (https://marketplace.visualstudio.com/items?itemName=pluyckx.iar-vsc).
+`IAR for Visual Studio Code` (`iar-vsc`) from the marketplace (<https://marketplace.visualstudio.com/items?itemName=pluyckx.iar-vsc>).
 Note that `iar-vsc` has been added to the recommendations for the workspace shipped with the debug extension.
 This extension will create a default launch configuration which reuses some of the settings from `iar-vsc`, among which the
 Embedded Workbench installation location.
@@ -27,10 +31,12 @@ The debug extension has been tested with Embedded Workbench for ARM version 8.50
 
 ## Debugging the sample workspace
 
-To run the debug extension, open the workspace `iar-vsc-debug.vscode-workspace` in VS Code, and run `npm install` in the terminal.
-Then, launch the `Extension + Server` configuration from the debugging panel.
+Launch the `Extension + Server` configuration from the debugging panel.
 The launch will default to an the `samples/GettingStarted` VSCode workspace, containing an
-Embedded Workbench project ready to be debugged.
+Embedded Workbench project.
+
+You can build the project using `Terminal > Run Task > iar > Build` and then debug it
+selecting the `Debug with C-SPY` launch type.
 
 ## Debugging your own projects
 
@@ -40,6 +46,6 @@ the `settings` folder in your project is populated with configuration files.
 Then, open up `.vscode/launch.json` created by the debug extension within the project folder and make sure
 you have a valid C-SPY launch configuration.
 
-Note that the variables window only works on very recent EW builds (i.e. builds from aug 2020 and later).
-Previous EW versions I tested had bugs where some C-SPY services either wouldn't start, or would start with pipes
-instead of sockets.
+## Architectural overview
+A "birds eye" view of the extension code follows:
+![Architecture diagram](md-images/artchitecture-overview.png)

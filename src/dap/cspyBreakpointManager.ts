@@ -2,7 +2,7 @@
 
 import * as Breakpoints from "./thrift/bindings/Breakpoints";
 import { DebugProtocol } from "vscode-debugprotocol";
-import { AccessType } from "./thrift/bindings/shared_types";
+import { AccessType, Breakpoint, Location } from "./thrift/bindings/shared_types";
 import { Disposable } from "./disposable";
 import { ThriftServiceManager } from "./thrift/thriftservicemanager";
 import { BREAKPOINTS_SERVICE } from "./thrift/bindings/breakpoints_types";
@@ -68,6 +68,13 @@ export class CSpyBreakpointManager implements Disposable {
                 }
             }
         }));
+    }
+
+    /**
+     * Get the breakpoints which have been submitted to C-SPY.
+     */
+    async getBreakpoints(): Promise<Breakpoint[]> {
+        return  this.breakpointService.service.getBreakpoints();
     }
 
     dispose(): void {

@@ -264,7 +264,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
-        // doesn't support multicore for now, so just return a default 'thread'
+        // doesn't support RTOS or multicore for now, so just return a default 'thread'
         response.body = {
             threads: [
                 new Thread(CSpyDebugSession.THREAD_ID, "core 1")
@@ -315,6 +315,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
             response.message = e.toString();
         }
         this.sendResponse(response);
+
+        // Variable requests are also performed when the target is idle
+        this.performDisassemblyEvent();
     }
 
     protected async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments) {
@@ -350,8 +353,27 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.sendResponse(response);
     }
 
+    // Currently not supported by VSCode
+    protected async disassembleRequest(response: DebugProtocol.DisassembleResponse, args: DebugProtocol.DisassembleArguments, request?: DebugProtocol.Request) {
+        console.log("DAP Disassemble", args);
+    }
+
+    /**
+     * As <tt>disassembleRequest</tt> is not supported by VSCode, we use our own callback.
+     * <p>This is called along with e.g. variable requests and sends a custom DAP event
+     * which is picked up by the extension to update our custom Disassembly view.
+     */
     private performDisassemblyEvent() {
-        // TODO: implement
+        // This relies on some other call to have set a suitable "inspection context" in C-SPY
+        const breakpoints = this.breakpointManager.getBreakpoints();
+        this.stackManager.fetchDisassembly().then((disasmBlock)=>{
+            this.sendEvent({
+                event: "disassembly",
+                body: disasmBlock,
+                seq: this.eventSeq++,
+                type: "event",
+            })
+        });
     }
 
     private async endSession() {

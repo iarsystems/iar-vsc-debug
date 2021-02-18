@@ -4,6 +4,13 @@ import * as vscode from 'vscode';
 import { WorkspaceFolder, DebugConfiguration, ProviderResult, CancellationToken } from 'vscode';
 import { MemoryDocumentProvider } from './memoryDocumentProvider';
 import { DisassemblyView } from './disassemblyView';
+import { getEnabledCategories } from 'trace_events';
+import { DisassembledBlock } from './dap/cspyContextManager';
+
+/** Set to <tt>true</tt> to enable the Disassembly view */
+const ENABLE_DISASSEMBLY_VIEW = true;
+/** Set to <tt>true</tt> to enable the Symbolic Memory view */
+const ENABLE_MEMORY_VIEW = false;
 
 export function activate(context: vscode.ExtensionContext) {
     console.log("activating");
@@ -33,19 +40,34 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.debug.onDidStartDebugSession(async session => {
         if (session.type === "cspy") {
             // TODO: should probably not open automatically (maybe add a setting for it)
-            // const memoryDocument = await vscode.workspace.openTextDocument(vscode.Uri.parse("memory:Symbolic Memory.iarmem"));
-            // await vscode.window.showTextDocument(memoryDocument, { preview: false, preserveFocus: true, viewColumn: vscode.ViewColumn.Three });
-            // disasmView.open();
+            if(ENABLE_MEMORY_VIEW) {
+                const memoryDocument = await vscode.workspace.openTextDocument(vscode.Uri.parse("memory:Symbolic Memory.iarmem"));
+                await vscode.window.showTextDocument(memoryDocument, { preview: false, preserveFocus: true, viewColumn: vscode.ViewColumn.Three });
+            }
+            if(ENABLE_DISASSEMBLY_VIEW) {
+                disasmView.open();
+            }
         }
     }));
 
     // Note: sometimes, VS Code calls this handler before onDidStartDebugSession
     context.subscriptions.push(vscode.debug.onDidReceiveDebugSessionCustomEvent(async (e: vscode.DebugSessionCustomEvent) => {
         if (e.session.type === "cspy") {
-            if (e.event === "memory") {
+            if (ENABLE_MEMORY_VIEW && e.event === "memory") {
                 memoryDocumentProvider.setData(e.body, vscode.Uri.parse("memory:Symbolic Memory.iarmem"));
-            } else if (e.event === "disassembly") {
-                disasmView.setData(e.body.disasm, e.body.bp_rows, e.body.cur_row >= 0 ? e.body.cur_row : undefined);
+            } else if (ENABLE_DISASSEMBLY_VIEW && e.event === "disassembly") {
+                /*
+                 * This event is sent by performDisassemblyEvent(), and carries a
+                 * disassembled block as its <tt>body</tt>.
+                 *
+                 * Unlike with CSpyRuby, breakpoint markers are not available here.
+                 * They should be updated by listening to VSCode breakpoint events.
+                 */
+                const disasmBlock: DisassembledBlock = e.body;
+                disasmView.setData(
+                    disasmBlock.instructions,
+                    [], // We cannot update breakpoints at this time
+                    disasmBlock.currentRow >= 0 ? disasmBlock.currentRow : undefined);
             }
         }
     }));

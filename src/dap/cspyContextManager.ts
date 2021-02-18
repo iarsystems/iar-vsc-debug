@@ -1,17 +1,20 @@
 'use strict';
 
-import { ContextRef, ContextType, ExprFormat } from "./thrift/bindings/shared_types";
+import { ContextRef, ContextType, ExprFormat, Location } from "./thrift/bindings/shared_types";
 import * as ContextManager from "./thrift/bindings/ContextManager";
 import * as Debugger from "./thrift/bindings/Debugger";
+import * as Disassembly from "./thrift/bindings/Disassembly";
 import { StackFrame, Source, Scope, Handles, Variable } from "vscode-debugadapter";
 import { basename } from "path";
 import { ExprValue, CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE } from "./thrift/bindings/cspy_types";
+import { DISASSEMBLY_SERVICE, DisassembledLocation } from "./thrift/bindings/disassembly_types";
 import { Disposable } from "./disposable";
 import { ThriftServiceManager } from "./thrift/thriftservicemanager";
 import { ThriftClient } from "./thrift/thriftclient";
 import { WindowNames } from "./listWindowConstants";
 import { ListWindowVariablesProvider, VariablesProvider } from "./variablesProvider";
 import { ListWindowRow } from "./listWindowClient";
+var Int64 = require('node-int64');
 
 /**
  * Describes a scope, i.e. a C-SPY context used to access the scope,
@@ -35,6 +38,21 @@ class VariableReference {
 }
 
 /**
+ * A disassembled block of instructions
+ *
+ * TODO: Port to standard DAP types
+ */
+export class DisassembledBlock {
+    public currentRow: number;
+    public instructions: string[];
+    constructor(){
+        this.currentRow = 0;
+        this.instructions = [];
+    }
+}
+
+
+/**
  * Takes care of managing stack contexts, and allows to perform operations
  * on/in a context (e.g. fetching or setting variables, evaluating expressions)
  */
@@ -54,6 +72,7 @@ export class CSpyContextManager implements Disposable {
             await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.LOCALS, RowToVariableConverters.locals).catch(onProviderUnavailable),
             await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.STATICS, RowToVariableConverters.statics).catch(onProviderUnavailable),
             await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.REGISTERS, RowToVariableConverters.registers).catch(onProviderUnavailable),
+            await serviceMgr.findService(DISASSEMBLY_SERVICE, Disassembly.Client),
         );
     }
 
@@ -73,7 +92,8 @@ export class CSpyContextManager implements Disposable {
                         private dbgr: ThriftClient<Debugger.Client>,
                         private localsProvider: ListWindowVariablesProvider | undefined,
                         private staticsProvider: ListWindowVariablesProvider | undefined,
-                        private registersProvider: ListWindowVariablesProvider | undefined) {
+                        private registersProvider: ListWindowVariablesProvider | undefined,
+                        private disasm: ThriftClient<Disassembly.Client>) {
     }
 
     /**
@@ -182,6 +202,37 @@ export class CSpyContextManager implements Disposable {
         }
         return variable;
     }
+
+    /**
+     * Fetches a fixed number of disassembly lines from the current inspection context
+     */
+    async fetchDisassembly(): Promise<DisassembledBlock> {
+        const currentInspectionContextInfo = await this.contextManager.service.getContextInfo(this.currentInspectionContext);
+        const currAddress = currentInspectionContextInfo.execLocation.address;
+        const startLocation = new Location({
+            zone: currentInspectionContextInfo.execLocation.zone,
+            address: currentInspectionContextInfo.execLocation.address + new Int64(-20)
+        });
+        const endLocation = new Location({
+            zone: currentInspectionContextInfo.execLocation.zone,
+            address: currentInspectionContextInfo.execLocation.address + new Int64(40)
+        });
+
+        const disasmLocations = await this.disasm.service.disassembleRange(startLocation, endLocation,
+            this.currentInspectionContext);
+        // Reduce a DisassembledBlock from the array of disassembled locations
+        return disasmLocations
+               .reduce((result, dloc) => {
+                    if(dloc.location.address.compare(currAddress) == 0){
+                        // We are about to append the current instruction block
+                        result.currentRow = result.instructions.length;
+                   }
+                   // Append the instructions of the current block
+                   result.instructions = result.instructions.concat(dloc.instructions);
+                   return result;
+               }, new DisassembledBlock());
+    }
+
 }
 
 /**
