@@ -162,7 +162,7 @@
 						"name": "Debug with C-SPY",
 						"program": "${workspaceFolder}/Debug/Exe/ewproj.out",
 						"stopOnEntry": true,
-						"workbenchPath":  "${command:iar-settings.workbench}",
+						"workbenchPath": "${command:iar-settings.workbench}",
 						"projectPath": "${command:iar-settings.project-file}",
 						"projectConfiguration": "${command:iar-settings.project-configuration}"
 					}
@@ -177,7 +177,7 @@
 							"name": "${4:Debug with C-SPY}",
 							"program": "^\"\\${workspaceFolder}/Debug/Exe/${1:ewproj.out}\"",
 							"stopOnEntry": true,
-							"workbenchPath":  "${command:iar-settings.workbench}",
+							"workbenchPath": "${command:iar-settings.workbench}",
 							"projectPath": "${command:iar-settings.project-file}",
 							"projectConfiguration": "${command:iar-settings.project-configuration}"
 						}
