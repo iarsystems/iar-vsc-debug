@@ -1,0 +1,16 @@
+[
+    {
+        "directory": "$DIR$",
+        "arguments": ["$COMPILER_NAME$", "$DIR$/main.c", "-o", "$DIR$/Test/Obj/"],
+        "file": "$DIR$/main.c",
+        "output": "$DIR$/Test/Obj/main.o",
+        "type": "COMPILER"
+    },
+    {
+        "directory": "$DIR$",
+        "arguments": ["$LINKER_NAME$", "$DIR$/Test/Obj/main.o", "-o", "$DIR$/Test/Exe/$PROJ_NAME$.out"],
+        "file": "$DIR$/Test/Obj/main.o",
+        "output": "$DIR$/Test/Exe/$PROJ_NAME$.out",
+        "type": "LINKER"
+    }
+]
