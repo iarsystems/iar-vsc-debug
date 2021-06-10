@@ -81,8 +81,9 @@ suite("New tests", () =>{
             stopOnEntry:true
         }
         await vscode.debug.startDebugging(undefined,dbgConfig);
-        if(vscode.debug.activeDebugSession){
-            await vscode.debug.activeDebugSession.customRequest('step');
+        let activeSession = vscode.debug.activeDebugSession;
+        if(activeSession){
+            await TestUtils.assertCurrentLineIs(activeSession,"",43,1);
         }
         await vscode.debug.stopDebugging();
         console.log("Done");

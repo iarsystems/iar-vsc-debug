@@ -1,7 +1,8 @@
 
-import * as Path from "path";
-import {DebugClient} from 'vscode-debugadapter-testsupport'
+
 import assert = require('assert')
+import * as vscode from 'vscode';
+import { DebugSession, StackFrame } from 'vscode-debugadapter';
 
 /**
  *  Class contaning utility methods for the tests.
@@ -17,17 +18,14 @@ export class TestUtils{
 
 	}
 
-	static assertStackIs(client: DebugClient, path: string, line: number, column: number){
-		console.log('Checking stack');
-		return client.stackTraceRequest({threadId: 0}).then((stack)=>{
-			const frame = stack.body.stackFrames[0];
-			if(frame.source?.path){
-				// Only check if available.
-				assert.ok(frame.source.path.includes(path),'');
+	static assertCurrentLineIs(session: vscode.DebugSession, path: string, line: number, column: number){
+		return session.customRequest('stackTrace').then((response)=>{
+			if(response.stackFrames)
+			{
+				let currentStack = response.stackFrames[0];
+				assert.strictEqual(currentStack.line,line);
+				assert.strictEqual(currentStack.column,column);
 			}
-            assert.strictEqual(frame.line, line, 'stopped location: line mismatch');
-            assert.strictEqual(frame.column, column, 'stopped location: column mismatch');
-            return stack;
-		})
+		});
 	}
 }
