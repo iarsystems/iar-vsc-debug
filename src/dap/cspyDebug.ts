@@ -5,11 +5,12 @@ import * as Debugger from "./thrift/bindings/Debugger";
 import * as DebugEventListener from "./thrift/bindings/DebugEventListener";
 import * as LibSupportService2 from "./thrift/bindings/LibSupportService2";
 import { ThriftClient } from "./thrift/thriftclient";
-import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant } from "./thrift/bindings/cspy_types";
+import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant, SessionConfiguration } from "./thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
 import { CSpyContextManager } from "./cspyContextManager";
 import { CSpyBreakpointManager } from "./cspyBreakpointManager";
 import { XclConfigurationResolver } from "./configresolution/xclConfigurationResolver";
+import { LaunchArgumentConfigurationResolver}  from "./configresolution/launchArgumentConfigurationResolver";
 import { CSpyException } from "./thrift/bindings/shared_types";
 import { LIBSUPPORT_SERVICE } from "./thrift/bindings/libsupport_types";
 import { LibSupportHandler } from "./libSupportHandler";
@@ -36,6 +37,14 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     projectPath: string;
     /** Name of the project configuration to debug (e.g. Debug) */
     projectConfiguration: string;
+    /** The name of the driver library to use.*/
+    driverLib?: string;
+    /** The driver options as a list of string*/
+    driverOptions?: string[];
+    /** A list the macros to load*/
+    macros?: string[];
+    /** A list of plugins to load */
+    plugins?: string[];
 }
 
 /**
@@ -131,7 +140,13 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.serviceManager.startService(LIBSUPPORT_SERVICE, LibSupportService2, libSupportHandler);
 
         try {
-            const sessionConfig = await new XclConfigurationResolver().resolveLaunchArguments(args);
+            var sessionConfig:SessionConfiguration;
+            if(args.driverLib && args.driverOptions){
+                // The user has specified argument to use for the launch process.
+                sessionConfig = await new LaunchArgumentConfigurationResolver().resolveLaunchArguments(args);
+            }else{
+                sessionConfig = await new XclConfigurationResolver().resolveLaunchArguments(args);
+            }
 
             this.cspyDebugger = await this.serviceManager.findService(DEBUGGER_SERVICE, Debugger);
             this.sendEvent(new OutputEvent("Using C-SPY version: " + await this.cspyDebugger.service.getVersionString() + "\n"));
