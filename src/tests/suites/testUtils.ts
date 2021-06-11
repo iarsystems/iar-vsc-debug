@@ -20,11 +20,12 @@ export class TestUtils{
 
 	static assertCurrentLineIs(session: vscode.DebugSession, path: string, line: number, column: number){
 		return session.customRequest('stackTrace').then((response)=>{
+			console.log("Checking stack");
 			if(response.stackFrames)
 			{
 				let currentStack = response.stackFrames[0];
-				assert.strictEqual(currentStack.line,line);
-				assert.strictEqual(currentStack.column,column);
+				assert.strictEqual(currentStack.line,line,`Wrong line: expected ${line} got ${currentStack.line}`);
+				assert.strictEqual(currentStack.column,column,`Wrong column: expected ${column} got ${currentStack.column}`);
 			}
 		});
 	}

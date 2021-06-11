@@ -1,4 +1,5 @@
 import assert = require('assert');
+import mocha = require('mocha')
 import * as Path from 'path';
 import {CSpyLaunchRequestArguments} from '../../dap/cspyDebug';
 import * as vscode from 'vscode';
@@ -57,7 +58,10 @@ suite("New tests", () =>{
 	const PROJECT_ROOT = Path.join(__dirname, '../../../');
 	const DATA_ROOT = Path.join(PROJECT_ROOT, 'src/tests/data/');
 
-    const launchArgs:CSpyLaunchRequestArguments = {
+    const dbgConfig:vscode.DebugConfiguration = {
+        type: 'cspy',
+        request: 'launch',
+        name: 'Test',
         program: Path.join(PROJECT_ROOT,"samples","GettingStarted","Debug","Exe","BasicDebugging.out"),
         workbenchPath: "/home/power/ewarm-master/StageLinux_x86_64/Release",
         projectPath: Path.join(PROJECT_ROOT,"samples","GettingStarted"),
@@ -65,28 +69,38 @@ suite("New tests", () =>{
         driverLib: "SIM2",
         driverOptions: ["--endian=little", "--cpu=ARM7TDMI", "--fpu=None", "--semihosting", "--multicore_nr_of_cores=1"],
         stopOnEntry:true
-        }
+    }
 
-    test("Launch dbg",async ()=>{
-        const dbgConfig:vscode.DebugConfiguration = {
-            type: 'cspy',
-            request: 'launch',
-            name: 'Test',
-            program: Path.join(PROJECT_ROOT,"samples","GettingStarted","Debug","Exe","BasicDebugging.out"),
-            workbenchPath: "/home/power/ewarm-master/StageLinux_x86_64/Release",
-            projectPath: Path.join(PROJECT_ROOT,"samples","GettingStarted"),
-            projectConfiguration: "Debug",
-            driverLib: "SIM2",
-            driverOptions: ["--endian=little", "--cpu=ARM7TDMI", "--fpu=None", "--semihosting", "--multicore_nr_of_cores=1"],
-            stopOnEntry:true
-        }
-        await vscode.debug.startDebugging(undefined,dbgConfig);
-        let activeSession = vscode.debug.activeDebugSession;
-        if(activeSession){
-            await TestUtils.assertCurrentLineIs(activeSession,"",43,1);
-        }
-        await vscode.debug.stopDebugging();
-        console.log("Done");
+    var activeSession : vscode.DebugSession;
+
+    vscode.debug.onDidStartDebugSession((session)=>{
+        activeSession = session;
+    });
+
+    mocha.beforeEach(()=>{
+        return vscode.debug.startDebugging(undefined,dbgConfig).then((response)=>{
+            assert.strictEqual(response,true);
+        });
+    })
+
+    mocha.afterEach( ()=>{
+        return activeSession.customRequest('terminate').then(()=>{
+            vscode.debug.stopDebugging(activeSession);
+        })
+    })
+
+    test("Test launch", ()=>{
+        return TestUtils.assertCurrentLineIs(activeSession,"",43,1);
+    })
+
+
+    test("Test step",()=>{
+        return TestUtils.assertCurrentLineIs(activeSession,"",43,1).then(()=>{
+            console.log("Stepping");
+            activeSession.customRequest('next',{granularity: ""}).then(()=>{
+                TestUtils.assertCurrentLineIs(activeSession,"",45,1)
+            })
+        })
     })
 
 });
