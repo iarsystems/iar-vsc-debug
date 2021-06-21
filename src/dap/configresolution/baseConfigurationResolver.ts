@@ -6,6 +6,7 @@ import { CSpyLaunchRequestArguments } from "../cspyDebug";
 import * as Path from "path";
 import { StackSettings } from "../thrift/bindings/shared_types";
 import * as Fs from "fs";
+import { IarOsUtils } from "../../utils/osUtils";
 
 /**
  * A session config containing only the values {@link BaseConfigurationResolver} is not able to provide.
@@ -41,8 +42,7 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
         }
 
         const partialValues = await this.resolveLaunchArgumentsPartial(launchArguments);
-        // TODO: cross-platform-ify
-        const libsupportPath = Path.join(launchArguments.workbenchPath, partialValues.target, "bin", partialValues.target + "LibSupportEclipse.dll");
+        const libsupportPath = IarOsUtils.resolveTargetLibrary(launchArguments.workbenchPath, partialValues.target, "LibSupportEclipse");
 
         const config: SessionConfiguration = new SessionConfiguration({
             attachToTarget: partialValues.attachToTarget,

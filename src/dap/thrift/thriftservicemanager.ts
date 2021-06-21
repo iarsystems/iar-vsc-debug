@@ -16,6 +16,7 @@ import { tmpdir } from "os";
 import { Server, AddressInfo } from "net";
 import { Disposable } from "../disposable";
 import { DEBUGGER_SERVICE } from "./bindings/cspy_types";
+import { IarOsUtils } from "../../utils/osUtils";
 
 /**
  * Provides and manages a set of thrift services.
@@ -129,7 +130,7 @@ export namespace ThriftServiceManager {
      * @param workbenchPath Path to the top-level folder of the workbench to use
      */
     export async function fromWorkbench(workbenchPath: string): Promise<ThriftServiceManager> {
-        let registryPath = path.join(workbenchPath, "common/bin/CSpyServer2.exe"); // TODO: cross-platform-ify
+        let registryPath = path.join(workbenchPath, "common/bin/CSpyServer2" + IarOsUtils.executableExtension()); // TODO: cross-platform-ify
         const tmpDir = getTmpDir(workbenchPath);
         const serviceRegistryProcess = spawn(registryPath, ["-standalone", "-sockets"],
                                                 { cwd: tmpDir });
