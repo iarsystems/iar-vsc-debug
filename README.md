@@ -13,6 +13,9 @@ Please note that this is only a prototype and it is not meant for public distrib
 ![Screenshot](md-images/debug-session-screenshot.png)
 
 ## Setup
+Start by initializing the utils submodule. If the code was checked out using "--recursive" from git, everything is setup otherwise run "git submodule update --init" to get the pinned version of the 
+utility repo. Run "git submodule update --remote" to get the latest available version of the repo. The folder can also be setup as a regular git repo by navigating to src/utils and run "git checkout master".
+
 Open the workspace `iar-vsc-debug.vscode-workspace` in VS Code, and run `npm install` in the terminal. You should be prompted to install the recommended extension `iar-vsc`, described below.
 ### Installing the `iar-vsc` extension
 
