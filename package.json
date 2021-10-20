@@ -79,10 +79,12 @@
 		"menus": {
 			"debug/toolBar": [
 				{
-					"command": "iar.stepOverInstruction"
+					"command": "iar.stepOverInstruction",
+					"when": "debugConfigurationType == cspy"
 				},
 				{
-					"command": "iar.stepIntoInstruction"
+					"command": "iar.stepIntoInstruction",
+					"when": "debugConfigurationType == cspy"
 				}
 			]
 		},
