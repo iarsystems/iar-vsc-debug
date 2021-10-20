@@ -140,7 +140,7 @@
 							},
 							"workbenchPath": {
 								"type": "string",
-								"description": "Path to the Embedded Workbench installation to use.",
+								"description": "Path to the Embedded Workbench installation to use (e.g. \"C:\\\\Program Files (x86)\\\\IAR Systems\\\\Embedded Workbench 8.3\").",
 								"default": "${command:iar-settings.workbench}"
 							},
 							"projectPath": {
@@ -175,12 +175,12 @@
 						"body": {
 							"type": "cspy",
 							"request": "launch",
-							"name": "${4:Debug with C-SPY}",
-							"program": "^\"\\${workspaceFolder}/Debug/Exe/${1:ewproj.out}\"",
+							"name": "${1:Debug with C-SPY}",
+							"program": "^\"\\${workspaceFolder}/Debug/Exe/${2:ewproj.out}\"",
 							"stopOnEntry": true,
-							"workbenchPath": "${command:iar-settings.workbench}",
-							"projectPath": "${command:iar-settings.project-file}",
-							"projectConfiguration": "${command:iar-settings.project-configuration}"
+							"workbenchPath": "^\"\\${command:iar-settings.workbench}\"",
+							"projectPath": "^\"\\${command:iar-settings.project-file}\"",
+							"projectConfiguration": "^\"\\${command:iar-settings.project-configuration}\""
 						}
 					}
 				]
