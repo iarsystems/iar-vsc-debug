@@ -105,6 +105,9 @@
 		"breakpoints": [
 			{
 				"language": "c"
+			},
+			{
+				"language": "cpp"
 			}
 		],
 		"debuggers": [
@@ -114,7 +117,7 @@
 				"program": "./out/dap/cspyDebug.js",
 				"runtime": "node",
 				"languages": [
-					"c"
+					"c", "cpp"
 				],
 				"configurationAttributes": {
 					"launch": {
