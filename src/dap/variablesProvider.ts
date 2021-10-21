@@ -1,7 +1,7 @@
 "use strict";
 
 import { Variable, Handles } from "vscode-debugadapter";
-import { ThriftServiceManager } from "./thrift/thriftservicemanager";
+import { ThriftServiceManager } from "./thrift/thriftServiceManager";
 import { ListWindowClient, ListWindowRow } from "./listWindowClient";
 import { Disposable } from "./disposable";
 

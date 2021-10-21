@@ -4,9 +4,9 @@ import * as Breakpoints from "./thrift/bindings/Breakpoints";
 import { DebugProtocol } from "vscode-debugprotocol";
 import { AccessType, Breakpoint, Location } from "./thrift/bindings/shared_types";
 import { Disposable } from "./disposable";
-import { ThriftServiceManager } from "./thrift/thriftservicemanager";
+import { ThriftServiceManager } from "./thrift/thriftServiceManager";
 import { BREAKPOINTS_SERVICE } from "./thrift/bindings/breakpoints_types";
-import { ThriftClient } from "./thrift/thriftclient";
+import { ThriftClient } from "./thrift/thriftClient";
 
 /**
  * Sets, unsets and verifies C-SPY breakpoints.

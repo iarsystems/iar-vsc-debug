@@ -4,8 +4,8 @@ import * as Q from "q";
 import { Note, Row, What } from "./thrift/bindings/listwindow_types";
 import * as ListWindowBackend from "./thrift/bindings/ListWindowBackend";
 import * as ListWindowFrontend from "./thrift/bindings/ListWindowFrontend";
-import { ThriftClient } from "./thrift/thriftclient";
-import { ThriftServiceManager } from "./thrift/thriftservicemanager";
+import { ThriftClient } from "./thrift/thriftClient";
+import { ThriftServiceManager } from "./thrift/thriftServiceManager";
 import { Int64 } from "thrift";
 import { Disposable } from "./disposable";
 

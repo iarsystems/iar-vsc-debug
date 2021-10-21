@@ -7,7 +7,7 @@ import { spawn, ChildProcess } from "child_process";
 import * as path from "path";
 import * as fs from "fs";
 import { ServiceLocation, Transport, Protocol } from "./bindings/ServiceRegistry_types";
-import { ThriftClient } from "./thriftclient";
+import { ThriftClient } from "./thriftClient";
 
 import * as CSpyServiceRegistry from "./bindings/CSpyServiceRegistry";
 import * as Debugger from "./bindings/Debugger";
@@ -151,7 +151,7 @@ export namespace ThriftServiceManager {
             console.log(dat.toString());
         });
         serviceRegistryProcess.stderr?.on("data", dat => {
-            console.log("ERR: " + dat.toString());
+            // console.log("ERR: " + dat.toString());
         });
         serviceRegistryProcess.on("exit", code => {
             console.log("CSpyServer exited: " + code);
@@ -191,6 +191,7 @@ export namespace ThriftServiceManager {
     function getTmpDir(workbenchPath: string): string {
         let openedFolder = "cspy";
         const hashed = createHash("md5").update(openedFolder + workbenchPath).digest("hex");
+        // const hashed = createHash("md5").update(openedFolder + workbenchPath + new Date().getMilliseconds()).digest("hex");
         const tmpPath = path.join(tmpdir(), "iar-vsc-" + hashed);
         if (!fs.existsSync(tmpPath)) {
             fs.mkdirSync(tmpPath);

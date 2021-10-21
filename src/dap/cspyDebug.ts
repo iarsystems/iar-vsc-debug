@@ -1,10 +1,10 @@
 import { DebugProtocol } from "vscode-debugprotocol";
 import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, DebugSession, TerminatedEvent } from "vscode-debugadapter";
-import { ThriftServiceManager } from "./thrift/thriftservicemanager";
+import { ThriftServiceManager } from "./thrift/thriftServiceManager";
 import * as Debugger from "./thrift/bindings/Debugger";
 import * as DebugEventListener from "./thrift/bindings/DebugEventListener";
 import * as LibSupportService2 from "./thrift/bindings/LibSupportService2";
-import { ThriftClient } from "./thrift/thriftclient";
+import { ThriftClient } from "./thrift/thriftClient";
 import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant, SessionConfiguration } from "./thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
 import { CSpyContextManager } from "./cspyContextManager";
