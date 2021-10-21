@@ -23,13 +23,15 @@ import { IarOsUtils } from "../../utils/osUtils";
  */
 export class ThriftServiceManager implements Disposable {
     private static readonly SERVICE_LOOKUP_TIMEOUT = 1000;
+    private static readonly CSPYSERVER_EXIT_TIMEOUT = 2000;
     private readonly activeServers: Server[] = [];
 
     /**
      * Create a new service manager from the given service registry.
+     * @param cspyProcess The CSpyServer process serving the service registry.
      * @param registryLocationPath Path to a file containing a valid {@link ServiceLocation} pointing to a service registry
      */
-    constructor(private registryLocationPath: fs.PathLike) {
+    constructor(private cspyProcess: ChildProcess, private registryLocationPath: fs.PathLike) {
     }
 
     /**
@@ -44,6 +46,16 @@ export class ThriftServiceManager implements Disposable {
         await dgbr.service.exit();
         dgbr.dispose();
         this.activeServers.forEach(server => server.close());
+        // Wait for cspyserver process to exit
+        if(this.cspyProcess.exitCode === null) {
+            await new Promise((resolve, reject) => {
+                this.cspyProcess.on("exit", resolve);
+                setTimeout(() => {
+                    reject("CSpyServer exit timed out");
+                    this.cspyProcess.kill();
+                }, ThriftServiceManager.CSPYSERVER_EXIT_TIMEOUT);
+            });
+        }
     }
 
     /**
@@ -57,7 +69,6 @@ export class ThriftServiceManager implements Disposable {
 
         const location = await registry.service.waitForService(serviceId, ThriftServiceManager.SERVICE_LOOKUP_TIMEOUT);
         const service = await this.getServiceAt(location, serviceType);
-        console.log(await registry.service.getServices());
 
         registry.dispose();
 
@@ -148,7 +159,7 @@ export namespace ThriftServiceManager {
 
         try {
             await waitUntilReady(serviceRegistryProcess);
-            return new ThriftServiceManager(path.join(tmpDir, "CSpyServer2-ServiceRegistry.txt"));
+            return new ThriftServiceManager(serviceRegistryProcess, path.join(tmpDir, "CSpyServer2-ServiceRegistry.txt"));
         } catch(e) {
             serviceRegistryProcess.kill();
             throw e;
