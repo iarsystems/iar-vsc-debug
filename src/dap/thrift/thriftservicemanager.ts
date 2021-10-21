@@ -23,7 +23,7 @@ import { IarOsUtils } from "../../utils/osUtils";
  */
 export class ThriftServiceManager implements Disposable {
     private static readonly SERVICE_LOOKUP_TIMEOUT = 1000;
-    private readonly activeServers: Server[];
+    private readonly activeServers: Server[] = [];
 
     /**
      * Create a new service manager from the given service registry.
@@ -85,6 +85,8 @@ export class ThriftServiceManager implements Disposable {
         const location = new ServiceLocation({ host: "localhost", port: port, protocol: Protocol.Binary, transport: Transport.Socket });
         const registry = await this.getServiceAt(this.getRegistryLocation(), CSpyServiceRegistry);
         await registry.service.registerService(serviceId, location);
+
+        this.activeServers.push(server);
 
         registry.dispose();
         return location;

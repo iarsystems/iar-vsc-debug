@@ -209,7 +209,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.sendEvent(new TerminatedEvent());
     }
     protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments) {
-        await this.cspyDebugger.service.stopSession();
         await this.endSession();
         this.sendResponse(response);
     }
