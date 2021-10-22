@@ -30,6 +30,7 @@
 		"await-notify": "1.0.1",
 		"mutex-promise": "^0.1.0",
 		"thrift": "^0.12.0",
+    	"uuid": "^8.3.2",
 		"vscode-debugadapter": "^1.41.1",
 		"vscode-debugprotocol": "^1.41.0",
 		"vscode-languageserver": "^3.5.0"
@@ -39,6 +40,7 @@
 		"@types/vscode": "^1.46.0",
 		"@types/mocha": "^5.2.7",
 		"@types/node": "^14.7.0",
+    	"@types/uuid": "^8.3.1",
 		"mocha": "^6.1.4",
 		"tslint": "^5.8.0",
 		"typescript": "^3.8.0",

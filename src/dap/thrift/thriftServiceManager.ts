@@ -11,12 +11,12 @@ import { ThriftClient } from "./thriftClient";
 
 import * as CSpyServiceRegistry from "./bindings/CSpyServiceRegistry";
 import * as Debugger from "./bindings/Debugger";
-import { createHash } from "crypto";
 import { tmpdir } from "os";
 import { Server, AddressInfo } from "net";
 import { Disposable } from "../disposable";
 import { DEBUGGER_SERVICE } from "./bindings/cspy_types";
 import { IarOsUtils } from "../../utils/osUtils";
+import { v4 as uuidv4 } from "uuid";
 
 /**
  * Provides and manages a set of thrift services.
@@ -29,9 +29,9 @@ export class ThriftServiceManager implements Disposable {
     /**
      * Create a new service manager from the given service registry.
      * @param cspyProcess The CSpyServer process serving the service registry.
-     * @param registryLocationPath Path to a file containing a valid {@link ServiceLocation} pointing to a service registry
+     * @param registryLocationPath The location of the service registry to use.
      */
-    constructor(private cspyProcess: ChildProcess, private registryLocationPath: fs.PathLike) {
+    constructor(private cspyProcess: ChildProcess, private registryLocation: ServiceLocation) {
     }
 
     /**
@@ -65,7 +65,7 @@ export class ThriftServiceManager implements Disposable {
      * @param serviceType The type of service to register (usually given as the top-level import of the service module)
      */
     async findService<T>(serviceId: string, serviceType: Thrift.TClientConstructor<T>): Promise<ThriftClient<T>> {
-        const registry = await this.getServiceAt(this.getRegistryLocation(), CSpyServiceRegistry);
+        const registry = await this.getServiceAt(this.registryLocation, CSpyServiceRegistry);
 
         const location = await registry.service.waitForService(serviceId, ThriftServiceManager.SERVICE_LOOKUP_TIMEOUT);
         const service = await this.getServiceAt(location, serviceType);
@@ -94,27 +94,12 @@ export class ThriftServiceManager implements Disposable {
 
         const port = (server.address() as AddressInfo).port; // this cast is safe since we know it's an IP socket
         const location = new ServiceLocation({ host: "localhost", port: port, protocol: Protocol.Binary, transport: Transport.Socket });
-        const registry = await this.getServiceAt(this.getRegistryLocation(), CSpyServiceRegistry);
+        const registry = await this.getServiceAt(this.registryLocation, CSpyServiceRegistry);
         await registry.service.registerService(serviceId, location);
 
         this.activeServers.push(server);
 
         registry.dispose();
-        return location;
-    }
-
-    private getRegistryLocation(): ServiceLocation {
-        const locSerialized = fs.readFileSync(this.registryLocationPath);
-
-        // These concats are a hack to create a valid thrift message. The thrift library seems unable to deserialize just a struct (at least for the json protocol)
-        // Once could also do JSON.parse and manually convert it to a ServiceLocation, but this is arguably more robust
-        const transport = new Thrift.TFramedTransport(Buffer.concat([Buffer.from("[1,0,0,0,"), locSerialized, Buffer.from("]")]));
-        const prot = new Thrift.TJSONProtocol(transport);
-        prot.readMessageBegin();
-        const location = new ServiceLocation();
-        location.read(prot);
-        prot.readMessageEnd();
-
         return location;
     }
 
@@ -132,7 +117,7 @@ export class ThriftServiceManager implements Disposable {
                 .on("connect", async () => {
                     const client = Thrift.createClient<T>(serviceType, conn);
                     resolve(new ThriftClient(conn, client));
-                }).on("close", () => console.log("Connection closed for", location.port));
+                });
         });
     }
 }
@@ -143,8 +128,8 @@ export namespace ThriftServiceManager {
      * @param workbenchPath Path to the top-level folder of the workbench to use
      */
     export async function fromWorkbench(workbenchPath: string): Promise<ThriftServiceManager> {
-        let registryPath = path.join(workbenchPath, "common/bin/CSpyServer2" + IarOsUtils.executableExtension()); // TODO: cross-platform-ify
-        const tmpDir = getTmpDir(workbenchPath);
+        let registryPath = path.join(workbenchPath, "common/bin/CSpyServer2" + IarOsUtils.executableExtension());
+        const tmpDir = getTmpDir();
         const serviceRegistryProcess = spawn(registryPath, ["-standalone", "-sockets"],
                                                 { cwd: tmpDir });
         serviceRegistryProcess.stdout?.on("data", dat => {
@@ -159,7 +144,19 @@ export namespace ThriftServiceManager {
 
         try {
             await waitUntilReady(serviceRegistryProcess);
-            return new ThriftServiceManager(serviceRegistryProcess, path.join(tmpDir, "CSpyServer2-ServiceRegistry.txt"));
+
+            // Find the location of the service registry
+            const locSerialized = fs.readFileSync(path.join(tmpDir, "CSpyServer2-ServiceRegistry.txt"));
+            // These concats are a hack to create a valid thrift message. The thrift library seems unable to deserialize just a struct (at least for the json protocol)
+            // Once could also do JSON.parse and manually convert it to a ServiceLocation, but this is arguably more robust
+            const transport = new Thrift.TFramedTransport(Buffer.concat([Buffer.from("[1,0,0,0,"), locSerialized, Buffer.from("]")]));
+            const prot = new Thrift.TJSONProtocol(transport);
+            prot.readMessageBegin();
+            const location = new ServiceLocation();
+            location.read(prot);
+            prot.readMessageEnd();
+
+            return new ThriftServiceManager(serviceRegistryProcess, location);
         } catch(e) {
             serviceRegistryProcess.kill();
             throw e;
@@ -185,16 +182,14 @@ export namespace ThriftServiceManager {
         });
     }
 
-    // Creates and returns a temporary directory unique to the currently opened folder & workbench.
-    // This is used to store the bootstrap files created by CSpyServer2, to avoid conflicts if
+    // Creates and returns a unique temporary directory.
+    // This is used to store the bootstrap file created by CSpyServer2, to avoid conflicts if
     // several cspy processes are run at the same time.
-    function getTmpDir(workbenchPath: string): string {
-        let openedFolder = "cspy";
-        const hashed = createHash("md5").update(openedFolder + workbenchPath).digest("hex");
-        // const hashed = createHash("md5").update(openedFolder + workbenchPath + new Date().getMilliseconds()).digest("hex");
-        const tmpPath = path.join(tmpdir(), "iar-vsc-" + hashed);
+    function getTmpDir(): string {
+        // Generate a uuid-based name and place in /tmp or similar
+        const tmpPath = path.join(tmpdir(), "iar-vsc", uuidv4());
         if (!fs.existsSync(tmpPath)) {
-            fs.mkdirSync(tmpPath);
+            fs.mkdirSync(tmpPath, {recursive: true});
         }
         return tmpPath;
     }
