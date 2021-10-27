@@ -1,106 +1,76 @@
-import assert = require('assert');
-import mocha = require('mocha')
+import * as Assert from "assert";
 import * as Path from 'path';
-import {CSpyLaunchRequestArguments} from '../../dap/cspyDebug';
 import * as vscode from 'vscode';
-import {DebugClient} from 'vscode-debugadapter-testsupport';
 import { TestUtils } from './testUtils';
-import { DebugSession } from 'vscode-debugadapter';
+import { TestSandbox } from "../../utils/testutils/testSandbox";
 
 
-/*
-suite("Tests", function() {
-    const DEBUGGER = './out/dap/cspyDebug.js';
-	const PROJECT_ROOT = Path.join(__dirname, '../../../');
-	const DATA_ROOT = Path.join(PROJECT_ROOT, 'src/tests/data/');
-
-    // This is the DAP protocol keeper which one can use
-	let debugClient: DebugClient;
-
-    // Setup and start the client. This will not launch the session.
-    setup(async () => {
-        //debugClient = new DebugClient('node', DEBUGGER, 'cspy');
-		//return debugClient.start();
-    });
-
-
-    const launchArgs:CSpyLaunchRequestArguments = {
-    program: Path.join(PROJECT_ROOT,"samples","GettingStarted","Debug","Exe","BasicDebugging.out"),
-    workbenchPath: "/home/power/ewarm-master/StageLinux_x86_64/Release",
-    projectPath: Path.join(PROJECT_ROOT,"samples","GettingStarted"),
-    projectConfiguration: "Debug",
-    driverLib: "SIM2",
-    driverOptions: ["--endian=little", "--cpu=ARM7TDMI", "--fpu=None", "--semihosting", "--multicore_nr_of_cores=1"],
-    stopOnEntry:true
-    }
-
-    suite("Launching a debugsession", ()=>{
-        test("Initialize-request", ()=>{
-            return debugClient.initializeRequest().then((response)=>{
-                assert.ok(response.body?.supportsConfigurationDoneRequest);
-                assert.ok(response.body?.supportsSetVariable);
-            })
-        });
-
-        test("Launch-request", ()=>{
-            return debugClient.launch(launchArgs).then(()=>{
-                debugClient.terminateRequest()
-            });
-        });
-    });
-
-
-
-});*/
-
-
+/**
+ * Tests against a full debug session started from vs code.
+ * Testing this way is a bit clumsy, since there are limits to what information we can
+ * probe for from the vs code api. For example, after stepping or running, we can't know
+ * when the debugger has stopped again, we instead just have to wait.
+ *
+ * An improvement would be to have the debug adapter support multiple clients at the
+ * same time. Then we could have vs code connect to it, and also have a DebugClient
+ * instance to use for e.g. waiting for events. However, the debug adapter currently only
+ * supports having one client at a time.
+ */
 suite("New tests", () =>{
-	const PROJECT_ROOT = Path.join(__dirname, '../../../');
-	const DATA_ROOT = Path.join(PROJECT_ROOT, 'src/tests/data/');
 
     const dbgConfig:vscode.DebugConfiguration = {
         type: 'cspy',
         request: 'launch',
-        name: 'Test',
-        program: Path.join(PROJECT_ROOT,"samples","GettingStarted","Debug","Exe","BasicDebugging.out"),
-        workbenchPath: "/home/power/ewarm-master/StageLinux_x86_64/Release",
-        projectPath: Path.join(PROJECT_ROOT,"samples","GettingStarted"),
+        name: 'C-SPY Debugging Tests',
         projectConfiguration: "Debug",
-        driverLib: "SIM2",
+        driverLib: "armsim2",
         driverOptions: ["--endian=little", "--cpu=ARM7TDMI", "--fpu=None", "--semihosting", "--multicore_nr_of_cores=1"],
         stopOnEntry:true
     }
 
-    var activeSession : vscode.DebugSession;
+    let activeSession: vscode.DebugSession;
+    let sandbox = new TestSandbox(TestUtils.PROJECT_ROOT);
+    let testProjectsPath: string;
 
     vscode.debug.onDidStartDebugSession((session)=>{
         activeSession = session;
     });
 
-    mocha.beforeEach(()=>{
-        return vscode.debug.startDebugging(undefined,dbgConfig).then((response)=>{
-            assert.strictEqual(response,true);
-        });
-    })
+    suiteSetup(() => {
+        testProjectsPath = sandbox.copyToSandbox(Path.join(TestUtils.PROJECT_ROOT, "src/tests/TestProjects/"));
 
-    mocha.afterEach( ()=>{
-        return activeSession.customRequest('terminate').then(()=>{
-            vscode.debug.stopDebugging(activeSession);
-        })
-    })
+        dbgConfig.projectPath = Path.join(testProjectsPath, "GettingStarted/BasicDebugging.ewp");
+        dbgConfig.program = Path.join(testProjectsPath, "GettingStarted/Debug/exe/BasicDebugging.out");
 
-    test("Test launch", ()=>{
-        return TestUtils.assertCurrentLineIs(activeSession,"",43,1);
-    })
+        const installDirs = vscode.workspace.getConfiguration("iarvsc").get<string[]>("iarInstallDirectories");
+        Assert(installDirs, "No workbenches found to use for debugging");
+        // For now just use the first entry, and assume it points directly to a top-level ew directory
+        const workbench = installDirs[0];
+
+        dbgConfig.workbenchPath = workbench;
+        TestUtils.buildProject(dbgConfig.workbenchPath, dbgConfig.projectPath, dbgConfig.projectConfiguration);
+    });
+
+    setup(async ()=>{
+        await vscode.debug.startDebugging(undefined, dbgConfig);
+        await TestUtils.wait(500);
+
+    });
+
+    teardown(async ()=>{
+        await vscode.debug.stopDebugging(activeSession);
+    });
+
+    test("Test launch", async ()=>{
+        await TestUtils.assertCurrentLineIs(activeSession,"",43,1);
+    });
 
 
-    test("Test step",()=>{
-        return TestUtils.assertCurrentLineIs(activeSession,"",43,1).then(()=>{
-            console.log("Stepping");
-            activeSession.customRequest('next',{granularity: ""}).then(()=>{
-                TestUtils.assertCurrentLineIs(activeSession,"",45,1)
-            })
-        })
-    })
+    test("Test step",async ()=>{
+        await TestUtils.assertCurrentLineIs(activeSession,"",43,1);
+        await TestUtils.wait(100);
+        await activeSession.customRequest('next',{granularity: ""});
+        TestUtils.assertCurrentLineIs(activeSession,"",45,1);
+    });
 
 });
