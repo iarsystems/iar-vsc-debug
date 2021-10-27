@@ -2,23 +2,29 @@
 
 import assert = require('assert')
 import * as vscode from 'vscode';
-import { DebugSession, StackFrame } from 'vscode-debugadapter';
+import * as Path from 'path';
+import { IarOsUtils } from '../../utils/osUtils';
+import { spawn, spawnSync } from 'child_process';
 
 /**
  *  Class contaning utility methods for the tests.
  */
 
-export class TestUtils{
+export namespace TestUtils {
+	export const PROJECT_ROOT = Path.join(__dirname, '../../../');
 
-	private static patchEwp(ewpPath:string, target:string){
-
-	}
-
-	static buildProject(ewpPath:string, target:string){
+	function patchEwp(ewpPath:string, target:string){
 
 	}
 
-	static assertCurrentLineIs(session: vscode.DebugSession, path: string, line: number, column: number){
+	export function buildProject(workbenchPath: string, ewpPath: string, configuration: string) {
+		const iarBuildPath = Path.join(workbenchPath, "common/bin/iarbuild" + IarOsUtils.executableExtension());
+		console.log("Building " + ewpPath);
+		spawnSync(iarBuildPath, [ewpPath, "-build", configuration]);
+		// console.log(spawnSync(iarBuildPath, [ewpPath, "-build", configuration]).stdout.toString());
+	}
+
+	export function assertCurrentLineIs(session: vscode.DebugSession, path: string, line: number, column: number){
 		return session.customRequest('stackTrace').then((response)=>{
 			console.log("Checking stack");
 			if(response.stackFrames)
@@ -29,4 +35,10 @@ export class TestUtils{
 			}
 		});
 	}
+
+    export function wait(time: number) {
+        return new Promise((resolve, _) => {
+            setTimeout(resolve, time);
+        });
+    }
 }
