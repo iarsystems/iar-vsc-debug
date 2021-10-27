@@ -41,14 +41,18 @@ export class LaunchArgumentConfigurationResolver extends BaseConfigurationResolv
 
 		const plugins = args.plugins? args.plugins : [];
 		// always add bat library.
-		plugins.push(IarOsUtils.resolveTargetLibrary(args.workbenchPath,target,"Bat"));
+		// plugins.push(IarOsUtils.resolveTargetLibrary(args.workbenchPath,target,"Bat"));
 
 		const macros = args.macros? args.macros : [];
 
+		// TODO: This probably needs to be adapted for linux (e.g. case sensitivity, library prefix)
+        const driver = IarOsUtils.resolveTargetLibrary(args.workbenchPath,target,args.driverLib);
+		const proc = IarOsUtils.resolveTargetLibrary(args.workbenchPath,target,"PROC");
+
         const config: PartialSessionConfiguration = {
             attachToTarget: false,
-            driverName: IarOsUtils.resolveTargetLibrary(args.workbenchPath,target,args.driverLib),
-            processorName: IarOsUtils.resolveTargetLibrary(args.workbenchPath,target,"PROC"),
+            driverName: Path.basename(driver, IarOsUtils.libraryExtension()),
+            processorName: Path.basename(proc, IarOsUtils.libraryExtension()),
             type: "simulator",
             options: ["--plugin=" + IarOsUtils.resolveTargetLibrary(args.workbenchPath,target,"Bat"),"--backend"].concat(args.driverOptions? args.driverOptions : []),
             plugins: plugins,
