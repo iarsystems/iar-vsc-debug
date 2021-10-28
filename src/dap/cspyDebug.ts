@@ -274,7 +274,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
             }
         }
         this.sendResponse(response);
-        this.performDisassemblyEvent(); // update disassembly to reflect changed breakpoints
+        if (response.success) {
+            this.performDisassemblyEvent(); // update disassembly to reflect changed breakpoints
+        }
     }
 
     protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
@@ -391,12 +393,12 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     private async endSession() {
-        await this.stackManager.dispose();
-        this.breakpointManager.dispose();
+        await this.stackManager?.dispose();
+        this.breakpointManager?.dispose();
         // Will disconnect this DAP debugger client
-        this.cspyDebugger.dispose();
+        this.cspyDebugger?.dispose();
         // VSC-3 This will take care of orderly shutting down CSpyServer
-        await this.serviceManager.dispose();
+        await this.serviceManager?.dispose();
     }
 }
 DebugSession.run(CSpyDebugSession);

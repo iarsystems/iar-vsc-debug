@@ -40,7 +40,7 @@ suite("New tests", () =>{
         testProjectsPath = sandbox.copyToSandbox(Path.join(TestUtils.PROJECT_ROOT, "src/tests/TestProjects/"));
 
         dbgConfig.projectPath = Path.join(testProjectsPath, "GettingStarted/BasicDebugging.ewp");
-        dbgConfig.program = Path.join(testProjectsPath, "GettingStarted/Debug/exe/BasicDebugging.out");
+        dbgConfig.program = Path.join(testProjectsPath, "GettingStarted/Debug/Exe/BasicDebugging.out");
 
         const installDirs = vscode.workspace.getConfiguration("iarvsc").get<string[]>("iarInstallDirectories");
         Assert(installDirs, "No workbenches found to use for debugging");

@@ -59,7 +59,7 @@ suite("Test Debug Adapter", () =>{
         // Create a folder where we can build and debug the project
         const testProjectsPath = sandbox.copyToSandbox(Path.join(TestUtils.PROJECT_ROOT, "src/tests/TestProjects/"));
         dbgConfig.projectPath = Path.join(testProjectsPath, "GettingStarted/BasicDebugging.ewp");
-        dbgConfig.program = Path.join(testProjectsPath, "GettingStarted/Debug/exe/BasicDebugging.out");
+        dbgConfig.program = Path.join(testProjectsPath, "GettingStarted/Debug/Exe/BasicDebugging.out");
 
         // Find a workbench to build with
         const installDirs = vscode.workspace.getConfiguration("iarvsc").get<string[]>("iarInstallDirectories");
@@ -121,7 +121,7 @@ suite("Test Debug Adapter", () =>{
     });
 
     test("Stops on entry", async () => {
-        const expectedPath = Utils.pathRegex(Utils.sourceFilePath(dbgConfig.projectPath, "Fibonacci.c"));
+        const expectedPath = Utils.pathRegex(fibonacciFile);
         return Promise.all([
             dc.configurationSequence(),
             dc.launch(dbgConfig),
