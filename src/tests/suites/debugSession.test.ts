@@ -53,7 +53,7 @@ suite("New tests", () =>{
 
     setup(async ()=>{
         await vscode.debug.startDebugging(undefined, dbgConfig);
-        await TestUtils.wait(500);
+        await TestUtils.wait(1000);
 
     });
 
@@ -68,8 +68,8 @@ suite("New tests", () =>{
 
     test("Test step",async ()=>{
         await TestUtils.assertCurrentLineIs(activeSession,"",43,1);
-        await TestUtils.wait(100);
         await activeSession.customRequest('next',{granularity: ""});
+        await TestUtils.wait(1000);
         TestUtils.assertCurrentLineIs(activeSession,"",45,1);
     });
 

@@ -83,7 +83,7 @@ suite("Test Debug Adapter", () =>{
         debugAdapter.stdout?.on("data", dat => {console.log("OUT: " + dat.toString())});
         debugAdapter.stderr?.on("data", dat => {console.log("ERR: " + dat.toString())});
         // Need to wait a bit for the adapter to start
-        await TestUtils.wait(1000);
+        await TestUtils.wait(2000);
     });
 
     suiteTeardown(() => {
@@ -98,7 +98,7 @@ suite("Test Debug Adapter", () =>{
     teardown(async ()=>{
         await dc.stop();
         // Need to wait a bit for the adapter to be ready again
-        await TestUtils.wait(100);
+        await TestUtils.wait(1000);
     });
 
 
