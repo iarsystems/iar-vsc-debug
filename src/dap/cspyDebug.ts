@@ -176,13 +176,12 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
         this.sendResponse(response);
 
-        // tell cspy to start the program
-        await this.cspyDebugger.service.runToULE("main", false);
-
         this.addCSpyEventHandlers();
 
         if (args.stopOnEntry) {
-            this.sendEvent(new StoppedEvent("entry", CSpyDebugSession.THREAD_ID));
+            this.expectedStoppingReason = "entry";
+            // tell cspy to start the program
+            await this.cspyDebugger.service.runToULE("main", false);
         } else {
             this.expectedStoppingReason = "breakpoint";
             await this.cspyDebugger.service.go();
