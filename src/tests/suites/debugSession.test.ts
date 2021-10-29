@@ -42,7 +42,7 @@ suite("New tests", () =>{
         dbgConfig.projectPath = Path.join(testProjectsPath, "GettingStarted/BasicDebugging.ewp");
         dbgConfig.program = Path.join(testProjectsPath, "GettingStarted/Debug/Exe/BasicDebugging.out");
 
-        const installDirs = vscode.workspace.getConfiguration("iarvsc").get<string[]>("iarInstallDirectories");
+        const installDirs = TestUtils.getEwPaths();
         Assert(installDirs, "No workbenches found to use for debugging");
         // For now just use the first entry, and assume it points directly to a top-level ew directory
         const workbench = installDirs[0];
