@@ -1,4 +1,4 @@
-'use strict';
+
 
 import * as Q from "q";
 import { Note, Row, What } from "./thrift/bindings/listwindow_types";
@@ -12,7 +12,7 @@ import { Disposable } from "./disposable";
 export interface ListWindowRow {
     values: string[];
     expandable: boolean;
-};
+}
 
 /**
  * Poses as a frontend for a list window, managing all events and keeping track of all its rows.
@@ -44,7 +44,7 @@ export class ListWindowClient implements Disposable {
     // This is usually the case, but we shouldn't rely on it.
     private rows: Row[] = [];
 
-    private constructor(private backend: ThriftClient<ListWindowBackend.Client>) {
+    private constructor(private readonly backend: ThriftClient<ListWindowBackend.Client>) {
     }
 
     /**
@@ -59,7 +59,9 @@ export class ListWindowClient implements Disposable {
      * Gets the children of an expandable row
      */
     async getChildrenOf(parent: ListWindowRow): Promise<ListWindowRow[]> {
-        if (!parent.expandable) { throw new Error("Attempted to expand a row that is not expandable."); }
+        if (!parent.expandable) {
+            throw new Error("Attempted to expand a row that is not expandable.");
+        }
         // Comparing the first column should be enough for most cases to identify a row.
         // A more robust way would be to keep track of indices, but that is hard since indices keep changing
         // when we expand rows. We could also let the row-comparison be defined e.g. as a predicate
@@ -74,7 +76,9 @@ export class ListWindowClient implements Disposable {
         const children: Row[] = [];
         for (let i = rowIndex + 1; i < this.rows.length; i++) {
             children.push(this.rows[i]);
-            if (this.rows[i].treeinfo.startsWith("L")) { break; }
+            if (this.rows[i].treeinfo.startsWith("L")) {
+                break;
+            }
         }
         return children.map(ListWindowClient.createListWindowRow);
     }
@@ -82,16 +86,16 @@ export class ListWindowClient implements Disposable {
     // callback from list window backend
     notify(note: Note): Q.Promise<void> {
         console.log("LISTWINDOW NOTIFIED: ", note.what, note.anonPos.toString(), note.ensureVisible.toNumber(), note.row.toNumber(), note.seq.toNumber());
-        switch(note.what) {
-            case What.kRowUpdate:
-                return this.backend.service.getRow(note.row).then(row => {
-                    this.rows[note.row.toNumber()] = row;
-                });
+        switch (note.what) {
+        case What.kRowUpdate:
+            return this.backend.service.getRow(note.row).then(row => {
+                this.rows[note.row.toNumber()] = row;
+            });
             // TODO: is this an acceptable way to handle thawing (and freezing)?
-            case What.kNormalUpdate:
-            case What.kFullUpdate:
-            case What.kThaw:
-                return this.updateAllRows();
+        case What.kNormalUpdate:
+        case What.kFullUpdate:
+        case What.kThaw:
+            return this.updateAllRows();
         }
         return Q.resolve();
     }

@@ -1,4 +1,4 @@
-'use strict';
+
 
 import { CSpyLaunchRequestArguments } from "../cspyDebug";
 import { BaseConfigurationResolver, PartialSessionConfiguration } from "./baseConfigurationResolver";
@@ -23,9 +23,9 @@ export class XclConfigurationResolver extends BaseConfigurationResolver {
         const processorLib = argsLines[0];
         const driverLib = argsLines[1];
 
-        let options: string[] = [];
-        let plugins: string[] = [];
-        let macros: string[] = [];
+        const options: string[] = [];
+        const plugins: string[] = [];
+        const macros: string[] = [];
         let attachToTarget = false;
         if (argsLines.length > 3) {
             argsLines.slice(3).forEach(arg => {
@@ -64,10 +64,10 @@ export class XclConfigurationResolver extends BaseConfigurationResolver {
     }
 
     private readLinesFromXclFile(xclPath: string): string[] {
-        return Fs.readFileSync(xclPath).toString()
-                    .split(/\r\n|\n/)
-                    .map(this.stripQuotes)
-                    .filter(line => line !== "");
+        return Fs.readFileSync(xclPath).toString().
+            split(/\r\n|\n/).
+            map(this.stripQuotes).
+            filter(line => line !== "");
     }
 
     private stripQuotes(str: string): string {

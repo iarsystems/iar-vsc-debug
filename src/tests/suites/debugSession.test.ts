@@ -1,4 +1,4 @@
-import * as Assert from "assert";
+import Assert from "assert";
 import * as Path from "path";
 import * as vscode from "vscode";
 import { TestUtils } from "./testUtils";

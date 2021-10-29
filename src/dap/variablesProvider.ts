@@ -1,4 +1,4 @@
-"use strict";
+
 
 import { Variable, Handles } from "vscode-debugadapter";
 import { ThriftServiceManager } from "./thrift/thriftServiceManager";
@@ -31,16 +31,16 @@ type RowToVariableConverter = (row: ListWindowRow) => Variable;
  */
 export class ListWindowVariablesProvider implements VariablesProvider, Disposable {
     static async instantiate(serviceMgr: ThriftServiceManager,
-                             windowServiceId: string,
-                             rowToVariable: RowToVariableConverter): Promise<ListWindowVariablesProvider> {
+        windowServiceId: string,
+        rowToVariable: RowToVariableConverter): Promise<ListWindowVariablesProvider> {
         const windowClient = await ListWindowClient.instantiate(serviceMgr, windowServiceId);
         return new ListWindowVariablesProvider(windowClient, rowToVariable);
     }
 
-    private variableReferences: Handles<ListWindowRow> = new Handles();
+    private readonly variableReferences: Handles<ListWindowRow> = new Handles();
 
-    private constructor(private windowClient: ListWindowClient,
-                        private rowToVariable: RowToVariableConverter) {}
+    private constructor(private readonly windowClient: ListWindowClient,
+                        private readonly rowToVariable: RowToVariableConverter) {}
 
     getVariables(): Promise<Variable[]> {
         return Promise.resolve(

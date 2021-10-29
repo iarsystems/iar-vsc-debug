@@ -1,4 +1,4 @@
-'use strict';
+
 
 import { CSpyLaunchRequestArguments } from "../cspyDebug";
 import { BaseConfigurationResolver, PartialSessionConfiguration } from "./baseConfigurationResolver";
@@ -16,44 +16,44 @@ export class LaunchArgumentConfigurationResolver extends BaseConfigurationResolv
 
     resolveLaunchArgumentsPartial(args: CSpyLaunchRequestArguments): Promise<PartialSessionConfiguration> {
 
-		var targets = IarUtils.getTargetsFromEwPath(args.workbenchPath);
-		var target:string = "";
-		if(targets.length > 0){
-			// Just use the first one in the list for now.
-			target = targets[0];
-			console.log("Using target " + target);
-		}
+        const targets = IarUtils.getTargetsFromEwPath(args.workbenchPath);
+        let target = "";
+        if (targets.length > 0) {
+            // Just use the first one in the list for now.
+            target = targets[0];
+            console.log("Using target " + target);
+        }
 
 
-		// Resolve the target from the the provided path.
-		var folders = Fs.readdirSync(args.workbenchPath);
-		for(var i = 0; i < folders.length; i++){
-			var possibleTarget = Path.basename(folders[i]);
-			if(possibleTarget !== "common"){
-				target = possibleTarget;
-				break;
-			}
-		}
+        // Resolve the target from the the provided path.
+        const folders = Fs.readdirSync(args.workbenchPath);
+        for (let i = 0; i < folders.length; i++) {
+            const possibleTarget = Path.basename(folders[i]);
+            if (possibleTarget !== "common") {
+                target = possibleTarget;
+                break;
+            }
+        }
 
-		if(!args.driverLib){
-			return Promise.reject("No driver lib specified");
-		}
+        if (!args.driverLib) {
+            return Promise.reject(new Error("No driver lib specified"));
+        }
 
-		const plugins = args.plugins? args.plugins : [];
-		// always add bat library.
-		// plugins.push(IarOsUtils.resolveTargetLibrary(args.workbenchPath,target,"Bat"));
+        const plugins = args.plugins? args.plugins : [];
+        // always add bat library.
+        // plugins.push(IarOsUtils.resolveTargetLibrary(args.workbenchPath,target,"Bat"));
 
-		const macros = args.macros? args.macros : [];
+        const macros = args.macros? args.macros : [];
 
-        let driver = IarOsUtils.resolveTargetLibrary(args.workbenchPath,target,args.driverLib);
-		let proc = IarOsUtils.resolveTargetLibrary(args.workbenchPath,target,"proc");
+        const driver = IarOsUtils.resolveTargetLibrary(args.workbenchPath, target, args.driverLib);
+        const proc = IarOsUtils.resolveTargetLibrary(args.workbenchPath, target, "proc");
 
         const config: PartialSessionConfiguration = {
             attachToTarget: false,
             driverName: driver,
             processorName: proc,
             type: "simulator",
-            options: ["--plugin=" + IarOsUtils.resolveTargetLibrary(args.workbenchPath,target,"Bat"),"--backend"].concat(args.driverOptions? args.driverOptions : []),
+            options: ["--plugin=" + IarOsUtils.resolveTargetLibrary(args.workbenchPath, target, "Bat"), "--backend"].concat(args.driverOptions? args.driverOptions : []),
             plugins: plugins,
             setupMacros: macros,
             target: target

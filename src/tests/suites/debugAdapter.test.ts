@@ -1,6 +1,5 @@
-import * as Assert from "assert";
+import Assert from "assert";
 import * as Path from "path";
-import * as vscode from "vscode";
 import { DebugClient } from "vscode-debugadapter-testsupport";
 import { TestUtils } from "./testUtils";
 import { TestSandbox } from "../../utils/testutils/testSandbox";
@@ -18,7 +17,7 @@ namespace Utils {
     // Given a path, returns a regex matching the path on any OS.
     export function pathRegex(path: string) {
         // Accept back- OR forward slashes
-        path = path.replace(/[\/\\]/g, "[\\/\\\\]");
+        path = path.replace(/[/\\]/g, "[/\\\\]");
         const pattern = `^${path}$`;
         // Note that we use case-insensitive paths on windows
         return new RegExp(pattern, OsUtils.detectOsType() === OsUtils.OsType.Windows ? "i" : undefined);
@@ -124,7 +123,7 @@ suite("Test Debug Adapter", () =>{
         Assert(response.body?.supportsSetVariable);
     });
 
-    test("Stops on entry", async() => {
+    test("Stops on entry", () => {
         const expectedPath = Utils.pathRegex(fibonacciFile);
         return Promise.all([
             dc.configurationSequence(),

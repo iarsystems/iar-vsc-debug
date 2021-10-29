@@ -1,4 +1,4 @@
-'use strict';
+
 
 import { SessionConfiguration } from "../thrift/bindings/cspy_types";
 import { CSpyLaunchRequestArguments } from "../cspyDebug";
