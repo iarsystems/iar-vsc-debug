@@ -8,3 +8,4 @@ mock-debug.txt
 runtime.log
 outdebug_adapter.log
 package-lock.json
+.vscode-test/
