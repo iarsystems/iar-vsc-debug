@@ -17,7 +17,8 @@
 		"noUnusedParameters": false
 	},
 	"include": [
-		"../src/**/*",
+		"src/**/*",
+		"tests/**/*",
 	],
 	"exclude": [
 		"../out/**/*"

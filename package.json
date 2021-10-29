@@ -41,6 +41,9 @@
 		"@types/mocha": "^5.2.7",
 		"@types/node": "^14.7.0",
     	"@types/uuid": "^8.3.1",
+		"@typescript-eslint/eslint-plugin": "^5.2.0",
+		"@typescript-eslint/parser": "^5.2.0",
+		"eslint": "^8.1.0",
 		"mocha": "^6.1.4",
 		"tslint": "^5.8.0",
 		"typescript": "^3.8.0",
@@ -53,12 +56,12 @@
 	"scripts": {
 		"prepublish": "tsc -p ./src",
 		"compile": "tsc -p ./src",
-		"tslint": "tslint ./src/**/*.ts",
 		"watch": "tsc -w -p ./src",
 		"test": "mocha -u tdd ./out/tests/",
 		"package": "vsce package",
 		"publish": "vsce publish",
-		"pkgvars": "node ./node_modules/vscode/bin/install"
+		"pkgvars": "node ./node_modules/vscode/bin/install",
+    	"lint": "eslint . --ext .ts"
 	},
 	"main": "./out/extension",
 	"activationEvents": [
