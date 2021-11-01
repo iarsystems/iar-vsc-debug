@@ -1,8 +1,7 @@
-import * as Assert from "assert";
-import * as Path from 'path';
-import * as vscode from 'vscode';
-import { DebugClient } from 'vscode-debugadapter-testsupport';
-import { TestUtils } from './testUtils';
+import Assert from "assert";
+import * as Path from "path";
+import { DebugClient } from "vscode-debugadapter-testsupport";
+import { TestUtils } from "./testUtils";
 import { TestSandbox } from "../../utils/testutils/testSandbox";
 import { ChildProcess, spawn } from "child_process";
 import { OsUtils } from "../../utils/osUtils";
@@ -11,21 +10,21 @@ namespace Utils {
     // Given an ewp file and a source file in the same directory, returns
     // the path to the source file
     export function sourceFilePath(ewpFile: string, sourceName: string) {
-        let sourcePath = Path.join(Path.dirname(ewpFile), sourceName);
+        const sourcePath = Path.join(Path.dirname(ewpFile), sourceName);
         return sourcePath;
     }
 
     // Given a path, returns a regex matching the path on any OS.
     export function pathRegex(path: string) {
         // Accept back- OR forward slashes
-        path = path.replace(/[\/\\]/g, "[\\/\\\\]");
+        path = path.replace(/[/\\]/g, "[/\\\\]");
         const pattern = `^${path}$`;
         // Note that we use case-insensitive paths on windows
         return new RegExp(pattern, OsUtils.detectOsType() === OsUtils.OsType.Windows ? "i" : undefined);
     }
 
     export function assertStoppedLocation(dc: DebugClient, reason: string, line: number, file: string | undefined, name: RegExp) {
-        return dc.waitForEvent("stopped").then(async (event) => {
+        return dc.waitForEvent("stopped").then(async(event) => {
             Assert.equal(event.body?.reason, reason);
             const stack = await dc.stackTraceRequest({threadId: 1});
             const topStack = stack.body.stackFrames[0];
@@ -42,18 +41,18 @@ namespace Utils {
  */
 suite("Test Debug Adapter", () =>{
     const ADAPTER_PORT = 4711;
-    const FIBS = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
+    const FIBS = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55];
 
     const dbgConfig: any = {
         projectConfiguration: "Debug",
         driverLib: "armsim2",
         driverOptions: ["--endian=little", "--cpu=ARM7TDMI", "--fpu=None", "--semihosting", "--multicore_nr_of_cores=1"],
         stopOnEntry:true
-    }
+    };
 
-    let sandbox = new TestSandbox(TestUtils.PROJECT_ROOT);
-    let fibonacciFile: string = "";
-    let utilsFile: string = "";
+    const sandbox = new TestSandbox(TestUtils.PROJECT_ROOT);
+    let fibonacciFile = "";
+    let utilsFile = "";
 
     suiteSetup(() => {
         // Create a folder where we can build and debug the project
@@ -77,11 +76,15 @@ suite("Test Debug Adapter", () =>{
     let dc: DebugClient;
     let debugAdapter: ChildProcess;
 
-    suiteSetup(async ()=>{
+    suiteSetup(async()=>{
         // For some reason DebugClient isnt able to start the adapter itself, so start it manually as a tcp server
-        debugAdapter = spawn("node", [Path.join(__dirname, '../../dap/cspyDebug.js'), `--server=${ADAPTER_PORT}`]);
-        debugAdapter.stdout?.on("data", dat => {console.log("OUT: " + dat.toString())});
-        debugAdapter.stderr?.on("data", dat => {console.log("ERR: " + dat.toString())});
+        debugAdapter = spawn("node", [Path.join(__dirname, "../../dap/cspyDebug.js"), `--server=${ADAPTER_PORT}`]);
+        debugAdapter.stdout?.on("data", dat => {
+            console.log("OUT: " + dat.toString());
+        });
+        debugAdapter.stderr?.on("data", dat => {
+            console.log("ERR: " + dat.toString());
+        });
         // Need to wait a bit for the adapter to start
         await TestUtils.wait(2000);
     });
@@ -90,28 +93,28 @@ suite("Test Debug Adapter", () =>{
         debugAdapter.kill();
     });
 
-    setup(async () => {
-        dc = new DebugClient('node', '', 'cspy');
+    setup(async() => {
+        dc = new DebugClient("node", "", "cspy");
         await dc.start(ADAPTER_PORT);
     });
 
-    teardown(async ()=>{
+    teardown(async()=>{
         await dc.stop();
         // Need to wait a bit for the adapter to be ready again
         await TestUtils.wait(1000);
     });
 
 
-    test("Unknown request produces error", async () => {
+    test("Unknown request produces error", async() => {
         try {
             await dc.send("illegal");
             Assert.fail("Unknown request did not prduce an error");
-        } catch(e) {
+        } catch (e) {
             console.log(e);
         }
     });
 
-    test("Returns supported features", async () => {
+    test("Returns supported features", async() => {
         const response = await dc.initializeRequest();
         Assert(response.body?.supportsConfigurationDoneRequest);
         Assert(response.body?.supportsEvaluateForHovers);
@@ -120,7 +123,7 @@ suite("Test Debug Adapter", () =>{
         Assert(response.body?.supportsSetVariable);
     });
 
-    test("Stops on entry", async () => {
+    test("Stops on entry", () => {
         const expectedPath = Utils.pathRegex(fibonacciFile);
         return Promise.all([
             dc.configurationSequence(),
@@ -165,10 +168,10 @@ suite("Test Debug Adapter", () =>{
         return Promise.all([
             dc.configurationSequence(),
             dc.launch(dbgConfig),
-            dc.waitForEvent("initialized").then(async () => {
+            dc.waitForEvent("initialized").then(async() => {
                 const response = await dc.setBreakpointsRequest(
-                                            { source: { path: fibonacciFile },
-                                                breakpoints: [{line: 25}, {line: 29}, {line: 31}, {line: 46}] });
+                    { source: { path: fibonacciFile },
+                        breakpoints: [{line: 25}, {line: 29}, {line: 31}, {line: 46}] });
                 const bps = response.body.breakpoints;
                 Assert.equal(bps.length, 4);
 
@@ -190,10 +193,10 @@ suite("Test Debug Adapter", () =>{
         // However DAP clients may set breakpoints slightly before the launch request is started, so we need to support that.
         return Promise.all([
             dc.configurationSequence(),
-            dc.initializeRequest().then(async () => {
+            dc.initializeRequest().then(async() => {
                 const response = await dc.setBreakpointsRequest(
-                                            { source: { path: Utils.sourceFilePath(dbgConfig.projectPath, "Fibonacci.c") },
-                                                breakpoints: [{line: 47}] });
+                    { source: { path: Utils.sourceFilePath(dbgConfig.projectPath, "Fibonacci.c") },
+                        breakpoints: [{line: 47}] });
                 TestUtils.wait(1000).then(() => dc.launchRequest(dbgConfig));
                 Assert.equal(response.body.breakpoints[0].line, 47);
                 Assert(response.body.breakpoints[0].verified);
@@ -207,7 +210,7 @@ suite("Test Debug Adapter", () =>{
         return Promise.all([
             dc.configurationSequence(),
             dc.launch(dbgConfigCopy),
-            dc.waitForEvent("stopped").then(async () => {
+            dc.waitForEvent("stopped").then(async() => {
                 // Locals are tested in other test cases
                 const scopes = await dc.scopesRequest({frameId: 0});
 
@@ -242,12 +245,12 @@ suite("Test Debug Adapter", () =>{
         return Promise.all([
             dc.configurationSequence(),
             dc.launch(dbgConfig),
-            dc.waitForEvent("stopped").then(async () => {
+            dc.waitForEvent("stopped").then(async() => {
                 for (let i = 0; i < 4; i++) {
                     await Promise.all([
                         dc.nextRequest({threadId: 1}),
                         Utils.assertStoppedLocation(dc, "step", 45 + i*2,
-                                                    fibonacciFile, /main/),
+                            fibonacciFile, /main/),
                     ]);
                 }
                 await Promise.all([
@@ -255,10 +258,10 @@ suite("Test Debug Adapter", () =>{
                     Utils.assertStoppedLocation(dc, "step", 35, fibonacciFile, /DoForegroundProcess/)
                 ]);
                 await dc.setBreakpointsRequest({ source: { path: utilsFile },
-                                                breakpoints: [{line: 54}] });
+                    breakpoints: [{line: 54}] });
                 await Promise.all([
                     dc.continueRequest({threadId: 1}),
-                    Utils.assertStoppedLocation(dc, "breakpoint", 54, utilsFile, /PutFib/).then(async () => {
+                    Utils.assertStoppedLocation(dc, "breakpoint", 54, utilsFile, /PutFib/).then(async() => {
                         const stack = (await dc.stackTraceRequest({threadId: 1})).body.stackFrames;
                         Assert(stack.length >= 3);
                         Assert.equal(stack[1].name, "DoForegroundProcess");
@@ -281,18 +284,18 @@ suite("Test Debug Adapter", () =>{
         return Promise.all([
             dc.configurationSequence(),
             dc.launch(dbgConfig),
-            dc.waitForEvent("stopped").then(async () => {
+            dc.waitForEvent("stopped").then(async() => {
                 for (let i = 0; i < 3; i++) {
                     await Promise.all([
                         dc.nextRequest({threadId: 1, granularity: "instruction"}),
                         Utils.assertStoppedLocation(dc, "step", 45,
-                                                    fibonacciFile, /main/),
+                            fibonacciFile, /main/),
                     ]);
                 }
                 await Promise.all([
                     dc.nextRequest({threadId: 1, granularity: "instruction"}),
                     Utils.assertStoppedLocation(dc, "step", 47,
-                                                fibonacciFile, /main/),
+                        fibonacciFile, /main/),
                 ]);
             })
         ]);
@@ -306,7 +309,7 @@ suite("Test Debug Adapter", () =>{
             dc.hitBreakpoint(
                 dbgConfigCopy,
                 { line: 37, path: fibonacciFile }
-            ).then(async () => {
+            ).then(async() => {
                 let scopes = await dc.scopesRequest({frameId: 0});
                 let locals = (await dc.variablesRequest({variablesReference: scopes.body.scopes[0].variablesReference})).body.variables;
                 Assert.equal(locals.length, 1);

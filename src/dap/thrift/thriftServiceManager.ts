@@ -31,7 +31,7 @@ export class ThriftServiceManager implements Disposable {
      * @param cspyProcess The CSpyServer process serving the service registry.
      * @param registryLocationPath The location of the service registry to use.
      */
-    constructor(private cspyProcess: ChildProcess, private registryLocation: ServiceLocation) {
+    constructor(private readonly cspyProcess: ChildProcess, private readonly registryLocation: ServiceLocation) {
     }
 
     /**
@@ -47,11 +47,11 @@ export class ThriftServiceManager implements Disposable {
         dgbr.dispose();
         this.activeServers.forEach(server => server.close());
         // Wait for cspyserver process to exit
-        if(this.cspyProcess.exitCode === null) {
+        if (this.cspyProcess.exitCode === null) {
             await new Promise((resolve, reject) => {
                 this.cspyProcess.on("exit", resolve);
                 setTimeout(() => {
-                    reject("CSpyServer exit timed out");
+                    reject(new Error("CSpyServer exit timed out"));
                     this.cspyProcess.kill();
                 }, ThriftServiceManager.CSPYSERVER_EXIT_TIMEOUT);
             });
@@ -88,9 +88,9 @@ export class ThriftServiceManager implements Disposable {
             transport: Thrift.TBufferedTransport,
             protocol: Thrift.TBinaryProtocol,
         };
-        const server = Thrift.createServer(serviceType, handler, serverOpt)
-            .on('error', console.log)
-            .listen(0); // port 0 lets node figure out what to use
+        const server = Thrift.createServer(serviceType, handler, serverOpt).
+            on("error", console.log).
+            listen(0); // port 0 lets node figure out what to use
 
         const port = (server.address() as AddressInfo).port; // this cast is safe since we know it's an IP socket
         const location = new ServiceLocation({ host: "localhost", port: port, protocol: Protocol.Binary, transport: Transport.Socket });
@@ -112,9 +112,9 @@ export class ThriftServiceManager implements Disposable {
             protocol: location.protocol === Protocol.Binary ? Thrift.TBinaryProtocol : Thrift.TJSONProtocol,
         };
         return new Promise((resolve, reject) => {
-            const conn = Thrift.createConnection(location.host, location.port, options)
-                .on("error", err => reject(err))
-                .on("connect", async () => {
+            const conn = Thrift.createConnection(location.host, location.port, options).
+                on("error", err => reject(err)).
+                on("connect", () => {
                     const client = Thrift.createClient<T>(serviceType, conn);
                     resolve(new ThriftClient(conn, client));
                 });
@@ -128,14 +128,14 @@ export namespace ThriftServiceManager {
      * @param workbenchPath Path to the top-level folder of the workbench to use
      */
     export async function fromWorkbench(workbenchPath: string): Promise<ThriftServiceManager> {
-        let registryPath = path.join(workbenchPath, "common/bin/CSpyServer2" + IarOsUtils.executableExtension());
+        const registryPath = path.join(workbenchPath, "common/bin/CSpyServer2" + IarOsUtils.executableExtension());
         const tmpDir = getTmpDir();
         const serviceRegistryProcess = spawn(registryPath, ["-standalone", "-sockets"],
-                                                { cwd: tmpDir });
+            { cwd: tmpDir });
         serviceRegistryProcess.stdout?.on("data", dat => {
             console.log(dat.toString());
         });
-        serviceRegistryProcess.stderr?.on("data", dat => {
+        serviceRegistryProcess.stderr?.on("data", _ => {
             // console.log("ERR: " + dat.toString());
         });
         serviceRegistryProcess.on("exit", code => {
@@ -157,7 +157,7 @@ export namespace ThriftServiceManager {
             prot.readMessageEnd();
 
             return new ThriftServiceManager(serviceRegistryProcess, location);
-        } catch(e) {
+        } catch (e) {
             serviceRegistryProcess.kill();
             throw e;
         }
@@ -166,8 +166,8 @@ export namespace ThriftServiceManager {
     // reads stdout as a hacky way to wait until cspyserver has launched
     // TODO: find a more robust way to detect when cspyserver is ready
     function waitUntilReady(process: ChildProcess): Promise<void> {
-        return new Promise(async (resolve, reject) => {
-            let output: string = "";
+        return new Promise((resolve, reject) => {
+            let output = "";
             const onData = (data: Buffer | string) => {
                 output += data;
                 if (output.includes("running")) {
@@ -175,10 +175,10 @@ export namespace ThriftServiceManager {
                     process.stdout?.removeListener("data", onData);
                     resolve();
                 }
-            }
+            };
             process.stdout?.on("data", onData);
 
-            setTimeout(() => reject("Service registry launch timed out"), 10000);
+            setTimeout(() => reject(new Error("Service registry launch timed out")), 10000);
         });
     }
 

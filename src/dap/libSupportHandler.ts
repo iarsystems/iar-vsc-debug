@@ -1,4 +1,4 @@
-'use strict';
+
 
 import * as Q from "q";
 
@@ -6,8 +6,8 @@ import * as Q from "q";
  * Implements the LibSupport thrift service.
  */
 export class LibSupportHandler {
-    private outputCallbacks: Array<(data: string) => void> = [];
-    private exitCallbacks: Array<(code: number) => void> = [];
+    private readonly outputCallbacks: Array<(data: string) => void> = [];
+    private readonly exitCallbacks: Array<(code: number) => void> = [];
 
     /**
      * Registers a callback to run when the debugee produces some output
@@ -30,7 +30,7 @@ export class LibSupportHandler {
     /**
      * Request input from the terminal I/O console.
      */
-    requestInputBinary(len: number): Q.Promise<string> {
+    requestInputBinary(_len: number): Q.Promise<string> {
         // TODO: implement
         // The implementation will be slightly complicated, since DAP doesn't support any way to request
         // console input from the user. Instead, we have to set some state indicating that we're waiting
@@ -61,7 +61,7 @@ export class LibSupportHandler {
     /**
      * The target program has aborted (i.e. called abort()).
      */
-    reportAssert(file: string, line: string, message: string): Q.Promise<void> {
+    reportAssert(_file: string, _line: string, _message: string): Q.Promise<void> {
         // No need to implement this for now, since it triggers a logevent anyway
         return Q.resolve();
     }

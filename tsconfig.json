@@ -11,15 +11,16 @@
 		"noImplicitThis": true,
 		"inlineSourceMap": false,
 		"sourceMap": true,
-		"outDir": "../out",
+		"outDir": "out",
 		"preserveConstEnums": true,
 		"strictNullChecks": true,
-		"noUnusedParameters": false
+		"noUnusedParameters": false,
+		"esModuleInterop": true
 	},
 	"include": [
-		"../src/**/*",
+		"src/**/*",
 	],
 	"exclude": [
-		"../out/**/*"
+		"out/**/*"
 	]
 }
