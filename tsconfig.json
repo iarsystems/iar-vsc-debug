@@ -14,8 +14,7 @@
 		"outDir": "out",
 		"preserveConstEnums": true,
 		"strictNullChecks": true,
-		"noUnusedParameters": false,
-		"esModuleInterop": true
+		"noUnusedParameters": false
 	},
 	"include": [
 		"src/**/*",

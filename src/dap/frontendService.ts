@@ -3,7 +3,7 @@
 import * as Thrift from "thrift";
 import { MsgIcon, MsgKind, MsgResult } from "./thrift/bindings/frontend_types";
 import { SourceLocation } from "./thrift/bindings/shared_types";
-import Q from "q";
+import * as Q from "q";
 
 /**
  * Implements the Frontend thrift service.

@@ -14,9 +14,8 @@ import { ThriftClient } from "./thrift/thriftClient";
 import { WindowNames } from "./listWindowConstants";
 import { ListWindowVariablesProvider, VariablesProvider } from "./variablesProvider";
 import { ListWindowRow } from "./listWindowClient";
-import Int64 from "node-int64";
+import Int64 = require("node-int64");
 
-// import Int64 from "node-int64";
 /**
  * Describes a scope, i.e. a C-SPY context used to access the scope,
  * and a provider giving the variables in that scope.
