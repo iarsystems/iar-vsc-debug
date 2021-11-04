@@ -56,7 +56,7 @@ export class CSpyBreakpointManager implements Disposable {
 
                 // TODO: the debugger doesn't seem to adjust the line on the ule, e.g. if the line is empty. If we parse the descriptor, we can get the actual line of the bp.
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                const [_, newLine, newCol] = this.parseSourceUle(newBp.ule);
+                const [, newLine, newCol] = this.parseSourceUle(newBp.ule);
                 return {
                     verified: newBp.valid,
                     line: this.convertDebuggerLineToClient(newLine),

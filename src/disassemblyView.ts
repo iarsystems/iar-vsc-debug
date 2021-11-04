@@ -6,7 +6,7 @@ import * as vscode from "vscode";
  */
 export class DisassemblyView {
     private readonly _documentProvider = new DisassemblyDocumentProvider();
-    private _editor: vscode.TextEditor; // The editor containing out disassembly document
+    private _editor: vscode.TextEditor | undefined; // The editor containing out disassembly document
 
     private _content: string[] = [];
     private _bps: number[] = [];
@@ -34,7 +34,7 @@ export class DisassemblyView {
             }
         }));
         // Make sure to reapply decorations when we switch back to this editor
-        context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor((e: vscode.TextEditor) =>{
+        context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor((e: vscode.TextEditor | undefined) =>{
             if (this._editor && e && e.document === this._editor.document) {
                 this._editor = e;
                 this.updateDecorations();
@@ -61,11 +61,15 @@ export class DisassemblyView {
     }
 
     private updateContent() {
-        this._documentProvider.setData(this._content, this._editor.document.uri);
+        if (this._editor) {
+            this._documentProvider.setData(this._content, this._editor.document.uri);
+        }
     }
 
     private updateDecorations() {
-        // TODO: check if _editor is set before doing anything
+        if (!this._editor) {
+            return;
+        }
         const bpDecorations: vscode.DecorationOptions[] = [];
         this._bps.forEach((row: number) => {
             const range = new vscode.Range(new vscode.Position(row, 0), new vscode.Position(row, 1));

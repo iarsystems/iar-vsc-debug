@@ -62,9 +62,8 @@ export class CSpyContextManager implements Disposable {
      * Creates a new context manager using services from the given service manager.
      */
     static async instantiate(serviceMgr: ThriftServiceManager): Promise<CSpyContextManager> {
-        const onProviderUnavailable = (reason) => {
-            console.error("VariablesProvider failed to load: ", reason);
-            return undefined;
+        const onProviderUnavailable = (reason: unknown) => {
+            throw reason;
         };
         return new CSpyContextManager(
             await serviceMgr.findService(CONTEXT_MANAGER_SERVICE, ContextManager.Client),

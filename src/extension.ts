@@ -81,7 +81,7 @@ class CSpyConfigurationProvider implements vscode.DebugConfigurationProvider {
 	 * e.g. add all missing attributes to the debug configuration.
      * TODO: this needs some work
 	 */
-    resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, _token?: CancellationToken): ProviderResult<DebugConfiguration> {
+    resolveDebugConfiguration(_folder: WorkspaceFolder | undefined, config: DebugConfiguration, _token?: CancellationToken): ProviderResult<DebugConfiguration> {
         // if launch.json is missing or empty
         if (!config.type && !config.request && !config.name) {
             const editor = vscode.window.activeTextEditor;

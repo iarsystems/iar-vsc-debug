@@ -29,7 +29,7 @@ export namespace TestUtils {
         // console.log(spawnSync(iarBuildPath, [ewpPath, "-build", configuration]).stdout.toString());
     }
 
-    export function assertCurrentLineIs(session: vscode.DebugSession, path: string, line: number, column: number) {
+    export function assertCurrentLineIs(session: vscode.DebugSession, _path: string, line: number, column: number) {
         return session.customRequest("stackTrace").then((response)=>{
             console.log("Checking stack");
             if (response.stackFrames) {
