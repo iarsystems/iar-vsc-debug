@@ -196,13 +196,16 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     private addCSpyEventHandlers() {
-        this.cspyEventHandler?.observeDebugEvents(DkNotifyConstant.kDkTargetStopped, () => {
+        if (this.cspyEventHandler === undefined) {
+            throw new Error("Expected CSPY event handler to be initialized, but it is not");
+        }
+        this.cspyEventHandler.observeDebugEvents(DkNotifyConstant.kDkTargetStopped, () => {
             // TODO: figure out if it's feasible to get a precise reason for stopping from C-SPY
             console.log("Target stopped, sending StoppedEvent");
             this.sendEvent(new StoppedEvent(this.expectedStoppingReason, CSpyDebugSession.THREAD_ID));
         });
 
-        this.cspyEventHandler?.observeDebugEvents(DkNotifyConstant.kDkForcedStop, () => {
+        this.cspyEventHandler.observeDebugEvents(DkNotifyConstant.kDkForcedStop, () => {
             this.expectedStoppingReason = "exit";
         });
     }
@@ -221,70 +224,71 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.sendResponse(response);
     }
 
-    protected override pauseRequest(response: DebugProtocol.PauseResponse) {
-        this.expectedStoppingReason = "pause";
-        this.cspyDebugger?.service.stop();
+    protected override async pauseRequest(response: DebugProtocol.PauseResponse) {
+        await CSpyDebugSession.tryResponseWith(this.cspyDebugger, response, cspyDebugger => {
+            this.expectedStoppingReason = "pause";
+            cspyDebugger.service.stop();
+        });
         this.sendResponse(response);
     }
-    protected override continueRequest(response: DebugProtocol.ContinueResponse, _args: DebugProtocol.ContinueArguments) {
-        this.expectedStoppingReason = "breakpoint";
-        this.cspyDebugger?.service.go();
+    protected override async continueRequest(response: DebugProtocol.ContinueResponse, _args: DebugProtocol.ContinueArguments) {
+        await CSpyDebugSession.tryResponseWith(this.cspyDebugger, response, cspyDebugger => {
+            this.expectedStoppingReason = "breakpoint";
+            cspyDebugger.service.go();
+        });
         this.sendResponse(response);
     }
 
     protected override async restartRequest(response: DebugProtocol.RestartResponse, _args: DebugProtocol.RestartArguments) {
-        this.expectedStoppingReason = "entry";
-        await this.cspyDebugger?.service.reset();
-        this.cspyDebugger?.service.runToULE("main", false);
-        // TODO: should we call 'go' here? Maybe the launch argument 'stopOnEntry' should be stored, so we have it here
+        await CSpyDebugSession.tryResponseWith(this.cspyDebugger, response, async cspyDebugger => {
+            this.expectedStoppingReason = "entry";
+            await cspyDebugger.service.reset();
+            cspyDebugger.service.runToULE("main", false);
+            // TODO: should we call 'go' here? Maybe the launch argument 'stopOnEntry' should be stored, so we have it here
+        });
         this.sendResponse(response);
     }
 
-    protected override nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments) {
-        this.expectedStoppingReason = "step";
-        if (args.granularity === "instruction") {
-            this.cspyDebugger?.service.instructionStepOver();
-        } else {
-            this.cspyDebugger?.service.stepOver(true);
-        }
+    protected override async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments) {
+        await CSpyDebugSession.tryResponseWith(this.cspyDebugger, response, cspyDebugger => {
+            this.expectedStoppingReason = "step";
+            if (args.granularity === "instruction") {
+                cspyDebugger.service.instructionStepOver();
+            } else {
+                cspyDebugger.service.stepOver(true);
+            }
+        });
         this.sendResponse(response);
     }
 
-    protected override stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments) {
-        this.expectedStoppingReason = "step";
-        if (args.granularity === "instruction") {
-            this.cspyDebugger?.service.instructionStep();
-        } else {
-            this.cspyDebugger?.service.step(true);
-        }
+    protected override async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments) {
+        await CSpyDebugSession.tryResponseWith(this.cspyDebugger, response, cspyDebugger => {
+            this.expectedStoppingReason = "step";
+            if (args.granularity === "instruction") {
+                cspyDebugger.service.instructionStep();
+            } else {
+                cspyDebugger.service.step(true);
+            }
+        });
         this.sendResponse(response);
     }
 
-    protected override stepOutRequest(response: DebugProtocol.StepOutResponse, _args: DebugProtocol.StepOutArguments) {
+    protected override async stepOutRequest(response: DebugProtocol.StepOutResponse, _args: DebugProtocol.StepOutArguments) {
         this.expectedStoppingReason = "step";
-        this.cspyDebugger?.service.stepOut();
+        await CSpyDebugSession.tryResponseWith(this.cspyDebugger, response, cspyDebugger => {
+            cspyDebugger.service.stepOut();
+        });
         this.sendResponse(response);
     }
 
     protected override async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments) {
         console.log("SetBPs");
-        if (args.breakpoints) {
-            try {
-                if (this.breakpointManager === undefined) {
-                    throw new Error("BreakpointManager has not been initialized");
-                }
-                const bps = await this.breakpointManager.setBreakpointsFor(args.source, args.breakpoints);
-                response.body = {
-                    breakpoints: bps,
-                };
-            } catch (e) {
-                console.error(e);
-                response.success = false;
-                if (typeof e === "string" || e instanceof Error) {
-                    response.message = e.toString();
-                }
-            }
-        }
+        await CSpyDebugSession.tryResponseWith(this.breakpointManager, response, async breakpointManager => {
+            const bps = await breakpointManager.setBreakpointsFor(args.source, args.breakpoints ?? []);
+            response.body = {
+                breakpoints: bps,
+            };
+        });
         this.sendResponse(response);
         if (response.success) {
             this.performDisassemblyEvent(); // update disassembly to reflect changed breakpoints
@@ -303,60 +307,36 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     protected override async stackTraceRequest(response: DebugProtocol.StackTraceResponse, _args: DebugProtocol.StackTraceArguments) {
         console.log("StackTrace");
-        try {
-            if (this.stackManager === undefined) {
-                throw new Error("StackManager has not been initialized");
-            }
-            const frames = await this.stackManager.fetchStackFrames();
+        await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
+            const frames = await stackManager.fetchStackFrames();
             response.body = {
                 stackFrames: frames,
                 totalFrames: frames.length,
             };
-        } catch (e) {
-            response.success = false;
-            if (typeof e === "string" || e instanceof Error) {
-                response.message = e.toString();
-            }
-        }
+        });
         this.sendResponse(response);
         this.performDisassemblyEvent();
     }
 
-    protected override scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments) {
+    protected override async scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments) {
         console.log("Scopes");
-        try {
-            if (this.stackManager === undefined) {
-                throw new Error("StackManager has not been initialized");
-            }
-            const scopes = this.stackManager.fetchScopes(args.frameId);
+        await CSpyDebugSession.tryResponseWith(this.stackManager, response, stackManager => {
+            const scopes = stackManager.fetchScopes(args.frameId);
             response.body = {
                 scopes: scopes,
             };
-        } catch (e) {
-            response.success = false;
-            if (typeof e === "string" || e instanceof Error) {
-                response.message = e.toString();
-            }
-        }
+        });
         this.sendResponse(response);
     }
 
     protected override async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments) {
         console.log("Variables");
-        try {
-            if (this.stackManager === undefined) {
-                throw new Error("StackManager has not been initialized");
-            }
-            const variables = await this.stackManager.fetchVariables(args.variablesReference);
+        await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
+            const variables = await stackManager.fetchVariables(args.variablesReference);
             response.body = {
                 variables: variables,
             };
-        } catch (e) {
-            response.success = false;
-            if (typeof e === "string" || e instanceof Error) {
-                response.message = e.toString();
-            }
-        }
+        });
         this.sendResponse(response);
 
         // Variable requests are also performed when the target is idle
@@ -364,31 +344,20 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     protected override async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments) {
-        try {
-            if (this.stackManager === undefined) {
-                throw new Error("StackManager has not been initialized");
-            }
-            const newVal = await this.stackManager.setVariable(args.variablesReference, args.name, args.value);
+        await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
+            const newVal = await stackManager.setVariable(args.variablesReference, args.name, args.value);
             response.body = {
                 value: newVal,
             };
-        } catch (e) {
-            response.success = false;
-            if (typeof e === "string" || e instanceof Error) {
-                response.message = e.toString();
-            }
-        }
+        });
         this.sendResponse(response);
     }
 
 
     protected override async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments) {
         console.log("Eval");
-        try {
-            if (this.stackManager === undefined) {
-                throw new Error("StackManager has not been initialized");
-            }
-            const val = await this.stackManager.evalExpression(args.frameId || 0, args.expression);
+        await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
+            const val = await stackManager.evalExpression(args.frameId || 0, args.expression);
             // TODO: expandable variables using subexpressions
             response.body = {
                 result: val.value,
@@ -396,13 +365,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 memoryReference: val.hasLocation ? val.location.address.toString() : undefined,
                 variablesReference: 0,
             };
-        } catch (e) {
-            console.log(e);
-            response.success = false;
-            if (typeof e === "string" || e instanceof Error) {
-                response.message = e.toString();
-            }
-        }
+        });
         this.sendResponse(response);
     }
 
@@ -438,6 +401,28 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.cspyDebugger?.dispose();
         // VSC-3 This will take care of orderly shutting down CSpyServer
         await this.serviceManager?.dispose();
+    }
+
+    /**
+     * Performs some standard error handling around a DAP request reponse, which requires some potentially undefined object.
+     * If the object is undefined, or the handling of the request throws an error, the request is marked as unsucessful and
+     * an appropriate error msg is set.
+     * @param obj The object required to be defined
+     * @param response The response to send to the DAP request
+     * @param fun The function to run with the object, if defined
+     */
+    private static async tryResponseWith<T, R extends DebugProtocol.Response>(obj: T | undefined, response: R, fun: (obj: T) => void | Promise<void>) {
+        try {
+            if (obj === undefined) {
+                throw new Error("Unexpected undefined object");
+            }
+            await fun(obj);
+        } catch (e) {
+            response.success = false;
+            if (typeof e === "string" || e instanceof Error) {
+                response.message = e.toString();
+            }
+        }
     }
 }
 DebugSession.run(CSpyDebugSession);
