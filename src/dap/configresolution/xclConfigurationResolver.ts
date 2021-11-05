@@ -22,6 +22,9 @@ export class XclConfigurationResolver extends BaseConfigurationResolver {
         const argsLines = this.readLinesFromXclFile(argsFile);
         const processorLib = argsLines[0];
         const driverLib = argsLines[1];
+        if (!processorLib || !driverLib) {
+            return Promise.reject(new Error(`The file seems too short: ${argsFile}`));
+        }
 
         const options: string[] = [];
         const plugins: string[] = [];
@@ -31,11 +34,11 @@ export class XclConfigurationResolver extends BaseConfigurationResolver {
             argsLines.slice(3).forEach(arg => {
                 const pluginMatch = /--plugin=(.+)$/.exec(arg);
                 const macroMatch = /--macro=(.+)$/.exec(arg);
-                if (pluginMatch) {
+                if (pluginMatch && pluginMatch[1]) {
                     if (!/bat.(dll|so)$/.test(pluginMatch[1])) { // remove e.g. armbat plugin
                         plugins.push(Path.parse(pluginMatch[1]).name);
                     }
-                } else if (macroMatch) {
+                } else if (macroMatch && macroMatch[1]) {
                     macros.push(macroMatch[1]); // not tested
                 } else if (/\s*--attach_to_running_target\s*/.test(arg)) {
                     attachToTarget = true;

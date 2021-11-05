@@ -16,7 +16,9 @@
         "alwaysStrict": true, /* Ensure that all files emit "use strict" */
         "strictBindCallApply": true, /* Enable type checks for call/bind/apply */
         "strictFunctionTypes": true, /* Stricter type checks for function parameters */
-        "noImplicitOverride": true /* Force use of 'override' keyword */
+        "noImplicitOverride": true, /* Force use of 'override' keyword */
+        "noPropertyAccessFromIndexSignature": true, /* Report errors when accessing nonexistent fields */
+        "noUncheckedIndexedAccess": true /* Add 'undefined' to the type returned from indexed accesses */
 	},
 	"include": [
 		"src/**/*",

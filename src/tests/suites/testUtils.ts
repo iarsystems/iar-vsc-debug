@@ -19,7 +19,7 @@ export namespace TestUtils {
         if (installDirs) {
             return installDirs;
         }
-        return JSON.parse(process.env.ewPaths || "[]");
+        return JSON.parse(process.env["ewPaths"] || "[]");
     }
 
     export function buildProject(workbenchPath: string, ewpPath: string, configuration: string) {

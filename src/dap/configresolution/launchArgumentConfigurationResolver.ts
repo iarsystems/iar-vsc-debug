@@ -18,7 +18,7 @@ export class LaunchArgumentConfigurationResolver extends BaseConfigurationResolv
 
         const targets = IarUtils.getTargetsFromEwPath(args.workbenchPath);
         let target = "";
-        if (targets.length > 0) {
+        if (targets[0] !== undefined) {
             // Just use the first one in the list for now.
             target = targets[0];
             console.log("Using target " + target);
@@ -27,8 +27,8 @@ export class LaunchArgumentConfigurationResolver extends BaseConfigurationResolv
 
         // Resolve the target from the the provided path.
         const folders = Fs.readdirSync(args.workbenchPath);
-        for (let i = 0; i < folders.length; i++) {
-            const possibleTarget = Path.basename(folders[i]);
+        for (const folder of folders) {
+            const possibleTarget = Path.basename(folder);
             if (possibleTarget !== "common") {
                 target = possibleTarget;
                 break;

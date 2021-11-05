@@ -15,6 +15,7 @@ import { WindowNames } from "./listWindowConstants";
 import { ListWindowVariablesProvider, VariablesProvider } from "./variablesProvider";
 import { ListWindowRow } from "./listWindowClient";
 import Int64 = require("node-int64");
+import { DebugProtocol } from "vscode-debugprotocol";
 
 /**
  * Describes a scope, i.e. a C-SPY context used to access the scope,
@@ -105,7 +106,7 @@ export class CSpyContextManager implements Disposable {
 
         // this assumes the contexts we get from getStack are sorted by frame level and in ascending order
         return contextInfos.map((contextInfo, i) => {
-            if (contextInfo.sourceRanges.length > 0) {
+            if (contextInfo.sourceRanges[0] !== undefined) {
                 const filename = contextInfo.sourceRanges[0].filename;
                 return new StackFrame(
                     i, contextInfo.functionName, new Source(basename(filename), filename), contextInfo.sourceRanges[0].first.line, contextInfo.sourceRanges[0].first.col
@@ -126,6 +127,9 @@ export class CSpyContextManager implements Disposable {
      */
     fetchScopes(frameIndex: number): Scope[] {
         const context = this.contextReferences[frameIndex];
+        if (!context) {
+            throw new Error(`Frame index ${frameIndex} is out of bounds`);
+        }
 
         const scopes = new Array<Scope>();
         scopes.push(new Scope("Local", this.scopeAndVariableHandles.create(new ScopeReference(this.localsProvider, context)), false));
@@ -179,6 +183,9 @@ export class CSpyContextManager implements Disposable {
      */
     async evalExpression(frameIndex: number, expression: string): Promise<ExprValue> {
         const context = this.contextReferences[frameIndex];
+        if (!context) {
+            throw new Error(`Frame index ${frameIndex} is out of bounds`);
+        }
         await this.contextManager.service.setInspectionContext(context);
         const result = await this.dbgr.service.evalExpression(context, expression, [], ExprFormat.kDefault, true);
         return result;
@@ -241,7 +248,10 @@ export class CSpyContextManager implements Disposable {
  * Describes how the columns of these windows are laid out, and how to convert them to variables
  */
 namespace RowToVariableConverters {
-    export function locals(row: ListWindowRow) {
+    export function locals(row: ListWindowRow): DebugProtocol.Variable {
+        if (!row.values[0] || !row.values[1] || !row.values[3]) {
+            throw new Error("Not enough data in row to parse variable");
+        }
         return {
             name: row.values[0],
             value: row.values[1],
@@ -249,15 +259,22 @@ namespace RowToVariableConverters {
             variablesReference: 0,
         };
     }
-    export function statics(row: ListWindowRow) {
+    export function statics(row: ListWindowRow): DebugProtocol.Variable {
+        if (!row.values[0] || !row.values[1] || !row.values[3]) {
+            throw new Error("Not enough data in row to parse variable");
+        }
         return {
-            name: row.values[0].split(" ")[0],
+            // TODO: Do we actually want to remove the second half?
+            name: row.values[0].split(" ")[0] ?? row.values[0],
             value: row.values[1],
             type: `${row.values[3]} @ ${row.values[2]}`,
             variablesReference: 0,
         };
     }
-    export function registers(row: ListWindowRow) {
+    export function registers(row: ListWindowRow): DebugProtocol.Variable {
+        if (!row.values[0] || !row.values[1] || !row.values[2]) {
+            throw new Error("Not enough data in row to parse variable");
+        }
         return {
             name: row.values[0],
             value: row.values[1],

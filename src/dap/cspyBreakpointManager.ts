@@ -88,7 +88,7 @@ export class CSpyBreakpointManager implements Disposable {
 
     private parseSourceUle(ule: string): [string, number, number] {
         const match = /^{(.+)}\.(\d+)\.(\d+)$/.exec(ule);
-        if (!match || match.length !== 4) {
+        if (!match || match.length !== 4 || !match[1]) {
             throw new Error("Invalid source ULE: " + ule);
         }
         return [match[1], Number(match[2]), Number(match[3])];

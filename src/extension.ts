@@ -89,12 +89,12 @@ class CSpyConfigurationProvider implements vscode.DebugConfigurationProvider {
                 config.type = "cspy";
                 config.name = "Launch";
                 config.request = "launch";
-                config.program = "${file}";
-                config.stopOnEntry = true;
+                config["program"] = "${file}";
+                config["stopOnEntry"] = true;
             }
         }
 
-        if (!config.program) {
+        if (!config["program"]) {
             return vscode.window.showInformationMessage("Cannot find a program to debug").then(_ => {
                 return undefined;	// abort launch
             });

@@ -39,16 +39,16 @@ suite("New tests", () =>{
     suiteSetup(() => {
         testProjectsPath = sandbox.copyToSandbox(Path.join(TestUtils.PROJECT_ROOT, "src/tests/TestProjects/"));
 
-        dbgConfig.projectPath = Path.join(testProjectsPath, "GettingStarted/BasicDebugging.ewp");
-        dbgConfig.program = Path.join(testProjectsPath, "GettingStarted/Debug/Exe/BasicDebugging.out");
+        dbgConfig["projectPath"] = Path.join(testProjectsPath, "GettingStarted/BasicDebugging.ewp");
+        dbgConfig["program"] = Path.join(testProjectsPath, "GettingStarted/Debug/Exe/BasicDebugging.out");
 
         const installDirs = TestUtils.getEwPaths();
         Assert(installDirs, "No workbenches found to use for debugging");
         // For now just use the first entry, and assume it points directly to a top-level ew directory
         const workbench = installDirs[0];
 
-        dbgConfig.workbenchPath = workbench;
-        TestUtils.buildProject(dbgConfig.workbenchPath, dbgConfig.projectPath, dbgConfig.projectConfiguration);
+        dbgConfig["workbenchPath"] = workbench;
+        TestUtils.buildProject(dbgConfig["workbenchPath"], dbgConfig["projectPath"], dbgConfig["projectConfiguration"]);
     });
 
     setup(async()=>{

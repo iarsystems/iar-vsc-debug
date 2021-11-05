@@ -66,17 +66,22 @@ export class ListWindowClient implements Disposable {
         // A more robust way would be to keep track of indices, but that is hard since indices keep changing
         // when we expand rows. We could also let the row-comparison be defined e.g. as a predicate
         // passed as a parameter, so the comparison can be changed on a per-window basis.
-        const rowIndex = this.rows.findIndex(r => r.cells[0].text === parent.values[0]);
-        const row = this.rows[rowIndex];
+        const rowIndex = this.rows.findIndex(r => r.cells[0]?.text === parent.values[0]);
+        if (rowIndex === -1) {
+            throw new Error("Cannot find row in the window matching: " + parent.values[0]);
+        }
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const row = this.rows[rowIndex]!;
 
         if (row.treeinfo !== "-") {
             await this.backend.service.toggleExpansion(new Int64(rowIndex));
             await this.updateAllRows();
         }
         const children: Row[] = [];
-        for (let i = rowIndex + 1; i < this.rows.length; i++) {
-            children.push(this.rows[i]);
-            if (this.rows[i].treeinfo.startsWith("L")) {
+        const candidates = this.rows.slice(rowIndex + 1, this.rows.length);
+        for (const candidateRow of candidates) {
+            children.push(candidateRow);
+            if (candidateRow.treeinfo.startsWith("L")) {
                 break;
             }
         }
