@@ -23,7 +23,10 @@
 				"--extensionTestsPath=${workspaceFolder}/out/tests/suites/index"
 			],
 			"outFiles": [ "${workspaceFolder}/out/**/*.js" ],
-			"preLaunchTask": "npm: compile"
+			"preLaunchTask": "npm: compile",
+            "presentation": {
+                "group": "Tests",
+            }
 		},
 	],
 	"compounds": [
