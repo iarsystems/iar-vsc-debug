@@ -8,7 +8,7 @@ import { ThriftClient } from "./thrift/thriftClient";
 import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant, SessionConfiguration } from "./thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
 import { CSpyContextManager } from "./cspyContextManager";
-import { CSpyBreakpointManager } from "./cspyBreakpointManager";
+import { CSpyBreakpointManager } from "./breakpoints/cspyBreakpointManager";
 import { XclConfigurationResolver } from "./configresolution/xclConfigurationResolver";
 import { LaunchArgumentConfigurationResolver}  from "./configresolution/launchArgumentConfigurationResolver";
 import { CSpyException } from "./thrift/bindings/shared_types";

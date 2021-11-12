@@ -1,12 +1,14 @@
 
 
-import * as Breakpoints from "./thrift/bindings/Breakpoints";
+import * as Breakpoints from "../thrift/bindings/Breakpoints";
 import { DebugProtocol } from "vscode-debugprotocol";
-import { AccessType, Breakpoint } from "./thrift/bindings/shared_types";
-import { Disposable } from "./disposable";
-import { ThriftServiceManager } from "./thrift/thriftServiceManager";
-import { BREAKPOINTS_SERVICE } from "./thrift/bindings/breakpoints_types";
-import { ThriftClient } from "./thrift/thriftClient";
+import { AccessType, Breakpoint } from "../thrift/bindings/shared_types";
+import { Disposable } from "../disposable";
+import { ThriftServiceManager } from "../thrift/thriftServiceManager";
+import { BREAKPOINTS_SERVICE } from "../thrift/bindings/breakpoints_types";
+import { ThriftClient } from "../thrift/thriftClient";
+import { LocOnlyDescriptor } from "./locOnlyDescriptor";
+import { DescriptorReader } from "./descriptorReader";
 
 /**
  * Sets, unsets and verifies C-SPY breakpoints.
@@ -54,9 +56,12 @@ export class CSpyBreakpointManager implements Disposable {
                 const dbgrCol = bp.column ? this.convertClientColumnToDebugger(bp.column) : 1;
                 const newBp = await this.breakpointService.service.setBreakpointOnUle(`{${sourcePath}}.${dbgrLine}.${dbgrCol}`, AccessType.kDkFetchAccess);
 
-                // TODO: the debugger doesn't seem to adjust the line on the ule, e.g. if the line is empty. If we parse the descriptor, we can get the actual line of the bp.
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                const [, newLine, newCol] = this.parseSourceUle(newBp.ule);
+                if (newBp.category !== "STD_CODE2" && newBp.category !== "STD_CODE") {
+                    throw new Error("Encountered unsupported BP category: " + newBp.category);
+                }
+                const descriptor = new LocOnlyDescriptor(new DescriptorReader(newBp.descriptor));
+
+                const [, newLine, newCol] = this.parseSourceUle(descriptor.ule);
                 return {
                     verified: newBp.valid,
                     line: this.convertDebuggerLineToClient(newLine),
@@ -87,6 +92,8 @@ export class CSpyBreakpointManager implements Disposable {
     }
 
     private parseSourceUle(ule: string): [string, number, number] {
+        console.log("Examing ule: " + ule);
+
         const match = /^{(.+)}\.(\d+)\.(\d+)$/.exec(ule);
         if (!match || match.length !== 4 || !match[1]) {
             throw new Error("Invalid source ULE: " + ule);
