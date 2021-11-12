@@ -1,7 +1,7 @@
-import * as vscode from 'vscode'
+import * as vscode from "vscode";
 
 export class MemoryDocumentProvider implements vscode.TextDocumentContentProvider {
-    private _onDidChangeEmitter = new vscode.EventEmitter<vscode.Uri>();
+    private readonly _onDidChangeEmitter = new vscode.EventEmitter<vscode.Uri>();
     public onDidChange = this._onDidChangeEmitter.event;
 
     private _data: string[][] = [];
@@ -13,8 +13,8 @@ export class MemoryDocumentProvider implements vscode.TextDocumentContentProvide
     provideTextDocumentContent(_: vscode.Uri): vscode.ProviderResult<string> {
         let content = "";
         this._data.forEach(row => {
-            content += row.join('\t');
-            content += '\n';
+            content += row.join("\t");
+            content += "\n";
         });
         return content;
     }

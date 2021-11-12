@@ -1,4 +1,4 @@
-'use strict';
+
 
 import * as Q from "q";
 import { Note, Row, What } from "./thrift/bindings/listwindow_types";
@@ -12,7 +12,7 @@ import { Disposable } from "./disposable";
 export interface ListWindowRow {
     values: string[];
     expandable: boolean;
-};
+}
 
 /**
  * Poses as a frontend for a list window, managing all events and keeping track of all its rows.
@@ -44,7 +44,7 @@ export class ListWindowClient implements Disposable {
     // This is usually the case, but we shouldn't rely on it.
     private rows: Row[] = [];
 
-    private constructor(private backend: ThriftClient<ListWindowBackend.Client>) {
+    private constructor(private readonly backend: ThriftClient<ListWindowBackend.Client>) {
     }
 
     /**
@@ -59,22 +59,31 @@ export class ListWindowClient implements Disposable {
      * Gets the children of an expandable row
      */
     async getChildrenOf(parent: ListWindowRow): Promise<ListWindowRow[]> {
-        if (!parent.expandable) { throw new Error("Attempted to expand a row that is not expandable."); }
+        if (!parent.expandable) {
+            throw new Error("Attempted to expand a row that is not expandable.");
+        }
         // Comparing the first column should be enough for most cases to identify a row.
         // A more robust way would be to keep track of indices, but that is hard since indices keep changing
         // when we expand rows. We could also let the row-comparison be defined e.g. as a predicate
         // passed as a parameter, so the comparison can be changed on a per-window basis.
-        const rowIndex = this.rows.findIndex(r => r.cells[0].text === parent.values[0]);
-        const row = this.rows[rowIndex];
+        const rowIndex = this.rows.findIndex(r => r.cells[0]?.text === parent.values[0]);
+        if (rowIndex === -1) {
+            throw new Error("Cannot find row in the window matching: " + parent.values[0]);
+        }
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const row = this.rows[rowIndex]!;
 
         if (row.treeinfo !== "-") {
             await this.backend.service.toggleExpansion(new Int64(rowIndex));
             await this.updateAllRows();
         }
         const children: Row[] = [];
-        for (let i = rowIndex + 1; i < this.rows.length; i++) {
-            children.push(this.rows[i]);
-            if (this.rows[i].treeinfo.startsWith("L")) { break; }
+        const candidates = this.rows.slice(rowIndex + 1, this.rows.length);
+        for (const candidateRow of candidates) {
+            children.push(candidateRow);
+            if (candidateRow.treeinfo.startsWith("L")) {
+                break;
+            }
         }
         return children.map(ListWindowClient.createListWindowRow);
     }
@@ -82,16 +91,16 @@ export class ListWindowClient implements Disposable {
     // callback from list window backend
     notify(note: Note): Q.Promise<void> {
         console.log("LISTWINDOW NOTIFIED: ", note.what, note.anonPos.toString(), note.ensureVisible.toNumber(), note.row.toNumber(), note.seq.toNumber());
-        switch(note.what) {
-            case What.kRowUpdate:
-                return this.backend.service.getRow(note.row).then(row => {
-                    this.rows[note.row.toNumber()] = row;
-                });
+        switch (note.what) {
+        case What.kRowUpdate:
+            return this.backend.service.getRow(note.row).then(row => {
+                this.rows[note.row.toNumber()] = row;
+            });
             // TODO: is this an acceptable way to handle thawing (and freezing)?
-            case What.kNormalUpdate:
-            case What.kFullUpdate:
-            case What.kThaw:
-                return this.updateAllRows();
+        case What.kNormalUpdate:
+        case What.kFullUpdate:
+        case What.kThaw:
+            return this.updateAllRows();
         }
         return Q.resolve();
     }

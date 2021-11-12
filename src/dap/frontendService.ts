@@ -1,8 +1,6 @@
-'use strict';
+
 
 import * as Thrift from "thrift";
-import * as Frontend from "./thrift/bindings/Frontend";
-import { Server } from "net";
 import { MsgIcon, MsgKind, MsgResult } from "./thrift/bindings/frontend_types";
 import { SourceLocation } from "./thrift/bindings/shared_types";
 import * as Q from "q";
@@ -14,33 +12,33 @@ import * as Q from "q";
  */
 export class FrontendHandler {
 
-    messageBox(msg: string, caption: string, icon: MsgIcon, kind: MsgKind, dontAskMgrKey: string): Q.Promise<MsgResult> {
+    messageBox(msg: string, caption: string, _icon: MsgIcon, _kind: MsgKind, _dontAskMgrKey: string): Q.Promise<MsgResult> {
         console.log("messageBox", msg, caption);
         return Q.resolve(MsgResult.kMsgResOk);
     }
 
-    messageBoxAsync(msg: string, caption: string, icon: MsgIcon, dontAskMgrKey: string): Q.Promise<void> {
+    messageBoxAsync(msg: string, caption: string, _icon: MsgIcon, _dontAskMgrKey: string): Q.Promise<void> {
         console.log("messageBoxAsync", msg, caption);
         return Q.resolve();
     }
 
-    openFileDialog(title: string, startdir: string, filter: string, allowMultiple: boolean, existing: boolean): Q.Promise<string[]> {
+    openFileDialog(title: string, _startdir: string, _filter: string, _allowMultiple: boolean, _existing: boolean): Q.Promise<string[]> {
         console.log("openFileDialog", title);
         return Q.resolve([]);
     }
 
-    openDirectoryDialog(title: string, existing: boolean, startdir: string): Q.Promise<string[]> {
+    openDirectoryDialog(title: string, _existing: boolean, _startdir: string): Q.Promise<string[]> {
         console.log("openDirectoryDialog", title);
         return Q.resolve([]);
     }
 
-    openSaveDialog(title: string, fileName: string, defExt: string, startDir: string, filter: string): Q.Promise<string[]> {
+    openSaveDialog(title: string, fileName: string, _defExt: string, _startDir: string, _filter: string): Q.Promise<string[]> {
         console.log("openSaveDialog", title, fileName);
         return Q.resolve([]);
     }
 
     private id = 0;
-    createProgressBar(msg: string, caption: string, minvalue: Thrift.Int64, maxvalue: Thrift.Int64, canCancel: boolean, indeterminate: boolean): Q.Promise<number> {
+    createProgressBar(msg: string, caption: string, _minvalue: Thrift.Int64, _maxvalue: Thrift.Int64, _canCancel: boolean, _indeterminate: boolean): Q.Promise<number> {
         console.log("createProgressBar", msg, caption);
         return Q.resolve(this.id++);
     }

@@ -1,4 +1,4 @@
-"use strict";
+
 
 /**
  * Contains names for all C-SPY windows used by this adapter

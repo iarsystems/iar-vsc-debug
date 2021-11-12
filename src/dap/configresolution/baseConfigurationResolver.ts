@@ -1,4 +1,4 @@
-'use strict';
+
 
 import { ConfigurationResolver } from "./configurationResolver";
 import { SessionConfiguration } from "../thrift/bindings/cspy_types";
@@ -32,13 +32,13 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
 
     async resolveLaunchArguments(launchArguments: CSpyLaunchRequestArguments): Promise<SessionConfiguration> {
         if (!Fs.existsSync(launchArguments.program)) {
-            return Promise.reject(`The program '${launchArguments.program}' does not exist.`);
+            return Promise.reject(new Error(`The program '${launchArguments.program}' does not exist.`));
         }
         if (!Fs.existsSync(launchArguments.projectPath)) {
-            return Promise.reject(`The project '${launchArguments.projectPath}' does not exist.`);
+            return Promise.reject(new Error(`The project '${launchArguments.projectPath}' does not exist.`));
         }
         if (!Fs.existsSync(launchArguments.workbenchPath)) {
-            return Promise.reject(`The workbench folder '${launchArguments.workbenchPath}' does not exist.`);
+            return Promise.reject(new Error(`The workbench folder '${launchArguments.workbenchPath}' does not exist.`));
         }
 
         const partialValues = await this.resolveLaunchArgumentsPartial(launchArguments);

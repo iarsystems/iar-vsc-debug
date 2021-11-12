@@ -1,7 +1,7 @@
 import { DebugEvent, LogEvent, InspectionContextChangedEvent, BaseContextChangedEvent, DkNotifyConstant } from "./thrift/bindings/cspy_types";
 import * as Q from "q";
 
-type EventCallback<T> = (event: T) => any;
+type EventCallback<T> = (event: T) => void;
 
 /**
  * Implements the DebugEventListener thrift service,
@@ -16,10 +16,10 @@ export class DebugEventListenerHandler {
      * Register a callback to be called when receiving debug events of the specified type.
      */
     public observeDebugEvents(type: DkNotifyConstant, callback: EventCallback<DebugEvent>) {
-        if (!this.debugEventCallbacks[type]) {
-            this.debugEventCallbacks[type] = [];
+        if (!this.debugEventCallbacks.get(type)) {
+            this.debugEventCallbacks.set(type, []);
         }
-        this.debugEventCallbacks[type].push(callback);
+        this.debugEventCallbacks.get(type)?.push(callback);
     }
 
     /**
@@ -36,9 +36,7 @@ export class DebugEventListenerHandler {
      */
     postDebugEvent(event: DebugEvent): Q.Promise<void> {
         console.log(`DEBUGEVENT (${event.note}): ${event.descr}`, event.params);
-        if (this.debugEventCallbacks[event.note]) {
-            this.debugEventCallbacks[event.note].forEach(callback => callback(event));
-        }
+        this.debugEventCallbacks.get(event.note)?.forEach((callback: EventCallback<DebugEvent>) => callback(event));
         return Q.resolve();
     }
 

@@ -1,4 +1,4 @@
-'use strict';
+
 
 import { ContextRef, ContextType, ExprFormat, Location } from "./thrift/bindings/shared_types";
 import * as ContextManager from "./thrift/bindings/ContextManager";
@@ -7,14 +7,15 @@ import * as Disassembly from "./thrift/bindings/Disassembly";
 import { StackFrame, Source, Scope, Handles, Variable } from "vscode-debugadapter";
 import { basename } from "path";
 import { ExprValue, CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE } from "./thrift/bindings/cspy_types";
-import { DISASSEMBLY_SERVICE, DisassembledLocation } from "./thrift/bindings/disassembly_types";
+import { DISASSEMBLY_SERVICE } from "./thrift/bindings/disassembly_types";
 import { Disposable } from "./disposable";
 import { ThriftServiceManager } from "./thrift/thriftServiceManager";
 import { ThriftClient } from "./thrift/thriftClient";
 import { WindowNames } from "./listWindowConstants";
 import { ListWindowVariablesProvider, VariablesProvider } from "./variablesProvider";
 import { ListWindowRow } from "./listWindowClient";
-var Int64 = require('node-int64');
+import Int64 = require("node-int64");
+import { DebugProtocol } from "vscode-debugprotocol";
 
 /**
  * Describes a scope, i.e. a C-SPY context used to access the scope,
@@ -45,7 +46,7 @@ class VariableReference {
 export class DisassembledBlock {
     public currentRow: number;
     public instructions: string[];
-    constructor(){
+    constructor() {
         this.currentRow = 0;
         this.instructions = [];
     }
@@ -62,10 +63,9 @@ export class CSpyContextManager implements Disposable {
      * Creates a new context manager using services from the given service manager.
      */
     static async instantiate(serviceMgr: ThriftServiceManager): Promise<CSpyContextManager> {
-        const onProviderUnavailable = (reason) => {
-            console.error("VariablesProvider failed to load: ", reason);
-            return undefined;
-        }
+        const onProviderUnavailable = (reason: unknown) => {
+            throw reason;
+        };
         return new CSpyContextManager(
             await serviceMgr.findService(CONTEXT_MANAGER_SERVICE, ContextManager.Client),
             await serviceMgr.findService(DEBUGGER_SERVICE, Debugger.Client),
@@ -83,17 +83,17 @@ export class CSpyContextManager implements Disposable {
     // We send these to the client when creating scopes or expandable vars, and the client
     // can then use them to e.g. request all variables for a scope or request that we expand
     // and expandable variable.
-    private scopeAndVariableHandles = new Handles<ScopeReference | VariableReference>();
+    private readonly scopeAndVariableHandles = new Handles<ScopeReference | VariableReference>();
 
     // TODO: We should get this from the event service, I think, but it doesn't seem to receive any contexts. This works for now.
     private readonly currentInspectionContext = new ContextRef({ core: 0, level: 0, task: 0, type: ContextType.CurrentInspection });
 
-    private constructor(private contextManager: ThriftClient<ContextManager.Client>,
-                        private dbgr: ThriftClient<Debugger.Client>,
-                        private localsProvider: ListWindowVariablesProvider | undefined,
-                        private staticsProvider: ListWindowVariablesProvider | undefined,
-                        private registersProvider: ListWindowVariablesProvider | undefined,
-                        private disasm: ThriftClient<Disassembly.Client>) {
+    private constructor(private readonly contextManager: ThriftClient<ContextManager.Client>,
+                        private readonly dbgr: ThriftClient<Debugger.Client>,
+                        private readonly localsProvider: ListWindowVariablesProvider | undefined,
+                        private readonly staticsProvider: ListWindowVariablesProvider | undefined,
+                        private readonly registersProvider: ListWindowVariablesProvider | undefined,
+                        private readonly disasm: ThriftClient<Disassembly.Client>) {
     }
 
     /**
@@ -106,14 +106,14 @@ export class CSpyContextManager implements Disposable {
 
         // this assumes the contexts we get from getStack are sorted by frame level and in ascending order
         return contextInfos.map((contextInfo, i) => {
-            if (contextInfo.sourceRanges.length > 0) {
+            if (contextInfo.sourceRanges[0] !== undefined) {
                 const filename = contextInfo.sourceRanges[0].filename;
                 return new StackFrame(
                     i, contextInfo.functionName, new Source(basename(filename), filename), contextInfo.sourceRanges[0].first.line, contextInfo.sourceRanges[0].first.col
                 );
             } else {
                 return new StackFrame(
-                   i, contextInfo.functionName // TODO: maybe add a Source that points to memory or disasm window
+                    i, contextInfo.functionName // TODO: maybe add a Source that points to memory or disasm window
                 );
             }
         });
@@ -125,8 +125,11 @@ export class CSpyContextManager implements Disposable {
      * Each scope is given a reference number (or 'handle'), that is used to specify the scope when
      * e.g. fetching variables.
      */
-    async fetchScopes(frameIndex: number): Promise<Scope[]> {
+    fetchScopes(frameIndex: number): Scope[] {
         const context = this.contextReferences[frameIndex];
+        if (!context) {
+            throw new Error(`Frame index ${frameIndex} is out of bounds`);
+        }
 
         const scopes = new Array<Scope>();
         scopes.push(new Scope("Local", this.scopeAndVariableHandles.create(new ScopeReference(this.localsProvider, context)), false));
@@ -165,7 +168,9 @@ export class CSpyContextManager implements Disposable {
      */
     async setVariable(scopeReference: number, variable: string, value: string): Promise<string> {
         const scope = this.scopeAndVariableHandles.get(scopeReference);
-        if (!(scope instanceof ScopeReference)) { throw new Error("Invalid reference: Is not a scope."); }
+        if (!(scope instanceof ScopeReference)) {
+            throw new Error("Invalid reference: Is not a scope.");
+        }
 
         const context = scope.context;
         await this.contextManager.service.setInspectionContext(context);
@@ -178,6 +183,9 @@ export class CSpyContextManager implements Disposable {
      */
     async evalExpression(frameIndex: number, expression: string): Promise<ExprValue> {
         const context = this.contextReferences[frameIndex];
+        if (!context) {
+            throw new Error(`Frame index ${frameIndex} is out of bounds`);
+        }
         await this.contextManager.service.setInspectionContext(context);
         const result = await this.dbgr.service.evalExpression(context, expression, [], ExprFormat.kDefault, true);
         return result;
@@ -209,28 +217,29 @@ export class CSpyContextManager implements Disposable {
     async fetchDisassembly(): Promise<DisassembledBlock> {
         const currentInspectionContextInfo = await this.contextManager.service.getContextInfo(this.currentInspectionContext);
         const currAddress = currentInspectionContextInfo.execLocation.address;
+        // TODO: The handling of these addresses is probably unsafe for larger addresses, CHANGE THIS
         const startLocation = new Location({
             zone: currentInspectionContextInfo.execLocation.zone,
-            address: currentInspectionContextInfo.execLocation.address + new Int64(-20)
+            address: new Int64(currentInspectionContextInfo.execLocation.address.toNumber() - 20)
         });
         const endLocation = new Location({
             zone: currentInspectionContextInfo.execLocation.zone,
-            address: currentInspectionContextInfo.execLocation.address + new Int64(40)
+            address: new Int64(currentInspectionContextInfo.execLocation.address.toNumber() + 40)
         });
 
         const disasmLocations = await this.disasm.service.disassembleRange(startLocation, endLocation,
             this.currentInspectionContext);
         // Reduce a DisassembledBlock from the array of disassembled locations
-        return disasmLocations
-               .reduce((result, dloc) => {
-                    if(dloc.location.address.compare(currAddress) == 0){
-                        // We are about to append the current instruction block
-                        result.currentRow = result.instructions.length;
-                   }
-                   // Append the instructions of the current block
-                   result.instructions = result.instructions.concat(dloc.instructions);
-                   return result;
-               }, new DisassembledBlock());
+        return disasmLocations.
+            reduce((result, dloc) => {
+                if (dloc.location.address.compare(currAddress) === 0) {
+                    // We are about to append the current instruction block
+                    result.currentRow = result.instructions.length;
+                }
+                // Append the instructions of the current block
+                result.instructions = result.instructions.concat(dloc.instructions);
+                return result;
+            }, new DisassembledBlock());
     }
 
 }
@@ -239,28 +248,38 @@ export class CSpyContextManager implements Disposable {
  * Describes how the columns of these windows are laid out, and how to convert them to variables
  */
 namespace RowToVariableConverters {
-    export function locals(row: ListWindowRow) {
+    export function locals(row: ListWindowRow): DebugProtocol.Variable {
+        if (!row.values[0] || !row.values[1] || !row.values[3]) {
+            throw new Error("Not enough data in row to parse variable");
+        }
         return {
             name: row.values[0],
             value: row.values[1],
             type: `${row.values[3]} @ ${row.values[2]}`,
             variablesReference: 0,
-        }
+        };
     }
-    export function statics(row: ListWindowRow) {
+    export function statics(row: ListWindowRow): DebugProtocol.Variable {
+        if (!row.values[0] || !row.values[1] || !row.values[3]) {
+            throw new Error("Not enough data in row to parse variable");
+        }
         return {
-            name: row.values[0].split(" ")[0],
+            // TODO: Do we actually want to remove the second half?
+            name: row.values[0].split(" ")[0] ?? row.values[0],
             value: row.values[1],
             type: `${row.values[3]} @ ${row.values[2]}`,
             variablesReference: 0,
-        }
+        };
     }
-    export function registers(row: ListWindowRow) {
+    export function registers(row: ListWindowRow): DebugProtocol.Variable {
+        if (!row.values[0] || !row.values[1] || !row.values[2]) {
+            throw new Error("Not enough data in row to parse variable");
+        }
         return {
             name: row.values[0],
             value: row.values[1],
             type: row.values[2],
             variablesReference: 0,
-        }
+        };
     }
 }
