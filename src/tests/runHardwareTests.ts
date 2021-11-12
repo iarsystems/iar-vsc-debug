@@ -1,7 +1,5 @@
 import * as path from 'path';
 import { exit } from 'process';
-import { CodeLensResolveRequest } from 'vscode-languageserver-protocol';
-import { systemDefaultPlatform } from 'vscode-test/out/util';
 import {runTestsIn, getEnvs} from '../utils/testutils/testRunner'
 
 function printHelp(){
