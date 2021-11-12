@@ -204,10 +204,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
             console.log("Target stopped, sending StoppedEvent");
             this.sendEvent(new StoppedEvent(this.expectedStoppingReason, CSpyDebugSession.THREAD_ID));
         });
-
-        this.cspyEventHandler.observeDebugEvents(DkNotifyConstant.kDkForcedStop, () => {
-            this.expectedStoppingReason = "exit";
-        });
     }
 
     protected override async terminateRequest(response: DebugProtocol.TerminateResponse, _args: DebugProtocol.TerminateArguments) {
