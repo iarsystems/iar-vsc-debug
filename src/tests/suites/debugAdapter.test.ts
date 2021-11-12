@@ -180,7 +180,7 @@ suite("Test Debug Adapter", () =>{
                 Assert(!bps[0]?.verified);
                 Assert.equal(bps[1]?.line, 29);
                 Assert(bps[1]?.verified);
-                Assert.equal(bps[2]?.line, 36);
+                Assert.equal(bps[2]?.line, 35);
                 Assert(bps[2]?.verified);
                 Assert.equal(bps[3]?.line, 47);
                 Assert(bps[3]?.verified);
