@@ -4,7 +4,6 @@ import { DebugClient } from "vscode-debugadapter-testsupport";
 import { TestUtils } from "./testUtils";
 import { TestSandbox } from "../../utils/testutils/testSandbox";
 import { ChildProcess, spawn } from "child_process";
-import { OsUtils } from "../../utils/osUtils";
 
 namespace Utils {
     // Given an ewp file and a source file in the same directory, returns
@@ -14,13 +13,11 @@ namespace Utils {
         return sourcePath;
     }
 
-    // Given a path, returns a regex matching the path on any OS.
+    // Given a path, returns a regex matching the path with either backward- or forward slashes
     export function pathRegex(path: string) {
         // Accept back- OR forward slashes
         path = path.replace(/[/\\]/g, "[/\\\\]");
-        const pattern = `^${path}$`;
-        // Note that we use case-insensitive paths on windows
-        return new RegExp(pattern, OsUtils.detectOsType() === OsUtils.OsType.Windows ? "i" : undefined);
+        return new RegExp(`^${path}$`);
     }
 
     export function assertStoppedLocation(dc: DebugClient, reason: string, line: number, file: string | undefined, name: RegExp) {
@@ -184,6 +181,39 @@ suite("Test Debug Adapter", () =>{
                 Assert(bps[2]?.verified);
                 Assert.equal(bps[3]?.line, 47);
                 Assert(bps[3]?.verified);
+            }),
+        ]);
+    });
+
+    test("Removes breakpoints", () => {
+        return Promise.all([
+            dc.configurationSequence(),
+            dc.launch(dbgConfig),
+            dc.waitForEvent("initialized").then(async() => {
+                let response = await dc.setBreakpointsRequest(
+                    { source: { path: fibonacciFile },
+                        breakpoints: [{line: 47}, {line: 49}] });
+                let bps = response.body.breakpoints;
+                Assert.strictEqual(bps.length, 2);
+                Assert.strictEqual(bps[0]?.line, 47);
+                Assert(bps[0]?.verified);
+                Assert.strictEqual(bps[1]?.line, 49);
+                Assert(bps[1]?.verified);
+
+                await dc.waitForEvent("stopped");
+
+                response = await dc.setBreakpointsRequest(
+                    { source: { path: fibonacciFile },
+                        breakpoints: [{line: 49}] });
+                bps = response.body.breakpoints;
+                Assert.strictEqual(bps.length, 1);
+                Assert.strictEqual(bps[0]?.line, 49);
+                Assert(bps[0]?.verified);
+
+                await Promise.all([
+                    dc.continueRequest({threadId: 1}),
+                    dc.assertStoppedLocation("breakpoint", { path: fibonacciFile, line: 49 })
+                ]);
             }),
         ]);
     });

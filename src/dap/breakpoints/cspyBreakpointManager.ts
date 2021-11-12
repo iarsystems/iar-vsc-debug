@@ -9,6 +9,7 @@ import { BREAKPOINTS_SERVICE } from "../thrift/bindings/breakpoints_types";
 import { ThriftClient } from "../thrift/thriftClient";
 import { LocOnlyDescriptor } from "./locOnlyDescriptor";
 import { DescriptorReader } from "./descriptorReader";
+import { OsUtils } from "../../utils/osUtils";
 
 /**
  * Sets, unsets and verifies C-SPY breakpoints.
@@ -34,9 +35,10 @@ export class CSpyBreakpointManager implements Disposable {
 
     async setBreakpointsFor(source: DebugProtocol.Source, bps: DebugProtocol.SourceBreakpoint[]): Promise<DebugProtocol.Breakpoint[]> {
         // remove all bps for this source file, and replace with the new ones
-        // TODO: instead, maybe try to match existing bps with new ones, and only remove/add those
-        // that are not in both sets.
-        const sourcePath = source.path ? source.path : source.name;
+        if (!source.path) {
+            return Promise.reject(new Error("Cannot set breakpoints without a path"));
+        }
+        const sourcePath = source.path;
         const currentBps = await this.breakpointService.service.getBreakpoints();
         const toRemove = currentBps.filter(bp => {
             if (!bp.isUleBased) {
@@ -46,7 +48,7 @@ export class CSpyBreakpointManager implements Disposable {
                 return true;
             }
             const uleData = this.parseSourceUle(bp.ule);
-            return uleData[0] === sourcePath;
+            return OsUtils.pathsEqual(uleData[0], sourcePath);
         });
         await Promise.all(toRemove.map(bp => this.breakpointService.service.removeBreakpoint(bp.id) ));
 
