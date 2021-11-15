@@ -7,8 +7,8 @@ import { Disposable } from "../disposable";
 import { ThriftServiceManager } from "../thrift/thriftServiceManager";
 import { BREAKPOINTS_SERVICE } from "../thrift/bindings/breakpoints_types";
 import { ThriftClient } from "../thrift/thriftClient";
-import { LocOnlyDescriptor } from "./locOnlyDescriptor";
-import { DescriptorReader } from "./descriptorReader";
+import { LocOnlyDescriptor } from "./descriptors/locOnlyDescriptor";
+import { DescriptorReader } from "./descriptors/descriptorReader";
 import { OsUtils } from "../../utils/osUtils";
 
 /**
