@@ -68,6 +68,7 @@ export class CSpyBreakpointManager implements Disposable {
                     verified: newBp.valid,
                     line: this.convertDebuggerLineToClient(newLine),
                     column: this.convertDebuggerColumnToClient(newCol),
+                    message: newBp.description,
                     source,
                 };
             } catch (e) {
