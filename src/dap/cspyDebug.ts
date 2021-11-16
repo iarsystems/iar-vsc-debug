@@ -18,6 +18,7 @@ import { LibSupportHandler } from "./libSupportHandler";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import { Subject } from "await-notify";
+import { CSpyDriverUtils } from "./breakpoints/CSpyDriver";
 
 
 /**
@@ -162,7 +163,10 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
             // only after loading modules can we initialize services using listwindows
             this.stackManager = await CSpyContextManager.instantiate(this.serviceManager);
-            this.breakpointManager = await CSpyBreakpointManager.instantiate(this.serviceManager, this.clientLinesStartAt1, this.clientColumnsStartAt1);
+            this.breakpointManager = await CSpyBreakpointManager.instantiate(this.serviceManager,
+                this.clientLinesStartAt1,
+                this.clientColumnsStartAt1,
+                CSpyDriverUtils.fromDriverName(args.driverLib ?? sessionConfig.driverName)); // TODO: figure out how to best do this
         } catch (e) {
             response.success = false;
             if (typeof e === "string" || e instanceof Error) {
