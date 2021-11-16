@@ -143,7 +143,7 @@ export class CSpyBreakpointManager implements Disposable {
             return new LocEtcDescriptor([type, ule]);
         case BreakpointCategory.EMUL_CODE:
             // TODO: How to determine the bp type? The user probably wants to be able to choose
-            return new EmulCodeBreakpointDescriptor([type, ule, EmulCodeBreakpointType.kDriverDefaultBreakpoint]);
+            return new EmulCodeBreakpointDescriptor([type, ule, EmulCodeBreakpointType.kDriverSoftwareBreakpoint]);
         default:
             throw new Error("Don't know how to create breakpoints for category: " + type);
         }
