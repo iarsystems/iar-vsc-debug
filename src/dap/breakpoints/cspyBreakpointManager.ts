@@ -7,14 +7,9 @@ import { Disposable } from "../disposable";
 import { ThriftServiceManager } from "../thrift/thriftServiceManager";
 import { BREAKPOINTS_SERVICE } from "../thrift/bindings/breakpoints_types";
 import { ThriftClient } from "../thrift/thriftClient";
-import { LocOnlyDescriptor } from "./descriptors/locOnlyDescriptor";
-import { DescriptorReader } from "./descriptors/descriptorReader";
-import { EmulCodeBreakpointDescriptor, EmulCodeBreakpointType } from "./descriptors/emulCodeBreakpointDescriptor";
-import { BreakpointCategory } from "./breakpointCategory";
 import { DescriptorWriter } from "./descriptors/descriptorWriter";
-import { BreakpointDescriptor } from "./descriptors/breakpointDescriptor";
-import { LocEtcDescriptor } from "./descriptors/locEtcDescriptor";
 import { CSpyDriver, CSpyDriverUtils } from "./CSpyDriver";
+import { CodeBreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
 
 /**
  * A breakpoint which has been set in the cspy backend (it isn't necessary valid, just validated and known in the backend)
@@ -52,10 +47,14 @@ export class CSpyBreakpointManager implements Disposable {
     // even though this information is not explicitly given to us via DAP.
     private readonly knownBreakpoints: Map<string, Array<ValidatedBreakpoint>> = new Map();
 
+    // Holds driver-specific bp creation logic
+    private readonly bpDescriptorFactory: CodeBreakpointDescriptorFactory;
+
     private constructor(private readonly breakpointService: ThriftClient<Breakpoints.Client>,
                 private readonly clientLinesStartAt1: boolean,
                 private readonly clientColumnsStartAt1: boolean,
-                private readonly driver: CSpyDriver) {
+                driver: CSpyDriver) {
+        this.bpDescriptorFactory = CSpyDriverUtils.getCodeBreakpointDescriptorFactory(driver);
     }
 
     /**
@@ -84,7 +83,7 @@ export class CSpyBreakpointManager implements Disposable {
         await Promise.all(newBps.map(async dapBp => {
             const dbgrLine = this.convertClientLineToDebugger(dapBp.line);
             const dbgrCol = dapBp.column ? this.convertClientColumnToDebugger(dapBp.column) : 1;
-            const descriptor = this.createDefaultBreakpointAt(`{${sourcePath}}.${dbgrLine}.${dbgrCol}`);
+            const descriptor = this.bpDescriptorFactory.createOnUle(`{${sourcePath}}.${dbgrLine}.${dbgrCol}`);
 
             const writer = new DescriptorWriter();
             descriptor.serialize(writer);
@@ -101,7 +100,7 @@ export class CSpyBreakpointManager implements Disposable {
         dapBps.map(dapBp => {
             const validatedBp = knownBreakpoints.find(bp => CSpyBreakpointManager.bpsEqual(bp.dapBp, dapBp));
             if (validatedBp !== undefined) {
-                const descriptor = new LocOnlyDescriptor(new DescriptorReader(validatedBp.cspyBp.descriptor));
+                const descriptor = this.bpDescriptorFactory.createFromString(validatedBp.cspyBp.descriptor);
                 const [, actualLine, actualCol] = this.parseSourceUle(descriptor.ule);
                 results.push({
                     verified: validatedBp.cspyBp.valid,
@@ -133,20 +132,6 @@ export class CSpyBreakpointManager implements Disposable {
 
     dispose(): void {
         this.breakpointService.dispose();
-    }
-
-    // Creates a standard code breakpoint according to the driver used
-    private createDefaultBreakpointAt(ule: string): BreakpointDescriptor {
-        const type = CSpyDriverUtils.getCodeBreakpointCategory(this.driver);
-        switch (type) {
-        case BreakpointCategory.STD_CODE2:
-            return new LocEtcDescriptor([type, ule]);
-        case BreakpointCategory.EMUL_CODE:
-            // TODO: How to determine the bp type? The user probably wants to be able to choose
-            return new EmulCodeBreakpointDescriptor([type, ule, EmulCodeBreakpointType.kDriverSoftwareBreakpoint]);
-        default:
-            throw new Error("Don't know how to create breakpoints for category: " + type);
-        }
     }
 
     private parseSourceUle(ule: string): [path: string, line: number, col: number] {

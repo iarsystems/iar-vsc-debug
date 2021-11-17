@@ -1,6 +1,6 @@
 import { IarOsUtils } from "../../utils/osUtils";
-import { BreakpointCategory } from "./breakpointCategory";
 import * as Path from "path";
+import { EmulCodeBreakpointDescriptorFactory, StdCode2BreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
 
 /**
  * Lists all CSpy drivers. Their value should match the suffix used to name their library file
@@ -44,13 +44,13 @@ export namespace CSpyDriverUtils {
     }
 
     /**
-     * Gets the category to use for code breakpoints for the given driver
+     * Gets a factory for creating code bp descriptors for the given driver.
      */
-    export function getCodeBreakpointCategory(driver: CSpyDriver) {
+    export function getCodeBreakpointDescriptorFactory(driver: CSpyDriver) {
         switch (driver) {
         case CSpyDriver.SIM2:
         case CSpyDriver.IMPERAS:
-            return BreakpointCategory.STD_CODE2;
+            return new StdCode2BreakpointDescriptorFactory();
         case CSpyDriver.IJET:
         case CSpyDriver.JLINK:
         case CSpyDriver.GDBSERVER:
@@ -60,11 +60,11 @@ export namespace CSpyDriverUtils {
         case CSpyDriver.STLINK:
         case CSpyDriver.XDS:
         case CSpyDriver.TIMSPFET:
-            return BreakpointCategory.EMUL_CODE;
+            return new EmulCodeBreakpointDescriptorFactory();
         default:
             console.error("Tried getting code breakpoint category for unknown driver: " + driver);
-            console.error("Assuming " + BreakpointCategory.EMUL_CODE);
-            return BreakpointCategory.EMUL_CODE;
+            console.error("Assuming EMUL_CODE");
+            return new EmulCodeBreakpointDescriptorFactory();
         }
     }
 }
