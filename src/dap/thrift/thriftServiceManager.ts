@@ -23,7 +23,7 @@ import { v4 as uuidv4 } from "uuid";
  */
 export class ThriftServiceManager implements Disposable {
     private static readonly SERVICE_LOOKUP_TIMEOUT = 1000;
-    private static readonly CSPYSERVER_EXIT_TIMEOUT = 10000;
+    private static readonly CSPYSERVER_EXIT_TIMEOUT = 30000;
     private readonly activeServers: Server[] = [];
 
     /**

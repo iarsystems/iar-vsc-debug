@@ -213,6 +213,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     protected override async terminateRequest(response: DebugProtocol.TerminateResponse, _args: DebugProtocol.TerminateArguments) {
         this.sendResponse(response);
         try {
+            this.sendEvent(new OutputEvent("Shutting down C-SPY...\n"));
             await this.endSession();
         } catch (e) {
             console.log(e);
