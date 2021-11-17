@@ -13,7 +13,10 @@ export enum CSpyDriver {
     GDBSERVER = "GDBSERV",
     CADI = "CADI",
     STELLARIS = "LMIFTDI",
-    // TODO: add e.g. stlink, xds
+    PEMICRO = "PEMICRO",
+    STLINK = "STLINK",
+    XDS = "XDS",
+    TIMSPFET = "TIFET",
 }
 
 export namespace CSpyDriverUtils {
@@ -53,6 +56,10 @@ export namespace CSpyDriverUtils {
         case CSpyDriver.GDBSERVER:
         case CSpyDriver.CADI:
         case CSpyDriver.STELLARIS:
+        case CSpyDriver.PEMICRO:
+        case CSpyDriver.STLINK:
+        case CSpyDriver.XDS:
+        case CSpyDriver.TIMSPFET:
             return BreakpointCategory.EMUL_CODE;
         default:
             console.error("Tried getting code breakpoint category for unknown driver: " + driver);

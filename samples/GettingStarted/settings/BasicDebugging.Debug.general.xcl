@@ -1,10 +1,10 @@
-"E:\Program Files (x86)\IAR Systems\Embedded Workbench for ARM 8.50.6\arm\bin\armproc.dll" 
+"C:\Program Files\IAR Systems\ReleaseWin64_16-11-nov\StageWin64_16\ReleaseNov11\arm\bin\armPROC.dll" 
 
-"E:\Program Files (x86)\IAR Systems\Embedded Workbench for ARM 8.50.6\arm\bin\armsim2.dll" 
+"C:\Program Files\IAR Systems\ReleaseWin64_16-11-nov\StageWin64_16\ReleaseNov11\arm\bin\armJET.dll" 
 
-"E:\iar-vscode-github\iar-vsc-debug\samples\GettingStarted\Debug\Exe\BasicDebugging.out" 
+"E:\repos\VSCode\iar-vsc-debug\samples\GettingStarted\Debug\Exe\BasicDebugging.out" 
 
---plugin="E:\Program Files (x86)\IAR Systems\Embedded Workbench for ARM 8.50.6\arm\bin\armbat.dll" 
+--plugin="C:\Program Files\IAR Systems\ReleaseWin64_16-11-nov\StageWin64_16\ReleaseNov11\arm\bin\armbat.dll" 
 
 
 
