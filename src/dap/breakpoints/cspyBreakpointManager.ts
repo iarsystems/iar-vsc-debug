@@ -159,6 +159,24 @@ export class CSpyBreakpointManager implements Disposable {
         }
     }
 
+    getBreakpointType(): BreakpointType {
+        if (this.bpDescriptorFactory instanceof EmulCodeBreakpointDescriptorFactory) {
+            switch (this.bpDescriptorFactory.type) {
+            case EmulCodeBreakpointType.kDriverDefaultBreakpoint:
+                return BreakpointType.AUTO;
+            case EmulCodeBreakpointType.kDriverHardwareBreakpoint:
+                return BreakpointType.HARDWARE;
+            case EmulCodeBreakpointType.kDriverSoftwareBreakpoint:
+                return BreakpointType.SOFTWARE;
+            default:
+                return BreakpointType.AUTO;
+                break;
+            }
+        } else {
+            throw new Error("The driver does not support breakpoint types");
+        }
+    }
+
     dispose(): void {
         this.breakpointService.dispose();
     }

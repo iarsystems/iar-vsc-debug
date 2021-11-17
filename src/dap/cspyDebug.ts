@@ -19,6 +19,7 @@ import { LibSupportHandler } from "./libSupportHandler";
 // @ts-ignore
 import { Subject } from "await-notify";
 import { CSpyDriverUtils } from "./breakpoints/CSpyDriver";
+import { Command, CommandRegistry } from "./commandRegistry";
 
 
 /**
@@ -71,6 +72,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
     private stackManager: CSpyContextManager | undefined = undefined;
     private breakpointManager: CSpyBreakpointManager | undefined = undefined;
 
+    private readonly consoleCommandRegistry: CommandRegistry = new CommandRegistry();
+
     // Sequence number for custom events
     private eventSeq = 0;
 
@@ -109,6 +112,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         response.body.supportsSetVariable = true;
         response.body.supportsTerminateRequest = true;
         response.body.supportsSteppingGranularity = true;
+        response.body.supportsCompletionsRequest = true;
 
         this.clientLinesStartAt1 = args.linesStartAt1 || false;
         this.clientColumnsStartAt1 = args.columnsStartAt1 || false;
@@ -165,16 +169,31 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
             // only after loading modules can we initialize services using listwindows
             this.stackManager = await CSpyContextManager.instantiate(this.serviceManager);
+            // initialize all breakpoint stuff
             this.breakpointManager = await CSpyBreakpointManager.instantiate(this.serviceManager,
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1,
                 CSpyDriverUtils.fromDriverName(args.driverLib ?? sessionConfig.driverName)); // TODO: figure out how to best do this
+
             if (this.breakpointManager.supportsBreakpointTypes()) {
                 const type = args.breakpointType === "hardware" ? BreakpointType.HARDWARE :
                     args.breakpointType === "software" ? BreakpointType.SOFTWARE : BreakpointType.AUTO;
                 this.breakpointManager.setBreakpointType(type);
-                const outEv = new OutputEvent(`Using '${type}' breakpoint type.`);
-                this.sendEvent(outEv);
+                this.sendEvent(new OutputEvent(`Using '${type}' breakpoint type. To select hardware- or software breakpoints, type '__breakpoints_type_toggle' into the console`));
+
+                this.consoleCommandRegistry.registerCommand(new Command("__breakpoints_set_type_software", () => {
+                    this.breakpointManager?.setBreakpointType(BreakpointType.SOFTWARE);
+                    return Promise.resolve(`Now using ${BreakpointType.SOFTWARE} breakpoints (only applies to new breakpoints)`);
+                }));
+                this.consoleCommandRegistry.registerCommand(new Command("__breakpoints_set_type_hardware", () => {
+                    this.breakpointManager?.setBreakpointType(BreakpointType.HARDWARE);
+                    return Promise.resolve(`Now using ${BreakpointType.HARDWARE} breakpoints (only applies to new breakpoints)`);
+                }));
+                this.consoleCommandRegistry.registerCommand(new Command("__breakpoints_type_toggle", () => {
+                    const type = this.breakpointManager?.getBreakpointType() === BreakpointType.HARDWARE ? BreakpointType.SOFTWARE : BreakpointType.HARDWARE;
+                    this.breakpointManager?.setBreakpointType(type);
+                    return Promise.resolve(`Now using ${type} breakpoints (only applies to new breakpoints)`);
+                }));
             }
         } catch (e) {
             response.success = false;
@@ -366,22 +385,40 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     protected override async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments) {
         console.log("Eval");
-        await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
-            const val = await stackManager.evalExpression(args.frameId || 0, args.expression);
-            // TODO: expandable variables using subexpressions
-            response.body = {
-                result: val.value,
-                type: val.type,
-                memoryReference: val.hasLocation ? val.location.address.toString() : undefined,
-                variablesReference: 0,
-            };
-        });
+        if (this.consoleCommandRegistry.hasCommand(args.expression)) {
+            const res = await this.consoleCommandRegistry.runCommand(args.expression);
+            if (res) {
+                this.sendEvent(new OutputEvent(res));
+            }
+        } else {
+            await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
+                const val = await stackManager.evalExpression(args.frameId || 0, args.expression);
+                // TODO: expandable variables using subexpressions
+                response.body = {
+                    result: val.value,
+                    type: val.type,
+                    memoryReference: val.hasLocation ? val.location.address.toString() : undefined,
+                    variablesReference: 0,
+                };
+            });
+        }
         this.sendResponse(response);
     }
 
     // Currently not supported by VSCode
     protected override disassembleRequest(_response: DebugProtocol.DisassembleResponse, args: DebugProtocol.DisassembleArguments, _request?: DebugProtocol.Request) {
         console.log("DAP Disassemble", args);
+    }
+
+    protected override completionsRequest(response: DebugProtocol.CompletionsResponse, _args: DebugProtocol.CompletionsArguments) {
+        const targets: DebugProtocol.CompletionItem[] = this.consoleCommandRegistry.commandNames.map(name => {
+            return { label: name, type: "property" };
+        });
+        response.body = {
+            targets: targets
+        };
+        response.success = true;
+        this.sendResponse(response);
     }
 
     /**
