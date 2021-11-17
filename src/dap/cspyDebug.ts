@@ -8,7 +8,7 @@ import { ThriftClient } from "./thrift/thriftClient";
 import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant, SessionConfiguration } from "./thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
 import { CSpyContextManager } from "./cspyContextManager";
-import { CSpyBreakpointManager } from "./breakpoints/cspyBreakpointManager";
+import { BreakpointType, CSpyBreakpointManager } from "./breakpoints/cspyBreakpointManager";
 import { XclConfigurationResolver } from "./configresolution/xclConfigurationResolver";
 import { LaunchArgumentConfigurationResolver}  from "./configresolution/launchArgumentConfigurationResolver";
 import { CSpyException } from "./thrift/bindings/shared_types";
@@ -33,6 +33,8 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     program: string;
     /** Automatically stop target after launch. If not specified, target does not stop. */
     stopOnEntry?: boolean;
+    /** The type of breakpoint to use by default (only applicable to some drivers). */
+    breakpointType?: "auto" | "hardware" | "software" | string;
     /** enable logging the Debug Adapter Protocol */
     trace?: boolean;
     /** Path to the Embedded Workbench installation to use */
@@ -167,6 +169,13 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1,
                 CSpyDriverUtils.fromDriverName(args.driverLib ?? sessionConfig.driverName)); // TODO: figure out how to best do this
+            if (this.breakpointManager.supportsBreakpointTypes()) {
+                const type = args.breakpointType === "hardware" ? BreakpointType.HARDWARE :
+                    args.breakpointType === "software" ? BreakpointType.SOFTWARE : BreakpointType.AUTO;
+                this.breakpointManager.setBreakpointType(type);
+                const outEv = new OutputEvent(`Using '${type}' breakpoint type.`);
+                this.sendEvent(outEv);
+            }
         } catch (e) {
             response.success = false;
             if (typeof e === "string" || e instanceof Error) {

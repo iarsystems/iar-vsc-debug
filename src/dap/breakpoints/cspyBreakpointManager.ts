@@ -9,11 +9,19 @@ import { BREAKPOINTS_SERVICE } from "../thrift/bindings/breakpoints_types";
 import { ThriftClient } from "../thrift/thriftClient";
 import { DescriptorWriter } from "./descriptors/descriptorWriter";
 import { CSpyDriver, CSpyDriverUtils } from "./CSpyDriver";
-import { CodeBreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
+import { CodeBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
+import { EmulCodeBreakpointType } from "./descriptors/emulCodeBreakpointDescriptor";
+
 
 /**
- * A breakpoint which has been set in the cspy backend (it isn't necessary valid, just validated and known in the backend)
+ * Different types of breakpoints, only applicable to some drivers.
+ * In practice these map to EmulCodeBreakpointType, but we want to hide that relation.
  */
+export enum BreakpointType {
+    AUTO = "auto", HARDWARE = "hardware", SOFTWARE = "software"
+}
+
+// A breakpoint which has been set in the cspy backend (it isn't necessary valid, just validated and known in the backend)
 interface ValidatedBreakpoint {
     dapBp: DebugProtocol.SourceBreakpoint;
     cspyBp: Thrift.Breakpoint;
@@ -124,10 +132,31 @@ export class CSpyBreakpointManager implements Disposable {
     }
 
     /**
-     * Get the breakpoints which have been submitted to C-SPY.
+     * Whether the current driver supports setting a {@link BreakpointType} (using the methods below)
      */
-    getBreakpoints(): Promise<Thrift.Breakpoint[]> {
-        return Promise.resolve(this.breakpointService.service.getBreakpoints());
+    supportsBreakpointTypes() {
+        return this.bpDescriptorFactory instanceof EmulCodeBreakpointDescriptorFactory;
+    }
+
+    setBreakpointType(type: BreakpointType) {
+        if (this.bpDescriptorFactory instanceof EmulCodeBreakpointDescriptorFactory) {
+            let bpType: EmulCodeBreakpointType;
+            switch (type) {
+            case BreakpointType.AUTO:
+                bpType = EmulCodeBreakpointType.kDriverDefaultBreakpoint;
+                break;
+            case BreakpointType.HARDWARE:
+                bpType = EmulCodeBreakpointType.kDriverHardwareBreakpoint;
+                break;
+            case BreakpointType.SOFTWARE:
+                bpType = EmulCodeBreakpointType.kDriverSoftwareBreakpoint;
+                break;
+            default:
+                bpType = EmulCodeBreakpointType.kDriverDefaultBreakpoint;
+                break;
+            }
+            this.bpDescriptorFactory.type = bpType;
+        }
     }
 
     dispose(): void {
