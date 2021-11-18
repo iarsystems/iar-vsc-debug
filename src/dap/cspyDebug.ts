@@ -179,7 +179,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 const type = args.breakpointType === "hardware" ? BreakpointType.HARDWARE :
                     args.breakpointType === "software" ? BreakpointType.SOFTWARE : BreakpointType.AUTO;
                 this.breakpointManager.setBreakpointType(type);
-                this.sendEvent(new OutputEvent(`Using '${type}' breakpoint type. To select hardware- or software breakpoints, type '__breakpoints_type_toggle' into the console`));
+                this.sendEvent(new OutputEvent(`Using '${type}' breakpoint type. To select hardware- or software breakpoints, type '__breakpoints_type_toggle' into the console\n`));
 
                 this.consoleCommandRegistry.registerCommand(new Command("__breakpoints_set_type_software", () => {
                     this.breakpointManager?.setBreakpointType(BreakpointType.SOFTWARE);
