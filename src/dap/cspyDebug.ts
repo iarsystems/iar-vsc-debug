@@ -20,6 +20,7 @@ import { LibSupportHandler } from "./libSupportHandler";
 import { Subject } from "await-notify";
 import { CSpyDriverUtils } from "./breakpoints/CSpyDriver";
 import { Command, CommandRegistry } from "./commandRegistry";
+import { Utils } from "./utils";
 
 
 /**
@@ -48,8 +49,12 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     driverLib?: string;
     /** The driver options as a list of string*/
     driverOptions?: string[];
-    /** A list the macros to load*/
+    /** A list of macros to load*/
     macros?: string[];
+    /** A list of devices macros to load before flashing*/
+    deviceMacros?: string[];
+    /** A board file specifying how to flash the device (optional) */
+    flashLoader?: string;
     /** A list of plugins to load */
     plugins?: string[];
 }
@@ -126,6 +131,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.configurationDone.notify();
     }
 
+    // TODO: report progress using a frontend service and the Progress(Start|Update|End) DAP events
     protected override async launchRequest(response: DebugProtocol.LaunchResponse, args: CSpyLaunchRequestArguments) {
         // make sure to 'Stop' the buffered logging if 'trace' is not set
         logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false);
@@ -162,8 +168,14 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
             this.cspyDebugger = await this.serviceManager.findService(DEBUGGER_SERVICE, Debugger);
             this.sendEvent(new OutputEvent("Using C-SPY version: " + await this.cspyDebugger.service.getVersionString() + "\n"));
+
             await this.cspyDebugger.service.startSession(sessionConfig);
-            // TODO: report progress using a frontend service and the Progress(Start|Update|End) DAP events
+            await Utils.loadMacros(this.cspyDebugger.service, args.deviceMacros ?? []);
+            if (args.flashLoader) {
+                // TODO: figure out if we should support the last two args
+                await this.cspyDebugger.service.flashModule(args.flashLoader, sessionConfig.executable, [], []);
+            }
+            await Utils.loadMacros(this.cspyDebugger.service, sessionConfig.setupMacros ?? []);
             await this.cspyDebugger.service.loadModule(args.program);
             this.sendEvent(new OutputEvent("Session started\n"));
 
