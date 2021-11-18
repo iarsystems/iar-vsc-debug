@@ -386,9 +386,16 @@ export class CSpyDebugSession extends LoggingDebugSession {
     protected override async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments) {
         console.log("Eval");
         if (this.consoleCommandRegistry.hasCommand(args.expression)) {
-            const res = await this.consoleCommandRegistry.runCommand(args.expression);
-            if (res) {
-                this.sendEvent(new OutputEvent(res));
+            try {
+                const res = await this.consoleCommandRegistry.runCommand(args.expression);
+                if (res) {
+                    this.sendEvent(new OutputEvent(res));
+                }
+            } catch (e) {
+                response.success = false;
+                if (e instanceof Error) {
+                    response.message = e.message;
+                }
             }
         } else {
             await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
