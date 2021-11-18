@@ -105,20 +105,20 @@ export class CSpyBreakpointManager implements Disposable {
 
         // Map the requested BPs to a DAP result format, using data from each cspy BP
         const results: DebugProtocol.Breakpoint[] = [];
-        dapBps.map(dapBp => {
+        dapBps.forEach(dapBp => {
             const validatedBp = knownBreakpoints.find(bp => CSpyBreakpointManager.bpsEqual(bp.dapBp, dapBp));
-            if (validatedBp !== undefined) {
+            if (validatedBp !== undefined && validatedBp.cspyBp.valid) {
                 const descriptor = this.bpDescriptorFactory.createFromString(validatedBp.cspyBp.descriptor);
                 const [, actualLine, actualCol] = this.parseSourceUle(descriptor.ule);
                 results.push({
-                    verified: validatedBp.cspyBp.valid,
+                    verified: true,
                     line: this.convertDebuggerLineToClient(actualLine),
                     column: this.convertDebuggerColumnToClient(actualCol),
                     message: validatedBp.cspyBp.description,
                     source,
                 });
             } else {
-                results.push({ // The breakpoint failed to set (threw an exception)
+                results.push({ // The breakpoint failed to set
                     verified: false,
                     line: dapBp.line,
                     column: dapBp.column,
