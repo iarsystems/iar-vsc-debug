@@ -95,6 +95,11 @@
 						"Auto",
 						"Hardware",
 						"Software"
+					],
+					"enumDescriptions": [
+						"Use the driver's default breakpoint type.",
+						"Use hardware breakpoints.",
+						"Use software breakpoints."
 					]
 				}
 			}
