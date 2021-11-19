@@ -18,7 +18,7 @@ import { LibSupportHandler } from "./libSupportHandler";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import { Subject } from "await-notify";
-import { CSpyDriverUtils } from "./breakpoints/CSpyDriver";
+import { CSpyDriverUtils } from "./breakpoints/cspyDriver";
 import { Command, CommandRegistry } from "./commandRegistry";
 
 
