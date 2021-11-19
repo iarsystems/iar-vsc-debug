@@ -6,6 +6,7 @@ import { MemoryDocumentProvider } from "./memoryDocumentProvider";
 import { DisassemblyView } from "./disassemblyView";
 import { DisassembledBlock } from "./dap/cspyContextManager";
 import { CSpyDebugSession } from "./dap/cspyDebug";
+import { BreakpointType } from "./dap/breakpoints/cspyBreakpointManager";
 
 /** Set to <tt>true</tt> to enable the Disassembly view */
 const ENABLE_DISASSEMBLY_VIEW = true;
@@ -100,6 +101,14 @@ class CSpyConfigurationProvider implements vscode.DebugConfigurationProvider {
             });
         }
 
+        // Pass along the user's selection of breakpoint type to the adapter
+        // Allow overriding the user setting from launch.json, even if we don't advertise that possibility anywhere
+        if (!config["breakpointType"]) {
+            const bpType = vscode.workspace.getConfiguration("iardbg").get("breakpointType");
+            const actualType = bpType === "Hardware" ? BreakpointType.HARDWARE :
+                bpType === "Software" ? BreakpointType.SOFTWARE : BreakpointType.AUTO;
+            config["breakpointType"] = actualType;
+        }
 
 
         return config;

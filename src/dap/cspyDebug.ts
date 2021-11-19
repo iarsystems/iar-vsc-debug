@@ -34,8 +34,8 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     program: string;
     /** Automatically stop target after launch. If not specified, target does not stop. */
     stopOnEntry?: boolean;
-    /** The type of breakpoint to use by default (only applicable to some drivers). */
-    breakpointType: "auto" | "hardware" | "software" | string;
+    /** The type of breakpoint to use by default. This isn't provided directly in the launch.json (it's not declared in package.json). Instead it is provided from the user's selection in the UI. */
+    breakpointType: BreakpointType;
     /** enable logging the Debug Adapter Protocol */
     trace?: boolean;
     /** Path to the Embedded Workbench installation to use */
@@ -449,14 +449,12 @@ export class CSpyDebugSession extends LoggingDebugSession {
     /**
      * Registers commands for setting breakpoints type via console commands and custom dap requests.
      */
-    private setupBreakpointCommands(requestedInitialType: string) {
+    private setupBreakpointCommands(requestedInitialType: BreakpointType) {
         const bpTypeMessage = (type: BreakpointType) => `Now using ${type} breakpoints (only applies to new breakpoints)`;
         // If the driver supports it, register console commands
         if (this.breakpointManager?.supportsBreakpointTypes()) {
-            const initialBpType = requestedInitialType === "hardware" ? BreakpointType.HARDWARE :
-                requestedInitialType === "software" ? BreakpointType.SOFTWARE : BreakpointType.AUTO;
-            this.breakpointManager.setBreakpointType(initialBpType);
-            this.sendEvent(new OutputEvent(`Using '${initialBpType}' breakpoint type.\n`));
+            this.breakpointManager.setBreakpointType(requestedInitialType);
+            this.sendEvent(new OutputEvent(`Using '${requestedInitialType}' breakpoint type.\n`));
 
             const makeConsoleCommand = (name: string, type: BreakpointType) => {
                 return new Command(name, () => {

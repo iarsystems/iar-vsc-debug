@@ -84,6 +84,21 @@
 				"path": "./syntaxes/iarmemory.tmLanguage.json"
 			}
 		],
+		"configuration":{
+			"title": "IAR C-SPY Debugging",
+			"properties": {
+				"iardbg.breakpointType": {
+					"default": "Auto",
+					"description": "Whether to set hardware- or software breakpoints. This only affects drivers that support it. Changing this setting will not affect already installed breakpoints in active sessions.",
+					"type": "string",
+					"enum": [
+						"Auto",
+						"Hardware",
+						"Software"
+					]
+				}
+			}
+		},
 		"menus": {
 			"debug/toolBar": [
 				{
@@ -146,15 +161,6 @@
 								"type": "boolean",
 								"description": "Automatically stop after launch.",
 								"default": true
-							},
-							"breakpointType": {
-								"type": "string",
-								"description": "The type of breakpoint to use by default (only applicable to some drivers).",
-								"enum": [
-									"auto",
-									"software",
-									"hardware"
-								]
 							},
 							"trace": {
 								"type": "boolean",
