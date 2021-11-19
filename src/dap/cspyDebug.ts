@@ -35,7 +35,7 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     /** Automatically stop target after launch. If not specified, target does not stop. */
     stopOnEntry?: boolean;
     /** The type of breakpoint to use by default (only applicable to some drivers). */
-    breakpointType?: "auto" | "hardware" | "software" | string;
+    breakpointType: "auto" | "hardware" | "software" | string;
     /** enable logging the Debug Adapter Protocol */
     trace?: boolean;
     /** Path to the Embedded Workbench installation to use */
@@ -72,7 +72,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
     private stackManager: CSpyContextManager | undefined = undefined;
     private breakpointManager: CSpyBreakpointManager | undefined = undefined;
 
-    private readonly consoleCommandRegistry: CommandRegistry = new CommandRegistry();
+    // Here, we can register actions to perform on e.g. receiving console commands, or custom dap requests
+    private readonly consoleCommandRegistry: CommandRegistry<void, string> = new CommandRegistry();
+    private readonly customRequestRegistry: CommandRegistry<unknown, unknown> = new CommandRegistry();
 
     // Sequence number for custom events
     private eventSeq = 0;
@@ -147,7 +149,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.sendEvent(new OutputEvent(data, "stdout"));
         });
         libSupportHandler.observeExit(code => {
-            this.sendEvent(new OutputEvent("Target program terminated, exit code " + code));
+            this.sendEvent(new OutputEvent("Target program terminated, exit code " + code + "\n"));
         });
         this.serviceManager.startService(LIBSUPPORT_SERVICE, LibSupportService2, libSupportHandler);
 
@@ -174,27 +176,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1,
                 CSpyDriverUtils.fromDriverName(args.driverLib ?? sessionConfig.driverName)); // TODO: figure out how to best do this
+            this.setupBreakpointCommands(args.breakpointType);
 
-            if (this.breakpointManager.supportsBreakpointTypes()) {
-                const type = args.breakpointType === "hardware" ? BreakpointType.HARDWARE :
-                    args.breakpointType === "software" ? BreakpointType.SOFTWARE : BreakpointType.AUTO;
-                this.breakpointManager.setBreakpointType(type);
-                this.sendEvent(new OutputEvent(`Using '${type}' breakpoint type. To select hardware- or software breakpoints, type '__breakpoints_type_toggle' into the console\n`));
-
-                this.consoleCommandRegistry.registerCommand(new Command("__breakpoints_set_type_software", () => {
-                    this.breakpointManager?.setBreakpointType(BreakpointType.SOFTWARE);
-                    return Promise.resolve(`Now using ${BreakpointType.SOFTWARE} breakpoints (only applies to new breakpoints)`);
-                }));
-                this.consoleCommandRegistry.registerCommand(new Command("__breakpoints_set_type_hardware", () => {
-                    this.breakpointManager?.setBreakpointType(BreakpointType.HARDWARE);
-                    return Promise.resolve(`Now using ${BreakpointType.HARDWARE} breakpoints (only applies to new breakpoints)`);
-                }));
-                this.consoleCommandRegistry.registerCommand(new Command("__breakpoints_type_toggle", () => {
-                    const type = this.breakpointManager?.getBreakpointType() === BreakpointType.HARDWARE ? BreakpointType.SOFTWARE : BreakpointType.HARDWARE;
-                    this.breakpointManager?.setBreakpointType(type);
-                    return Promise.resolve(`Now using ${type} breakpoints (only applies to new breakpoints)`);
-                }));
-            }
         } catch (e) {
             response.success = false;
             if (typeof e === "string" || e instanceof Error) {
@@ -428,6 +411,21 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.sendResponse(response);
     }
 
+    protected override async customRequest(command: string, response: DebugProtocol.Response, args: unknown) {
+        if (this.customRequestRegistry.hasCommand(command)) {
+            try {
+                const result = await this.customRequestRegistry.runCommand(command, args);
+                response.body = result;
+            } catch (e) {
+                response.success = false;
+                response.message = e instanceof Error ? e.message : undefined;
+            }
+        } else {
+            response.success = false;
+        }
+        this.sendResponse(response);
+    }
+
     /**
      * As <tt>disassembleRequest</tt> is not supported by VSCode, we use our own callback.
      * <p>This is called along with e.g. variable requests and sends a custom DAP event
@@ -446,6 +444,46 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 type: "event",
             });
         });
+    }
+
+    /**
+     * Registers commands for setting breakpoints type via console commands and custom dap requests.
+     */
+    private setupBreakpointCommands(requestedInitialType: string) {
+        const bpTypeMessage = (type: BreakpointType) => `Now using ${type} breakpoints (only applies to new breakpoints)`;
+        // If the driver supports it, register console commands
+        if (this.breakpointManager?.supportsBreakpointTypes()) {
+            const initialBpType = requestedInitialType === "hardware" ? BreakpointType.HARDWARE :
+                requestedInitialType === "software" ? BreakpointType.SOFTWARE : BreakpointType.AUTO;
+            this.breakpointManager.setBreakpointType(initialBpType);
+            this.sendEvent(new OutputEvent(`Using '${initialBpType}' breakpoint type.\n`));
+
+            const makeConsoleCommand = (name: string, type: BreakpointType) => {
+                return new Command(name, () => {
+                    this.breakpointManager?.setBreakpointType(type);
+                    return Promise.resolve(bpTypeMessage(type));
+                });
+            };
+            this.consoleCommandRegistry.registerCommand(makeConsoleCommand("__breakpoints_set_type_auto", BreakpointType.AUTO));
+            this.consoleCommandRegistry.registerCommand(makeConsoleCommand("__breakpoints_set_type_hardware", BreakpointType.HARDWARE));
+            this.consoleCommandRegistry.registerCommand(makeConsoleCommand("__breakpoints_set_type_software", BreakpointType.SOFTWARE));
+        }
+        // Custom requests are always registered, but will give an error if made on a driver that doesn't support it.
+        const makeCustomRequestCommand = (name: string, type: BreakpointType) => {
+            return new Command(name, () => {
+                if (this.breakpointManager?.supportsBreakpointTypes()) {
+                    this.breakpointManager?.setBreakpointType(type);
+                    this.sendEvent(new OutputEvent(bpTypeMessage(type) + "\n"));
+                    return Promise.resolve();
+                } else {
+                    this.sendEvent(new OutputEvent("Cannot set breakpoint type (not supported by driver)"));
+                    return Promise.reject(new Error());
+                }
+            });
+        };
+        this.customRequestRegistry.registerCommand(makeCustomRequestCommand("useAutoBreakpoints", BreakpointType.AUTO));
+        this.customRequestRegistry.registerCommand(makeCustomRequestCommand("useHardwareBreakpoints", BreakpointType.HARDWARE));
+        this.customRequestRegistry.registerCommand(makeCustomRequestCommand("useSoftwareBreakpoints", BreakpointType.SOFTWARE));
     }
 
     private async endSession() {
