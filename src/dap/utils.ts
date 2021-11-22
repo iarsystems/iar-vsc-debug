@@ -5,7 +5,7 @@ export namespace Utils {
      * Loads a list of macro files in order.
      */
     export async function loadMacros(dbg: Debugger.Client, macros: string[]) {
-        for (const macro in macros) {
+        for (const macro of macros) {
             try {
                 await dbg.loadMacroFile(macro);
             } catch (e) {

@@ -8,7 +8,7 @@ import { ThriftServiceManager } from "../thrift/thriftServiceManager";
 import { BREAKPOINTS_SERVICE } from "../thrift/bindings/breakpoints_types";
 import { ThriftClient } from "../thrift/thriftClient";
 import { DescriptorWriter } from "./descriptors/descriptorWriter";
-import { CSpyDriver, CSpyDriverUtils } from "./CSpyDriver";
+import { CSpyDriver } from "./CSpyDriver";
 import { CodeBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
 import { EmulCodeBreakpointType } from "./descriptors/emulCodeBreakpointDescriptor";
 
@@ -62,7 +62,7 @@ export class CSpyBreakpointManager implements Disposable {
                 private readonly clientLinesStartAt1: boolean,
                 private readonly clientColumnsStartAt1: boolean,
                 driver: CSpyDriver) {
-        this.bpDescriptorFactory = CSpyDriverUtils.getCodeBreakpointDescriptorFactory(driver);
+        this.bpDescriptorFactory = driver.getCodeBreakpointDescriptorFactory();
     }
 
     /**

@@ -5,7 +5,7 @@ import * as Debugger from "./thrift/bindings/Debugger";
 import * as DebugEventListener from "./thrift/bindings/DebugEventListener";
 import * as LibSupportService2 from "./thrift/bindings/LibSupportService2";
 import { ThriftClient } from "./thrift/thriftClient";
-import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant, SessionConfiguration } from "./thrift/bindings/cspy_types";
+import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant, ModuleLoadingOptions, SessionConfiguration } from "./thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
 import { CSpyContextManager } from "./cspyContextManager";
 import { BreakpointType, CSpyBreakpointManager } from "./breakpoints/cspyBreakpointManager";
@@ -18,7 +18,7 @@ import { LibSupportHandler } from "./libSupportHandler";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import { Subject } from "await-notify";
-import { CSpyDriverUtils } from "./breakpoints/CSpyDriver";
+import { CSpyDriver } from "./breakpoints/CSpyDriver";
 import { Command, CommandRegistry } from "./commandRegistry";
 import { Utils } from "./utils";
 
@@ -51,10 +51,13 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     driverOptions?: string[];
     /** A list of macros to load*/
     macros?: string[];
-    /** A list of devices macros to load before flashing*/
-    deviceMacros?: string[];
-    /** A board file specifying how to flash the device (optional) */
-    flashLoader?: string;
+    /** Download options (optional, e.g. for simulator) */
+    download?: {
+        /** A board file specifying how to flash the device */
+        flashLoader?: string;
+        /** A list of devices macros to load before flashing */
+        deviceMacros?: string[];
+    }
     /** A list of plugins to load */
     plugins?: string[];
 }
@@ -170,10 +173,14 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.sendEvent(new OutputEvent("Using C-SPY version: " + await this.cspyDebugger.service.getVersionString() + "\n"));
 
             await this.cspyDebugger.service.startSession(sessionConfig);
-            await Utils.loadMacros(this.cspyDebugger.service, args.deviceMacros ?? []);
-            if (args.flashLoader) {
-                // TODO: figure out if we should support the last two args
-                await this.cspyDebugger.service.flashModule(args.flashLoader, sessionConfig.executable, [], []);
+            const driver = CSpyDriver.fromDriverName(args.driverLib ?? sessionConfig.driverName); // TODO: figure out how to best do this
+
+            // do flashing & downloading
+            if (!driver.isSimulator() && args.download) {
+                await Utils.loadMacros(this.cspyDebugger.service, args.download.deviceMacros ?? []);
+                if (args.download.flashLoader) {
+                    await this.cspyDebugger.service.flashModule(args.download.flashLoader, sessionConfig.executable, [], []);
+                }
             }
             await Utils.loadMacros(this.cspyDebugger.service, sessionConfig.setupMacros ?? []);
             await this.cspyDebugger.service.loadModule(args.program);
@@ -185,7 +192,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.breakpointManager = await CSpyBreakpointManager.instantiate(this.serviceManager,
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1,
-                CSpyDriverUtils.fromDriverName(args.driverLib ?? sessionConfig.driverName)); // TODO: figure out how to best do this
+                driver);
 
             if (this.breakpointManager.supportsBreakpointTypes()) {
                 const type = args.breakpointType === "hardware" ? BreakpointType.HARDWARE :

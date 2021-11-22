@@ -1,25 +1,58 @@
 import { IarOsUtils } from "../../utils/osUtils";
 import * as Path from "path";
-import { EmulCodeBreakpointDescriptorFactory, StdCode2BreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
+import { CodeBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory, StdCode2BreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
 
 /**
- * Lists all CSpy drivers. Their value should match the suffix used to name their library file
+ * Provides some driver-specific information.
  */
-export enum CSpyDriver {
-    SIM2 = "SIM2",
-    IMPERAS = "IMPERAS",
-    IJET = "JET",
-    JLINK = "JLINK",
-    GDBSERVER = "GDBSERV",
-    CADI = "CADI",
-    STELLARIS = "LMIFTDI",
-    PEMICRO = "PEMICRO",
-    STLINK = "STLINK",
-    XDS = "XDS",
-    TIMSPFET = "TIFET",
+export interface CSpyDriver {
+    /**
+     * Gets a factory for creating code bp descriptors for this driver.
+     */
+    getCodeBreakpointDescriptorFactory(): CodeBreakpointDescriptorFactory;
+
+    /**
+     * Returns whether this driver is a simulator. This means e.g. that flash loading is not necessary.
+     */
+    isSimulator(): boolean;
 }
 
-export namespace CSpyDriverUtils {
+// Common properties for all simulator drivers.
+abstract class SimulatorDriver implements CSpyDriver {
+    getCodeBreakpointDescriptorFactory(): CodeBreakpointDescriptorFactory {
+        return new StdCode2BreakpointDescriptorFactory();
+    }
+    isSimulator() {
+        return true;
+    }
+}
+
+export class Sim2Driver extends SimulatorDriver { }
+export class ImperasDriver extends SimulatorDriver { }
+
+// Common properties for all hardware drivers
+abstract class HardwareDriver implements CSpyDriver {
+    getCodeBreakpointDescriptorFactory(): CodeBreakpointDescriptorFactory {
+        return new EmulCodeBreakpointDescriptorFactory();
+    }
+    isSimulator(): boolean {
+        return false;
+    }
+}
+
+export class IJetDriver extends HardwareDriver { }
+export class JLinkDriver extends HardwareDriver { }
+export class GdbServerDriver extends HardwareDriver { }
+export class CADIDriver extends HardwareDriver { }
+export class StellarisDriver extends HardwareDriver { }
+export class PEMicroDriver extends HardwareDriver { }
+export class STLinkDriver extends HardwareDriver { }
+export class XDSDriver extends HardwareDriver { }
+export class TIMSPFETDriver extends HardwareDriver { }
+// Used for unrecognized drivers.
+export class UnknownDriver extends HardwareDriver { }
+
+export namespace CSpyDriver {
     /**
      * Tries to deduce the driver from the name of a driver library file (e.g. armSIM2.dll)
      */
@@ -34,37 +67,27 @@ export namespace CSpyDriverUtils {
             basename = basename.substr(targetName.length);
         }
 
-        const result = Object.values(CSpyDriver).find(driver => {
-            return basename.endsWith(driver.toLowerCase());
+        const driverMap: Array<{ name: string, driver: () => CSpyDriver }> = [
+            { name: "SIM2", driver: () => new Sim2Driver() },
+            { name: "IMPERAS", driver: () => new ImperasDriver() },
+            { name: "JET", driver: () => new IJetDriver() },
+            { name: "JLINK", driver: () => new JLinkDriver() },
+            { name: "GDBSERV", driver: () => new GdbServerDriver() },
+            { name: "CADI", driver: () => new CADIDriver() },
+            { name: "LMIFTDI", driver: () => new StellarisDriver() },
+            { name: "PEMICRO", driver: () => new PEMicroDriver() },
+            { name: "STLINK", driver: () => new STLinkDriver() },
+            { name: "XDS", driver: () => new XDSDriver() },
+            { name: "TIFET", driver: () => new TIMSPFETDriver() }
+        ];
+        const result = driverMap.find(({ name, }) => {
+            return basename.endsWith(name.toLowerCase());
         });
         if (!result) {
-            throw new Error("Unable to recognize driver: " + driverName);
+            console.error("Unable to recognize driver: " + driverName);
+            // For unknown drivers, we just guess at some properties and hope it works.
+            return new UnknownDriver();
         }
-        return result;
-    }
-
-    /**
-     * Gets a factory for creating code bp descriptors for the given driver.
-     */
-    export function getCodeBreakpointDescriptorFactory(driver: CSpyDriver) {
-        switch (driver) {
-        case CSpyDriver.SIM2:
-        case CSpyDriver.IMPERAS:
-            return new StdCode2BreakpointDescriptorFactory();
-        case CSpyDriver.IJET:
-        case CSpyDriver.JLINK:
-        case CSpyDriver.GDBSERVER:
-        case CSpyDriver.CADI:
-        case CSpyDriver.STELLARIS:
-        case CSpyDriver.PEMICRO:
-        case CSpyDriver.STLINK:
-        case CSpyDriver.XDS:
-        case CSpyDriver.TIMSPFET:
-            return new EmulCodeBreakpointDescriptorFactory();
-        default:
-            console.error("Tried getting code breakpoint category for unknown driver: " + driver);
-            console.error("Assuming EMUL_CODE");
-            return new EmulCodeBreakpointDescriptorFactory();
-        }
+        return result.driver();
     }
 }
