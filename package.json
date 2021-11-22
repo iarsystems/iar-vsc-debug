@@ -66,7 +66,10 @@
 	},
 	"main": "./out/extension",
 	"activationEvents": [
-		"onDebug"
+		"onDebug",
+		"onCommand:iar.useAutoBreakpoints",
+		"onCommand:iar.useHardwareBreakpoints",
+		"onCommand:iar.useSoftwareBreakpoints"
 	],
 	"contributes": {
 		"languages": [
@@ -108,11 +111,21 @@
 			"debug/toolBar": [
 				{
 					"command": "iar.stepOverInstruction",
-					"when": "debugConfigurationType == cspy"
+					"when": "debugType == cspy"
 				},
 				{
 					"command": "iar.stepIntoInstruction",
-					"when": "debugConfigurationType == cspy"
+					"when": "debugType == cspy"
+				}
+			],
+			"commandPalette": [
+				{
+				"command": "iar.stepOverInstruction",
+				"when": "false"
+				},
+				{
+				"command": "iar.stepIntoInstruction",
+				"when": "false"
 				}
 			]
 		},
@@ -121,13 +134,48 @@
 				"command": "iar.stepOverInstruction",
 				"icon": "images/istepover.png",
 				"category": "IAR Debug",
-				"title": "Intstruction Step Over"
+				"title": "Instruction Step Over",
+				"enablement": "debugType == cspy"
 			},
 			{
 				"command": "iar.stepIntoInstruction",
 				"icon": "images/istepin.png",
 				"category": "IAR Debug",
-				"title": "Intstruction Step Into"
+				"title": "Instruction Step Into",
+				"enablement": "debugType == cspy"
+			},
+			{
+				"command": "iar.useAutoBreakpoints",
+				"category": "IAR Debug",
+				"title": "Set Breakpoint Type: Auto"
+			},
+			{
+				"command": "iar.useHardwareBreakpoints",
+				"category": "IAR Debug",
+				"title": "Set Breakpoint Type: Hardware"
+			},
+			{
+				"command": "iar.useSoftwareBreakpoints",
+				"category": "IAR Debug",
+				"title": "Set Breakpoint Type: Software"
+			},
+			{
+				"command": "iar.useAutoBreakpointsActive",
+				"category": "IAR Debug",
+				"title": "Set Breakpoint Type: Auto (Current Session Only)",
+				"enablement": "debugType == cspy"
+			},
+			{
+				"command": "iar.useHardwareBreakpointsActive",
+				"category": "IAR Debug",
+				"title": "Set Breakpoint Type: Hardware (Current Session Only)",
+				"enablement": "debugType == cspy"
+			},
+			{
+				"command": "iar.useSoftwareBreakpointsActive",
+				"category": "IAR Debug",
+				"title": "Set Breakpoint Type: Software (Current Session Only)",
+				"enablement": "debugType == cspy"
 			}
 		],
 		"breakpoints": [

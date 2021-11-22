@@ -20,6 +20,7 @@ import { LibSupportHandler } from "./libSupportHandler";
 import { Subject } from "await-notify";
 import { CSpyDriverUtils } from "./breakpoints/cspyDriver";
 import { Command, CommandRegistry } from "./commandRegistry";
+import { CustomRequest } from "./customRequest";
 
 
 /**
@@ -479,9 +480,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 }
             });
         };
-        this.customRequestRegistry.registerCommand(makeCustomRequestCommand("useAutoBreakpoints", BreakpointType.AUTO));
-        this.customRequestRegistry.registerCommand(makeCustomRequestCommand("useHardwareBreakpoints", BreakpointType.HARDWARE));
-        this.customRequestRegistry.registerCommand(makeCustomRequestCommand("useSoftwareBreakpoints", BreakpointType.SOFTWARE));
+        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.USE_AUTO_BREAKPOINTS, BreakpointType.AUTO));
+        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.USE_HARDWARE_BREAKPOINTS, BreakpointType.HARDWARE));
+        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.USE_SOFTWARE_BREAKPOINTS, BreakpointType.SOFTWARE));
     }
 
     private async endSession() {

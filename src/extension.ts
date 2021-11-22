@@ -7,11 +7,16 @@ import { DisassemblyView } from "./disassemblyView";
 import { DisassembledBlock } from "./dap/cspyContextManager";
 import { CSpyDebugSession } from "./dap/cspyDebug";
 import { BreakpointType } from "./dap/breakpoints/cspyBreakpointManager";
+import { SettingsConstants } from "./settingsConstants";
+import { DebugSessionTracker } from "./debugSessionTracker";
+import { BreakpointCommands } from "./breakpointCommands";
 
 /** Set to <tt>true</tt> to enable the Disassembly view */
-const ENABLE_DISASSEMBLY_VIEW = true;
+const ENABLE_DISASSEMBLY_VIEW = false;
 /** Set to <tt>true</tt> to enable the Symbolic Memory view */
 const ENABLE_MEMORY_VIEW = false;
+
+let sessionTracker: DebugSessionTracker | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
     console.log("activating");
@@ -69,6 +74,9 @@ export function activate(context: vscode.ExtensionContext) {
             }
         }
     }));
+
+    sessionTracker = new DebugSessionTracker(context);
+    BreakpointCommands.registerCommands(context, sessionTracker);
 }
 
 export function deactivate() {
@@ -104,9 +112,9 @@ class CSpyConfigurationProvider implements vscode.DebugConfigurationProvider {
         // Pass along the user's selection of breakpoint type to the adapter
         // Allow overriding the user setting from launch.json, even if we don't advertise that possibility anywhere
         if (!config["breakpointType"]) {
-            const bpType = vscode.workspace.getConfiguration("iardbg").get("breakpointType");
-            const actualType = bpType === "Hardware" ? BreakpointType.HARDWARE :
-                bpType === "Software" ? BreakpointType.SOFTWARE : BreakpointType.AUTO;
+            const bpType = vscode.workspace.getConfiguration(SettingsConstants.MAIN_SECTION).get(SettingsConstants.BREAKPOINT_TYPE);
+            const actualType = bpType === SettingsConstants.BreakpointTypeValues.HARDWARE ? BreakpointType.HARDWARE :
+                bpType === SettingsConstants.BreakpointTypeValues.SOFTWARE ? BreakpointType.SOFTWARE : BreakpointType.AUTO;
             config["breakpointType"] = actualType;
         }
 
