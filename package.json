@@ -134,7 +134,9 @@
 							"program",
 							"workbenchPath",
 							"projectPath",
-							"projectConfiguration"
+							"projectConfiguration",
+							"driver",
+							"driverOptions"
 						],
 						"properties": {
 							"program": {
@@ -175,6 +177,50 @@
 								"type": "string",
 								"description": "Name of the project configuration to debug (e.g. Debug).",
 								"default": "${command:iar-settings.project-configuration}"
+							},
+							"driver": {
+								"type": "string",
+								"description": "The driver to use.",
+								"default": "sim2",
+								"enum": [
+									"sim2",
+									"ijet",
+									"jlink"
+								],
+								"enumDescriptions": [
+									"The driver to use for running the simulator.",
+									"I-Jet driver for hardware debugging.",
+									"J-Link driver for hardware debugging."
+								]
+							},
+							"driverOptions": {
+								"type": "array",
+								"description": "The commandline to use when launching.",
+								"items": {
+									"type": "string"
+								},
+								"default": [
+									"--endian=little",
+									"--cpu=<CPU_NAME>",
+									"--fpu=None",
+									"--semihosting"
+								]
+							},
+							"plugins": {
+								"type": "array",
+								"description": "The set of plugins to be loaded during the debug session",
+								"items": {
+									"type": "string"
+								},
+								"default": []
+							},
+							"setupMacros": {
+								"type": "array",
+								"description": "List of macros to be loaded with the debug session",
+								"items": {
+									"type": "string"
+								},
+								"default": []
 							}
 						}
 					}
@@ -188,7 +234,14 @@
 						"stopOnEntry": true,
 						"workbenchPath": "${command:iar-settings.workbench}",
 						"projectPath": "${command:iar-settings.project-file}",
-						"projectConfiguration": "${command:iar-settings.project-configuration}"
+						"projectConfiguration": "${command:iar-settings.project-configuration}",
+						"driver": "sim2",
+						"driverOptions": [
+							"--endian=little",
+							"--cpu=<CPU_NAME>",
+							"--fpu=None",
+							"--semihosting"
+						]
 					}
 				],
 				"configurationSnippets": [
@@ -203,7 +256,14 @@
 							"stopOnEntry": true,
 							"workbenchPath": "^\"\\${command:iar-settings.workbench}\"",
 							"projectPath": "^\"\\${command:iar-settings.project-file}\"",
-							"projectConfiguration": "^\"\\${command:iar-settings.project-configuration}\""
+							"projectConfiguration": "^\"\\${command:iar-settings.project-configuration}\"",
+							"driver": "sim2",
+							"driverOptions":[
+								"--endian=little",
+								"--cpu=<CPU_NAME>",
+								"--fpu=None",
+								"--semihosting"
+							]
 						}
 					}
 				]
