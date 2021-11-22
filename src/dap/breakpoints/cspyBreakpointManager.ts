@@ -8,7 +8,7 @@ import { ThriftServiceManager } from "../thrift/thriftServiceManager";
 import { BREAKPOINTS_SERVICE } from "../thrift/bindings/breakpoints_types";
 import { ThriftClient } from "../thrift/thriftClient";
 import { DescriptorWriter } from "./descriptors/descriptorWriter";
-import { CSpyDriver } from "./CSpyDriver";
+import { CSpyDriver } from "./cspyDriver";
 import { CodeBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
 import { EmulCodeBreakpointType } from "./descriptors/emulCodeBreakpointDescriptor";
 

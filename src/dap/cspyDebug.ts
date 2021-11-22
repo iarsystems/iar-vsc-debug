@@ -5,7 +5,7 @@ import * as Debugger from "./thrift/bindings/Debugger";
 import * as DebugEventListener from "./thrift/bindings/DebugEventListener";
 import * as LibSupportService2 from "./thrift/bindings/LibSupportService2";
 import { ThriftClient } from "./thrift/thriftClient";
-import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant, ModuleLoadingOptions, SessionConfiguration } from "./thrift/bindings/cspy_types";
+import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant, SessionConfiguration } from "./thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
 import { CSpyContextManager } from "./cspyContextManager";
 import { BreakpointType, CSpyBreakpointManager } from "./breakpoints/cspyBreakpointManager";
@@ -18,7 +18,7 @@ import { LibSupportHandler } from "./libSupportHandler";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import { Subject } from "await-notify";
-import { CSpyDriver } from "./breakpoints/CSpyDriver";
+import { CSpyDriver } from "./breakpoints/cspyDriver";
 import { Command, CommandRegistry } from "./commandRegistry";
 import { Utils } from "./utils";
 
