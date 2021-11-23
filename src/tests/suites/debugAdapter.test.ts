@@ -91,7 +91,8 @@ suite("Test Debug Adapter", () =>{
         debugAdapter.kill();
     });
 
-    setup(async() => {
+    setup(async function()  {
+        console.log("\n==========================================================" + this.currentTest!.title + "==========================================================\n");
         dc = new DebugClient("node", "", "cspy");
         await dc.start(ADAPTER_PORT);
     });
