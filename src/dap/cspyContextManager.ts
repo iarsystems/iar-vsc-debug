@@ -86,7 +86,7 @@ export class CSpyContextManager implements Disposable {
     private readonly scopeAndVariableHandles = new Handles<ScopeReference | VariableReference>();
 
     // TODO: We should get this from the event service, I think, but it doesn't seem to receive any contexts. This works for now.
-    private readonly currentInspectionContext = new ContextRef({ core: 0, level: 0, task: 0, type: ContextType.CurrentInspection });
+    private readonly globalInspectionContext = new ContextRef({ core: 0, level: 0, task: 0, type: ContextType.CurrentInspection });
 
     private constructor(private readonly contextManager: ThriftClient<ContextManager.Client>,
                         private readonly dbgr: ThriftClient<Debugger.Client>,
@@ -100,7 +100,7 @@ export class CSpyContextManager implements Disposable {
      * Fetches *all* available stack frames.
      */
     async fetchStackFrames(): Promise<StackFrame[]> {
-        const contextInfos = await this.contextManager.service.getStack(this.currentInspectionContext, 0, -1);
+        const contextInfos = await this.contextManager.service.getStack(this.globalInspectionContext, 0, -1);
 
         this.contextReferences = contextInfos.map(contextInfo => contextInfo.context);
 
@@ -181,8 +181,8 @@ export class CSpyContextManager implements Disposable {
     /**
      * Evaluates some expression at the specified stack frame.
      */
-    async evalExpression(frameIndex: number, expression: string): Promise<ExprValue> {
-        const context = this.contextReferences[frameIndex];
+    async evalExpression(frameIndex: number | undefined, expression: string): Promise<ExprValue> {
+        const context = frameIndex === undefined ? this.globalInspectionContext : this.contextReferences[frameIndex];
         if (!context) {
             throw new Error(`Frame index ${frameIndex} is out of bounds`);
         }
@@ -215,7 +215,7 @@ export class CSpyContextManager implements Disposable {
      * Fetches a fixed number of disassembly lines from the current inspection context
      */
     async fetchDisassembly(): Promise<DisassembledBlock> {
-        const currentInspectionContextInfo = await this.contextManager.service.getContextInfo(this.currentInspectionContext);
+        const currentInspectionContextInfo = await this.contextManager.service.getContextInfo(this.globalInspectionContext);
         const currAddress = currentInspectionContextInfo.execLocation.address;
         // TODO: The handling of these addresses is probably unsafe for larger addresses, CHANGE THIS
         const startLocation = new Location({
@@ -228,7 +228,7 @@ export class CSpyContextManager implements Disposable {
         });
 
         const disasmLocations = await this.disasm.service.disassembleRange(startLocation, endLocation,
-            this.currentInspectionContext);
+            this.globalInspectionContext);
         // Reduce a DisassembledBlock from the array of disassembled locations
         return disasmLocations.
             reduce((result, dloc) => {
@@ -249,7 +249,7 @@ export class CSpyContextManager implements Disposable {
  */
 namespace RowToVariableConverters {
     export function locals(row: ListWindowRow): DebugProtocol.Variable {
-        if (!row.values[0] || !row.values[1] || !row.values[3]) {
+        if (row.values[0] === undefined || row.values[1] === undefined || row.values[3] === undefined) {
             throw new Error("Not enough data in row to parse variable");
         }
         return {
@@ -260,7 +260,7 @@ namespace RowToVariableConverters {
         };
     }
     export function statics(row: ListWindowRow): DebugProtocol.Variable {
-        if (!row.values[0] || !row.values[1] || !row.values[3]) {
+        if (row.values[0] === undefined || row.values[1] === undefined || row.values[3] === undefined) {
             throw new Error("Not enough data in row to parse variable");
         }
         return {
@@ -272,7 +272,7 @@ namespace RowToVariableConverters {
         };
     }
     export function registers(row: ListWindowRow): DebugProtocol.Variable {
-        if (!row.values[0] || !row.values[1] || !row.values[2]) {
+        if (row.values[0] === undefined || row.values[1] === undefined || row.values[2] === undefined) {
             throw new Error("Not enough data in row to parse variable");
         }
         return {
