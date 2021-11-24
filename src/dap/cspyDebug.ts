@@ -45,7 +45,7 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     /** Name of the project configuration to debug (e.g. Debug) */
     projectConfiguration: string;
     /** The name of the driver library to use.*/
-    driverLib?: string;
+    driver?: string;
     /** The driver options as a list of string*/
     driverOptions?: string[];
     /** A list the macros to load*/
@@ -153,7 +153,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
         try {
             let sessionConfig: SessionConfiguration;
-            if (args.driverLib && args.driverOptions) {
+            if (args.driver && args.driverOptions) {
                 // The user has specified argument to use for the launch process.
                 sessionConfig = await new LaunchArgumentConfigurationResolver().resolveLaunchArguments(args);
             } else {
@@ -173,7 +173,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.breakpointManager = await CSpyBreakpointManager.instantiate(this.serviceManager,
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1,
-                CSpyDriverUtils.fromDriverName(args.driverLib ?? sessionConfig.driverName)); // TODO: figure out how to best do this
+                CSpyDriverUtils.fromDriverName(args.driver ?? sessionConfig.driverName)); // TODO: figure out how to best do this
 
             if (this.breakpointManager.supportsBreakpointTypes()) {
                 const type = args.breakpointType === "hardware" ? BreakpointType.HARDWARE :
