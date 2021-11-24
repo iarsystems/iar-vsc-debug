@@ -399,7 +399,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             }
         } else {
             await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
-                const val = await stackManager.evalExpression(args.frameId || 0, args.expression);
+                const val = await stackManager.evalExpression(args.frameId, args.expression);
                 // TODO: expandable variables using subexpressions
                 response.body = {
                     result: val.value,

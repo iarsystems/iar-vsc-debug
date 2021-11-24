@@ -91,7 +91,8 @@ suite("Test Debug Adapter", () =>{
         debugAdapter.kill();
     });
 
-    setup(async() => {
+    setup(async function()  {
+        console.log("\n==========================================================" + this.currentTest!.title + "==========================================================\n");
         dc = new DebugClient("node", "", "cspy");
         await dc.start(ADAPTER_PORT);
     });
@@ -189,7 +190,7 @@ suite("Test Debug Adapter", () =>{
         return Promise.all([
             dc.configurationSequence(),
             dc.launch(dbgConfig),
-            dc.waitForEvent("initialized").then(async() => {
+            dc.waitForEvent("stopped").then(async() => {
                 let response = await dc.setBreakpointsRequest(
                     { source: { path: fibonacciFile },
                         breakpoints: [{line: 47}, {line: 49}] });
@@ -199,8 +200,6 @@ suite("Test Debug Adapter", () =>{
                 Assert(bps[0]?.verified);
                 Assert.strictEqual(bps[1]?.line, 49);
                 Assert(bps[1]?.verified);
-
-                await dc.waitForEvent("stopped");
 
                 response = await dc.setBreakpointsRequest(
                     { source: { path: fibonacciFile },
@@ -218,23 +217,6 @@ suite("Test Debug Adapter", () =>{
         ]);
     });
 
-    test("Supports setting breakpoints before launch", () => {
-        // We need to send the launch request before breakpoints can be set in the backend and verified
-        // (because we need to know where the workbench is located). In practice this doesn't seem to be a problem (yet).
-        // However DAP clients may set breakpoints slightly before the launch request is started, so we need to support that.
-        return Promise.all([
-            dc.configurationSequence(),
-            dc.initializeRequest().then(async() => {
-                const response = await dc.setBreakpointsRequest(
-                    { source: { path: Utils.sourceFilePath(dbgConfig.projectPath, "Fibonacci.c") },
-                        breakpoints: [{line: 47}] });
-                TestUtils.wait(1000).then(() => dc.launchRequest(dbgConfig));
-                Assert.equal(response.body.breakpoints[0]?.line, 47);
-                Assert(response.body.breakpoints[0]?.verified);
-            }),
-        ]);
-    });
-
     test("Shows variable values", () => {
         const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig));
         dbgConfigCopy.stopOnEntry = false;
@@ -243,7 +225,8 @@ suite("Test Debug Adapter", () =>{
             dc.launch(dbgConfigCopy),
             dc.waitForEvent("stopped").then(async() => {
                 // Locals are tested in other test cases
-                const scopes = await dc.scopesRequest({frameId: 0});
+                const stack = await dc.stackTraceRequest({ threadId: 1});
+                const scopes = await dc.scopesRequest({frameId: stack.body.stackFrames[0]!.id});
 
                 const statics = (await dc.variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
                 Assert.equal(statics.length, 3);

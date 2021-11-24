@@ -150,20 +150,6 @@
 								"description": "Automatically stop after launch.",
 								"default": true
 							},
-							"breakpointType": {
-								"type": "string",
-								"description": "The type of breakpoint to use by default (only applicable to some drivers).",
-								"enum": [
-									"auto",
-									"software",
-									"hardware"
-								]
-							},
-							"trace": {
-								"type": "boolean",
-								"description": "Enable logging of the Debug Adapter Protocol.",
-								"default": true
-							},
 							"workbenchPath": {
 								"type": "string",
 								"description": "Path to the Embedded Workbench installation to use (e.g. \"C:\\\\Program Files (x86)\\\\IAR Systems\\\\Embedded Workbench 8.3\").",
