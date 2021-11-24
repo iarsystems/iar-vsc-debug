@@ -35,7 +35,7 @@ export class DebugEventListenerHandler {
      * Called whenever a debug event happens. See DkNotifySubscriber#Notify.
      */
     postDebugEvent(event: DebugEvent): Q.Promise<void> {
-        console.log(`DEBUGEVENT (${event.note}): ${event.descr}`, event.params);
+        //console.log(`DEBUGEVENT (${event.note}): ${event.descr}`, event.params);
         this.debugEventCallbacks.get(event.note)?.forEach((callback: EventCallback<DebugEvent>) => callback(event));
         return Q.resolve();
     }

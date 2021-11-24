@@ -88,7 +88,8 @@ export class CSpyBreakpointManager implements Disposable {
 
         // Set the new breakpoints in the backend, and store them
         const newBps = dapBps.filter(dapBp => !knownBreakpoints.some(bp => CSpyBreakpointManager.bpsEqual(dapBp, bp.dapBp)));
-        await Promise.all(newBps.map(async dapBp => {
+        // We do this in serial, and not in parallel (e.g. Promise.all); cspyserver doesn't seem to be able to handle concurrent requests
+        for (const dapBp of newBps) {
             const dbgrLine = this.convertClientLineToDebugger(dapBp.line);
             const dbgrCol = dapBp.column ? this.convertClientColumnToDebugger(dapBp.column) : 1;
             const descriptor = this.bpDescriptorFactory.createOnUle(`{${sourcePath}}.${dbgrLine}.${dbgrCol}`);
@@ -101,7 +102,7 @@ export class CSpyBreakpointManager implements Disposable {
             } catch (e) {
                 console.error(e);
             }
-        }));
+        }
 
         // Map the requested BPs to a DAP result format, using data from each cspy BP
         const results: DebugProtocol.Breakpoint[] = [];
