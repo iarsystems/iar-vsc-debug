@@ -1,3 +1,4 @@
+import { readFileSync } from "fs";
 import * as path from "path";
 import { exit } from "process";
 import { runTestsIn, getEnvs } from "../utils/testutils/testRunner";
@@ -5,8 +6,7 @@ import { runTestsIn, getEnvs } from "../utils/testutils/testRunner";
 function printHelp() {
     console.log("Utility for running hardware tests");
     console.log("--iar-dbg=[path]   The path to the iar-dbg extension");
-    console.log("--test-project=[path]   The path to the .ewp file to use");
-    console.log("--test-config=[config]   The name of the configuration to use");
+    console.log(`--config-json=[path]   The path to a debug config json file. Any fields in this file will override those used to launch test debug sessions.`);
 }
 
 async function main() {
@@ -22,8 +22,11 @@ async function main() {
         exit(1);
     }
 
-    //process.env["test-project"] = envs["test-project"];
-    //process.env["test-config"] = envs["test-config"];
+    if (envs["config-json"]) {
+        // We pass the overrides to the test suites as an environment variable. This makes it possible to use the same
+        // mechanism from a launch.json file, when running tests from vscode.
+        process.env["config-overrides"] = readFileSync(envs["config-json"]).toString();
+    }
 
     // Run the test-suite but pass a path that does not exist to trick vs-code to not load the
     // the new-build extension.

@@ -1,5 +1,3 @@
-
-
 import assert = require("assert")
 import * as vscode from "vscode";
 import * as Path from "path";
@@ -11,7 +9,6 @@ import { CSpyLaunchRequestArguments } from "../../dap/cspyDebug";
 /**
  *  Class contaning utility methods for the tests.
  */
-
 export namespace TestUtils {
     export const PROJECT_ROOT = Path.join(__dirname, "../../../");
 
@@ -23,27 +20,44 @@ export namespace TestUtils {
      * * Returns a launch config using the determined project and driver
      */
     export function doSetup(workbenchPath: string): vscode.DebugConfiguration & CSpyLaunchRequestArguments {
-        const sandbox = new TestSandbox(PROJECT_ROOT);
-        let targetProject = Path.join(TestUtils.PROJECT_ROOT, "src/tests/TestProjects/GettingStarted/BasicDebugging.ewp");
-        if (process.env["test-project"]) {
-            console.log("Using project: " + process.env["test-project"]);
-            targetProject = process.env["test-project"];
+        const overrides = getOverrides();
+        if (overrides.workbenchPath) {
+            throw new Error("Overriding the workbench path via json is not supported! Use the --ew-setup-file options instead.");
         }
+
+        let targetProject = Path.join(TestUtils.PROJECT_ROOT, "src/tests/TestProjects/GettingStarted/BasicDebugging.ewp");
+        if (overrides.projectPath) {
+            targetProject = overrides.projectPath!;
+            delete overrides.projectPath;
+        }
+        const sandbox = new TestSandbox(PROJECT_ROOT);
         const projectDir = sandbox.copyToSandbox(Path.dirname(targetProject));
         const project = Path.join(projectDir, Path.basename(targetProject));
-        let config = "Debug";
-        if (process.env["test-config"]) {
-            console.log("Using configuration: " + process.env["test-config"]);
-            config = process.env["test-config"];
-        }
-        buildProject(workbenchPath, project, config);
 
-        const launchConfig: vscode.DebugConfiguration = JSON.parse(JSON.stringify(defaultConfig));
+        let config = "Debug";
+        if (overrides.projectConfiguration) {
+            config = overrides.projectConfiguration!;
+            delete overrides.projectConfiguration;
+        }
+
+        // If overriding program, the user is responsible for having built it. Otherwise we build it ourselves.
+        let program: string;
+        if (overrides.program) {
+            program = overrides.program!;
+            delete overrides.program;
+        } else {
+            program = Path.join(Path.dirname(project), config, "Exe", Path.basename(project, ".ewp") + ".out");
+            buildProject(workbenchPath, project, config);
+        }
+
+        // Merge overrides and default config, and calculated values.
+        // Any fields on both defaultConfig and overrides will take their value from overrides.
         return {
-            ...launchConfig,
+            ...defaultConfig,
+            ...overrides,
             projectPath: project,
             projectConfiguration: config,
-            program: Path.join(Path.dirname(project), config, "Exe", Path.basename(project, ".ewp") + ".out"),
+            program: program,
             workbenchPath: workbenchPath
         };
     }
@@ -77,11 +91,19 @@ export namespace TestUtils {
     function buildProject(workbenchPath: string, ewpPath: string, configuration: string) {
         const iarBuildPath = Path.join(workbenchPath, "common/bin/iarbuild" + IarOsUtils.executableExtension());
         console.log("Building " + ewpPath);
-        const exitCode = spawnSync(iarBuildPath, [ewpPath, "-build", configuration]).status;
-        if (exitCode !== 0) {
-            throw new Error("Failed building test project, iarbuild gave: " + exitCode);
+        const proc = spawnSync(iarBuildPath, [ewpPath, "-build", configuration]);
+        if (proc.status !== 0) {
+            throw new Error(`Failed building test project (code ${proc.status}), iarbuild output: ${proc.stdout.toString()}`);
         }
-        // console.log(spawnSync(iarBuildPath, [ewpPath, "-build", configuration]).stdout.toString());
+    }
+
+    // Gets overrides for launch configs specified by e.g. runHardwareTests.ts
+    function getOverrides(): Partial<CSpyLaunchRequestArguments> {
+        if (process.env["config-overrides"]) {
+            const overrides = JSON.parse(process.env["config-overrides"]);
+            return overrides;
+        }
+        return {};
     }
 
 
