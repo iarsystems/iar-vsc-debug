@@ -1,11 +1,11 @@
 
 
 import * as vscode from "vscode";
-import { WorkspaceFolder, DebugConfiguration, ProviderResult, CancellationToken } from "vscode";
 import { MemoryDocumentProvider } from "./memoryDocumentProvider";
 import { DisassemblyView } from "./disassemblyView";
 import { DisassembledBlock } from "./dap/cspyContextManager";
 import { CSpyDebugSession } from "./dap/cspyDebug";
+import { CSpyConfigurationProvider } from "./dap/configresolution/cspyConfigurationProvider";
 
 /** Set to <tt>true</tt> to enable the Disassembly view */
 const ENABLE_DISASSEMBLY_VIEW = true;
@@ -15,12 +15,14 @@ const ENABLE_MEMORY_VIEW = false;
 export function activate(context: vscode.ExtensionContext) {
     console.log("activating");
     // register a configuration provider for 'cspy' debug type
-    context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", new CSpyConfigurationProvider()));
     vscode.debug.registerDebugAdapterDescriptorFactory("cspy", {
-        createDebugAdapterDescriptor(_session: vscode.DebugSession, _executable: vscode.DebugAdapterExecutable | undefined): ProviderResult<vscode.DebugAdapterDescriptor> {
+        createDebugAdapterDescriptor(_session: vscode.DebugSession, _executable: vscode.DebugAdapterExecutable | undefined): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
             return new vscode.DebugAdapterInlineImplementation(new CSpyDebugSession());
         }
     });
+
+    context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", CSpyConfigurationProvider.getProvider(), vscode.DebugConfigurationProviderTriggerKind.Initial));
+    context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", CSpyConfigurationProvider.getProvider(), vscode.DebugConfigurationProviderTriggerKind.Dynamic));
 
     // register commands to be called when pressing instruction step buttons
     context.subscriptions.push(vscode.commands.registerCommand("iar.stepOverInstruction", () => {
@@ -72,36 +74,4 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {
     // nothing to do
-}
-
-class CSpyConfigurationProvider implements vscode.DebugConfigurationProvider {
-
-    /**
-	 * Massage a debug configuration just before a debug session is being launched,
-	 * e.g. add all missing attributes to the debug configuration.
-     * TODO: this needs some work
-	 */
-    resolveDebugConfiguration(_folder: WorkspaceFolder | undefined, config: DebugConfiguration, _token?: CancellationToken): ProviderResult<DebugConfiguration> {
-        // if launch.json is missing or empty
-        if (!config.type && !config.request && !config.name) {
-            const editor = vscode.window.activeTextEditor;
-            if (editor && editor.document.languageId === "c") {
-                config.type = "cspy";
-                config.name = "Launch";
-                config.request = "launch";
-                config["program"] = "${file}";
-                config["stopOnEntry"] = true;
-            }
-        }
-
-        if (!config["program"]) {
-            return vscode.window.showInformationMessage("Cannot find a program to debug").then(_ => {
-                return undefined;	// abort launch
-            });
-        }
-
-
-
-        return config;
-    }
 }
