@@ -43,7 +43,8 @@ suite("Test Debug Adapter", () =>{
 
     const dbgConfig: any = {
         projectConfiguration: "Debug",
-        driverLib: "armsim2",
+        target: "arm",
+        driver: "sim2",
         driverOptions: ["--endian=little", "--cpu=ARM7TDMI", "--fpu=None", "--semihosting", "--multicore_nr_of_cores=1"],
         stopOnEntry:true
     };
