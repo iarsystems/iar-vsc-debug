@@ -9,7 +9,6 @@ import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant, SessionConfigu
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
 import { CSpyContextManager } from "./cspyContextManager";
 import { BreakpointType, CSpyBreakpointManager } from "./breakpoints/cspyBreakpointManager";
-import { XclConfigurationResolver } from "./configresolution/xclConfigurationResolver";
 import { LaunchArgumentConfigurationResolver}  from "./configresolution/launchArgumentConfigurationResolver";
 import { CSpyException } from "./thrift/bindings/shared_types";
 import { LIBSUPPORT_SERVICE } from "./thrift/bindings/libsupport_types";
@@ -45,9 +44,9 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     /** Name of the project configuration to debug (e.g. Debug) */
     projectConfiguration: string;
     /** The name of the driver library to use.*/
-    driverLib?: string;
+    driver: string;
     /** The driver options as a list of string*/
-    driverOptions?: string[];
+    driverOptions: string[];
     /** A list the macros to load*/
     macros?: string[];
     /** A list of plugins to load */
@@ -152,13 +151,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.serviceManager.startService(LIBSUPPORT_SERVICE, LibSupportService2, libSupportHandler);
 
         try {
-            let sessionConfig: SessionConfiguration;
-            if (args.driverLib && args.driverOptions) {
-                // The user has specified argument to use for the launch process.
-                sessionConfig = await new LaunchArgumentConfigurationResolver().resolveLaunchArguments(args);
-            } else {
-                sessionConfig = await new XclConfigurationResolver().resolveLaunchArguments(args);
-            }
+            const sessionConfig: SessionConfiguration = await new LaunchArgumentConfigurationResolver().resolveLaunchArguments(args);
 
             this.cspyDebugger = await this.serviceManager.findService(DEBUGGER_SERVICE, Debugger);
             this.sendEvent(new OutputEvent("Using C-SPY version: " + await this.cspyDebugger.service.getVersionString() + "\n"));
@@ -173,7 +166,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.breakpointManager = await CSpyBreakpointManager.instantiate(this.serviceManager,
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1,
-                CSpyDriverUtils.fromDriverName(args.driverLib ?? sessionConfig.driverName)); // TODO: figure out how to best do this
+                CSpyDriverUtils.fromDriverName(args.driver ?? sessionConfig.driverName)); // TODO: figure out how to best do this
 
             if (this.breakpointManager.supportsBreakpointTypes()) {
                 const type = args.breakpointType === "hardware" ? BreakpointType.HARDWARE :

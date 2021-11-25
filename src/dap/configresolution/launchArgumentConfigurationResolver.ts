@@ -35,7 +35,7 @@ export class LaunchArgumentConfigurationResolver extends BaseConfigurationResolv
             }
         }
 
-        if (!args.driverLib) {
+        if (!args.driver) {
             return Promise.reject(new Error("No driver lib specified"));
         }
 
@@ -45,7 +45,7 @@ export class LaunchArgumentConfigurationResolver extends BaseConfigurationResolv
 
         const macros = args.macros? args.macros : [];
 
-        const driver = IarOsUtils.resolveTargetLibrary(args.workbenchPath, target, args.driverLib);
+        const driver = IarOsUtils.resolveTargetLibrary(args.workbenchPath, target, args.driver);
         const proc = IarOsUtils.resolveTargetLibrary(args.workbenchPath, target, "proc");
 
         const config: PartialSessionConfiguration = {
