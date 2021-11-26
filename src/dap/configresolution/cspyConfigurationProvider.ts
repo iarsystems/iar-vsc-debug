@@ -63,8 +63,8 @@ export class CSpyConfigurationProvider implements vscode.DebugConfigurationProvi
                 const projName = path.basename(ewpFile, ".ewp");
                 const projDir = path.dirname(ewpFile);
                 const xclBaseName = projName + "." + configName;
-                const genXclFile = path.resolve(projDir, this._settingsCatalog, `${xclBaseName}${this._genXcl}`);
-                const drvXclFile = path.resolve(projDir, this._settingsCatalog, `${xclBaseName}${this._drvXcl}`);
+                const genXclFile = path.join(projDir, this._settingsCatalog, `${xclBaseName}${this._genXcl}`);
+                const drvXclFile = path.join(projDir, this._settingsCatalog, `${xclBaseName}${this._drvXcl}`);
                 // Ensure that both the files exists on disk.
                 if (fs.existsSync(genXclFile) && fs.existsSync(drvXclFile)) {
                     const config = this.convertXclToDebugConfiguration(folder.uri.path, projDir, projName, configName);
@@ -102,8 +102,8 @@ export class CSpyConfigurationProvider implements vscode.DebugConfigurationProvi
         }
 
         const baseName = projName + "." + configName;
-        const genXclFile = path.resolve(ewpDir, this._settingsCatalog, baseName + this._genXcl);
-        const drvXclFile = path.resolve(ewpDir, this._settingsCatalog, baseName + this._drvXcl);
+        const genXclFile = path.join(ewpDir, this._settingsCatalog, baseName + this._genXcl);
+        const drvXclFile = path.join(ewpDir, this._settingsCatalog, baseName + this._drvXcl);
 
         // We need both files to exist.
         if (!fs.existsSync(genXclFile) || !fs.existsSync(drvXclFile)) {
@@ -143,6 +143,7 @@ export class CSpyConfigurationProvider implements vscode.DebugConfigurationProvi
         // Read the content from the general file
         if (generalCommands.length < 3) {
             console.error("To few entries in the file, Corrupt?");
+            return undefined;
         } else {
             if (generalCommands[1]) {
                 const pathSegments = OsUtils.splitPath(generalCommands[1]);
@@ -162,7 +163,7 @@ export class CSpyConfigurationProvider implements vscode.DebugConfigurationProvi
                 const wsDirBase = path.basename(wsDir);
                 const index = pathSegments.findIndex(segment => segment === wsDirBase);
 
-                if (index) {
+                if (index !== -1) {
                     // Add the path as a relative path.
                     config["program"] = "${workspaceFolder}" + path.sep + pathSegments.slice(index + 1).join(path.sep);
                 } else {
@@ -194,16 +195,25 @@ export class CSpyConfigurationProvider implements vscode.DebugConfigurationProvi
         config["projectPath"] = ewpDir;
         config["projectConfiguration"] = configuration;
 
+        if (macros.length > 0) {
+            config["setupMacros"] = macros;
+        }
+
+
+        if (plugins.length > 0) {
+            config["plugins"] = plugins;
+        }
+
         // Everything in the driver segment can be sent directly to the driverOptions segment
         config["driverOptions"] = options.concat(driverCommands);
 
         return config;
     }
 
-    private getVscJson(folder: vscode.WorkspaceFolder) {
-        const projectFile = path.resolve(folder.uri.path, ".vscode", "iar-vsc.json");
+    getVscJson(folder: vscode.WorkspaceFolder) {
+        const projectFile = path.join(folder.uri.fsPath, ".vscode", "iar-vsc.json");
         if (!fs.existsSync(projectFile)) {
-            console.error("iar-vsc.json does not exist");
+            console.error(projectFile + " does not exist");
             return undefined;
         }
         return JSON.parse(fs.readFileSync(projectFile).toString());
