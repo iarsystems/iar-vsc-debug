@@ -1,0 +1,6 @@
+{
+    "ewp": "/home/power/iar-vs-code/iar-vsc-debug/src/tests/TestProjects/ConfigTests/BasicDebugging.ewp",
+    "compiler": "/home/power/iar-vs-code/release-scripts/getstage/stages/stage-arm/8.10/StageLinux_x86_64/Release/arm/bin/iccarm",
+    "workbench": "/home/power/iar-vs-code/release-scripts/getstage/stages/stage-arm/8.10/StageLinux_x86_64/Release",
+    "configuration": "Release"
+}
