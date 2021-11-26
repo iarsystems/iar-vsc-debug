@@ -108,7 +108,7 @@ suite("Configuration tests", () => {
         assert.deepStrictEqual(configTest, undefined);
 
         // Test that the driver and target can be extracted.
-        const genOpt = ["skipMe", "arm/bin/libarmsim2.so", path.resolve(wsDir, program)];
+        const genOpt = ["skipMe", "arm/bin/libarmsim2.so", path.join(wsDir, program)];
         configTest = CSpyConfigurationProvider.getProvider().generateDebugConfiguration(wsDir, ewpDir, launchName, config, genOpt, driverOpts);
         if (!configTest) {
             assert.fail("Failed to generate configuration");
@@ -120,7 +120,7 @@ suite("Configuration tests", () => {
         assert.deepStrictEqual(configTest["target"], "arm");
         assert.deepStrictEqual(configTest["driverOptions"], driverOpts);
 
-        const genOpt2 = ["skipMe", "arm\\bin\\armjet.dll", path.resolve(wsDir, program)];
+        const genOpt2 = ["skipMe", "arm\\bin\\armjet.dll", path.join(wsDir, program)];
         configTest = CSpyConfigurationProvider.getProvider().generateDebugConfiguration(wsDir, ewpDir, launchName, config, genOpt2, driverOpts);
         if (!configTest) {
             assert.fail("Failed to generate configuration");

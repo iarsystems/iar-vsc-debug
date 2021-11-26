@@ -63,8 +63,8 @@ export class CSpyConfigurationProvider implements vscode.DebugConfigurationProvi
                 const projName = path.basename(ewpFile, ".ewp");
                 const projDir = path.dirname(ewpFile);
                 const xclBaseName = projName + "." + configName;
-                const genXclFile = path.resolve(projDir, this._settingsCatalog, `${xclBaseName}${this._genXcl}`);
-                const drvXclFile = path.resolve(projDir, this._settingsCatalog, `${xclBaseName}${this._drvXcl}`);
+                const genXclFile = path.join(projDir, this._settingsCatalog, `${xclBaseName}${this._genXcl}`);
+                const drvXclFile = path.join(projDir, this._settingsCatalog, `${xclBaseName}${this._drvXcl}`);
                 // Ensure that both the files exists on disk.
                 if (fs.existsSync(genXclFile) && fs.existsSync(drvXclFile)) {
                     const config = this.convertXclToDebugConfiguration(folder.uri.path, projDir, projName, configName);
@@ -102,8 +102,8 @@ export class CSpyConfigurationProvider implements vscode.DebugConfigurationProvi
         }
 
         const baseName = projName + "." + configName;
-        const genXclFile = path.resolve(ewpDir, this._settingsCatalog, baseName + this._genXcl);
-        const drvXclFile = path.resolve(ewpDir, this._settingsCatalog, baseName + this._drvXcl);
+        const genXclFile = path.join(ewpDir, this._settingsCatalog, baseName + this._genXcl);
+        const drvXclFile = path.join(ewpDir, this._settingsCatalog, baseName + this._drvXcl);
 
         // We need both files to exist.
         if (!fs.existsSync(genXclFile) || !fs.existsSync(drvXclFile)) {
@@ -211,9 +211,9 @@ export class CSpyConfigurationProvider implements vscode.DebugConfigurationProvi
     }
 
     getVscJson(folder: vscode.WorkspaceFolder) {
-        const projectFile = path.resolve(folder.uri.path, ".vscode", "iar-vsc.json");
+        const projectFile = path.join(folder.uri.fsPath, ".vscode", "iar-vsc.json");
         if (!fs.existsSync(projectFile)) {
-            console.error("iar-vsc.json does not exist");
+            console.error(projectFile + " does not exist");
             return undefined;
         }
         return JSON.parse(fs.readFileSync(projectFile).toString());
