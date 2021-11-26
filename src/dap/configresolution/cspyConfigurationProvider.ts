@@ -143,6 +143,7 @@ export class CSpyConfigurationProvider implements vscode.DebugConfigurationProvi
         // Read the content from the general file
         if (generalCommands.length < 3) {
             console.error("To few entries in the file, Corrupt?");
+            return undefined;
         } else {
             if (generalCommands[1]) {
                 const pathSegments = OsUtils.splitPath(generalCommands[1]);
@@ -194,13 +195,22 @@ export class CSpyConfigurationProvider implements vscode.DebugConfigurationProvi
         config["projectPath"] = ewpDir;
         config["projectConfiguration"] = configuration;
 
+        if (macros.length > 0) {
+            config["setupMacros"] = macros;
+        }
+
+
+        if (plugins.length > 0) {
+            config["plugins"] = plugins;
+        }
+
         // Everything in the driver segment can be sent directly to the driverOptions segment
         config["driverOptions"] = options.concat(driverCommands);
 
         return config;
     }
 
-    private getVscJson(folder: vscode.WorkspaceFolder) {
+    getVscJson(folder: vscode.WorkspaceFolder) {
         const projectFile = path.resolve(folder.uri.path, ".vscode", "iar-vsc.json");
         if (!fs.existsSync(projectFile)) {
             console.error("iar-vsc.json does not exist");

@@ -14,13 +14,29 @@
 			"outFiles": [ "${workspaceFolder}/out/**/*.js" ]
 		},
 		{
-			"name": "Run Extension Tests",
+			"name": "Run Debugger Tests",
 			"type": "extensionHost",
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}",
-				"--extensionTestsPath=${workspaceFolder}/out/tests/suites/index"
+				"--extensionTestsPath=${workspaceFolder}/out/tests/suites/dbg/index"
+			],
+			"outFiles": [ "${workspaceFolder}/out/**/*.js" ],
+			"preLaunchTask": "npm: compile",
+            "presentation": {
+                "group": "Tests",
+            }
+		},
+		{
+			"name": "Run Configuration Tests",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"--extensionTestsPath=${workspaceFolder}/out/tests/suites/config/index",
+				"${workspaceFolder}/src/tests/TestProjects/ConfigTests"
 			],
 			"outFiles": [ "${workspaceFolder}/out/**/*.js" ],
 			"preLaunchTask": "npm: compile",
