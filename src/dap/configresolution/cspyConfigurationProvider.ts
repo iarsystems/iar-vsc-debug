@@ -163,7 +163,7 @@ export class CSpyConfigurationProvider implements vscode.DebugConfigurationProvi
                 const wsDirBase = path.basename(wsDir);
                 const index = pathSegments.findIndex(segment => segment === wsDirBase);
 
-                if (index) {
+                if (index !== -1) {
                     // Add the path as a relative path.
                     config["program"] = "${workspaceFolder}" + path.sep + pathSegments.slice(index + 1).join(path.sep);
                 } else {
