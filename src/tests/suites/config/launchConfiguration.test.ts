@@ -2,6 +2,7 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
 import * as path from "path";
+import * as fs from "fs";
 import { CSpyConfigurationProvider } from "../../../dap/configresolution/cspyConfigurationProvider";
 import { OsUtils } from "../../../utils/osUtils";
 
@@ -11,6 +12,32 @@ import { OsUtils } from "../../../utils/osUtils";
  * As such, the testsuite as a whole will test the concept as it can split into minor segments.
  */
 suite("Configuration tests", () => {
+
+    // The current workspace.
+    let rootFolder: vscode.WorkspaceFolder;
+
+    suiteSetup(() => {
+        // Start by setting loading the current workspace.
+        const folders = vscode.workspace.workspaceFolders;
+        console.log(folders);
+        if (!folders || !folders[0]) {
+            assert.fail("Failed to located the current workspace.");
+        }
+        rootFolder = folders[0];
+
+        // Skip the rest if hte build plugin is installed.
+        if (vscode.extensions.getExtension("pluyckx.iar-vsc")) {
+            console.log("Build extension is installed!");
+            return;
+        }
+
+        console.log("Build extensions not install: Patching the iar-vsc.json file");
+        // Slurp the content of the iar-vsc-file and patch the path to the ewp-file.
+        const vscContent = CSpyConfigurationProvider.getProvider().getVscJson(rootFolder);
+        vscContent["ewp"] = path.join(rootFolder.uri.fsPath, "BasicDebugging.ewp");
+        fs.writeFileSync(path.join(rootFolder.uri.fsPath, ".vscode", "iar-vsc.json"), JSON.stringify(vscContent, undefined, 4));
+
+    });
 
     /**
  	* Test the path splitter is able to work with different types of paths.
@@ -39,13 +66,7 @@ suite("Configuration tests", () => {
 	 * settings folder.
 	 */
     test("Test dynamic configurations", async() => {
-        const folders = vscode.workspace.workspaceFolders;
-        console.log(folders);
-        if (!folders || !folders[0]) {
-            assert.fail("Failed to located the current workspace.");
-        }
-
-        const cspyConfigs = await CSpyConfigurationProvider.getProvider().provideDebugConfigurations(folders[0]);
+        const cspyConfigs = await CSpyConfigurationProvider.getProvider().provideDebugConfigurations(rootFolder);
         if (!cspyConfigs) {
             assert.fail("Failed to generate a configuration");
         }
@@ -69,18 +90,14 @@ suite("Configuration tests", () => {
 	 * Test that we're able to read the content of the vsc file and select the appropriate configuration.
 	 */
     test("Test initial configurations", async() => {
-        const folders = vscode.workspace.workspaceFolders;
-        if (!folders || !folders[0]) {
-            assert.fail("Failed to located the current workspace.");
-        }
         const dummyConfig: any = {};
-        const cspyConfig = await CSpyConfigurationProvider.getProvider().resolveDebugConfiguration(folders[0], dummyConfig, undefined);
+        const cspyConfig = await CSpyConfigurationProvider.getProvider().resolveDebugConfiguration(rootFolder, dummyConfig, undefined);
 
         if (!cspyConfig || cspyConfig === null) {
             assert.fail("Failed to generate a configuration");
         }
 
-        const config = CSpyConfigurationProvider.getProvider().getVscJson(folders[0])["configuration"];
+        const config = CSpyConfigurationProvider.getProvider().getVscJson(rootFolder)["configuration"];
 
         // Check that we've collected the correct information for the project
         assert.deepStrictEqual(cspyConfig["name"], "BasicDebugging." + config);
