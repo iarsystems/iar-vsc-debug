@@ -5,6 +5,7 @@ import { IarOsUtils } from "../../utils/osUtils";
 import { spawnSync } from "child_process";
 import { TestSandbox } from "../../utils/testutils/testSandbox";
 import { CSpyLaunchRequestArguments } from "../../dap/cspyDebug";
+import { CSpyConfigurationProvider } from "../../dap/configresolution/cspyConfigurationProvider";
 
 /**
  *  Class contaning utility methods for the tests.
@@ -20,46 +21,41 @@ export namespace TestUtils {
      * * Returns a launch config using the determined project and driver
      */
     export function doSetup(workbenchPath: string): vscode.DebugConfiguration & CSpyLaunchRequestArguments {
-        const overrides = getOverrides();
-        if (overrides.workbenchPath) {
-            throw new Error("Overriding the workbench path via json is not supported! Use the --ew-setup-file options instead.");
-        }
-
-        let targetProject = Path.join(TestUtils.PROJECT_ROOT, "src/tests/TestProjects/GettingStarted/BasicDebugging.ewp");
-        if (overrides.projectPath) {
-            targetProject = overrides.projectPath!;
-            delete overrides.projectPath;
-        }
-        const sandbox = new TestSandbox(PROJECT_ROOT);
-        const projectDir = sandbox.copyToSandbox(Path.dirname(targetProject));
-        const project = Path.join(projectDir, Path.basename(targetProject));
-
-        let config = "Debug";
-        if (overrides.projectConfiguration) {
-            config = overrides.projectConfiguration!;
-            delete overrides.projectConfiguration;
-        }
+        const config = "Debug";
 
         // If overriding program, the user is responsible for having built it. Otherwise we build it ourselves.
-        let program: string;
-        if (overrides.program) {
-            program = overrides.program!;
-            delete overrides.program;
-        } else {
-            program = Path.join(Path.dirname(project), config, "Exe", Path.basename(project, ".ewp") + ".out");
-            buildProject(workbenchPath, project, config);
-        }
+        if (process.env["cspybat-args"] && process.env["source-dir"]) {
+            // split on unescaped whitespace
+            const args = process.env["cspybat-args"].split(/(?<!\\)\s/g);
+            const backendIdx = args.indexOf("--backend");
+            const launchConfig = CSpyConfigurationProvider.getProvider().generateDebugConfiguration(
+                "", "", "",
+                config,
+                args.slice(0, backendIdx),
+                args.slice(backendIdx));
 
-        // Merge overrides and default config, and calculated values.
-        // Any fields on both defaultConfig and overrides will take their value from overrides.
-        return {
-            ...defaultConfig,
-            ...overrides,
-            projectPath: project,
-            projectConfiguration: config,
-            program: program,
-            workbenchPath: workbenchPath
-        };
+            if (launchConfig === undefined) {
+                throw new Error("Unable to create launch config from cspybat cmdline. Check its validity.");
+            }
+            launchConfig["workbenchPath"] = workbenchPath;
+            launchConfig["stopOnEntry"] = defaultConfig.stopOnEntry;
+            launchConfig["projectPath"] = process.env["source-dir"];
+            return launchConfig as vscode.DebugConfiguration & CSpyLaunchRequestArguments;
+        } else {
+            const targetProject = Path.join(TestUtils.PROJECT_ROOT, "src/tests/TestProjects/GettingStarted/BasicDebugging.ewp");
+            const sandbox = new TestSandbox(PROJECT_ROOT);
+            const projectDir = sandbox.copyToSandbox(Path.dirname(targetProject));
+            const project = Path.join(projectDir, Path.basename(targetProject));
+            const program = Path.join(Path.dirname(project), config, "Exe", Path.basename(project, ".ewp") + ".out");
+            buildProject(workbenchPath, project, config);
+            return {
+                ...defaultConfig,
+                projectPath: project,
+                projectConfiguration: config,
+                program: program,
+                workbenchPath: workbenchPath
+            };
+        }
     }
 
     // Gets a list of paths to available ews, either from user settings or from an env variable set by the test runner
@@ -97,21 +93,12 @@ export namespace TestUtils {
         }
     }
 
-    // Gets overrides for launch configs specified by e.g. runHardwareTests.ts
-    function getOverrides(): Partial<CSpyLaunchRequestArguments> {
-        if (process.env["config-overrides"]) {
-            const overrides = JSON.parse(process.env["config-overrides"]);
-            return overrides;
-        }
-        return {};
-    }
-
-
-    const defaultConfig: vscode.DebugConfiguration = {
+    const defaultConfig = {
         type: "cspy",
         request: "launch",
         name: "C-SPY Debugging Tests",
-        driverLib: "armsim2",
+        target: "arm",
+        driver: "armsim2",
         driverOptions: ["--endian=little", "--cpu=ARM7TDMI", "--fpu=None", "--semihosting", "--multicore_nr_of_cores=1"],
         stopOnEntry:true
     };
