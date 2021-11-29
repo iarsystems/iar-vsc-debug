@@ -1,8 +1,8 @@
 import * as Assert from "assert";
 import * as Path from "path";
 import { DebugClient } from "vscode-debugadapter-testsupport";
-import { TestUtils } from "./testUtils";
-import { TestSandbox } from "../../utils/testutils/testSandbox";
+import { TestUtils } from "../testUtils";
+import { TestSandbox } from "../../../utils/testutils/testSandbox";
 import { ChildProcess, spawn } from "child_process";
 
 namespace Utils {

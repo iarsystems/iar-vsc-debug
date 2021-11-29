@@ -66,7 +66,8 @@
 	},
 	"main": "./out/extension",
 	"activationEvents": [
-		"onDebug"
+		"onDebugResolve:cspy",
+		"onDebugDynamicConfigurations:cspy"
 	],
 	"contributes": {
 		"languages": [
@@ -134,7 +135,9 @@
 							"program",
 							"workbenchPath",
 							"projectPath",
-							"projectConfiguration"
+							"projectConfiguration",
+							"driver",
+							"driverOptions"
 						],
 						"properties": {
 							"program": {
@@ -147,13 +150,47 @@
 								"description": "Automatically stop after launch.",
 								"default": true
 							},
-							"breakpointType": {
+							"workbenchPath": {
 								"type": "string",
-								"description": "The type of breakpoint to use by default (only applicable to some drivers).",
+								"description": "Path to the Embedded Workbench installation to use (e.g. \"C:\\\\Program Files (x86)\\\\IAR Systems\\\\Embedded Workbench 8.3\").",
+								"default": "${command:iar-settings.workbench}"
+							},
+							"projectPath": {
+								"type": "string",
+								"description": "Path to the .ewp file of the project to debug.",
+								"default": "${command:iar-settings.project-file}"
+							},
+							"projectConfiguration": {
+								"type": "string",
+								"description": "Name of the project configuration to debug (e.g. Debug).",
+								"default": "${command:iar-settings.project-configuration}"
+							},
+							"driver": {
+								"type": "string",
+								"description": "The driver to use.",
+								"default": "sim2",
 								"enum": [
-									"auto",
-									"software",
-									"hardware"
+									"sim2",
+									"ijet",
+									"jlink"
+								],
+								"enumDescriptions": [
+									"The driver to use for running the simulator.",
+									"I-Jet driver for hardware debugging.",
+									"J-Link driver for hardware debugging."
+								]
+							},
+							"driverOptions": {
+								"type": "array",
+								"description": "The commandline to use when launching.",
+								"items": {
+									"type": "string"
+								},
+								"default": [
+									"--endian=little",
+									"--cpu=<CPU_NAME>",
+									"--fpu=None",
+									"--semihosting"
 								]
 							},
 							"download": {
@@ -175,25 +212,21 @@
 									}
 								}
 							},
-							"trace": {
-								"type": "boolean",
-								"description": "Enable logging of the Debug Adapter Protocol.",
-								"default": true
+							"plugins": {
+								"type": "array",
+								"description": "The set of plugins to be loaded during the debug session",
+								"items": {
+									"type": "string"
+								},
+								"default": []
 							},
-							"workbenchPath": {
-								"type": "string",
-								"description": "Path to the Embedded Workbench installation to use (e.g. \"C:\\\\Program Files (x86)\\\\IAR Systems\\\\Embedded Workbench 8.3\").",
-								"default": "${command:iar-settings.workbench}"
-							},
-							"projectPath": {
-								"type": "string",
-								"description": "Path to the .ewp file of the project to debug.",
-								"default": "${command:iar-settings.project-file}"
-							},
-							"projectConfiguration": {
-								"type": "string",
-								"description": "Name of the project configuration to debug (e.g. Debug).",
-								"default": "${command:iar-settings.project-configuration}"
+							"setupMacros": {
+								"type": "array",
+								"description": "List of macros to be loaded with the debug session",
+								"items": {
+									"type": "string"
+								},
+								"default": []
 							}
 						}
 					}
@@ -207,7 +240,14 @@
 						"stopOnEntry": true,
 						"workbenchPath": "${command:iar-settings.workbench}",
 						"projectPath": "${command:iar-settings.project-file}",
-						"projectConfiguration": "${command:iar-settings.project-configuration}"
+						"projectConfiguration": "${command:iar-settings.project-configuration}",
+						"driver": "sim2",
+						"driverOptions": [
+							"--endian=little",
+							"--cpu=<CPU_NAME>",
+							"--fpu=None",
+							"--semihosting"
+						]
 					}
 				],
 				"configurationSnippets": [
@@ -222,7 +262,14 @@
 							"stopOnEntry": true,
 							"workbenchPath": "^\"\\${command:iar-settings.workbench}\"",
 							"projectPath": "^\"\\${command:iar-settings.project-file}\"",
-							"projectConfiguration": "^\"\\${command:iar-settings.project-configuration}\""
+							"projectConfiguration": "^\"\\${command:iar-settings.project-configuration}\"",
+							"driver": "sim2",
+							"driverOptions":[
+								"--endian=little",
+								"--cpu=<CPU_NAME>",
+								"--fpu=None",
+								"--semihosting"
+							]
 						}
 					}
 				]

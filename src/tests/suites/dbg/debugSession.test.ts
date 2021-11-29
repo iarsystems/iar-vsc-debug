@@ -1,8 +1,8 @@
 import * as Assert from "assert";
 import * as Path from "path";
 import * as vscode from "vscode";
-import { TestUtils } from "./testUtils";
-import { TestSandbox } from "../../utils/testutils/testSandbox";
+import { TestUtils } from "../testUtils";
+import { TestSandbox } from "../../../utils/testutils/testSandbox";
 
 
 /**
