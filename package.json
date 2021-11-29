@@ -269,7 +269,11 @@
 								"--cpu=<CPU_NAME>",
 								"--fpu=None",
 								"--semihosting"
-							]
+							],
+							"download": {
+								"flashLoader": "",
+								"deviceMacros": []
+							}
 						}
 					}
 				]
