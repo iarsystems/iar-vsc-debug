@@ -1,5 +1,6 @@
 import * as Assert from "assert";
 import * as Path from "path";
+import * as Fs from "fs";
 import { DebugClient } from "vscode-debugadapter-testsupport";
 import { TestUtils } from "../testUtils";
 import { TestSandbox } from "../../../utils/testutils/testSandbox";
@@ -76,8 +77,13 @@ suite("Test Debug Adapter", () =>{
     let debugAdapter: ChildProcess;
 
     suiteSetup(async()=>{
+        const theDebugger = Path.join(__dirname, "../../../dap/cspyDebug.js");
+        if (!Fs.existsSync(theDebugger)) {
+            Assert.fail("No debugger is available.");
+        }
+
         // For some reason DebugClient isnt able to start the adapter itself, so start it manually as a tcp server
-        debugAdapter = spawn("node", [Path.join(__dirname, "../../dap/cspyDebug.js"), `--server=${ADAPTER_PORT}`]);
+        debugAdapter = spawn("node", [Path.join(__dirname, "../../../dap/cspyDebug.js"), `--server=${ADAPTER_PORT}`]);
         debugAdapter.stdout?.on("data", dat => {
             console.log("OUT: " + dat.toString());
         });
