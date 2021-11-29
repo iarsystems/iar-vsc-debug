@@ -193,6 +193,25 @@
 									"--semihosting"
 								]
 							},
+							"download": {
+								"type": "object",
+								"description": "Options for downloading to hardware. Can be omitted. Will be ignored for simulator drivers.",
+								"properties": {
+									"flashLoader": {
+										"type": "string",
+										"description": "A flash loader specification XML file, with the filename extension board.",
+										"format": "uri"
+									},
+									"deviceMacros": {
+										"type": "array",
+										"description": "A list of device macros to load when running the flash loader.",
+										"items": {
+											"type": "string",
+											"format": "uri"
+										}
+									}
+								}
+							},
 							"plugins": {
 								"type": "array",
 								"description": "The set of plugins to be loaded during the debug session",
@@ -250,7 +269,11 @@
 								"--cpu=<CPU_NAME>",
 								"--fpu=None",
 								"--semihosting"
-							]
+							],
+							"download": {
+								"flashLoader": "",
+								"deviceMacros": []
+							}
 						}
 					}
 				]

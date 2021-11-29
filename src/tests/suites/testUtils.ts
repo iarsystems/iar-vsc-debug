@@ -32,7 +32,7 @@ export namespace TestUtils {
                 "", "", "",
                 config,
                 args.slice(0, backendIdx),
-                args.slice(backendIdx));
+                args.slice(backendIdx+1));
 
             if (launchConfig === undefined) {
                 throw new Error("Unable to create launch config from cspybat cmdline. Check its validity.");

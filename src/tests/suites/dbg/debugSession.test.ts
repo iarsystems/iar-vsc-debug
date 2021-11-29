@@ -1,6 +1,6 @@
 import * as Assert from "assert";
 import * as vscode from "vscode";
-import { TestUtils } from "./testUtils";
+import { TestUtils } from "../testUtils";
 
 
 /**

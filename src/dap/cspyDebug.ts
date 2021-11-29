@@ -17,8 +17,9 @@ import { LibSupportHandler } from "./libSupportHandler";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import { Subject } from "await-notify";
-import { CSpyDriverUtils } from "./breakpoints/cspyDriver";
+import { CSpyDriver } from "./breakpoints/cspyDriver";
 import { Command, CommandRegistry } from "./commandRegistry";
+import { Utils } from "./utils";
 
 
 /**
@@ -47,8 +48,15 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     driver: string;
     /** The driver options as a list of string*/
     driverOptions: string[];
-    /** A list the macros to load*/
+    /** A list of macros to load*/
     macros?: string[];
+    /** Download options (optional, e.g. for simulator) */
+    download?: {
+        /** A board file specifying how to flash the device */
+        flashLoader?: string;
+        /** A list of devices macros to load before flashing */
+        deviceMacros?: string[];
+    }
     /** A list of plugins to load */
     plugins?: string[];
 }
@@ -125,6 +133,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.configurationDone.notify();
     }
 
+    // TODO: report progress using a frontend service and the Progress(Start|Update|End) DAP events
     protected override async launchRequest(response: DebugProtocol.LaunchResponse, args: CSpyLaunchRequestArguments) {
         // make sure to 'Stop' the buffered logging if 'trace' is not set
         logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false);
@@ -155,8 +164,18 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
             this.cspyDebugger = await this.serviceManager.findService(DEBUGGER_SERVICE, Debugger);
             this.sendEvent(new OutputEvent("Using C-SPY version: " + await this.cspyDebugger.service.getVersionString() + "\n"));
+
             await this.cspyDebugger.service.startSession(sessionConfig);
-            // TODO: report progress using a frontend service and the Progress(Start|Update|End) DAP events
+            const driver = CSpyDriver.fromDriverName(args.driver ?? sessionConfig.driverName); // TODO: figure out how to best do this
+
+            // do flashing & downloading
+            if (!driver.isSimulator() && args.download) {
+                await Utils.loadMacros(this.cspyDebugger.service, args.download.deviceMacros ?? []);
+                if (args.download.flashLoader) {
+                    await this.cspyDebugger.service.flashModule(args.download.flashLoader, sessionConfig.executable, [], []);
+                }
+            }
+            await Utils.loadMacros(this.cspyDebugger.service, sessionConfig.setupMacros ?? []);
             await this.cspyDebugger.service.loadModule(args.program);
             this.sendEvent(new OutputEvent("Session started\n"));
 
@@ -166,7 +185,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.breakpointManager = await CSpyBreakpointManager.instantiate(this.serviceManager,
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1,
-                CSpyDriverUtils.fromDriverName(args.driver ?? sessionConfig.driverName)); // TODO: figure out how to best do this
+                driver); // TODO: figure out how to best do this
 
             if (this.breakpointManager.supportsBreakpointTypes()) {
                 const type = args.breakpointType === "hardware" ? BreakpointType.HARDWARE :
