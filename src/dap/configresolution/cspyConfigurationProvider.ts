@@ -17,6 +17,8 @@ export class CSpyConfigurationProvider implements vscode.DebugConfigurationProvi
     // Regexps
     private readonly _pluginReg = new RegExp(/--plugin=(.+)$/);
     private readonly _macroReg = new RegExp(/--macro=(.+)$/);
+    private readonly _deviceMacroReg = new RegExp(/--device_macro=(.+)$/);
+    private readonly _flashLoaderReg = new RegExp(/--flash_loader=(.+)$/);
     private readonly _attachReg = new RegExp(/\s*--attach_to_running_target\s*/);
 
     public static getProvider() {
@@ -137,6 +139,10 @@ export class CSpyConfigurationProvider implements vscode.DebugConfigurationProvi
         const plugins: string[] = [];
         // The set of listed macros (--macros option) and regex
         const macros: string[] = [];
+        // The set of listed device macros (--device_macro option) and regex
+        const deviceMacros: string[] = [];
+        // The selected flash loader (if any)
+        let flashLoader: string | undefined;
         // The rest which is just sent to the backend directly.
         const options: string[] = [];
 
@@ -176,12 +182,18 @@ export class CSpyConfigurationProvider implements vscode.DebugConfigurationProvi
             generalCommands.slice(3).forEach(arg => {
                 const pluginMatch = this._pluginReg.exec(arg);
                 const macroMatch = this._macroReg.exec(arg);
+                const deviceMacroMatch = this._deviceMacroReg.exec(arg);
+                const flashLoaderMatch = this._flashLoaderReg.exec(arg);
                 if (pluginMatch && pluginMatch[1]) {
                     if (!/bat.(dll|so)$/.test(pluginMatch[1])) { // remove e.g. armbat plugin
-                        plugins.push(path.parse(pluginMatch[1]).name);
+                        plugins.push(path.parse(this.stripQuotes(pluginMatch[1])).name);
                     }
                 } else if (macroMatch && macroMatch[1]) {
-                    macros.push(macroMatch[1]); // not tested
+                    macros.push(this.stripQuotes(macroMatch[1])); // not tested
+                } else if (deviceMacroMatch && deviceMacroMatch[1]) {
+                    deviceMacros.push(this.stripQuotes(deviceMacroMatch[1]));
+                } else if (flashLoaderMatch && flashLoaderMatch[1]) {
+                    flashLoader = this.stripQuotes(flashLoaderMatch[1]);
                 } else if (this._attachReg.test(arg)) {
                     config["stopOnEntry"] = false;
                 } else {
@@ -197,6 +209,13 @@ export class CSpyConfigurationProvider implements vscode.DebugConfigurationProvi
 
         if (macros.length > 0) {
             config["setupMacros"] = macros;
+        }
+
+        if (deviceMacros.length > 0 || flashLoader !== undefined) {
+            config["download"] = {
+                flashLoader: flashLoader,
+                deviceMacros: deviceMacros,
+            };
         }
 
 
