@@ -295,7 +295,7 @@
                 </option>
                 <option>
                     <name>CCLangConformance</name>
-                    <state>0</state>
+                    <state>2</state>
                 </option>
                 <option>
                     <name>CCSignedPlainChar</name>
@@ -2087,9 +2087,6 @@
     </configuration>
     <file>
         <name>$PROJ_DIR$\Fibonacci.c</name>
-    </file>
-    <file>
-        <name>$PROJ_DIR$\Test.c</name>
     </file>
     <file>
         <name>$PROJ_DIR$\Utilities.c</name>

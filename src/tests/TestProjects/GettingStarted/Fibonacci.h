@@ -18,6 +18,6 @@
 #include "Utilities.h"
 
 // some global variables for testing purposes
-__root const char *str = "This is a sträng";
+const char *str = "This is a sträng";
 
 #endif
