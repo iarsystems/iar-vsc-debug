@@ -153,17 +153,17 @@
 							"workbenchPath": {
 								"type": "string",
 								"description": "Path to the Embedded Workbench installation to use (e.g. \"C:\\\\Program Files (x86)\\\\IAR Systems\\\\Embedded Workbench 8.3\").",
-								"default": "${command:iar-settings.workbench}"
+								"default": "${command:iar-settings.workbench} for an iar-vsc project or path to EW root."
 							},
 							"projectPath": {
 								"type": "string",
-								"description": "Path to the .ewp file of the project to debug.",
-								"default": "${command:iar-settings.project-file}"
+								"description": "The workspace to use during the debug session",
+								"default": "${command:iar-settings.project-file} for an iar-vsc projects or path to project (${workspaceFolder} for current folder)"
 							},
 							"projectConfiguration": {
 								"type": "string",
 								"description": "Name of the project configuration to debug (e.g. Debug).",
-								"default": "${command:iar-settings.project-configuration}"
+								"default": "${command:iar-settings.project-configuration} for an iar-vsc projects or the name of the configuration."
 							},
 							"driver": {
 								"type": "string",
@@ -238,9 +238,9 @@
 						"name": "Debug with C-SPY",
 						"program": "${workspaceFolder}/Debug/Exe/ewproj.out",
 						"stopOnEntry": true,
-						"workbenchPath": "${command:iar-settings.workbench}",
-						"projectPath": "${command:iar-settings.project-file}",
-						"projectConfiguration": "${command:iar-settings.project-configuration}",
+						"workbenchPath": "${command:iar-settings.workbench} for an iar-vsc project or path to EW root.",
+						"projectPath": "${command:iar-settings.project-file} for an iar-vsc projects or path to project (${workspaceFolder} for current folder)",
+						"projectConfiguration": "${command:iar-settings.project-configuration} for an iar-vsc projects or the name of the configuration.",
 						"driver": "sim2",
 						"driverOptions": [
 							"--endian=little",
@@ -252,7 +252,32 @@
 				],
 				"configurationSnippets": [
 					{
-						"label": "C-SPY Debug: Launch",
+						"label": "C-SPY Debug: Launch iar-vsc project",
+						"description": "A new configuration for debugging a program with C-SPY that is using the iar-vsc extension",
+						"body": {
+							"type": "cspy",
+							"request": "launch",
+							"name": "${1:Debug with C-SPY}",
+							"program": "^\"\\${workspaceFolder}/\\${command:iar-settings.project-configuration}/Exe/${2:ewproj.out}\"",
+							"stopOnEntry": true,
+							"workbenchPath": "^\"\\${command:iar-settings.workbench}\"",
+							"projectPath": "^\"\\${command:iar-settings.project-file}\"",
+							"projectConfiguration": "^\"\\${command:iar-settings.project-configuration}\"",
+							"driver": "sim2",
+							"driverOptions":[
+								"--endian=little",
+								"--cpu=<CPU_NAME>",
+								"--fpu=None",
+								"--semihosting"
+							],
+							"download": {
+								"flashLoader": "",
+								"deviceMacros": []
+							}
+						}
+					},
+					{
+						"label": "C-SPY Debug: Generic launch configuration",
 						"description": "A new configuration for debugging a program with C-SPY",
 						"body": {
 							"type": "cspy",
@@ -260,9 +285,9 @@
 							"name": "${1:Debug with C-SPY}",
 							"program": "^\"\\${workspaceFolder}/Debug/Exe/${2:ewproj.out}\"",
 							"stopOnEntry": true,
-							"workbenchPath": "^\"\\${command:iar-settings.workbench}\"",
-							"projectPath": "^\"\\${command:iar-settings.project-file}\"",
-							"projectConfiguration": "^\"\\${command:iar-settings.project-configuration}\"",
+							"workbenchPath": "${3:workbenchPath}",
+							"projectPath": "^\"\\${workspaceFolder}\"",
+							"projectConfiguration": "^\"Debug\"",
 							"driver": "sim2",
 							"driverOptions":[
 								"--endian=little",
