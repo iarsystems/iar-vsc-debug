@@ -38,10 +38,29 @@ declare enum NodeType {
   File = 2,
 }
 
+/**
+ * An option type describes which control should be used to manipulate the option in a GUI
+ * 
+ * These currently match the class names in the SWTD option system, as that is the
+ * only option type system which is widely used.
+ * TBD: This might change in future versions of this service to match more abstract control types
+ * (e.g. Edit is a text box, EditB is actually a tree-like structure).
+ */
+declare enum OptionType {
+  Check = 0,
+  Edit = 1,
+  EditB = 2,
+  List = 3,
+  Radio = 4,
+  CheckList = 5,
+}
+
 declare class ProjectManagerError extends Thrift.TException {
   public description: string;
 
     constructor(args?: { description: string; });
+  read(input: Object): void;
+  write(input: Object): void;
 }
 
 /**
@@ -57,17 +76,18 @@ declare class ToolDefinition {
   public executableName: string;
   public inputExtensions: string[];
   public outputExtensions: string[];
+  public hiddenOutputExtensions: string[];
   public toolType: ToolType;
   public invocationType: InvocationType;
 
-    constructor(args?: { id: string; name: string; executableName: string; inputExtensions: string[]; outputExtensions: string[]; toolType: ToolType; invocationType: InvocationType; });
+    constructor(args?: { id: string; name: string; executableName: string; inputExtensions: string[]; outputExtensions: string[]; hiddenOutputExtensions: string[]; toolType: ToolType; invocationType: InvocationType; });
+  read(input: Object): void;
+  write(input: Object): void;
 }
 
 /**
  * Defines a hardware target for which projects can be built for using one or more tools
  * (compiler, linker, etc.).
- * 
- * TODO: Determine how this will actually communicate with a WTD, i.e. its "mImpl" field.
  */
 declare class Toolchain {
   public id: string;
@@ -75,6 +95,8 @@ declare class Toolchain {
   public tools: ToolDefinition[];
 
     constructor(args?: { id: string; name: string; tools: ToolDefinition[]; });
+  read(input: Object): void;
+  write(input: Object): void;
 }
 
 /**
@@ -86,6 +108,19 @@ declare class Configuration {
   public toolchainId: string;
 
     constructor(args?: { name: string; toolchainId: string; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
+/**
+ * Corresponds to a workspace on disk
+ */
+declare class WorkspaceContext {
+  public filename: string;
+
+    constructor(args?: { filename: string; });
+  read(input: Object): void;
+  write(input: Object): void;
 }
 
 /**
@@ -93,9 +128,10 @@ declare class Configuration {
  */
 declare class ProjectContext {
   public filename: string;
-  public configurations: Configuration[];
 
-    constructor(args?: { filename: string; configurations: Configuration[]; });
+    constructor(args?: { filename: string; });
+  read(input: Object): void;
+  write(input: Object): void;
 }
 
 /**
@@ -110,8 +146,71 @@ declare class Node {
   public children: Node[];
   public type: NodeType;
   public path: string;
+  public isMfcEnabled: boolean;
+  public isExcludedFromBuild: boolean;
+  public hasLocalSettings: boolean;
+  public hasRelevantSettings: boolean;
+  public childrenHaveLocalSettings: boolean;
 
-    constructor(args?: { name: string; children: Node[]; type: NodeType; path: string; });
+    constructor(args?: { name: string; children: Node[]; type: NodeType; path: string; isMfcEnabled: boolean; isExcludedFromBuild: boolean; hasLocalSettings: boolean; hasRelevantSettings: boolean; childrenHaveLocalSettings: boolean; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
+/**
+ * Properties of an option's element (e.g. list item, radio button, a checkbox in a check list)
+ */
+declare class OptionElementDescription {
+  public id: string;
+  public label: string;
+  public enabled: boolean;
+  public data: string;
+
+    constructor(args?: { id: string; label: string; enabled: boolean; data: string; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
+/**
+ * Properties of an option
+ */
+declare class OptionDescription {
+  public id: string;
+  public value: string;
+  public type: OptionType;
+  public elements: OptionElementDescription[];
+  public enabled: boolean;
+  public visible: boolean;
+  public canBeLocal: boolean;
+
+    constructor(args?: { id: string; value: string; type: OptionType; elements: OptionElementDescription[]; enabled: boolean; visible: boolean; canBeLocal: boolean; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
+/**
+ * Associates a group of options under a single category.
+ */
+declare class OptionCategory {
+  public id: string;
+  public optionIds: string[];
+
+    constructor(args?: { id: string; optionIds: string[]; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
+/**
+ * Stores the result of a build, referring to the project that was built
+ */
+declare class BuildResult {
+  public projectContext: ProjectContext;
+  public buildOutput: string[];
+  public succeded: boolean;
+
+    constructor(args?: { projectContext: ProjectContext; buildOutput: string[]; succeded: boolean; });
+  read(input: Object): void;
+  write(input: Object): void;
 }
 
 declare var PROJECTMANAGER_ID: string;
