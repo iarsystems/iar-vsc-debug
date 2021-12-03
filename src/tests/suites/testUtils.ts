@@ -26,7 +26,7 @@ export namespace TestUtils {
         // If overriding program, the user is responsible for having built it. Otherwise we build it ourselves.
         if (process.env["cspybat-args"] && process.env["source-dir"]) {
             // split on unescaped whitespace
-            const args = process.env["cspybat-args"].split(/(?<!\\)\s/g);
+            const args = process.env["cspybat-args"].split(/(?<!\\)\s+/g);
             const backendIdx = args.indexOf("--backend");
             const launchConfig = CSpyConfigurationProvider.getProvider().generateDebugConfiguration(
                 "", "", "",
