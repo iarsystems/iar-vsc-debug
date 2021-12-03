@@ -30,6 +30,8 @@ import { Utils } from "./utils";
  * and this interface should always match that schema.
  */
 export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
+    /** The name of the target in lower case (e.g. arm) */
+    target: string;
     /** An absolute path to the "program" to debug. */
     program: string;
     /** Automatically stop target after launch. If not specified, target does not stop. */
