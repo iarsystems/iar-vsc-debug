@@ -35,7 +35,7 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
             return Promise.reject(new Error(`The program '${launchArguments.program}' does not exist.`));
         }
         if (!Fs.existsSync(launchArguments.projectPath)) {
-            return Promise.reject(new Error(`The project '${launchArguments.projectPath}' does not exist.`));
+            return Promise.reject(new Error(`The path '${launchArguments.projectPath}' does not exist.`));
         }
         if (!Fs.existsSync(launchArguments.workbenchPath)) {
             return Promise.reject(new Error(`The workbench folder '${launchArguments.workbenchPath}' does not exist.`));
@@ -43,6 +43,15 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
 
         const partialValues = await this.resolveLaunchArgumentsPartial(launchArguments);
         const libsupportPath = IarOsUtils.resolveTargetLibrary(launchArguments.workbenchPath, partialValues.target, "LibSupportEclipse");
+
+        // Do the work on the project path which may be an ewp-file or a directory.
+        let projectPath: string = launchArguments.projectPath;
+        const projectName: string = Path.basename(launchArguments.projectPath);
+        if (Fs.lstatSync(projectPath).isFile()) {
+            // The user has given a file, so get the path to the directory in
+            // which the file is located.
+            projectPath = Path.parse(projectPath).dir;
+        }
 
         const config: SessionConfiguration = new SessionConfiguration({
             attachToTarget: partialValues.attachToTarget,
@@ -55,8 +64,8 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
             enableCRun: false,
             options: partialValues.options,
             plugins: partialValues.plugins.concat([libsupportPath]),
-            projectDir: Path.parse(launchArguments.projectPath).dir,
-            projectName: Path.basename(launchArguments.projectPath),
+            projectDir: projectPath,
+            projectName: projectName,
             setupMacros: partialValues.setupMacros,
             target: partialValues.target,
             toolkitDir: Path.join(launchArguments.workbenchPath, partialValues.target), // TODO: this is probably not safe, find a better way to determine the path
