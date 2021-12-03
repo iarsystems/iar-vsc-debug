@@ -90,7 +90,7 @@ export class ListWindowClient implements Disposable {
 
     // callback from list window backend
     notify(note: Note): Q.Promise<void> {
-        console.log("LISTWINDOW NOTIFIED: ", note.what, note.anonPos.toString(), note.ensureVisible.toNumber(), note.row.toNumber(), note.seq.toNumber());
+        //console.log("LISTWINDOW NOTIFIED: ", note.what, note.anonPos.toString(), note.ensureVisible.toNumber(), note.row.toNumber(), note.seq.toNumber());
         switch (note.what) {
         case What.kRowUpdate:
             return this.backend.service.getRow(note.row).then(row => {

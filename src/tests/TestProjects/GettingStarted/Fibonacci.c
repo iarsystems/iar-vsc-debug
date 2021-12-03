@@ -50,5 +50,6 @@ int32_t main(void)
   {
     DoForegroundProcess();
   }
+  long test = (long) str; // prevent str from being optimized away
   return 0;
 }

@@ -1,10 +1,11 @@
 import * as Assert from "assert";
 import * as Path from "path";
 import * as Fs from "fs";
+import * as vscode from "vscode";
 import { DebugClient } from "vscode-debugadapter-testsupport";
 import { TestUtils } from "../testUtils";
-import { TestSandbox } from "../../../utils/testutils/testSandbox";
 import { ChildProcess, spawn } from "child_process";
+import { CSpyLaunchRequestArguments } from "../../../dap/cspyDebug";
 
 namespace Utils {
     // Given an ewp file and a source file in the same directory, returns
@@ -42,32 +43,19 @@ suite("Test Debug Adapter", () =>{
     const ADAPTER_PORT = 4711;
     const FIBS = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55];
 
-    const dbgConfig: any = {
-        projectConfiguration: "Debug",
-        target: "arm",
-        driver: "sim2",
-        driverOptions: ["--endian=little", "--cpu=ARM7TDMI", "--fpu=None", "--semihosting", "--multicore_nr_of_cores=1"],
-        stopOnEntry:true
-    };
-
-    const sandbox = new TestSandbox(TestUtils.PROJECT_ROOT);
     let fibonacciFile = "";
     let utilsFile = "";
 
-    suiteSetup(() => {
-        // Create a folder where we can build and debug the project
-        const testProjectsPath = sandbox.copyToSandbox(Path.join(TestUtils.PROJECT_ROOT, "src/tests/TestProjects/"));
-        dbgConfig.projectPath = Path.join(testProjectsPath, "GettingStarted/BasicDebugging.ewp");
-        dbgConfig.program = Path.join(testProjectsPath, "GettingStarted/Debug/Exe/BasicDebugging.out");
+    let dbgConfig: vscode.DebugConfiguration & CSpyLaunchRequestArguments;
 
+    suiteSetup(() => {
         // Find a workbench to build with
         const installDirs = TestUtils.getEwPaths();
         Assert(installDirs, "No workbenches found to use for debugging");
         // For now just use the first entry, and assume it points directly to a top-level ew directory
         const workbench = installDirs[0];
 
-        dbgConfig.workbenchPath = workbench;
-        TestUtils.buildProject(dbgConfig.workbenchPath, dbgConfig.projectPath, "Debug");
+        dbgConfig = TestUtils.doSetup(workbench);
 
         fibonacciFile = Utils.sourceFilePath(dbgConfig.projectPath, "Fibonacci.c");
         utilsFile = Utils.sourceFilePath(dbgConfig.projectPath, "Utilities.c");
