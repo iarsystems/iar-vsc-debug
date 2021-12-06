@@ -174,11 +174,11 @@
 							"driver": {
 								"type": "string",
 								"description": "The driver to use.",
-								"default": "SIM2",
+								"default": "sim2",
 								"enum": [
-									"SIM2",
-									"JET",
-									"JLINK"
+									"sim2",
+									"jet",
+									"jlink"
 								],
 								"enumDescriptions": [
 									"The driver to use for running the simulator.",
@@ -248,7 +248,7 @@
 						"workbenchPath": "${command:iar-settings.workbench} for an iar-vsc project or path to EW root.",
 						"projectPath": "${command:iar-settings.project-file} for an iar-vsc projects or path to project (${workspaceFolder} for current folder)",
 						"projectConfiguration": "${command:iar-settings.project-configuration} for an iar-vsc projects or the name of the configuration.",
-						"driver": "SIM2",
+						"driver": "sim2",
 						"driverOptions": [
 							"--endian=little",
 							"--cpu=<CPU_NAME>",
@@ -271,7 +271,7 @@
 							"workbenchPath": "^\"\\${command:iar-settings.workbench}\"",
 							"projectPath": "^\"\\${command:iar-settings.project-file}\"",
 							"projectConfiguration": "^\"\\${command:iar-settings.project-configuration}\"",
-							"driver": "SIM2",
+							"driver": "sim2",
 							"driverOptions":[
 								"--endian=little",
 								"--cpu=<CPU_NAME>",
@@ -297,7 +297,7 @@
 							"workbenchPath": "${3:workbenchPath}",
 							"projectPath": "^\"\\${workspaceFolder}\"",
 							"projectConfiguration": "^\"Debug\"",
-							"driver": "SIM2",
+							"driver": "sim2",
 							"driverOptions":[
 								"--endian=little",
 								"--cpu=<CPU_NAME>",
