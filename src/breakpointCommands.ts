@@ -18,7 +18,7 @@ export namespace BreakpointCommands {
                 // IF there is a session running, the user will get feedback from the console, but otherwise
                 // we give some feedback here.
                 if (sessionTracker.runningSessions.length === 0) {
-                    vscode.window.showInformationMessage(`Now using ${breakpointType} breakpoints.`, {detail: "This applies to future sessions"});
+                    vscode.window.showInformationMessage(`Now using ${breakpointType} breakpoints.`);
                 }
             }));
         };
