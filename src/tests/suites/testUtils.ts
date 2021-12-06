@@ -6,6 +6,7 @@ import { spawnSync } from "child_process";
 import { TestSandbox } from "../../utils/testutils/testSandbox";
 import { CSpyLaunchRequestArguments } from "../../dap/cspyDebug";
 import { CSpyConfigurationProvider } from "../../dap/configresolution/cspyConfigurationProvider";
+import { BreakpointType } from "../../dap/breakpoints/cspyBreakpointManager";
 
 /**
  *  Class contaning utility methods for the tests.
@@ -53,7 +54,8 @@ export namespace TestUtils {
                 projectPath: project,
                 projectConfiguration: config,
                 program: program,
-                workbenchPath: workbenchPath
+                workbenchPath: workbenchPath,
+                breakpointType: BreakpointType.AUTO
             };
         }
     }

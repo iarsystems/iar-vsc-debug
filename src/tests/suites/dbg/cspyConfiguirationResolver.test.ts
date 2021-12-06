@@ -4,6 +4,7 @@ import * as assert from "assert";
 import * as path from "path";
 import { OsUtils } from "../../../utils/osUtils";
 import { TestUtils } from "../testUtils";
+import { BreakpointType } from "../../../dap/breakpoints/cspyBreakpointManager";
 
 suite("Configuration resolution tests", () => {
 
@@ -41,7 +42,7 @@ suite("Configuration resolution tests", () => {
             target: "arm",
             program: existantFile,
             stopOnEntry: true,
-            breakpointType: "auto",
+            breakpointType: BreakpointType.AUTO,
             trace: true,
             workbenchPath: workbench,
             projectPath: existantDir,

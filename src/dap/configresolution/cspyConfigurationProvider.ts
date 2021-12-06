@@ -2,6 +2,8 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
 import { OsUtils } from "../../utils/osUtils";
+import { SettingsConstants } from "../../settingsConstants";
+import { BreakpointType } from "../breakpoints/cspyBreakpointManager";
 
 /**
  * This class is used to generate the launch.json content on the fly and from explicit commands.
@@ -84,6 +86,15 @@ export class CSpyConfigurationProvider implements vscode.DebugConfigurationProvi
             return vscode.window.showInformationMessage(`Failed to launch confguration: ${errMsg}`).then(_ => {
                 return undefined;	// abort launch
             });
+        }
+
+        // Pass along the user's selection of breakpoint type to the adapter
+        // Allow overriding the user setting from launch.json, even if we don't advertise that possibility anywhere
+        if (!config["breakpointType"]) {
+            const bpType = vscode.workspace.getConfiguration(SettingsConstants.MAIN_SECTION).get(SettingsConstants.BREAKPOINT_TYPE);
+            const actualType = bpType === SettingsConstants.BreakpointTypeValues.HARDWARE ? BreakpointType.HARDWARE :
+                bpType === SettingsConstants.BreakpointTypeValues.SOFTWARE ? BreakpointType.SOFTWARE : BreakpointType.AUTO;
+            config["breakpointType"] = actualType;
         }
 
         return config;

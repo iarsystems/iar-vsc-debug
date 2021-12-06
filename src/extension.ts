@@ -6,11 +6,15 @@ import { DisassemblyView } from "./disassemblyView";
 import { DisassembledBlock } from "./dap/cspyContextManager";
 import { CSpyDebugSession } from "./dap/cspyDebug";
 import { CSpyConfigurationProvider } from "./dap/configresolution/cspyConfigurationProvider";
+import { DebugSessionTracker } from "./debugSessionTracker";
+import { BreakpointCommands } from "./breakpointCommands";
 
 /** Set to <tt>true</tt> to enable the Disassembly view */
-const ENABLE_DISASSEMBLY_VIEW = true;
+const ENABLE_DISASSEMBLY_VIEW = false;
 /** Set to <tt>true</tt> to enable the Symbolic Memory view */
 const ENABLE_MEMORY_VIEW = false;
+
+let sessionTracker: DebugSessionTracker | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
     console.log("activating");
@@ -70,6 +74,9 @@ export function activate(context: vscode.ExtensionContext) {
             }
         }
     }));
+
+    sessionTracker = new DebugSessionTracker(context);
+    BreakpointCommands.registerCommands(context, sessionTracker);
 }
 
 export function deactivate() {
