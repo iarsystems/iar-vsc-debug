@@ -2,15 +2,11 @@
 
 import * as vscode from "vscode";
 import { MemoryDocumentProvider } from "./memoryDocumentProvider";
-import { DisassemblyView } from "./disassemblyView";
-import { DisassembledBlock } from "./dap/cspyContextManager";
 import { CSpyDebugSession } from "./dap/cspyDebug";
 import { CSpyConfigurationProvider } from "./dap/configresolution/cspyConfigurationProvider";
 import { DebugSessionTracker } from "./debugSessionTracker";
 import { BreakpointCommands } from "./breakpointCommands";
 
-/** Set to <tt>true</tt> to enable the Disassembly view */
-const ENABLE_DISASSEMBLY_VIEW = false;
 /** Set to <tt>true</tt> to enable the Symbolic Memory view */
 const ENABLE_MEMORY_VIEW = false;
 
@@ -38,7 +34,6 @@ export function activate(context: vscode.ExtensionContext) {
 
     const memoryDocumentProvider = new MemoryDocumentProvider();
     context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider("memory", memoryDocumentProvider));
-    const disasmView: DisassemblyView = new DisassemblyView(context);
 
     context.subscriptions.push(vscode.debug.onDidStartDebugSession(async session => {
         if (session.type === "cspy") {
@@ -46,9 +41,6 @@ export function activate(context: vscode.ExtensionContext) {
             if (ENABLE_MEMORY_VIEW) {
                 const memoryDocument = await vscode.workspace.openTextDocument(vscode.Uri.parse("memory:Symbolic Memory.iarmem"));
                 await vscode.window.showTextDocument(memoryDocument, { preview: false, preserveFocus: true, viewColumn: vscode.ViewColumn.Three });
-            }
-            if (ENABLE_DISASSEMBLY_VIEW) {
-                disasmView.open();
             }
         }
     }));
@@ -58,19 +50,6 @@ export function activate(context: vscode.ExtensionContext) {
         if (e.session.type === "cspy") {
             if (ENABLE_MEMORY_VIEW && e.event === "memory") {
                 memoryDocumentProvider.setData(e.body, vscode.Uri.parse("memory:Symbolic Memory.iarmem"));
-            } else if (ENABLE_DISASSEMBLY_VIEW && e.event === "disassembly") {
-                /*
-                 * This event is sent by performDisassemblyEvent(), and carries a
-                 * disassembled block as its <tt>body</tt>.
-                 *
-                 * Unlike with CSpyRuby, breakpoint markers are not available here.
-                 * They should be updated by listening to VSCode breakpoint events.
-                 */
-                const disasmBlock: DisassembledBlock = e.body;
-                disasmView.setData(
-                    disasmBlock.instructions,
-                    [], // We cannot update breakpoints at this time
-                    disasmBlock.currentRow >= 0 ? disasmBlock.currentRow : undefined);
             }
         }
     }));
