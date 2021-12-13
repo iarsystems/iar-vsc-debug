@@ -31,8 +31,8 @@
 		"mutex-promise": "^0.1.0",
 		"thrift": "^0.12.0",
 		"uuid": "^8.3.2",
-		"vscode-debugadapter": "^1.41.1",
-		"vscode-debugprotocol": "^1.41.0",
+		"vscode-debugadapter": "^1.51.0",
+		"vscode-debugprotocol": "^1.51.0",
 		"vscode-languageserver": "^3.5.0"
 	},
 	"devDependencies": {

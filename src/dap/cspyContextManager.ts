@@ -1,20 +1,17 @@
 
 
-import { ContextRef, ContextType, ExprFormat, Location } from "./thrift/bindings/shared_types";
+import { ContextRef, ContextType, ExprFormat } from "./thrift/bindings/shared_types";
 import * as ContextManager from "./thrift/bindings/ContextManager";
 import * as Debugger from "./thrift/bindings/Debugger";
-import * as Disassembly from "./thrift/bindings/Disassembly";
 import { StackFrame, Source, Scope, Handles, Variable } from "vscode-debugadapter";
 import { basename } from "path";
 import { ExprValue, CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE } from "./thrift/bindings/cspy_types";
-import { DISASSEMBLY_SERVICE } from "./thrift/bindings/disassembly_types";
 import { Disposable } from "./disposable";
 import { ThriftServiceManager } from "./thrift/thriftServiceManager";
 import { ThriftClient } from "./thrift/thriftClient";
 import { WindowNames } from "./listWindowConstants";
 import { ListWindowVariablesProvider, VariablesProvider } from "./variablesProvider";
 import { ListWindowRow } from "./listWindowClient";
-import Int64 = require("node-int64");
 import { DebugProtocol } from "vscode-debugprotocol";
 
 /**
@@ -38,20 +35,6 @@ class VariableReference {
     ) { }
 }
 
-/**
- * A disassembled block of instructions
- *
- * TODO: Port to standard DAP types
- */
-export class DisassembledBlock {
-    public currentRow: number;
-    public instructions: string[];
-    constructor() {
-        this.currentRow = 0;
-        this.instructions = [];
-    }
-}
-
 
 /**
  * Takes care of managing stack contexts, and allows to perform operations
@@ -72,7 +55,6 @@ export class CSpyContextManager implements Disposable {
             await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.LOCALS, RowToVariableConverters.locals).catch(onProviderUnavailable),
             await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.STATICS, RowToVariableConverters.statics).catch(onProviderUnavailable),
             await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.REGISTERS, RowToVariableConverters.registers).catch(onProviderUnavailable),
-            await serviceMgr.findService(DISASSEMBLY_SERVICE, Disassembly.Client),
         );
     }
 
@@ -85,37 +67,41 @@ export class CSpyContextManager implements Disposable {
     // and expandable variable.
     private readonly scopeAndVariableHandles = new Handles<ScopeReference | VariableReference>();
 
-    // TODO: We should get this from the event service, I think, but it doesn't seem to receive any contexts. This works for now.
-    private readonly globalInspectionContext = new ContextRef({ core: 0, level: 0, task: 0, type: ContextType.CurrentInspection });
+    // The base context represents the top of the stack frame. We don't worry about multicore/rtos for now, so we can use
+    // this context for most operations.
+    private readonly baseContext = new ContextRef({ core: 0, level: 0, task: 0, type: ContextType.CurrentBase });
 
     private constructor(private readonly contextManager: ThriftClient<ContextManager.Client>,
                         private readonly dbgr: ThriftClient<Debugger.Client>,
                         private readonly localsProvider: ListWindowVariablesProvider | undefined,
                         private readonly staticsProvider: ListWindowVariablesProvider | undefined,
-                        private readonly registersProvider: ListWindowVariablesProvider | undefined,
-                        private readonly disasm: ThriftClient<Disassembly.Client>) {
+                        private readonly registersProvider: ListWindowVariablesProvider | undefined) {
     }
 
     /**
      * Fetches *all* available stack frames.
      */
     async fetchStackFrames(): Promise<StackFrame[]> {
-        const contextInfos = await this.contextManager.service.getStack(this.globalInspectionContext, 0, -1);
+        const contextInfos = await this.contextManager.service.getStack(this.baseContext, 0, -1);
 
         this.contextReferences = contextInfos.map(contextInfo => contextInfo.context);
 
         // this assumes the contexts we get from getStack are sorted by frame level and in ascending order
         return contextInfos.map((contextInfo, i) => {
+            let frame: StackFrame;
             if (contextInfo.sourceRanges[0] !== undefined) {
                 const filename = contextInfo.sourceRanges[0].filename;
-                return new StackFrame(
+                frame = new StackFrame(
                     i, contextInfo.functionName, new Source(basename(filename), filename), contextInfo.sourceRanges[0].first.line, contextInfo.sourceRanges[0].first.col
                 );
             } else {
-                return new StackFrame(
-                    i, contextInfo.functionName // TODO: maybe add a Source that points to memory or disasm window
+                frame = new StackFrame(
+                    i, contextInfo.functionName
                 );
             }
+            // This string may later be passed with a disassemble request for this frame.
+            frame.instructionPointerReference = "0x" + contextInfo.execLocation.address.toOctetString();
+            return frame;
         });
     }
 
@@ -182,7 +168,7 @@ export class CSpyContextManager implements Disposable {
      * Evaluates some expression at the specified stack frame.
      */
     async evalExpression(frameIndex: number | undefined, expression: string): Promise<ExprValue> {
-        const context = frameIndex === undefined ? this.globalInspectionContext : this.contextReferences[frameIndex];
+        const context = frameIndex === undefined ? this.baseContext : this.contextReferences[frameIndex];
         if (!context) {
             throw new Error(`Frame index ${frameIndex} is out of bounds`);
         }
@@ -210,38 +196,6 @@ export class CSpyContextManager implements Disposable {
         }
         return variable;
     }
-
-    /**
-     * Fetches a fixed number of disassembly lines from the current inspection context
-     */
-    async fetchDisassembly(): Promise<DisassembledBlock> {
-        const currentInspectionContextInfo = await this.contextManager.service.getContextInfo(this.globalInspectionContext);
-        const currAddress = currentInspectionContextInfo.execLocation.address;
-        // TODO: The handling of these addresses is probably unsafe for larger addresses, CHANGE THIS
-        const startLocation = new Location({
-            zone: currentInspectionContextInfo.execLocation.zone,
-            address: new Int64(currentInspectionContextInfo.execLocation.address.toNumber() - 20)
-        });
-        const endLocation = new Location({
-            zone: currentInspectionContextInfo.execLocation.zone,
-            address: new Int64(currentInspectionContextInfo.execLocation.address.toNumber() + 40)
-        });
-
-        const disasmLocations = await this.disasm.service.disassembleRange(startLocation, endLocation,
-            this.globalInspectionContext);
-        // Reduce a DisassembledBlock from the array of disassembled locations
-        return disasmLocations.
-            reduce((result, dloc) => {
-                if (dloc.location.address.compare(currAddress) === 0) {
-                    // We are about to append the current instruction block
-                    result.currentRow = result.instructions.length;
-                }
-                // Append the instructions of the current block
-                result.instructions = result.instructions.concat(dloc.instructions);
-                return result;
-            }, new DisassembledBlock());
-    }
-
 }
 
 /**

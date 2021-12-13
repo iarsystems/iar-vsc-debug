@@ -21,6 +21,7 @@ import { CSpyDriver } from "./breakpoints/cspyDriver";
 import { Command, CommandRegistry } from "./commandRegistry";
 import { Utils } from "./utils";
 import { CustomRequest } from "./customRequest";
+import { CspyDisassemblyManager } from "./cspyDisassemblyManager";
 
 
 /**
@@ -81,13 +82,11 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     private stackManager: CSpyContextManager | undefined = undefined;
     private breakpointManager: CSpyBreakpointManager | undefined = undefined;
+    private disassemblyManager: CspyDisassemblyManager | undefined = undefined;
 
     // Here, we can register actions to perform on e.g. receiving console commands, or custom dap requests
     private readonly consoleCommandRegistry: CommandRegistry<void, string> = new CommandRegistry();
     private readonly customRequestRegistry: CommandRegistry<unknown, unknown> = new CommandRegistry();
-
-    // Sequence number for custom events
-    private eventSeq = 0;
 
     private readonly configurationDone = new Subject();
 
@@ -125,6 +124,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         response.body.supportsTerminateRequest = true;
         response.body.supportsSteppingGranularity = true;
         response.body.supportsCompletionsRequest = true;
+        response.body.supportsDisassembleRequest = true;
 
         this.clientLinesStartAt1 = args.linesStartAt1 || false;
         this.clientColumnsStartAt1 = args.columnsStartAt1 || false;
@@ -186,6 +186,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
             // only after loading modules can we initialize services using listwindows
             this.stackManager = await CSpyContextManager.instantiate(this.serviceManager);
+            this.disassemblyManager = await CspyDisassemblyManager.instantiate(this.serviceManager);
             // initialize all breakpoint stuff
             this.breakpointManager = await CSpyBreakpointManager.instantiate(this.serviceManager,
                 this.clientLinesStartAt1,
@@ -317,9 +318,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
             };
         });
         this.sendResponse(response);
-        if (response.success) {
-            this.performDisassemblyEvent(); // update disassembly to reflect changed breakpoints
-        }
     }
 
     protected override threadsRequest(response: DebugProtocol.ThreadsResponse): void {
@@ -342,7 +340,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
             };
         });
         this.sendResponse(response);
-        this.performDisassemblyEvent();
     }
 
     protected override async scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments) {
@@ -365,9 +362,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
             };
         });
         this.sendResponse(response);
-
-        // Variable requests are also performed when the target is idle
-        this.performDisassemblyEvent();
     }
 
     protected override async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments) {
@@ -402,7 +396,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 response.body = {
                     result: val.value,
                     type: val.type,
-                    memoryReference: val.hasLocation ? val.location.address.toString() : undefined,
+                    memoryReference: val.hasLocation ? "0x" + val.location.address.toOctetString() : undefined,
                     variablesReference: 0,
                 };
             });
@@ -411,8 +405,16 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     // Currently not supported by VSCode
-    protected override disassembleRequest(_response: DebugProtocol.DisassembleResponse, args: DebugProtocol.DisassembleArguments, _request?: DebugProtocol.Request) {
+    protected override async disassembleRequest(response: DebugProtocol.DisassembleResponse, args: DebugProtocol.DisassembleArguments, _request?: DebugProtocol.Request) {
         console.log("DAP Disassemble", args);
+        await CSpyDebugSession.tryResponseWith(this.disassemblyManager, response, async disassemblyManager => {
+            const instructions = await disassemblyManager.fetchDisassembly(args.memoryReference, args.instructionCount, args.offset, args.instructionOffset);
+            response.body = {
+                instructions,
+            };
+        });
+
+        this.sendResponse(response);
     }
 
     protected override completionsRequest(response: DebugProtocol.CompletionsResponse, _args: DebugProtocol.CompletionsArguments) {
@@ -441,25 +443,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.sendResponse(response);
     }
 
-    /**
-     * As <tt>disassembleRequest</tt> is not supported by VSCode, we use our own callback.
-     * <p>This is called along with e.g. variable requests and sends a custom DAP event
-     * which is picked up by the extension to update our custom Disassembly view.
-     */
-    private performDisassemblyEvent() {
-        // This relies on some other call to have set a suitable "inspection context" in C-SPY
-        if (this.stackManager === undefined) {
-            throw new Error("StackManager has not been initialized");
-        }
-        this.stackManager.fetchDisassembly().then((disasmBlock)=>{
-            this.sendEvent({
-                event: "disassembly",
-                body: disasmBlock,
-                seq: this.eventSeq++,
-                type: "event",
-            });
-        });
-    }
 
     /**
      * Registers commands for setting breakpoints type via console commands and custom dap requests.
@@ -523,6 +506,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             }
             await fun(obj);
         } catch (e) {
+            console.error(e);
             response.success = false;
             if (typeof e === "string" || e instanceof Error) {
                 response.message = e.toString();
