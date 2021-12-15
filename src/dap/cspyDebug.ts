@@ -186,7 +186,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
             // only after loading modules can we initialize services using listwindows
             this.stackManager = await CSpyContextManager.instantiate(this.serviceManager);
-            this.disassemblyManager = await CspyDisassemblyManager.instantiate(this.serviceManager);
+            this.disassemblyManager = await CspyDisassemblyManager.instantiate(this.serviceManager,
+                this.clientLinesStartAt1,
+                this.clientColumnsStartAt1);
             // initialize all breakpoint stuff
             this.breakpointManager = await CSpyBreakpointManager.instantiate(this.serviceManager,
                 this.clientLinesStartAt1,
@@ -485,6 +487,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     private async endSession() {
         await this.stackManager?.dispose();
         this.breakpointManager?.dispose();
+        this.disassemblyManager?.dispose();
         // Will disconnect this DAP debugger client
         this.cspyDebugger?.dispose();
         // VSC-3 This will take care of orderly shutting down CSpyServer

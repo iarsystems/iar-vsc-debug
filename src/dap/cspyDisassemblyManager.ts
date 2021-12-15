@@ -1,10 +1,15 @@
 import Int64 = require("node-int64");
 import { DebugProtocol } from "vscode-debugprotocol";
 import * as Disassembly from "./thrift/bindings/Disassembly";
+import * as SourceLookup from "./thrift/bindings/SourceLookup";
 import { DISASSEMBLY_SERVICE } from "./thrift/bindings/disassembly_types";
 import { ContextRef, ContextType, Location, Zone } from "./thrift/bindings/shared_types";
 import { ThriftClient } from "./thrift/thriftClient";
 import { ThriftServiceManager } from "./thrift/thriftServiceManager";
+import { SOURCE_LOOKUP_SERVICE } from "./thrift/bindings/sourcelookup_types";
+import { Source } from "vscode-debugadapter";
+import { Disposable } from "./disposable";
+import { basename } from "path";
 
 /**
  * Requests disassembly from cspyserver and converts it to a dap-friendly format.
@@ -12,11 +17,20 @@ import { ThriftServiceManager } from "./thrift/thriftServiceManager";
  * The base unit for dap disassembly is lines (i.e. it requests X lines), whereas cspy
  * only deals with addresses. We can't really know how much memory to disassemble to generate
  * a certain number of lines, so we simply guess and fetch more if it wasn't enough.
+ *
+ * No (mutable) state is carried here, so it might be better to make
+ * this a namespace of pure functions.
  */
-export class CspyDisassemblyManager {
-    static async instantiate(serviceMgr: ThriftServiceManager): Promise<CspyDisassemblyManager> {
+export class CspyDisassemblyManager implements Disposable {
+    static async instantiate(serviceMgr: ThriftServiceManager,
+        clientLinesStartAt1: boolean,
+        clientColumnsStartAt1: boolean,
+    ): Promise<CspyDisassemblyManager> {
         return new CspyDisassemblyManager(
             await serviceMgr.findService(DISASSEMBLY_SERVICE, Disassembly.Client),
+            await serviceMgr.findService(SOURCE_LOOKUP_SERVICE, SourceLookup.Client),
+            clientLinesStartAt1,
+            clientColumnsStartAt1,
         );
     }
 
@@ -24,7 +38,15 @@ export class CspyDisassemblyManager {
     // ! If you lower this, make sure the addresses you pass to disassembleRange are word-aligned
     private readonly guessedInstructionSize = 4;
 
-    constructor(private readonly disasm: ThriftClient<Disassembly.Client>) { }
+    constructor(private readonly disasm: ThriftClient<Disassembly.Client>,
+                private readonly sourceLookup: ThriftClient<SourceLookup.Client>,
+                private readonly clientLinesStartAt1: boolean,
+                private readonly clientColumnsStartAt1: boolean) { }
+
+    dispose() {
+        this.disasm.dispose();
+        this.sourceLookup.dispose();
+    }
 
     /**
      * Fetches lines of disassembly and returns the in dap format. There may be multiple
@@ -38,9 +60,8 @@ export class CspyDisassemblyManager {
     async fetchDisassembly(memoryReference: string, lineCount: number, offset?: number, lineOffset?: number): Promise<DebugProtocol.DisassembledInstruction[]> {
         // Gives the default code zone. Matches eclipse's behaviour.
         const zone = new Zone({id: -1});
-        // const zoneInfo = await this.dbgr.service.getZoneById(zone.id);
 
-        const baseAddress = add(new Int64(memoryReference), new Int64(offset ?? 0));
+        const baseAddress = add(new Int64(memoryReference), offset ?? 0);
 
         // How many lines to generate before the base address (exclusive), and after it (inclusive)
         let linesBackward = -(lineOffset ?? 0);
@@ -51,7 +72,7 @@ export class CspyDisassemblyManager {
         {
             let currentEndAddr = baseAddress;
             while (linesBackward > 0) {
-                let startAddr = add(currentEndAddr, new Int64(-linesBackward*this.guessedInstructionSize));
+                let startAddr = add(currentEndAddr, -linesBackward*this.guessedInstructionSize);
                 if (lessThan(currentEndAddr, startAddr)) { // We underflowed, use 0
                     startAddr = new Int64(0);
                 }
@@ -73,7 +94,7 @@ export class CspyDisassemblyManager {
         {
             let currentStartAddr = baseAddress;
             while (linesForward > 0) {
-                let endAddr = add(currentStartAddr, new Int64(linesForward*this.guessedInstructionSize));
+                let endAddr = add(currentStartAddr, linesForward*this.guessedInstructionSize);
                 if (lessThan(endAddr, currentStartAddr)) { // We overflowed, use max 64-bit value
                     endAddr = new Int64(Buffer.alloc(8, 0xff));
                 }
@@ -89,7 +110,9 @@ export class CspyDisassemblyManager {
             }
         }
 
-        return before.concat(after);
+        const result = before.concat(after);
+        await this.populateSourceInfo(result, zone);
+        return result;
     }
 
     // Fetches disassembly from cspy and converts it to dap disasm lines.
@@ -122,6 +145,12 @@ export class CspyDisassemblyManager {
                             address: addressStr,
                         }];
                     }
+                    try {
+                        // Skip instruction if address is invalid (eclipse does this)
+                        BigInt(instrMatch[4]?.replace("'", "") ?? "error");
+                    } catch {
+                        return [];
+                    }
 
                     // Place each label on its own line
                     const labels = instrMatch[1]?.split(":\n").filter(label => label !== "") ?? [];
@@ -138,7 +167,7 @@ export class CspyDisassemblyManager {
                     const di: DebugProtocol.DisassembledInstruction = {
                         instruction: instrMatch[7],
                         address: addressStr,
-                        instructionBytes: instrMatch[5]
+                        instructionBytes: instrMatch[5]?.trim()
                     };
 
                     // Some instructions have multiline comments (ECL-2558), which we need to give their own line
@@ -153,14 +182,63 @@ export class CspyDisassemblyManager {
                 return dapInstrs;
             });
     }
+
+    // Looks up the corresponding source lines of the instructions, and adds that information
+    private async populateSourceInfo(instructions: DebugProtocol.DisassembledInstruction[], zone: Zone): Promise<void> {
+        let lastFile: string | undefined = undefined;
+        let lastLine = -1;
+        let i = -1;
+        // We could do a lot of this concurrently for a minor performance increase, but some extra complexity
+        for (const instruction of instructions) {
+            i++;
+            // Only do source lookup for the first line with a given address
+            if (instructions[i-1]?.address === instruction.address) continue;
+
+            const location = new Location({ zone: zone, address: new Int64(instruction.address) });
+            try {
+                const ranges = await this.sourceLookup.service.getSourceRanges(location);
+                const range = ranges[0];
+                if (range) {
+                    // Only the first instruction for a line should be decorated
+                    if (range.filename !== lastFile || range.first.line !== lastLine) {
+                        lastFile = range.filename;
+                        lastLine = range.first.line;
+                        instruction.location = new Source(basename(range.filename), range.filename);
+                        instruction.line = this.convertDebuggerLineToClient(range.first.line);
+                        instruction.column = this.convertDebuggerColumnToClient(range.first.col);
+                        instruction.endLine = this.convertDebuggerLineToClient(range.last.line);
+                        instruction.endColumn = this.convertDebuggerColumnToClient(range.last.col);
+                    }
+                }
+                if (ranges.length > 1) {
+                    console.error("Got multiple source ranges for line: " + instruction.instruction);
+                }
+            } catch {}
+        }
+    }
+
+    private convertDebuggerLineToClient(line: number): number {
+        return this.clientLinesStartAt1 ? line : line - 1;
+    }
+
+    private convertDebuggerColumnToClient(column: number): number {
+        return this.clientColumnsStartAt1 ? column : column - 1;
+    }
 }
 
 /**
- * Adds two 64-bit integers and returns the result.
+ * Adds a number to a 64-bit integer and returns the result. On over/underflow, clamps the result to the valid range.
  */
-function add(a: Int64, b: Int64): Int64 {
+function add(a: Int64, b: number): Int64 {
     // BigInt supercedes Int64 and supports arithmetic. However, we're stuck with Int64 since that's what thrift uses
-    const result = BigInt("0x"+a.toOctetString()) + BigInt("0x"+b.toOctetString());
+    const bigA = BigInt("0x"+a.toOctetString()) ;
+    const bigB = BigInt(b);
+    let result = bigA + bigB;
+    if (result < 0n) {
+        result = 0n;
+    } else if (result > 2n ** 64n - 1n) {
+        result = 2n ** 64n - 1n;
+    }
     return new Int64(result.toString(16));
 }
 
