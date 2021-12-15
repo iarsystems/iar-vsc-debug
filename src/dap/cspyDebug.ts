@@ -125,6 +125,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         response.body.supportsSteppingGranularity = true;
         response.body.supportsCompletionsRequest = true;
         response.body.supportsDisassembleRequest = true;
+        response.body.supportsInstructionBreakpoints = true;
 
         this.clientLinesStartAt1 = args.linesStartAt1 || false;
         this.clientColumnsStartAt1 = args.columnsStartAt1 || false;
@@ -315,6 +316,15 @@ export class CSpyDebugSession extends LoggingDebugSession {
         console.log("SetBPs");
         await CSpyDebugSession.tryResponseWith(this.breakpointManager, response, async breakpointManager => {
             const bps = await breakpointManager.setBreakpointsFor(args.source, args.breakpoints ?? []);
+            response.body = {
+                breakpoints: bps,
+            };
+        });
+        this.sendResponse(response);
+    }
+    protected override async setInstructionBreakpointsRequest(response: DebugProtocol.SetInstructionBreakpointsResponse, args: DebugProtocol.SetInstructionBreakpointsArguments) {
+        await CSpyDebugSession.tryResponseWith(this.breakpointManager, response, async breakpointManager => {
+            const bps = await breakpointManager.setInstructionBreakpointsFor(args.breakpoints);
             response.body = {
                 breakpoints: bps,
             };

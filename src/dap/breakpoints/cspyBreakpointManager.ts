@@ -22,10 +22,12 @@ export enum BreakpointType {
 }
 
 // A breakpoint which has been set in the cspy backend (it isn't necessary valid, just validated and known in the backend)
-interface ValidatedBreakpoint {
-    dapBp: DebugProtocol.SourceBreakpoint;
+interface InstalledBreakpoint<Bp> {
+    dapBp: Bp;
     cspyBp: Thrift.Breakpoint;
 }
+type InstalledSourceBreakpoint = InstalledBreakpoint<DebugProtocol.SourceBreakpoint>;
+type InstalledInstructionBreakpoint = InstalledBreakpoint<DebugProtocol.InstructionBreakpoint>;
 
 /**
  * Sets, unsets and verifies C-SPY breakpoints.
@@ -50,10 +52,12 @@ export class CSpyBreakpointManager implements Disposable {
         );
     }
 
-    // Stores all previously set breakpoints for all files.
+    // Stores all installed cspy breakpoints for all files, together with the DAP
+    // breakpoint that set them.
     // Lets us figure out when a bp is added or removed in the frontend,
     // even though this information is not explicitly given to us via DAP.
-    private readonly knownBreakpoints: Map<string, Array<ValidatedBreakpoint>> = new Map();
+    private readonly installedSourceBreakpoints: Map<string, Array<InstalledSourceBreakpoint>> = new Map();
+    private installedInstrunctionBreakpoints: Array<InstalledInstructionBreakpoint> = [];
 
     // Holds driver-specific bp creation logic
     private readonly bpDescriptorFactory: CodeBreakpointDescriptorFactory;
@@ -66,8 +70,7 @@ export class CSpyBreakpointManager implements Disposable {
     }
 
     /**
-     * Sets breakpoints for some source file, and clears all other breakpoints in the file.
-     * Ignores those breakpoints which have already been set by a previous call.
+     * Sets breakpoints for some source file, and removes all other breakpoints in the file.
      * @param source The source file to set breakpoints for
      * @param dapBps The breakpoints to set
      * @returns The actual BPs set, in the same order as input
@@ -79,47 +82,34 @@ export class CSpyBreakpointManager implements Disposable {
 
         const sourcePath = source.path;
 
-        // We want to avoid clearing and recreating breakpoints which haven't changed since the last call.
-        // We first figure out which bps have been removed in the frontend, and remove them
-        const knownBreakpoints: ValidatedBreakpoint[] = this.knownBreakpoints.get(sourcePath) ?? [];
-        const removedBps = knownBreakpoints.filter(bp => !dapBps.some(dabBp => CSpyBreakpointManager.bpsEqual(dabBp, bp.dapBp)) );
-        await Promise.all(removedBps.map(bp => this.breakpointService.service.removeBreakpoint(bp.cspyBp.id) ));
-        removedBps.forEach(bp => knownBreakpoints.splice(knownBreakpoints.indexOf(bp), 1) );
+        const installedBreakpoints: InstalledSourceBreakpoint[] = this.installedSourceBreakpoints.get(sourcePath) ?? [];
+        await this.setBreakpointsAsNeeded(
+            dapBps,
+            installedBreakpoints,
+            CSpyBreakpointManager.sourceBpsEqual,
+            (dapBp => { // Constructs ule for a breakpoint
+                const dbgrLine = this.convertClientLineToDebugger(dapBp.line);
+                const dbgrCol = dapBp.column ? this.convertClientColumnToDebugger(dapBp.column) : 1;
+                return `{${sourcePath}}.${dbgrLine}.${dbgrCol}`;
+            }),
+        );
 
-        // Set the new breakpoints in the backend, and store them
-        const newBps = dapBps.filter(dapBp => !knownBreakpoints.some(bp => CSpyBreakpointManager.bpsEqual(dapBp, bp.dapBp)));
-        // We do this in serial, and not in parallel (e.g. Promise.all); cspyserver doesn't seem to be able to handle concurrent requests
-        for (const dapBp of newBps) {
-            const dbgrLine = this.convertClientLineToDebugger(dapBp.line);
-            const dbgrCol = dapBp.column ? this.convertClientColumnToDebugger(dapBp.column) : 1;
-            const descriptor = this.bpDescriptorFactory.createOnUle(`{${sourcePath}}.${dbgrLine}.${dbgrCol}`);
-
-            const writer = new DescriptorWriter();
-            descriptor.serialize(writer);
-            try {
-                const cspyBp = await this.breakpointService.service.setBreakpointFromDescriptor(writer.result);
-                knownBreakpoints.push({ cspyBp, dapBp });
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
-        // Map the requested BPs to a DAP result format, using data from each cspy BP
+        // Map the requested BPs to a DAP result format
         const results: DebugProtocol.Breakpoint[] = [];
         dapBps.forEach(dapBp => {
-            const validatedBp = knownBreakpoints.find(bp => CSpyBreakpointManager.bpsEqual(bp.dapBp, dapBp));
-            if (validatedBp !== undefined && validatedBp.cspyBp.valid) {
-                const descriptor = this.bpDescriptorFactory.createFromString(validatedBp.cspyBp.descriptor);
+            const installedBp = installedBreakpoints.find(bp => CSpyBreakpointManager.sourceBpsEqual(bp.dapBp, dapBp));
+            if (installedBp !== undefined && installedBp.cspyBp.valid) {
+                const descriptor = this.bpDescriptorFactory.createFromString(installedBp.cspyBp.descriptor);
                 const [, actualLine, actualCol] = this.parseSourceUle(descriptor.ule);
                 results.push({
                     verified: true,
                     line: this.convertDebuggerLineToClient(actualLine),
                     column: this.convertDebuggerColumnToClient(actualCol),
-                    message: validatedBp.cspyBp.description,
+                    message: installedBp.cspyBp.description,
                     source,
                 });
             } else {
-                results.push({ // The breakpoint failed to set
+                results.push({ // The breakpoint failed to install
                     verified: false,
                     line: dapBp.line,
                     column: dapBp.column,
@@ -127,7 +117,49 @@ export class CSpyBreakpointManager implements Disposable {
                 });
             }
         });
-        this.knownBreakpoints.set(sourcePath, knownBreakpoints);
+        this.installedSourceBreakpoints.set(sourcePath, installedBreakpoints);
+
+        return results;
+    }
+
+    /**
+     * Sets instruction breakpoints at the given addresses, and removes any other instruction breakpoints.
+     * @param dapBps The breakpoints to set
+     * @returns The actual BPs set, in the same order as input
+     */
+    async setInstructionBreakpointsFor(dapBps: DebugProtocol.InstructionBreakpoint[]): Promise<DebugProtocol.Breakpoint[]> {
+        const installedBreakpoints: InstalledInstructionBreakpoint[] = this.installedInstrunctionBreakpoints;
+        await this.setBreakpointsAsNeeded(
+            dapBps,
+            installedBreakpoints,
+            CSpyBreakpointManager.instructionBpsEqual,
+            (dapBp => { // Constructs ule for a breakpoint
+                let address = dapBp.instructionReference;
+                if (dapBp.offset) {
+                    address = `0x${(BigInt(address) + BigInt(dapBp.offset)).toString(16)}`;
+                }
+                return address;
+            }),
+        );
+
+        // Map the requested BPs to a DAP result format, using data from each cspy BP
+        const results: DebugProtocol.Breakpoint[] = [];
+        dapBps.forEach(dapBp => {
+            const installed = installedBreakpoints.find(bp => CSpyBreakpointManager.instructionBpsEqual(bp.dapBp, dapBp));
+            if (installed !== undefined && installed.cspyBp.valid) {
+                results.push({
+                    verified: true,
+                    instructionReference: installed.cspyBp.ule,
+                    message: installed.cspyBp.description,
+                });
+            } else {
+                results.push({ // The breakpoint failed to set
+                    verified: false,
+                    instructionReference: dapBp.instructionReference,
+                });
+            }
+        });
+        this.installedInstrunctionBreakpoints = installedBreakpoints;
 
         return results;
     }
@@ -182,6 +214,42 @@ export class CSpyBreakpointManager implements Disposable {
         this.breakpointService.dispose();
     }
 
+    /**
+     * Sets and removes breakpoints as needed to ensure the installed breakpoints matches the wanted breakpoints.
+     * Any known breakpoints that are not wanted are removed, and any wanted breakpoints that are not known are installed.
+     * knownBreakpoints is edited in place so that after this operation, it contains the subset of wantedBreakpoints that
+     * are actually installed (some wanted breakpoints may fail to install, and will this not be in the known breakpoints).
+     * @param wantedBreakpoints The breakpoints we want to be set
+     * @param installedBreakpoints The breakpoints currently set in the backend
+     * @param bpsEqual Tells whether two breakpoints are equal
+     * @param toUle Converts a DAP breakpoints to the cspy ULE it should be set on
+     */
+    private async setBreakpointsAsNeeded<DapBp>(wantedBreakpoints: DapBp[],
+        installedBreakpoints: InstalledBreakpoint<DapBp>[],
+        bpsEqual: (bp1: DapBp, bp2: DapBp) => boolean,
+        toUle: (bp: DapBp) => string) {
+
+        // We want to avoid clearing and recreating breakpoints which haven't changed since the last call.
+        // We first figure out which bps have been removed in the frontend, and remove them
+        const bpsToRemove = installedBreakpoints.filter(installedBp => !wantedBreakpoints.some(wantedBp => bpsEqual(installedBp.dapBp, wantedBp)) );
+        bpsToRemove.forEach(bp => installedBreakpoints.splice(installedBreakpoints.indexOf(bp), 1) );
+        await Promise.all(bpsToRemove.map(bp => this.breakpointService.service.removeBreakpoint(bp.cspyBp.id) ));
+
+        const newBps = wantedBreakpoints.filter(wantedBp => !installedBreakpoints.some(installedBp => bpsEqual(installedBp.dapBp, wantedBp)));
+        for (const dapBp of newBps) {
+            const descriptor = this.bpDescriptorFactory.createOnUle(toUle(dapBp));
+
+            const writer = new DescriptorWriter();
+            descriptor.serialize(writer);
+            try {
+                const cspyBp = await this.breakpointService.service.setBreakpointFromDescriptor(writer.result);
+                installedBreakpoints.push({ cspyBp, dapBp });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    }
+
     private parseSourceUle(ule: string): [path: string, line: number, col: number] {
         const match = /^{(.+)}\.(\d+)\.(\d+)$/.exec(ule);
         if (!match || match.length !== 4 || !match[1]) {
@@ -206,11 +274,18 @@ export class CSpyBreakpointManager implements Disposable {
         return this.clientColumnsStartAt1 ? column : column - 1;
     }
 
-    private static bpsEqual(bp1: DebugProtocol.SourceBreakpoint, bp2: DebugProtocol.SourceBreakpoint): boolean {
+    private static sourceBpsEqual(bp1: DebugProtocol.SourceBreakpoint, bp2: DebugProtocol.SourceBreakpoint): boolean {
         return bp1.line === bp2.line &&
             bp1.column === bp2.column &&
             bp1.condition === bp2.condition &&
             bp1.hitCondition === bp2.hitCondition &&
             bp1.logMessage === bp2.logMessage;
+    }
+
+    private static instructionBpsEqual(bp1: DebugProtocol.InstructionBreakpoint, bp2: DebugProtocol.InstructionBreakpoint): boolean {
+        return bp1.instructionReference === bp2.instructionReference &&
+            bp1.offset === bp2.offset &&
+            bp1.condition === bp2.condition &&
+            bp1.hitCondition === bp2.hitCondition;
     }
 }
