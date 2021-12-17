@@ -6,6 +6,8 @@ import { DebugClient } from "vscode-debugadapter-testsupport";
 import { TestUtils } from "../testUtils";
 import { ChildProcess, spawn } from "child_process";
 import { CSpyLaunchRequestArguments } from "../../../dap/cspyDebug";
+import { DebugProtocol } from "vscode-debugprotocol";
+import { OsUtils } from "../../../utils/osUtils";
 
 namespace Utils {
     // Given an ewp file and a source file in the same directory, returns
@@ -153,7 +155,6 @@ suite("Test Debug Adapter", () =>{
         const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig));
         dbgConfigCopy.stopOnEntry = false;
         return Promise.all([
-            dc.configurationSequence(),
             dc.hitBreakpoint(
                 dbgConfigCopy,
                 { line: 36, path: fibonacciFile }
@@ -213,6 +214,63 @@ suite("Test Debug Adapter", () =>{
                 ]);
             }),
         ]);
+    });
+
+    test("Hits instruction breakpoint", () => {
+        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig));
+        dbgConfigCopy.stopOnEntry = false;
+        return Promise.all([
+            dc.configurationSequence(),
+            dc.launch(dbgConfig),
+            dc.waitForEvent("stopped").then(async() => {
+                const res = await dc.evaluateRequest({expression: "GetFib"});
+                const match = res.body.result.match(/GetFib \((.*)\)/);
+                Assert(match && match[1]);
+                const args: DebugProtocol.SetInstructionBreakpointsArguments = {
+                    breakpoints: [{instructionReference: match[1]}]
+                };
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                const bpRes: DebugProtocol.SetInstructionBreakpointsResponse = await dc.customRequest("setInstructionBreakpoints", args);
+                Assert(bpRes.body.breakpoints[0]?.verified);
+                Assert.strictEqual(bpRes.body.breakpoints[0]?.instructionReference, match[1]);
+                await Promise.all([
+                    dc.continueRequest({threadId: 0}),
+                    Utils.assertStoppedLocation(dc, "breakpoint", 35, utilsFile, /GetFib/)
+                ]);
+            }),
+        ]);
+    });
+
+    test("Provides stack frames", async() => {
+        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig));
+        dbgConfigCopy.stopOnEntry = false;
+        await dc.hitBreakpoint(
+            dbgConfigCopy,
+            { line: 60, path: utilsFile });
+        const res = await dc.stackTraceRequest({threadId: 0});
+        Assert.strictEqual(res.body.stackFrames.length, 4);
+
+        Assert(res.body.stackFrames[0]?.source?.path);
+        Assert(OsUtils.pathsEqual(res.body.stackFrames[0]?.source?.path, utilsFile), res.body.stackFrames[0]?.source?.path + " did not match " + utilsFile);
+        Assert.strictEqual(res.body.stackFrames[0].name, "PutFib");
+        Assert.strictEqual(res.body.stackFrames[0].line, 60);
+        Assert(res.body.stackFrames[0]?.instructionPointerReference?.match(/0x[\da-fA-F]{16}/));
+
+        Assert(res.body.stackFrames[1]?.source?.path);
+        Assert(OsUtils.pathsEqual(res.body.stackFrames[1]?.source?.path, fibonacciFile), res.body.stackFrames[1]?.source?.path + " did not match " + fibonacciFile);
+        Assert.strictEqual(res.body.stackFrames[1].name, "DoForegroundProcess");
+        Assert.strictEqual(res.body.stackFrames[1].line, 38);
+        Assert(res.body.stackFrames[1]?.instructionPointerReference?.match(/0x[\da-fA-F]{16}/));
+
+        Assert(res.body.stackFrames[2]?.source?.path);
+        Assert(OsUtils.pathsEqual(res.body.stackFrames[2]?.source?.path, fibonacciFile), res.body.stackFrames[2]?.source?.path + " did not match " + fibonacciFile);
+        Assert.strictEqual(res.body.stackFrames[2].name, "main");
+        Assert.strictEqual(res.body.stackFrames[2].line, 51);
+        Assert(res.body.stackFrames[2]?.instructionPointerReference?.match(/0x[\da-fA-F]{16}/));
+
+        Assert.strictEqual(res.body.stackFrames[3]?.source, undefined);
+        Assert(res.body.stackFrames[3]?.instructionPointerReference?.match(/0x[\da-fA-F]{16}/));
     });
 
     test("Shows variable values", () => {
@@ -316,7 +374,6 @@ suite("Test Debug Adapter", () =>{
         const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig));
         dbgConfigCopy.stopOnEntry = false;
         return Promise.all([
-            dc.configurationSequence(),
             dc.hitBreakpoint(
                 dbgConfigCopy,
                 { line: 37, path: fibonacciFile }
@@ -356,7 +413,33 @@ suite("Test Debug Adapter", () =>{
         ]);
     });
 
+    // Testing disassemble requests against the real debugger in a device-independent way is too difficult.
+    // Disassembly is tested more thoroughly in its own suite, using a mock disasm service.
+    test("Disassembly provides source lines", () => {
+        return Promise.all([
+            dc.configurationSequence(),
+            dc.launch(dbgConfig),
+            dc.waitForEvent("stopped").then(async() => {
+                const res = await dc.stackTraceRequest({threadId: 0});
+                const stackFrames = res.body.stackFrames;
+                Assert.strictEqual(stackFrames.length, 2);
+                // Disassemble request is not yet added to the test support library
+                const args: DebugProtocol.DisassembleArguments = {
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
+                    memoryReference: stackFrames[0]?.instructionPointerReference!,
+                    instructionCount: 1
+                };
+                const disAsm: DebugProtocol.DisassembleResponse = await dc.customRequest("disassemble", args);
+                Assert.strictEqual(disAsm.body?.instructions.length, 1);
+                const instr = disAsm.body.instructions[0];
+                Assert.strictEqual(instr?.address, stackFrames[0]?.instructionPointerReference);
+                Assert.strictEqual(instr?.location?.path, fibonacciFile);
+                Assert.strictEqual(instr?.line, 43);
+                Assert.strictEqual(instr?.endLine, 44);
+            })
+        ]);
+    });
+
     // Assert stepping, next into out etc. (with stack)
     // Pause?
-    // Eval
 });
