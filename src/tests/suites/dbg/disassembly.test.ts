@@ -10,6 +10,7 @@ import { ThriftClient } from "../../../dap/thrift/thriftClient";
 import { DisassembledLocation } from "../../../dap/thrift/bindings/disassembly_types";
 import EventEmitter = require("events");
 import { Source } from "vscode-debugadapter";
+import { OsUtils } from "../../../utils/osUtils";
 
 /**
  * Uses mock disassembly and source lookup services to test disassembly requests.
@@ -129,7 +130,7 @@ suite("Test Disassembly", () =>{
     });
 
     test("Provides source", async() => {
-        const filename = "C:\\myfile.c";
+        const filename = (OsUtils.detectOsType() === OsUtils.OsType.Windows) ? "C:\\myfile.c" : "/test/myfile.c";
         sourceRange = new SourceRange({
             filename: filename,
             text: " ", // not used
@@ -152,7 +153,7 @@ suite("Test Disassembly", () =>{
         Assert.deepStrictEqual(lines[0], {
             instruction: "\t\tAbort_Handler:",
             address: "0x000000000000beef",
-            location: new Source("myfile.c", "C:\\myfile.c"),
+            location: new Source("myfile.c", filename),
             symbol: "Abort_Handler",
             line: 15,
             endLine: 16,
