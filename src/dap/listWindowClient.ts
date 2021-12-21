@@ -39,12 +39,12 @@ export class ListWindowClient implements Disposable {
         return windowClient;
     }
 
-    // TODO: There needs to be some way of knowing that the data has been updated e.g. after the last kDkTargetStopped.
-    // Right now the adapter is just assuming that all windows (variables etc.) update before the DAP client has time to request that data.
-    // This is usually the case, but we shouldn't rely on it.
     private rows: Row[] = [];
+    // Only allow one update at a time to avoid race conditions. Any new updates must await the current one.
+    private currentUpdate: Q.Promise<Row[]>;
 
     private constructor(private readonly backend: ThriftClient<ListWindowBackend.Client>) {
+        this.currentUpdate = Q.resolve([]);
     }
 
     /**
@@ -90,17 +90,16 @@ export class ListWindowClient implements Disposable {
 
     // callback from list window backend
     notify(note: Note): Q.Promise<void> {
-        //console.log("LISTWINDOW NOTIFIED: ", note.what, note.anonPos.toString(), note.ensureVisible.toNumber(), note.row.toNumber(), note.seq.toNumber());
+        // TODO: should we handle thawing (and freezing)?
         switch (note.what) {
         case What.kRowUpdate:
             return this.backend.service.getRow(note.row).then(row => {
                 this.rows[note.row.toNumber()] = row;
             });
-            // TODO: is this an acceptable way to handle thawing (and freezing)?
         case What.kNormalUpdate:
         case What.kFullUpdate:
-        case What.kThaw:
-            return this.updateAllRows();
+            this.updateAllRows();
+            break;
         }
         return Q.resolve();
     }
@@ -110,16 +109,26 @@ export class ListWindowClient implements Disposable {
         this.backend.dispose();
     }
 
-    private updateAllRows(): Q.Promise<void> {
-        return this.backend.service.getNumberOfRows().then(async val => {
+    private updateAllRows() {
+        const updatePromise = this.backend.service.getNumberOfRows().then(async(val) => {
             const nRows = val.toNumber();
             const rowPromises: Q.Promise<Row>[] = [];
             for (let i = 0; i < nRows; i++) {
                 rowPromises.push(this.backend.service.getRow(new Int64(i)));
             }
             const rows = await Q.all(rowPromises);
-            this.rows = rows;
+            return rows;
         });
+        updatePromise.then(rows => {
+            // Commit the new rows only if no other update has been started after us
+            if (this.currentUpdate === updatePromise) {
+                this.rows = rows;
+            }
+        }).catch(err => {
+            console.error("Error updating listwindow:");
+            console.error(err);
+        });
+        this.currentUpdate = updatePromise;
     }
 
     // converts from internal (thrift) row class to the class used outwards
