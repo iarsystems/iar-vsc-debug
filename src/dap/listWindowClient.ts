@@ -14,6 +14,14 @@ export interface ListWindowRow {
     expandable: boolean;
 }
 
+// States constituting a treeinfo, copied from IfxListModel.h
+enum TreeGraphItems {
+    kLastChild  = "L",
+    kOtherChild = "T",
+    kPlus       = "+",
+    kMinus      = "-",
+}
+
 /**
  * Poses as a frontend for a list window, managing all events and keeping track of all its rows.
  * Also helps manage tree elements (i.e. expandable rows).
@@ -57,7 +65,7 @@ export class ListWindowClient implements Disposable {
     }
 
     /**
-     * Gets the children of an expandable row
+     * Gets the direct children of an expandable row
      */
     async getChildrenOf(parent: ListWindowRow): Promise<ListWindowRow[]> {
         if (!parent.expandable) {
@@ -74,15 +82,32 @@ export class ListWindowClient implements Disposable {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const row = this.rows[rowIndex]!;
 
-        if (row.treeinfo !== "-") {
+        if (!row.treeinfo.endsWith(TreeGraphItems.kMinus)) {
             await this.backend.service.toggleExpansion(new Int64(rowIndex));
             await this.updateAllRows();
         }
         const children: Row[] = [];
         const candidates = this.rows.slice(rowIndex + 1, this.rows.length);
+        // The tree info looks like <indentation><child info><expandability info>
+        // where
+        // <indentation> is a number of characters equal to the subvariable level - 1, so that the children of a top-level struct
+        // have 0 characters padding, children of a struct within a top-level struct have one char of padding etc.
+        // <child info> For non-top-level items, is a character indicating whether this is the last child of its parent ('L') or not ('T')
+        // <expandability info> '+' For not expanded, '-' for expanded, '.' for unexpandable (leaf)
+        // How deep in a structure of subvariables are we?
+        const indentationLevel = this.rows[rowIndex]?.treeinfo.indexOf(TreeGraphItems.kMinus);
+        if (indentationLevel === undefined || indentationLevel === -1) {
+            throw new Error("Couldn't find indentation level"); // Should not be able to happen
+        }
+        // Add rows at this indentation level until we reach the last child
+        // Note that we ignore rows which do not match either kOtherChild or kLastChild,
+        // since they have a different indentation level and should not be returned (only direct children should)
         for (const candidateRow of candidates) {
-            children.push(candidateRow);
-            if (candidateRow.treeinfo.startsWith("L")) {
+            const childInfo = candidateRow.treeinfo[indentationLevel];
+            if (childInfo === TreeGraphItems.kOtherChild) {
+                children.push(candidateRow);
+            } else if (childInfo === TreeGraphItems.kLastChild) {
+                children.push(candidateRow);
                 break;
             }
         }
@@ -147,7 +172,7 @@ export class ListWindowClient implements Disposable {
     private static createListWindowRow(row: Row) {
         return {
             values: row.cells.map(cell => cell.text),
-            expandable: row.treeinfo === "+" || row.treeinfo === "-",
+            expandable: row.treeinfo.endsWith(TreeGraphItems.kPlus) || row.treeinfo.endsWith(TreeGraphItems.kMinus),
         };
     }
 }

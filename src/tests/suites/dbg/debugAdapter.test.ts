@@ -104,7 +104,7 @@ suite("Test Debug Adapter", () =>{
     });
 
 
-    test("Unknown request produces error", async() => {
+     test("Unknown request produces error", async() => {
         try {
             await dc.send("illegal");
             Assert.fail("Unknown request did not prduce an error");
@@ -285,31 +285,86 @@ suite("Test Debug Adapter", () =>{
                 const scopes = await dc.scopesRequest({frameId: stack.body.stackFrames[0]!.id});
 
                 const statics = (await dc.variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
-                Assert.equal(statics.length, 3);
+                Assert.equal(statics.length, 4);
                 Assert(statics.some(variable => variable.name === "str" && variable.value.match(/"This is a sträng"$/) && variable.type?.match(/char const \* @ 0x/)));
 
-                const fibArray = statics.find(variable => variable.name === "Fib");
-                Assert(fibArray !== undefined);
-                Assert.equal(fibArray.value, "<array>");
-                Assert(fibArray.type !== undefined);
-                Assert.match(fibArray.type, /uint32_t\[10\] @ 0x/);
-                Assert(fibArray.variablesReference > 0); // Should be nested
-                const arrContents = (await dc.variablesRequest({variablesReference: fibArray.variablesReference})).body.variables;
-                Assert.equal(arrContents.length, 10);
-                for (let i = 0; i < 10; i++) {
-                    Assert.equal(arrContents[i]!.name, `[${i}]`);
-                    Assert.equal(arrContents[i]!.value, FIBS[i]!.toString());
-                    Assert.match(arrContents[i]!.type!, /uint32_t @ 0x/);
+                { // Check array
+                    const fibArray = statics.find(variable => variable.name === "Fib");
+                    Assert(fibArray !== undefined);
+                    Assert.equal(fibArray.value, "<array>");
+                    Assert(fibArray.type !== undefined);
+                    Assert.match(fibArray.type, /uint32_t\[10\] @ 0x/);
+                    Assert(fibArray.variablesReference > 0); // Should be nested
+                    const arrContents = (await dc.variablesRequest({variablesReference: fibArray.variablesReference})).body.variables;
+                    Assert.equal(arrContents.length, 10);
+                    for (let i = 0; i < 10; i++) {
+                        Assert.equal(arrContents[i]!.name, `[${i}]`);
+                        Assert.equal(arrContents[i]!.value, FIBS[i]!.toString());
+                        Assert.match(arrContents[i]!.type!, /uint32_t @ 0x/);
+                    }
                 }
 
-                const registers = (await dc.variablesRequest({variablesReference: scopes.body.scopes[2]!.variablesReference})).body.variables;
-                Assert(registers.some(reg => reg.name === "R4"));
-                Assert(registers.some(reg => reg.name === "SP"));
-                Assert(registers.some(reg => reg.name === "PC"));
-                Assert(registers.some(reg => reg.name === "CPSR" && reg.variablesReference > 0)); // Should be nested
+                { // Check nested struct
+                    const nestedStruct = statics.find(variable => variable.name === "nested_struct");
+                    Assert(nestedStruct !== undefined);
+                    Assert.strictEqual(nestedStruct.value, "<struct>");
+                    Assert(nestedStruct.variablesReference > 0);
+                    const nestedContents = (await dc.variablesRequest({variablesReference: nestedStruct.variablesReference})).body.variables;
+                    Assert.strictEqual(nestedContents.length, 2);
+                    { // Check second subvariable
+                        const innerStruct = nestedContents.find(variable => variable.name === "inner");
+                        Assert(innerStruct !== undefined);
+                        Assert(innerStruct.variablesReference > 0);
+                        const innerContents = (await dc.variablesRequest({variablesReference: innerStruct.variablesReference})).body.variables;
+                        Assert.strictEqual(innerContents.length, 2);
+                        const innerUnion = innerContents.find(variable => variable.name === "inner_inner");
+                        Assert(innerUnion !== undefined);
+                        Assert.strictEqual(innerUnion.value, "<union>");
+                        const innerUnionContents = (await dc.variablesRequest({variablesReference: innerUnion.variablesReference})).body.variables;
+                        Assert.strictEqual(innerUnionContents.length, 2);
+                        const unionChar = innerUnionContents.find(variable => variable.name === "d");
+                        Assert(unionChar !== undefined);
+                        Assert.strictEqual(unionChar.value, "'\\0' (0x00)");
+                        Assert(unionChar.type !== undefined);
+                        Assert.match(unionChar.type, /char @ 0x/);
+                    }
+                    { // Check first subvariable
+                        const innerUnion = nestedContents.find(variable => variable.name === "un");
+                        Assert(innerUnion !== undefined);
+                        Assert(innerUnion.variablesReference > 0);
+                        const innerContents = (await dc.variablesRequest({variablesReference: innerUnion.variablesReference})).body.variables;
+                        Assert.strictEqual(innerContents.length, 2);
+                        const innerInt = innerContents.find(variable => variable.name === "a");
+                        Assert(innerInt !== undefined);
+                        Assert.strictEqual(innerInt.value, "0");
+                        Assert(innerInt.type !== undefined);
+                        Assert.match(innerInt.type, /int @ 0x/);
+                    }
+                    { // Check second subvariable again after expanding the first
+                        const innerStruct = nestedContents.find(variable => variable.name === "inner");
+                        Assert(innerStruct !== undefined);
+                        Assert(innerStruct.variablesReference > 0);
+                        const innerContents = (await dc.variablesRequest({variablesReference: innerStruct.variablesReference})).body.variables;
+                        Assert.strictEqual(innerContents.length, 2);
+                        const innerInt = innerContents.find(variable => variable.name === "e");
+                        Assert(innerInt !== undefined);
+                        Assert.strictEqual(innerInt.value, "0");
+                        Assert(innerInt.type !== undefined);
+                        Assert.match(innerInt.type, /int @ 0x/);
+                    }
+                }
+
+                { // Check registers
+                    const registers = (await dc.variablesRequest({variablesReference: scopes.body.scopes[2]!.variablesReference})).body.variables;
+                    Assert(registers.some(reg => reg.name === "R4"));
+                    Assert(registers.some(reg => reg.name === "SP"));
+                    Assert(registers.some(reg => reg.name === "PC"));
+                    Assert(registers.some(reg => reg.name === "CPSR" && reg.variablesReference > 0)); // Should be nested
+                }
             }),
         ]);
     });
+    return;
 
     test("Supports stepping", () => {
         return Promise.all([
