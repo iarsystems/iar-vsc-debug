@@ -27,32 +27,61 @@ export interface VariablesProvider {
 type RowToVariableConverter = (row: ListWindowRow) => Variable;
 
 /**
- * Provides variables from a C-SPY window.
+ * Provides DAP-format variables from a C-SPY window.
  */
 export class ListWindowVariablesProvider implements VariablesProvider, Disposable {
+    // The maximum amount of time to wait when expecting an update
+    private static readonly UPDATE_TIMEOUT = 300;
+
     static async instantiate(serviceMgr: ThriftServiceManager,
         windowServiceId: string,
         rowToVariable: RowToVariableConverter): Promise<ListWindowVariablesProvider> {
+
         const windowClient = await ListWindowClient.instantiate(serviceMgr, windowServiceId);
         return new ListWindowVariablesProvider(windowClient, rowToVariable);
     }
 
     private readonly variableReferences: Handles<ListWindowRow> = new Handles();
+    // While this is pending, do not request updates from the listwindow. It is about to update!
+    private backendUpdate: Thenable<void>;
 
     private constructor(private readonly windowClient: ListWindowClient,
-                        private readonly rowToVariable: RowToVariableConverter) {}
+                        private readonly rowToVariable: RowToVariableConverter) {
 
-    getVariables(): Promise<Variable[]> {
-        return Promise.resolve(
-            this.windowClient.topLevelRows.map(row => this.createVariableFromRow(row))
-        );
+        this.backendUpdate = Promise.resolve();
     }
 
+    /**
+     * Gets all top-level variables in this window
+     */
+    async getVariables(): Promise<Variable[]> {
+        await this.backendUpdate;
+        return this.windowClient.topLevelRows.map(row => this.createVariableFromRow(row));
+    }
+
+    /**
+     * Gets all sub-variables from expanding a variable in this window
+     */
     async getSubvariables(variableReference: number) {
+        await this.backendUpdate;
         const referencedRow = this.variableReferences.get(variableReference);
         const children = await this.windowClient.getChildrenOf(referencedRow);
         return children.map(row => this.createVariableFromRow(row));
 
+    }
+
+    /**
+     * Notifies this provider that the backend is about to update its variables.
+     * Calls made to {@link getVariables} or {@link getSubvariables} shortly after will wait for
+     * the update to be received before returning.
+     */
+    notifyUpdateImminent() {
+        this.backendUpdate = new Promise(resolve => {
+            this.windowClient.onChangeOnce(() => {
+                resolve();
+            });
+            setTimeout(() => resolve(), ListWindowVariablesProvider.UPDATE_TIMEOUT);
+        });
     }
 
     async dispose() {

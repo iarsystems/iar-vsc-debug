@@ -5,7 +5,7 @@ import * as ContextManager from "./thrift/bindings/ContextManager";
 import * as Debugger from "./thrift/bindings/Debugger";
 import { StackFrame, Source, Scope, Handles, Variable } from "vscode-debugadapter";
 import { basename } from "path";
-import { ExprValue, CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE } from "./thrift/bindings/cspy_types";
+import { ExprValue, CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE, DkNotifyConstant } from "./thrift/bindings/cspy_types";
 import { Disposable } from "./disposable";
 import { ThriftServiceManager } from "./thrift/thriftServiceManager";
 import { ThriftClient } from "./thrift/thriftClient";
@@ -13,6 +13,7 @@ import { WindowNames } from "./listWindowConstants";
 import { ListWindowVariablesProvider, VariablesProvider } from "./variablesProvider";
 import { ListWindowRow } from "./listWindowClient";
 import { DebugProtocol } from "vscode-debugprotocol";
+import { DebugEventListenerHandler } from "./debugEventListenerHandler";
 
 /**
  * Describes a scope, i.e. a C-SPY context used to access the scope,
@@ -45,7 +46,7 @@ export class CSpyContextManager implements Disposable {
     /**
      * Creates a new context manager using services from the given service manager.
      */
-    static async instantiate(serviceMgr: ThriftServiceManager): Promise<CSpyContextManager> {
+    static async instantiate(serviceMgr: ThriftServiceManager, cspyEventListener: DebugEventListenerHandler): Promise<CSpyContextManager> {
         const onProviderUnavailable = (reason: unknown) => {
             throw reason;
         };
@@ -55,11 +56,14 @@ export class CSpyContextManager implements Disposable {
             await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.LOCALS, RowToVariableConverters.locals).catch(onProviderUnavailable),
             await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.STATICS, RowToVariableConverters.statics).catch(onProviderUnavailable),
             await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.REGISTERS, RowToVariableConverters.registers).catch(onProviderUnavailable),
+            cspyEventListener,
         );
     }
 
     // References to all current stack contexts
     private contextReferences: ContextRef[] = [];
+    // Keeps track of the context currently set in cspy, so we know when we change it.
+    private currentInspectionContext: ContextRef | undefined;
 
     // Reference ids to all DAP scopes we've created, and to all expandable variables
     // We send these to the client when creating scopes or expandable vars, and the client
@@ -75,7 +79,11 @@ export class CSpyContextManager implements Disposable {
                         private readonly dbgr: ThriftClient<Debugger.Client>,
                         private readonly localsProvider: ListWindowVariablesProvider | undefined,
                         private readonly staticsProvider: ListWindowVariablesProvider | undefined,
-                        private readonly registersProvider: ListWindowVariablesProvider | undefined) {
+                        private readonly registersProvider: ListWindowVariablesProvider | undefined,
+                        cspyEventListener: DebugEventListenerHandler) {
+        cspyEventListener.observeDebugEvents(DkNotifyConstant.kDkTargetStarted, () => {
+            this.currentInspectionContext = undefined;
+        });
     }
 
     /**
@@ -137,7 +145,7 @@ export class CSpyContextManager implements Disposable {
             if (!varProvider) {
                 throw new Error("Backend is not available for this scope.");
             }
-            await this.contextManager.service.setInspectionContext(reference.context);
+            await this.setInspectionContext(reference.context);
             const vars = await varProvider.getVariables();
             return vars.map(v => this.replaceVariableReference(varProvider, v));
 
@@ -159,7 +167,7 @@ export class CSpyContextManager implements Disposable {
         }
 
         const context = scope.context;
-        await this.contextManager.service.setInspectionContext(context);
+        await this.setInspectionContext(context);
         const exprVal = await this.dbgr.service.evalExpression(context, `${variable}=${value}`, [], ExprFormat.kDefault, true);
         return exprVal.value;
     }
@@ -172,7 +180,7 @@ export class CSpyContextManager implements Disposable {
         if (!context) {
             throw new Error(`Frame index ${frameIndex} is out of bounds`);
         }
-        await this.contextManager.service.setInspectionContext(context);
+        await this.setInspectionContext(context);
         const result = await this.dbgr.service.evalExpression(context, expression, [], ExprFormat.kDefault, true);
         return result;
     }
@@ -183,6 +191,17 @@ export class CSpyContextManager implements Disposable {
         await this.registersProvider?.dispose();
         this.contextManager.dispose();
         this.dbgr.dispose();
+    }
+
+    private async setInspectionContext(context: ContextRef) {
+        if (context !== this.currentInspectionContext) {
+            // Tell the variable windows to wait for an update before providing any variables
+            this.localsProvider?.notifyUpdateImminent();
+            this.staticsProvider?.notifyUpdateImminent();
+            this.registersProvider?.notifyUpdateImminent();
+            this.currentInspectionContext = context;
+        }
+        await this.contextManager.service.setInspectionContext(context);
     }
 
     // Transforms the variableReference value provided by a VariablesProvider

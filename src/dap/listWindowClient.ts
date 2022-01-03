@@ -42,6 +42,7 @@ export class ListWindowClient implements Disposable {
     private rows: Row[] = [];
     // Only allow one update at a time to avoid race conditions. Any new updates must await the current one.
     private currentUpdate: Q.Promise<Row[]>;
+    private oneshotChangeHandlers: Array<() => void> = [];
 
     private constructor(private readonly backend: ThriftClient<ListWindowBackend.Client>) {
         this.currentUpdate = Q.resolve([]);
@@ -88,6 +89,14 @@ export class ListWindowClient implements Disposable {
         return children.map(ListWindowClient.createListWindowRow);
     }
 
+    /**
+     * Registers a function to call next time the window contents change.
+     */
+    onChangeOnce(handler: () => void) {
+        this.oneshotChangeHandlers.push(handler);
+    }
+
+
     // callback from list window backend
     notify(note: Note): Q.Promise<void> {
         // TODO: should we handle thawing (and freezing)?
@@ -123,12 +132,15 @@ export class ListWindowClient implements Disposable {
             // Commit the new rows only if no other update has been started after us
             if (this.currentUpdate === updatePromise) {
                 this.rows = rows;
+                this.oneshotChangeHandlers.forEach(handler => handler());
+                this.oneshotChangeHandlers = [];
             }
         }).catch(err => {
             console.error("Error updating listwindow:");
             console.error(err);
         });
         this.currentUpdate = updatePromise;
+        return updatePromise;
     }
 
     // converts from internal (thrift) row class to the class used outwards

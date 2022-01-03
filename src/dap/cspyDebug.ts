@@ -186,7 +186,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.sendEvent(new OutputEvent("Session started\n"));
 
             // only after loading modules can we initialize services using listwindows
-            this.stackManager = await CSpyContextManager.instantiate(this.serviceManager);
+            this.stackManager = await CSpyContextManager.instantiate(this.serviceManager, this.cspyEventHandler);
             this.disassemblyManager = await CspyDisassemblyManager.instantiate(this.serviceManager,
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1);
