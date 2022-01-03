@@ -342,8 +342,8 @@ suite("Test Debug Adapter", () =>{
                         const vars = (await dc.variablesRequest({variablesReference: res.body.scopes[0]!.variablesReference})).body.variables;
                         Assert.equal(vars.length, 1);
                         Assert.equal(vars[0]!.name, "fib");
-                        Assert.equal(vars[0]!.value, "2");
-                        Assert.equal(vars[0]!.type, "uint32_t volatile");
+                        Assert.equal(vars[0]!.value, "<unavailable>");
+                        Assert.equal(vars[0]!.type, "");
                     })
                 ]);
             })
@@ -381,14 +381,14 @@ suite("Test Debug Adapter", () =>{
                 let scopes = await dc.scopesRequest({frameId: 0});
                 let locals = (await dc.variablesRequest({variablesReference: scopes.body.scopes[0]!.variablesReference})).body.variables;
                 Assert.equal(locals.length, 1);
-                Assert(locals.some(variable => variable.name === "fib" && variable.value === "<unavailable>" && variable.type === "uint32_t"));
+                Assert(locals.some(variable => variable.name === "fib" && variable.value === "<unavailable>" && variable.type === ""));
 
                 await Promise.all([ dc.nextRequest({threadId: 0}), dc.waitForEvent("stopped") ]);
 
                 scopes = await dc.scopesRequest({frameId: 0});
                 locals = (await dc.variablesRequest({variablesReference: scopes.body.scopes[0]!.variablesReference})).body.variables;
                 Assert.equal(locals.length, 1);
-                Assert(locals.some(variable => variable.name === "fib" && variable.value === "1" && variable.type === "uint32_t"));
+                Assert(locals.some(variable => variable.name === "fib" && variable.value === "1" && variable.type?.match(/uint32_t volatile @ 0x/)));
             }),
         ]);
     });

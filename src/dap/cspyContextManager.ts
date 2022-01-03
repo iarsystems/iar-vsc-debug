@@ -228,7 +228,7 @@ namespace RowToVariableConverters {
         return {
             name: row.values[0],
             value: row.values[1],
-            type: `${row.values[3]} @ ${row.values[2]}`,
+            type: row.values[3] ? `${row.values[3]} @ ${row.values[2]}` : "",
             variablesReference: 0,
         };
     }
