@@ -104,7 +104,7 @@ suite("Test Debug Adapter", () =>{
     });
 
 
-     test("Unknown request produces error", async() => {
+    test("Unknown request produces error", async() => {
         try {
             await dc.send("illegal");
             Assert.fail("Unknown request did not prduce an error");
