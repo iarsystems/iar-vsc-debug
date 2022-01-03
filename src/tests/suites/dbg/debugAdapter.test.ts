@@ -364,7 +364,6 @@ suite("Test Debug Adapter", () =>{
             }),
         ]);
     });
-    return;
 
     test("Supports stepping", () => {
         return Promise.all([
