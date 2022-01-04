@@ -285,7 +285,7 @@ suite("Test Debug Adapter", () =>{
                 const scopes = await dc.scopesRequest({frameId: stack.body.stackFrames[0]!.id});
 
                 const statics = (await dc.variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
-                Assert.equal(statics.length, 4);
+                Assert.strictEqual(statics.length, 4, "Expected 4 statics, found: " + statics.map(v => v.name).join(", "));
                 Assert(statics.some(variable => variable.name === "str" && variable.value.match(/"This is a sträng"$/) && variable.type?.match(/char const \* @ 0x/)));
 
                 { // Check array
