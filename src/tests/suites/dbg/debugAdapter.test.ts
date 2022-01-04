@@ -285,7 +285,7 @@ suite("Test Debug Adapter", () =>{
                 const scopes = await dc.scopesRequest({frameId: stack.body.stackFrames[0]!.id});
 
                 const statics = (await dc.variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
-                Assert.strictEqual(statics.length, 4, "Expected 4 statics, found: " + statics.map(v => v.name).join(", "));
+                Assert.strictEqual(statics.length, 5, "Expected 5 statics, found: " + statics.map(v => v.name).join(", "));
                 Assert(statics.some(variable => variable.name === "str" && variable.value.match(/"This is a sträng"$/) && variable.type?.match(/char const \* @ 0x/)));
 
                 { // Check array
@@ -304,6 +304,28 @@ suite("Test Debug Adapter", () =>{
                     }
                 }
 
+                { // Check registers
+                    const registers = (await dc.variablesRequest({variablesReference: scopes.body.scopes[2]!.variablesReference})).body.variables;
+                    Assert(registers.some(reg => reg.name === "R4"));
+                    Assert(registers.some(reg => reg.name === "SP"));
+                    Assert(registers.some(reg => reg.name === "PC"));
+                    Assert(registers.some(reg => reg.name === "CPSR" && reg.variablesReference > 0)); // Should be nested
+                }
+            }),
+        ]);
+    });
+    test("Supports deeply nested variables", () => {
+        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig));
+        dbgConfigCopy.stopOnEntry = false;
+        return Promise.all([
+            dc.configurationSequence(),
+            dc.launch(dbgConfigCopy),
+            dc.waitForEvent("stopped").then(async() => {
+                const stack = await dc.stackTraceRequest({ threadId: 1});
+                const scopes = await dc.scopesRequest({frameId: stack.body.stackFrames[0]!.id});
+
+                const statics = (await dc.variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
+                Assert.strictEqual(statics.length, 5, "Expected 5 statics, found: " + statics.map(v => v.name).join(", "));
                 { // Check nested struct
                     const nestedStruct = statics.find(variable => variable.name === "nested_struct");
                     Assert(nestedStruct !== undefined);
@@ -336,7 +358,7 @@ suite("Test Debug Adapter", () =>{
                         Assert.strictEqual(innerContents.length, 2);
                         const innerInt = innerContents.find(variable => variable.name === "a");
                         Assert(innerInt !== undefined);
-                        Assert.strictEqual(innerInt.value, "0");
+                        Assert.strictEqual(innerInt.value, "42");
                         Assert(innerInt.type !== undefined);
                         Assert.match(innerInt.type, /int @ 0x/);
                     }
@@ -353,13 +375,19 @@ suite("Test Debug Adapter", () =>{
                         Assert.match(innerInt.type, /int @ 0x/);
                     }
                 }
-
-                { // Check registers
-                    const registers = (await dc.variablesRequest({variablesReference: scopes.body.scopes[2]!.variablesReference})).body.variables;
-                    Assert(registers.some(reg => reg.name === "R4"));
-                    Assert(registers.some(reg => reg.name === "SP"));
-                    Assert(registers.some(reg => reg.name === "PC"));
-                    Assert(registers.some(reg => reg.name === "CPSR" && reg.variablesReference > 0)); // Should be nested
+                { // Check second nested struct, to make sure the adapter differentiates between them
+                    const nestedStruct = statics.find(variable => variable.name === "nested_struct2");
+                    Assert(nestedStruct !== undefined);
+                    Assert(nestedStruct.variablesReference > 0);
+                    const nestedContents = (await dc.variablesRequest({variablesReference: nestedStruct.variablesReference})).body.variables;
+                    const innerUnion = nestedContents.find(variable => variable.name === "un");
+                    Assert(innerUnion !== undefined);
+                    Assert(innerUnion.variablesReference > 0);
+                    const innerContents = (await dc.variablesRequest({variablesReference: innerUnion.variablesReference})).body.variables;
+                    Assert.strictEqual(innerContents.length, 2);
+                    const innerInt = innerContents.find(variable => variable.name === "a");
+                    Assert(innerInt !== undefined);
+                    Assert.strictEqual(innerInt.value, "0");
                 }
             }),
         ]);

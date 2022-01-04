@@ -11,24 +11,20 @@ import { Disposable } from "./disposable";
 
 export interface ListWindowRow {
     values: string[];
-    expandable: boolean;
-}
-
-// States constituting a treeinfo, copied from IfxListModel.h
-enum TreeGraphItems {
-    kLastChild  = "L",
-    kOtherChild = "T",
-    kPlus       = "+",
-    kMinus      = "-",
+    hasChildren: boolean;
+    id: number; // this is just a row index
 }
 
 /**
  * Poses as a frontend for a list window, managing all events and keeping track of all its rows.
- * Also helps manage tree elements (i.e. expandable rows).
- * NOTE: This class currently only supports tree elements of depth 2. TODO: support infinite expansion
+ * The contents are represented to users of this class as a tree, consisting of some top-level rows {@link topLevelRows},
+ * and their children {@link getChildrenOf}.
  * NOTE: This class **only** works with non-sliding list windows.
  */
 export class ListWindowClient implements Disposable {
+    // IMPLEMENTATION NOTE: We always expand all rows as far as possible when fetching window contents from the backend
+    // (as opposed to only expanding them when needed). This removes a lot of complexity in keeping track of rows' positions,
+    // but may be a little slow sometimes.
 
     /**
      * Starts a new ListWindowClient and connects it to the provided backend.
@@ -57,61 +53,46 @@ export class ListWindowClient implements Disposable {
     }
 
     /**
-     * Gets all top level rows, i.e. rows that have no parent, and should be displayed before any elements have been expanded.
+     * Gets all top level rows, i.e. rows that have no parent. These are valid only until the next window update.
      */
     get topLevelRows(): ListWindowRow[] {
-        const topLevelRowsInternal = this.rows.filter(row => ["+", "-", "."].includes(row.treeinfo));
-        return topLevelRowsInternal.map(ListWindowClient.createListWindowRow);
+        const topLevelRowIndices: number[] = [];
+        this.rows.forEach((row, index) => {
+            if (TreeInfoUtils.getDepth(row.treeinfo) === 0) {
+                topLevelRowIndices.push(index);
+            }
+        });
+        return topLevelRowIndices.map(row => this.createListWindowRow(row));
     }
 
     /**
-     * Gets the direct children of an expandable row
+     * Gets the direct children of an expandable row.
      */
-    async getChildrenOf(parent: ListWindowRow): Promise<ListWindowRow[]> {
-        if (!parent.expandable) {
+    getChildrenOf(parent: ListWindowRow): Promise<ListWindowRow[]> {
+        if (!parent.hasChildren) {
             throw new Error("Attempted to expand a row that is not expandable.");
         }
-        // Comparing the first column should be enough for most cases to identify a row.
-        // A more robust way would be to keep track of indices, but that is hard since indices keep changing
-        // when we expand rows. We could also let the row-comparison be defined e.g. as a predicate
-        // passed as a parameter, so the comparison can be changed on a per-window basis.
-        const rowIndex = this.rows.findIndex(r => r.cells[0]?.text === parent.values[0]);
-        if (rowIndex === -1) {
+        const rowIndex = parent.id;
+        const row = this.rows[rowIndex];
+        if (row === undefined) {
             throw new Error("Cannot find row in the window matching: " + parent.values[0]);
         }
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const row = this.rows[rowIndex]!;
 
-        if (!row.treeinfo.endsWith(TreeGraphItems.kMinus)) {
-            await this.backend.service.toggleExpansion(new Int64(rowIndex));
-            await this.updateAllRows();
-        }
-        const children: Row[] = [];
-        const candidates = this.rows.slice(rowIndex + 1, this.rows.length);
-        // The tree info looks like <indentation><child info><expandability info>
-        // where
-        // <indentation> is a number of characters equal to the subvariable level - 1, so that the children of a top-level struct
-        // have 0 characters padding, children of a struct within a top-level struct have one char of padding etc.
-        // <child info> For non-top-level items, is a character indicating whether this is the last child of its parent ('L') or not ('T')
-        // <expandability info> '+' For not expanded, '-' for expanded, '.' for unexpandable (leaf)
         // How deep in a structure of subvariables are we?
-        const indentationLevel = this.rows[rowIndex]?.treeinfo.indexOf(TreeGraphItems.kMinus);
-        if (indentationLevel === undefined || indentationLevel === -1) {
-            throw new Error("Couldn't find indentation level"); // Should not be able to happen
-        }
+        const depth = TreeInfoUtils.getDepth(row.treeinfo);
         // Add rows at this indentation level until we reach the last child
-        // Note that we ignore rows which do not match either kOtherChild or kLastChild,
-        // since they have a different indentation level and should not be returned (only direct children should)
-        for (const candidateRow of candidates) {
-            const childInfo = candidateRow.treeinfo[indentationLevel];
-            if (childInfo === TreeGraphItems.kOtherChild) {
-                children.push(candidateRow);
-            } else if (childInfo === TreeGraphItems.kLastChild) {
-                children.push(candidateRow);
+        const children: number[] = [];
+        for (let i = rowIndex + 1; i < this.rows.length; i++) {
+            const candidate = this.rows[i];
+            if (!candidate || TreeInfoUtils.getDepth(candidate.treeinfo) !== depth + 1) {
+                continue;
+            }
+            children.push(i);
+            if (TreeInfoUtils.isLastChild(candidate.treeinfo)) {
                 break;
             }
         }
-        return children.map(ListWindowClient.createListWindowRow);
+        return Promise.resolve(children.map(row => this.createListWindowRow(row)));
     }
 
     /**
@@ -145,12 +126,19 @@ export class ListWindowClient implements Disposable {
 
     private updateAllRows() {
         const updatePromise = this.backend.service.getNumberOfRows().then(async(val) => {
-            const nRows = val.toNumber();
-            const rowPromises: Q.Promise<Row>[] = [];
+            let nRows = val.toNumber();
+            const rows: Row[] = [];
             for (let i = 0; i < nRows; i++) {
-                rowPromises.push(this.backend.service.getRow(new Int64(i)));
+                const row = await this.backend.service.getRow(new Int64(i));
+                // if expandable, expand it and reload it
+                if (TreeInfoUtils.isExpandable(row.treeinfo) && !TreeInfoUtils.isExpanded(row.treeinfo)) {
+                    await this.backend.service.toggleExpansion(new Int64(i));
+                    nRows = (await this.backend.service.getNumberOfRows()).toNumber();
+                    rows.push(await this.backend.service.getRow(new Int64(i)));
+                } else {
+                    rows.push(row);
+                }
             }
-            const rows = await Q.all(rowPromises);
             return rows;
         });
         updatePromise.then(rows => {
@@ -169,10 +157,50 @@ export class ListWindowClient implements Disposable {
     }
 
     // converts from internal (thrift) row class to the class used outwards
-    private static createListWindowRow(row: Row) {
+    private createListWindowRow(rowIndex: number) {
+        const row = this.rows[rowIndex];
+        if (row === undefined) throw new Error("Couldn't create row");
         return {
             values: row.cells.map(cell => cell.text),
-            expandable: row.treeinfo.endsWith(TreeGraphItems.kPlus) || row.treeinfo.endsWith(TreeGraphItems.kMinus),
+            hasChildren: TreeInfoUtils.isExpandable(row.treeinfo),
+            id: rowIndex,
         };
+    }
+}
+
+// Utility functions for parsing treeinfo strings from listwindow rows
+namespace TreeInfoUtils {
+    // The tree info looks like <indentation><child info><expandability info>
+    // where
+    // <indentation> is a number of characters equal to the subvariable level - 1, so that the children of a top-level struct
+    // have 0 characters padding, children of a struct within a top-level struct have one char of padding etc.
+    // <child info> For non-top-level items, is a character indicating whether this is the last child of its parent ('L') or not ('T')
+    // <expandability info> '+' For not expanded, '-' for expanded, '.' for unexpandable (leaf)
+
+    // States constituting a treeinfo, copied from IfxListModel.h
+    enum TreeGraphItems {
+        kLastChild  = "L",
+        kOtherChild = "T",
+        kLeaf       = ".",
+        kPlus       = "+",
+        kMinus      = "-",
+    }
+
+    /**
+     * How many parents does this row have?
+     */
+    export function getDepth(treeinfo: string): number {
+        return treeinfo.search(new RegExp(`[${TreeGraphItems.kLeaf}${TreeGraphItems.kPlus}\\${TreeGraphItems.kMinus}]`));
+    }
+
+    export function isLastChild(treeinfo: string): boolean {
+        return treeinfo.match(new RegExp(`${TreeGraphItems.kLastChild}.$`)) !== null;
+    }
+
+    export function isExpandable(treeinfo: string) {
+        return treeinfo.endsWith(TreeGraphItems.kMinus) || treeinfo.endsWith(TreeGraphItems.kPlus);
+    }
+    export function isExpanded(treeinfo: string) {
+        return treeinfo.endsWith(TreeGraphItems.kMinus);
     }
 }

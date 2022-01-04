@@ -20,7 +20,7 @@
 // some global variables for testing purposes
 const char *str = "This is a sträng";
 // for testing nested variables
-struct {
+struct nest {
 	union
 	{
 		int a; char b;
@@ -31,6 +31,8 @@ struct {
 		} inner_inner;
 		int e;
 	} inner;
-} nested_struct;
+};
+struct nest nested_struct;
+struct nest nested_struct2;
 
 #endif

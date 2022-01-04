@@ -51,6 +51,7 @@ int32_t main(void)
     DoForegroundProcess();
   }
   long test = (long) str; // prevent str from being optimized away
-  nested_struct.un.a = 0; // prevent nested_struct from being optimized away
+  nested_struct.un.a = 42; // prevent nested_struct from being optimized away
+  nested_struct2.un.a = 0; // prevent nested_struct2 from being optimized away
   return 0;
 }

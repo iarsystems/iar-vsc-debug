@@ -90,7 +90,7 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
 
     private createVariableFromRow(row: ListWindowRow) {
         const baseVar = this.rowToVariable(row);
-        baseVar.variablesReference = row.expandable ? this.variableReferences.create(row) : 0;
+        baseVar.variablesReference = row.hasChildren ? this.variableReferences.create(row) : 0;
         return baseVar;
     }
 }
