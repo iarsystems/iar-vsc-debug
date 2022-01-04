@@ -19,5 +19,18 @@
 
 // some global variables for testing purposes
 const char *str = "This is a sträng";
+// for testing nested variables
+struct {
+	union
+	{
+		int a; char b;
+	} un;
+	struct {
+		union {
+			int c; char d;
+		} inner_inner;
+		int e;
+	} inner;
+} nested_struct;
 
 #endif
