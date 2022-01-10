@@ -522,6 +522,92 @@ suite("Test Debug Adapter", () =>{
         ]);
     });
 
+    test("Supports setting variable values", () => {
+        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig));
+        dbgConfigCopy.stopOnEntry = false;
+        return Promise.all([
+            dc.hitBreakpoint(
+                dbgConfigCopy,
+                { line: 38, path: fibonacciFile }
+            ).then(async() => {
+                const stack = await dc.stackTraceRequest({ threadId: 1});
+                const scopes = await dc.scopesRequest({frameId: stack.body.stackFrames[0]!.id});
+
+                // First set new values
+                dc.setVariableRequest({name: "fib", value: "42", variablesReference: scopes.body.scopes[0]!.variablesReference});
+
+                const staticsScope = scopes.body.scopes[1]!;
+                {
+                    const statics = (await dc.variablesRequest({variablesReference: staticsScope.variablesReference})).body.variables;
+                    const nestedStruct = statics.find(variable => variable.name === "nested_struct");
+                    Assert(nestedStruct !== undefined);
+                    Assert(nestedStruct.variablesReference > 0);
+                    const nestedContents = (await dc.variablesRequest({variablesReference: nestedStruct.variablesReference})).body.variables;
+                    const innerUnion = nestedContents.find(variable => variable.name === "un");
+                    Assert(innerUnion !== undefined);
+                    Assert(innerUnion.variablesReference > 0);
+                    dc.setVariableRequest({ name: "a", value: "0x41", variablesReference: innerUnion.variablesReference});
+                }
+
+                // Now check that the values changed
+                const statics = (await dc.variablesRequest({variablesReference: staticsScope.variablesReference})).body.variables;
+                Assert(statics.some(variable => variable.name === "callCount" && variable.value === "42" && variable.type?.match(/int_fast8_t @ 0x/)), JSON.stringify(statics));
+                {
+                    const nestedStruct = statics.find(variable => variable.name === "nested_struct");
+                    Assert(nestedStruct !== undefined);
+                    Assert(nestedStruct.variablesReference > 0);
+                    const nestedContents = (await dc.variablesRequest({variablesReference: nestedStruct.variablesReference})).body.variables;
+                    const innerUnion = nestedContents.find(variable => variable.name === "un");
+                    Assert(innerUnion !== undefined);
+                    Assert(innerUnion.variablesReference > 0);
+                    const innerContents = (await dc.variablesRequest({variablesReference: innerUnion.variablesReference})).body.variables;
+                    Assert.strictEqual(innerContents.length, 2);
+                    const innerChar = innerContents.find(variable => variable.name === "b");
+                    Assert(innerChar !== undefined);
+                    Assert.strictEqual(innerChar.value, "'A' (0x41)");
+                    Assert(innerChar.type !== undefined);
+                    Assert.match(innerChar.type, /int @ 0x/);
+                }
+            })
+        ]);
+    });
+
+    test("Supports setting register values", () => {
+        return Promise.all([
+            dc.configurationSequence(),
+            dc.launch(dbgConfig),
+            dc.waitForEvent("stopped").then(async() => {
+                const stack = await dc.stackTraceRequest({ threadId: 1});
+                const scopes = await dc.scopesRequest({frameId: stack.body.stackFrames[0]!.id});
+                const registersScope = scopes.body.scopes[2]!;
+
+                // First set new values
+                dc.setVariableRequest({name: "R8", value: "0xDEAD'BEEF", variablesReference: registersScope.variablesReference});
+
+                {
+                    const regs = (await dc.variablesRequest({variablesReference: registersScope.variablesReference})).body.variables;
+                    const apsr = regs.find(reg => reg.name === "APSR");
+                    Assert(apsr !== undefined);
+                    Assert(apsr.variablesReference > 0);
+                    dc.setVariableRequest({ name: "V", value: "0b1", variablesReference: apsr.variablesReference});
+                }
+
+                // Now check that the values changed
+                const regs = (await dc.variablesRequest({variablesReference: registersScope.variablesReference})).body.variables;
+                Assert(regs.some(reg => reg.name === "R8" && reg.value === "0xdead'beef"), JSON.stringify(regs));
+                {
+                    const apsr = regs.find(reg => reg.name === "APSR");
+                    Assert(apsr !== undefined);
+                    Assert(apsr.variablesReference > 0);
+                    const apsrContents = (await dc.variablesRequest({variablesReference: apsr.variablesReference})).body.variables;
+                    const v = apsrContents.find(reg => reg.name === "V");
+                    Assert(v !== undefined);
+                    Assert.strictEqual(v.value, "1");
+                }
+            })
+        ]);
+    });
+
     // Assert stepping, next into out etc. (with stack)
     // Pause?
 });

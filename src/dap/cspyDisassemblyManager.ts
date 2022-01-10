@@ -231,7 +231,7 @@ export class CspyDisassemblyManager implements Disposable {
  */
 function add(a: Int64, b: number): Int64 {
     // BigInt supercedes Int64 and supports arithmetic. However, we're stuck with Int64 since that's what thrift uses
-    const bigA = BigInt("0x"+a.toOctetString()) ;
+    const bigA = BigInt("0x"+a.toOctetString());
     const bigB = BigInt(b);
     let result = bigA + bigB;
     if (result < 0n) {
