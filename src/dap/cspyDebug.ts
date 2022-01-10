@@ -162,6 +162,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         });
         libSupportHandler.observeExit(code => {
             this.sendEvent(new OutputEvent("Target program terminated, exit code " + code + "\n"));
+            this.expectedStoppingReason = "exit";
         });
         this.serviceManager.startService(LIBSUPPORT_SERVICE, LibSupportService2, libSupportHandler);
 
