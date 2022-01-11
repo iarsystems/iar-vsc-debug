@@ -550,8 +550,9 @@ suite("Test Debug Adapter", () =>{
                 }
 
                 // Now check that the values changed
+                const locals = (await dc.variablesRequest({variablesReference: scopes.body.scopes[0]!.variablesReference})).body.variables;
+                Assert(locals.some(variable => variable.name === "fib" && variable.value === "42" && variable.type?.match(/uint32_t volatile @ 0x/)), JSON.stringify(locals));
                 const statics = (await dc.variablesRequest({variablesReference: staticsScope.variablesReference})).body.variables;
-                Assert(statics.some(variable => variable.name === "callCount <Fibonacci\\callCount>" && variable.value === "42" && variable.type?.match(/int_fast8_t @ 0x/)), JSON.stringify(statics));
                 {
                     const nestedStruct = statics.find(variable => variable.name === "nested_struct <Fibonacci\\nested_struct>");
                     Assert(nestedStruct !== undefined);

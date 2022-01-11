@@ -11,8 +11,6 @@ import { ThriftServiceManager } from "./thrift/thriftServiceManager";
 import { ThriftClient } from "./thrift/thriftClient";
 import { WindowNames } from "./listWindowConstants";
 import { ListWindowVariablesProvider, VariablesProvider } from "./variablesProvider";
-import { ListWindowRow } from "./listWindowClient";
-import { DebugProtocol } from "vscode-debugprotocol";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
 
 /**
@@ -31,8 +29,9 @@ class ScopeReference {
  */
 class VariableReference {
     constructor(
-        readonly source: VariablesProvider,
-        readonly sourceReference: number,
+        readonly provider: VariablesProvider,
+        readonly context: ContextRef,
+        readonly variableReference: number,
     ) { }
 }
 
@@ -53,9 +52,9 @@ export class CSpyContextManager implements Disposable {
         return new CSpyContextManager(
             await serviceMgr.findService(CONTEXT_MANAGER_SERVICE, ContextManager.Client),
             await serviceMgr.findService(DEBUGGER_SERVICE, Debugger.Client),
-            await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.LOCALS, RowToVariableConverters.locals).catch(onProviderUnavailable),
-            await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.STATICS, RowToVariableConverters.statics).catch(onProviderUnavailable),
-            await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.REGISTERS, RowToVariableConverters.registers).catch(onProviderUnavailable),
+            await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.LOCALS, 0, 1, 3, 2).catch(onProviderUnavailable),
+            await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.STATICS, 0, 1, 3, 2).catch(onProviderUnavailable),
+            await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.REGISTERS, 0, 1, 2, -1).catch(onProviderUnavailable),
             cspyEventListener,
         );
     }
@@ -139,37 +138,38 @@ export class CSpyContextManager implements Disposable {
      */
     async fetchVariables(handle: number): Promise<Variable[]> {
         const reference = this.scopeAndVariableHandles.get(handle);
+        await this.setInspectionContext(reference.context);
 
         if (reference instanceof ScopeReference) {
             const varProvider = reference.provider;
             if (!varProvider) {
                 throw new Error("Backend is not available for this scope.");
             }
-            await this.setInspectionContext(reference.context);
             const vars = await varProvider.getVariables();
-            return vars.map(v => this.replaceVariableReference(varProvider, v));
+            return vars.map(v => this.replaceVariableReference(varProvider, v, reference.context));
 
         } else if (reference instanceof VariableReference) {
-            const subVars = await reference.source.getSubvariables(reference.sourceReference);
-            return subVars.map(v => this.replaceVariableReference(reference.source, v));
+            const subVars = await reference.provider.getSubvariables(reference.variableReference);
+            return subVars.map(v => this.replaceVariableReference(reference.provider, v, reference.context));
         }
         throw new Error("Unknown handle type.");
     }
 
     /**
      * Sets a variable in the specified scope to the specified value.
-     * // TODO: this could use the appropriate cspy window to the set the variable instead of relying on evals
      */
     async setVariable(scopeReference: number, variable: string, value: string): Promise<string> {
-        const scope = this.scopeAndVariableHandles.get(scopeReference);
-        if (!(scope instanceof ScopeReference)) {
-            throw new Error("Invalid reference: Is not a scope.");
-        }
+        const reference = this.scopeAndVariableHandles.get(scopeReference);
+        await this.setInspectionContext(reference.context);
 
-        const context = scope.context;
-        await this.setInspectionContext(context);
-        const exprVal = await this.dbgr.service.evalExpression(context, `${variable}=${value}`, [], ExprFormat.kDefault, true);
-        return exprVal.value;
+        if (reference instanceof ScopeReference) {
+            if (!reference.provider) {
+                throw new Error("Backend is not available for this scope.");
+            }
+            return reference.provider.setVariable(variable, undefined, value);
+        } else {
+            return reference.provider.setVariable(variable, reference.variableReference, value);
+        }
     }
 
     /**
@@ -208,50 +208,11 @@ export class CSpyContextManager implements Disposable {
     // into one that we can send to the DAP client, and that won't conflict with other
     // references created by this class (e.g. for scopes). The new reference points to a
     // {@link VariableReference} that lets us later access the original value.
-    private replaceVariableReference(source: VariablesProvider, variable: Variable): Variable {
+    private replaceVariableReference(source: VariablesProvider, variable: Variable, context: ContextRef): Variable {
         if (variable.variablesReference > 0) {
-            variable.variablesReference = this.scopeAndVariableHandles.create(new VariableReference(source, variable.variablesReference));
+            variable.variablesReference = this.scopeAndVariableHandles.create(new VariableReference(source, context, variable.variablesReference));
             return variable;
         }
         return variable;
-    }
-}
-
-/**
- * Describes how the columns of these windows are laid out, and how to convert them to variables
- */
-namespace RowToVariableConverters {
-    export function locals(row: ListWindowRow): DebugProtocol.Variable {
-        if (row.values[0] === undefined || row.values[1] === undefined || row.values[3] === undefined) {
-            throw new Error("Not enough data in row to parse variable");
-        }
-        return {
-            name: row.values[0],
-            value: row.values[1],
-            type: row.values[3] ? `${row.values[3]} @ ${row.values[2]}` : "",
-            variablesReference: 0,
-        };
-    }
-    export function statics(row: ListWindowRow): DebugProtocol.Variable {
-        if (row.values[0] === undefined || row.values[1] === undefined || row.values[3] === undefined) {
-            throw new Error("Not enough data in row to parse variable");
-        }
-        return {
-            name: row.values[0],
-            value: row.values[1],
-            type: `${row.values[3]} @ ${row.values[2]}`,
-            variablesReference: 0,
-        };
-    }
-    export function registers(row: ListWindowRow): DebugProtocol.Variable {
-        if (row.values[0] === undefined || row.values[1] === undefined || row.values[2] === undefined) {
-            throw new Error("Not enough data in row to parse variable");
-        }
-        return {
-            name: row.values[0],
-            value: row.values[1],
-            type: row.values[2],
-            variablesReference: 0,
-        };
     }
 }

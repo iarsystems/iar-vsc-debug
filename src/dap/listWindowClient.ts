@@ -68,7 +68,7 @@ export class ListWindowClient implements Disposable {
     /**
      * Gets the direct children of an expandable row.
      */
-    getChildrenOf(parent: ListWindowRow): Promise<ListWindowRow[]> {
+    getChildrenOf(parent: ListWindowRow): ListWindowRow[] {
         if (!parent.hasChildren) {
             throw new Error("Attempted to expand a row that is not expandable.");
         }
@@ -92,7 +92,26 @@ export class ListWindowClient implements Disposable {
                 break;
             }
         }
-        return Promise.resolve(children.map(row => this.createListWindowRow(row)));
+        return children.map(row => this.createListWindowRow(row));
+    }
+
+    /**
+     * Sets the value of a cell
+     * @param row The row in which to set the v alue
+     * @param column The column in this row to set the value for
+     * @param value The value to set
+     * @returns The new value of the call (may differ from the value set)
+     */
+    async setValueOf(row: ListWindowRow, column: number, value: string) {
+        await this.backend.service.setValue(new Int64(row.id), column, value);
+        const updatedRow = await this.backend.service.getRow(new Int64(row.id));
+        this.rows[row.id] = updatedRow;
+        const updatedValue = updatedRow.cells[column];
+        if (updatedValue === undefined) {
+            throw new Error("No value in this column");
+        }
+        return updatedValue.text;
+        // TODO: use promise
     }
 
     /**
