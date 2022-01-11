@@ -286,10 +286,10 @@ suite("Test Debug Adapter", () =>{
 
                 const statics = (await dc.variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
                 Assert.strictEqual(statics.length, 5, "Expected 5 statics, found: " + statics.map(v => v.name).join(", "));
-                Assert(statics.some(variable => variable.name === "str" && variable.value.match(/"This is a sträng"$/) && variable.type?.match(/char const \* @ 0x/)));
+                Assert(statics.some(variable => variable.name === "str <Fibonacci\\str>" && variable.value.match(/"This is a sträng"$/) && variable.type?.match(/char const \* @ 0x/)));
 
                 { // Check array
-                    const fibArray = statics.find(variable => variable.name === "Fib");
+                    const fibArray = statics.find(variable => variable.name === "Fib <Utilities\\Fib>");
                     Assert(fibArray !== undefined);
                     Assert.equal(fibArray.value, "<array>");
                     Assert(fibArray.type !== undefined);
@@ -327,7 +327,7 @@ suite("Test Debug Adapter", () =>{
                 const statics = (await dc.variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
                 Assert.strictEqual(statics.length, 5, "Expected 5 statics, found: " + statics.map(v => v.name).join(", "));
                 { // Check nested struct
-                    const nestedStruct = statics.find(variable => variable.name === "nested_struct");
+                    const nestedStruct = statics.find(variable => variable.name === "nested_struct <Fibonacci\\nested_struct>");
                     Assert(nestedStruct !== undefined);
                     Assert.strictEqual(nestedStruct.value, "<struct>");
                     Assert(nestedStruct.variablesReference > 0);
@@ -376,7 +376,7 @@ suite("Test Debug Adapter", () =>{
                     }
                 }
                 { // Check second nested struct, to make sure the adapter differentiates between them
-                    const nestedStruct = statics.find(variable => variable.name === "nested_struct2");
+                    const nestedStruct = statics.find(variable => variable.name === "nested_struct2 <Fibonacci\\nested_struct2>");
                     Assert(nestedStruct !== undefined);
                     Assert(nestedStruct.variablesReference > 0);
                     const nestedContents = (await dc.variablesRequest({variablesReference: nestedStruct.variablesReference})).body.variables;
@@ -539,7 +539,7 @@ suite("Test Debug Adapter", () =>{
                 const staticsScope = scopes.body.scopes[1]!;
                 {
                     const statics = (await dc.variablesRequest({variablesReference: staticsScope.variablesReference})).body.variables;
-                    const nestedStruct = statics.find(variable => variable.name === "nested_struct");
+                    const nestedStruct = statics.find(variable => variable.name === "nested_struct <Fibonacci\\nested_struct>");
                     Assert(nestedStruct !== undefined);
                     Assert(nestedStruct.variablesReference > 0);
                     const nestedContents = (await dc.variablesRequest({variablesReference: nestedStruct.variablesReference})).body.variables;
@@ -551,9 +551,9 @@ suite("Test Debug Adapter", () =>{
 
                 // Now check that the values changed
                 const statics = (await dc.variablesRequest({variablesReference: staticsScope.variablesReference})).body.variables;
-                Assert(statics.some(variable => variable.name === "callCount" && variable.value === "42" && variable.type?.match(/int_fast8_t @ 0x/)), JSON.stringify(statics));
+                Assert(statics.some(variable => variable.name === "callCount <Fibonacci\\callCount>" && variable.value === "42" && variable.type?.match(/int_fast8_t @ 0x/)), JSON.stringify(statics));
                 {
-                    const nestedStruct = statics.find(variable => variable.name === "nested_struct");
+                    const nestedStruct = statics.find(variable => variable.name === "nested_struct <Fibonacci\\nested_struct>");
                     Assert(nestedStruct !== undefined);
                     Assert(nestedStruct.variablesReference > 0);
                     const nestedContents = (await dc.variablesRequest({variablesReference: nestedStruct.variablesReference})).body.variables;

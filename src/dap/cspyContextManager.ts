@@ -237,8 +237,7 @@ namespace RowToVariableConverters {
             throw new Error("Not enough data in row to parse variable");
         }
         return {
-            // TODO: Do we actually want to remove the second half?
-            name: row.values[0].split(" ")[0] ?? row.values[0],
+            name: row.values[0],
             value: row.values[1],
             type: `${row.values[3]} @ ${row.values[2]}`,
             variablesReference: 0,
