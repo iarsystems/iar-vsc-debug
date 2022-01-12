@@ -200,8 +200,8 @@ export class CSpyContextManager implements Disposable {
             this.staticsProvider?.notifyUpdateImminent();
             this.registersProvider?.notifyUpdateImminent();
             this.currentInspectionContext = context;
+            await this.contextManager.service.setInspectionContext(context);
         }
-        await this.contextManager.service.setInspectionContext(context);
     }
 
     // Transforms the variableReference value provided by a VariablesProvider

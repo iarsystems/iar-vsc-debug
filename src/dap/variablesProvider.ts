@@ -92,22 +92,19 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
     async setVariable(name: string, variableReference: number | undefined, value: string): Promise<string> {
         // TODO: indices should be instance variables
         await this.backendUpdate;
+        let rows: ListWindowRow[];
         if (!variableReference) {
-            const rows = this.windowClient.topLevelRows;
-            const row = rows.find(row => row.values[this.varNameColumn] === name);
-            if (!row) {
-                throw new Error("Failed to find variable with name: " + name);
-            }
-            return this.windowClient.setValueOf(row, this.varValueColumn, value);
+            rows = this.windowClient.topLevelRows;
         } else {
             const parentRow = this.variableReferences.get(variableReference);
-            const rows = this.windowClient.getChildrenOf(parentRow);
-            const row = rows.find(row => row.values[this.varNameColumn] === name);
-            if (!row) {
-                throw new Error("Failed to find variable with name: " + name);
-            }
-            return this.windowClient.setValueOf(row, this.varValueColumn, value);
+            rows = this.windowClient.getChildrenOf(parentRow);
         }
+        const row = rows.find(row => row.values[this.varNameColumn] === name);
+        if (!row) {
+            throw new Error("Failed to find variable with name: " + name);
+        }
+        this.notifyUpdateImminent();
+        return this.windowClient.setValueOf(row, this.varValueColumn, value);
     }
 
     /**

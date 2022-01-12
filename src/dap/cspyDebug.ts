@@ -130,6 +130,10 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.clientLinesStartAt1 = args.linesStartAt1 || false;
         this.clientColumnsStartAt1 = args.columnsStartAt1 || false;
 
+        if (!args.supportsInvalidatedEvent) {
+            console.error("Client does not support invalidated event, setting variables may give inconsistent behaviour.");
+        }
+
         this.sendResponse(response);
     }
 
@@ -378,6 +382,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     protected override async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments) {
+        console.log("setVariable");
         await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
             const newVal = await stackManager.setVariable(args.variablesReference, args.name, args.value);
             response.body = {
@@ -385,6 +390,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
             };
         });
         this.sendResponse(response);
+        // When changing a variable, other variables pointing to the same memory may change, so force the UI to reload all variables
+        this.sendEvent(new InvalidatedEvent(["variables"]));
     }
 
 

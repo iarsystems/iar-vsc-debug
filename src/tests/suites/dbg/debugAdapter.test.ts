@@ -567,7 +567,7 @@ suite("Test Debug Adapter", () =>{
                     Assert(innerChar !== undefined);
                     Assert.strictEqual(innerChar.value, "'A' (0x41)");
                     Assert(innerChar.type !== undefined);
-                    Assert.match(innerChar.type, /int @ 0x/);
+                    Assert.match(innerChar.type, /char @ 0x/);
                 }
             })
         ]);
