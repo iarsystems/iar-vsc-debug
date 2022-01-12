@@ -1,5 +1,5 @@
 import { DebugProtocol } from "vscode-debugprotocol";
-import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, DebugSession, TerminatedEvent } from "vscode-debugadapter";
+import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, DebugSession, TerminatedEvent, InvalidatedEvent } from "vscode-debugadapter";
 import { ThriftServiceManager } from "./thrift/thriftServiceManager";
 import * as Debugger from "./thrift/bindings/Debugger";
 import * as DebugEventListener from "./thrift/bindings/DebugEventListener";
