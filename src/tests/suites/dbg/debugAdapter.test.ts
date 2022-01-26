@@ -26,12 +26,12 @@ namespace Utils {
 
     export function assertStoppedLocation(dc: DebugClient, reason: string, line: number, file: string | undefined, name: RegExp) {
         return dc.waitForEvent("stopped").then(async(event) => {
-            Assert.equal(event.body?.reason, reason);
+            Assert.strictEqual(event.body?.reason, reason);
             const stack = await dc.stackTraceRequest({threadId: 1});
             const topStack = stack.body.stackFrames[0];
             Assert(topStack);
-            Assert.equal(topStack.line, line);
-            Assert.equal(topStack.source?.path, file);
+            Assert.strictEqual(topStack.line, line);
+            Assert.strictEqual(topStack.source?.path, file);
             Assert.match(topStack.name, name);
         });
     }
@@ -171,15 +171,15 @@ suite("Test Debug Adapter", () =>{
                     { source: { path: fibonacciFile },
                         breakpoints: [{line: 25}, {line: 29}, {line: 31}, {line: 46}] });
                 const bps = response.body.breakpoints;
-                Assert.equal(bps.length, 4);
+                Assert.strictEqual(bps.length, 4);
 
-                Assert.equal(bps[0]?.line, 25);
+                Assert.strictEqual(bps[0]?.line, 25);
                 Assert(!bps[0]?.verified);
-                Assert.equal(bps[1]?.line, 29);
+                Assert.strictEqual(bps[1]?.line, 29);
                 Assert(bps[1]?.verified);
-                Assert.equal(bps[2]?.line, 35);
+                Assert.strictEqual(bps[2]?.line, 35);
                 Assert(bps[2]?.verified);
-                Assert.equal(bps[3]?.line, 47);
+                Assert.strictEqual(bps[3]?.line, 47);
                 Assert(bps[3]?.verified);
             }),
         ]);
@@ -291,15 +291,15 @@ suite("Test Debug Adapter", () =>{
                 { // Check array
                     const fibArray = statics.find(variable => variable.name === "Fib <Utilities\\Fib>");
                     Assert(fibArray !== undefined);
-                    Assert.equal(fibArray.value, "<array>");
+                    Assert.strictEqual(fibArray.value, "<array>");
                     Assert(fibArray.type !== undefined);
                     Assert.match(fibArray.type, /uint32_t\[10\] @ 0x/);
                     Assert(fibArray.variablesReference > 0); // Should be nested
                     const arrContents = (await dc.variablesRequest({variablesReference: fibArray.variablesReference})).body.variables;
-                    Assert.equal(arrContents.length, 10);
+                    Assert.strictEqual(arrContents.length, 10);
                     for (let i = 0; i < 10; i++) {
-                        Assert.equal(arrContents[i]!.name, `[${i}]`);
-                        Assert.equal(arrContents[i]!.value, FIBS[i]!.toString());
+                        Assert.strictEqual(arrContents[i]!.name, `[${i}]`);
+                        Assert.strictEqual(arrContents[i]!.value, FIBS[i]!.toString());
                         Assert.match(arrContents[i]!.type!, /uint32_t @ 0x/);
                     }
                 }
@@ -416,16 +416,16 @@ suite("Test Debug Adapter", () =>{
                     Utils.assertStoppedLocation(dc, "breakpoint", 54, utilsFile, /PutFib/).then(async() => {
                         const stack = (await dc.stackTraceRequest({threadId: 1})).body.stackFrames;
                         Assert(stack.length >= 3);
-                        Assert.equal(stack[1]!.name, "DoForegroundProcess");
-                        Assert.equal(stack[1]!.line, 38);
-                        Assert.equal(stack[1]!.source?.path, fibonacciFile);
+                        Assert.strictEqual(stack[1]!.name, "DoForegroundProcess");
+                        Assert.strictEqual(stack[1]!.line, 38);
+                        Assert.strictEqual(stack[1]!.source?.path, fibonacciFile);
 
                         const res = await dc.scopesRequest({frameId: stack[1]!.id});
                         const vars = (await dc.variablesRequest({variablesReference: res.body.scopes[0]!.variablesReference})).body.variables;
-                        Assert.equal(vars.length, 1);
-                        Assert.equal(vars[0]!.name, "fib");
-                        Assert.equal(vars[0]!.value, "<unavailable>");
-                        Assert.equal(vars[0]!.type, "");
+                        Assert.strictEqual(vars.length, 1);
+                        Assert.strictEqual(vars[0]!.name, "fib");
+                        Assert.strictEqual(vars[0]!.value, "<unavailable>");
+                        Assert.strictEqual(vars[0]!.type, "");
                     })
                 ]);
             })
@@ -462,14 +462,14 @@ suite("Test Debug Adapter", () =>{
             ).then(async() => {
                 let scopes = await dc.scopesRequest({frameId: 0});
                 let locals = (await dc.variablesRequest({variablesReference: scopes.body.scopes[0]!.variablesReference})).body.variables;
-                Assert.equal(locals.length, 1);
+                Assert.strictEqual(locals.length, 1);
                 Assert(locals.some(variable => variable.name === "fib" && variable.value === "<unavailable>" && variable.type === ""));
 
                 await Promise.all([ dc.nextRequest({threadId: 0}), dc.waitForEvent("stopped") ]);
 
                 scopes = await dc.scopesRequest({frameId: 0});
                 locals = (await dc.variablesRequest({variablesReference: scopes.body.scopes[0]!.variablesReference})).body.variables;
-                Assert.equal(locals.length, 1);
+                Assert.strictEqual(locals.length, 1);
                 Assert(locals.some(variable => variable.name === "fib" && variable.value === "1" && variable.type?.match(/uint32_t volatile @ 0x/)));
             }),
         ]);
@@ -481,9 +481,9 @@ suite("Test Debug Adapter", () =>{
             dc.launch(dbgConfig),
             dc.waitForEvent("stopped").then(async() => {
                 let res = await dc.evaluateRequest({expression: "2"});
-                Assert.equal(res.body.result, "2");
+                Assert.strictEqual(res.body.result, "2");
                 res = await dc.evaluateRequest({expression: "callCount"});
-                Assert.equal(res.body.result, "0");
+                Assert.strictEqual(res.body.result, "0");
                 res = await dc.evaluateRequest({expression: "str"});
                 Assert.match(res.body.result, /"This is a sträng"$/);
                 try {
