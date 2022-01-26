@@ -5,7 +5,8 @@
     "project": "./tsconfig.json"
   },
   "plugins": [
-    "@typescript-eslint"
+    "@typescript-eslint",
+    "deprecation"
   ],
   "extends": [
     "eslint:recommended",
@@ -29,6 +30,7 @@
     "no-empty": "off",                                          // Empty catch blocks can be useful
     "no-inner-declarations": "off",                             // Seems to break when using TS namespaces
     "eqeqeq": "error",                                          // == can be obscure/unintuitive, so use ===
+    "deprecation/deprecation": "warn",
     // CODE FORMATTING =================
     "semi": "warn",
     "camelcase": "warn",
