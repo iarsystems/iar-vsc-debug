@@ -609,6 +609,42 @@ suite("Test Debug Adapter", () =>{
         ]);
     });
 
+    test("Supports read and write memory", () => {
+        /// This test assumes ints are at least 4 bytes and that memory is little-endian, which may not be true in all cases
+        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig));
+        dbgConfigCopy.stopOnEntry = false;
+        return Promise.all([
+            dc.configurationSequence(),
+            dc.launch(dbgConfigCopy),
+            dc.waitForEvent("stopped").then(async() => {
+                const stack = await dc.stackTraceRequest({ threadId: 1});
+                const scopes = await dc.scopesRequest({frameId: stack.body.stackFrames[0]!.id});
+                const staticsScope = scopes.body.scopes[1]!;
+
+                const vars = await dc.variablesRequest({ variablesReference: staticsScope.variablesReference });
+                const callCount = vars.body.variables.find(variable => variable.name.startsWith("callCount"));
+                Assert(callCount);
+                Assert(callCount?.memoryReference)
+
+                // Read the variable value from memory --- should be 10
+                const response = await dc.customRequest("readMemory", { memoryReference: callCount.memoryReference, count: 4 });
+                const data = Buffer.from(response.body?.data, "base64");
+                Assert.deepStrictEqual(data, Buffer.from([10, 0, 0, 0]));
+
+                // Write a new value to the variable memory --- 0x010011ff
+                await dc.customRequest("writeMemory", { memoryReference: callCount.memoryReference, data: Buffer.from([0xff, 0x11, 0x00, 0x01]).toString("base64")});
+
+                {
+                    // Make sure the variable value now matches what we set
+                    const updatedVars = await dc.variablesRequest({ variablesReference: staticsScope.variablesReference });
+                    const updatedCallCount = updatedVars.body.variables.find(variable => variable.name.startsWith("callCount"));
+                    Assert(updatedCallCount);
+                    Assert.strictEqual(updatedCallCount?.value, "16'781'823");
+                }
+            })
+        ]);
+    });
+
     // Assert stepping, next into out etc. (with stack)
     // Pause?
 });

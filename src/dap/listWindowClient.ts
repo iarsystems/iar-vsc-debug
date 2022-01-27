@@ -45,7 +45,7 @@ export class ListWindowClient implements Disposable {
 
     private rows: Row[] = [];
     // Only allow one update at a time to avoid race conditions. Any new updates must await the current one.
-    private currentUpdate: Q.Promise<Row[]>;
+    private currentUpdate: Q.Promise<Row[]> | undefined;
     private oneshotChangeHandlers: Array<() => void> = [];
 
     private constructor(private readonly backend: ThriftClient<ListWindowBackend.Client>) {
@@ -54,26 +54,30 @@ export class ListWindowClient implements Disposable {
 
     /**
      * Gets all top level rows, i.e. rows that have no parent. These are valid only until the next window update.
+     * If the window is in the process of updating, waits for it to finish and returns the updated contents.
      */
-    get topLevelRows(): ListWindowRow[] {
-        const topLevelRowIndices: number[] = [];
-        this.rows.forEach((row, index) => {
+    async getTopLevelRows(): Promise<ListWindowRow[]> {
+        const rows = await this.getRows();
+        /** Convert internal (thrift) rows to {@link ListWindowRow}s */
+        const results: ListWindowRow[] = [];
+        rows.forEach((row, index) => {
             if (TreeInfoUtils.getDepth(row.treeinfo) === 0) {
-                topLevelRowIndices.push(index);
+                results.push(this.createListWindowRow(index));
             }
         });
-        return topLevelRowIndices.map(row => this.createListWindowRow(row));
+        return results;
     }
 
     /**
      * Gets the direct children of an expandable row.
      */
-    getChildrenOf(parent: ListWindowRow): ListWindowRow[] {
+    async getChildrenOf(parent: ListWindowRow): Promise<ListWindowRow[]> {
         if (!parent.hasChildren) {
             throw new Error("Attempted to expand a row that is not expandable.");
         }
         const rowIndex = parent.id;
-        const row = this.rows[rowIndex];
+        const rows = await this.getRows();
+        const row = rows[rowIndex];
         if (row === undefined) {
             throw new Error("Cannot find row in the window matching: " + parent.values[0]);
         }
@@ -143,6 +147,23 @@ export class ListWindowClient implements Disposable {
         this.backend.dispose();
     }
 
+    /**
+     * Gets the current window contents. If the window is in the process of updating, waits for it to finish and returns
+     * the updated contents.
+     */
+    private getRows(): Promise<Row[]> {
+        if (this.currentUpdate === undefined) {
+            return Promise.resolve(this.rows);
+        } else {
+            // We're in the process of updating, so wait for the rows to change before resolving
+            return new Promise((resolve, _) => {
+                this.onChangeOnce(() => {
+                    resolve(this.rows);
+                })
+            });
+        }
+    }
+
     private updateAllRows() {
         const updatePromise = this.backend.service.getNumberOfRows().then(async(val) => {
             let nRows = val.toNumber();
@@ -164,6 +185,7 @@ export class ListWindowClient implements Disposable {
             // Commit the new rows only if no other update has been started after us
             if (this.currentUpdate === updatePromise) {
                 this.rows = rows;
+                this.currentUpdate = undefined;
                 this.oneshotChangeHandlers.forEach(handler => handler());
                 this.oneshotChangeHandlers = [];
             }

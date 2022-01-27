@@ -157,8 +157,9 @@ export class CSpyContextManager implements Disposable {
 
     /**
      * Sets a variable in the specified scope to the specified value.
+     * Returns the updated value, and the memory address of the changed variable (if any)
      */
-    async setVariable(scopeReference: number, variable: string, value: string): Promise<string> {
+    async setVariable(scopeReference: number, variable: string, value: string): Promise<{newValue: string, changedAddress?: string}> {
         const reference = this.scopeAndVariableHandles.get(scopeReference);
         await this.setInspectionContext(reference.context);
 

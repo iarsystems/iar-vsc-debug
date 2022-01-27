@@ -25,9 +25,9 @@ export interface VariablesProvider {
      * @param name The name of a variable previously returned by this provider
      * @param variableReference The variableReference of the parent variable, if any
      * @param value The value to set
-     * @returns The new value of the variable. May be in a different format from the passed in value.
+     * @returns The new value of the variable, and the address of the changed variable if any. The value may be in a different format from the passed in value.
      */
-    setVariable(name: string, variableReference: number | undefined, value: string): Promise<string>;
+    setVariable(name: string, variableReference: number | undefined, value: string): Promise<{newValue: string, changedAddress?: string}>;
 }
 
 /**
@@ -75,7 +75,8 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
      */
     async getVariables(): Promise<Variable[]> {
         await this.backendUpdate;
-        return this.windowClient.topLevelRows.map(row => this.createVariableFromRow(row));
+        const topLevelRows = await this.windowClient.getTopLevelRows();
+        return topLevelRows.map(row => this.createVariableFromRow(row));
     }
 
     /**
@@ -84,27 +85,29 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
     async getSubvariables(variableReference: number) {
         await this.backendUpdate;
         const referencedRow = this.variableReferences.get(variableReference);
-        const children = this.windowClient.getChildrenOf(referencedRow);
+        const children = await this.windowClient.getChildrenOf(referencedRow);
         return children.map(row => this.createVariableFromRow(row));
 
     }
 
-    async setVariable(name: string, variableReference: number | undefined, value: string): Promise<string> {
-        // TODO: indices should be instance variables
+    async setVariable(name: string, variableReference: number | undefined, value: string): Promise<{newValue: string, changedAddress?: string}> {
         await this.backendUpdate;
         let rows: ListWindowRow[];
         if (!variableReference) {
-            rows = this.windowClient.topLevelRows;
+            rows = await this.windowClient.getTopLevelRows();
         } else {
             const parentRow = this.variableReferences.get(variableReference);
-            rows = this.windowClient.getChildrenOf(parentRow);
+            rows = await this.windowClient.getChildrenOf(parentRow);
         }
         const row = rows.find(row => row.values[this.varNameColumn] === name);
         if (!row) {
             throw new Error("Failed to find variable with name: " + name);
         }
         this.notifyUpdateImminent();
-        return this.windowClient.setValueOf(row, this.varValueColumn, value);
+        const newVal = await this.windowClient.setValueOf(row, this.varValueColumn, value);
+
+        const location = row.values[this.varLocationColumn];
+        return { newValue: newVal, changedAddress: location ? this.locationToMemoryReference(location) : undefined };
     }
 
     /**
@@ -131,11 +134,23 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
         if (name === undefined || value === undefined) {
             throw new Error("Not enough data in row to parse variable");
         }
+        const location = row.values[this.varLocationColumn];
         return {
             name: name,
             value: value,
             type: row.values[this.varTypeColumn] + (row.values[this.varLocationColumn] ? ` @ ${row.values[this.varLocationColumn]}` : ""),
+            memoryReference: location ? this.locationToMemoryReference(location) : undefined,
             variablesReference: row.hasChildren ? this.variableReferences.create(row) : 0,
         };
+    }
+
+    // converts the contents of a list window cell to a dap memory reference, if possible
+    private locationToMemoryReference(cellText: string): string | undefined {
+        // should only return if it's a memory address (and not e.g. a register)
+        if (cellText.match(/0x[a-fA-F0-9']/)) {
+            // remove ' from number, makes for easier parsing
+            return cellText.replace("'", "");
+        }
+        return undefined;
     }
 }

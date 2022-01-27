@@ -1,5 +1,5 @@
 import { DebugProtocol } from "vscode-debugprotocol";
-import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, DebugSession, TerminatedEvent, InvalidatedEvent } from "vscode-debugadapter";
+import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, DebugSession, TerminatedEvent, InvalidatedEvent, Event } from "vscode-debugadapter";
 import { ThriftServiceManager } from "./thrift/thriftServiceManager";
 import * as Debugger from "./thrift/bindings/Debugger";
 import * as DebugEventListener from "./thrift/bindings/DebugEventListener";
@@ -22,6 +22,7 @@ import { Command, CommandRegistry } from "./commandRegistry";
 import { Utils } from "./utils";
 import { CustomRequest } from "./customRequest";
 import { CspyDisassemblyManager } from "./cspyDisassemblyManager";
+import { CspyMemoryManager } from "./cspyMemoryManager";
 
 
 /**
@@ -83,6 +84,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     private stackManager: CSpyContextManager | undefined = undefined;
     private breakpointManager: CSpyBreakpointManager | undefined = undefined;
     private disassemblyManager: CspyDisassemblyManager | undefined = undefined;
+    private memoryManager: CspyMemoryManager | undefined = undefined;
 
     // Here, we can register actions to perform on e.g. receiving console commands, or custom dap requests
     private readonly consoleCommandRegistry: CommandRegistry<void, string> = new CommandRegistry();
@@ -126,6 +128,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
         response.body.supportsCompletionsRequest = true;
         response.body.supportsDisassembleRequest = true;
         response.body.supportsInstructionBreakpoints = true;
+        response.body.supportsReadMemoryRequest = true;
+        response.body.supportsWriteMemoryRequest = true;
 
         this.clientLinesStartAt1 = args.linesStartAt1 || false;
         this.clientColumnsStartAt1 = args.columnsStartAt1 || false;
@@ -192,6 +196,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
             // only after loading modules can we initialize services using listwindows
             this.stackManager = await CSpyContextManager.instantiate(this.serviceManager, this.cspyEventHandler);
+            this.memoryManager = await CspyMemoryManager.instantiate(this.serviceManager);
             this.disassemblyManager = await CspyDisassemblyManager.instantiate(this.serviceManager,
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1);
@@ -384,10 +389,18 @@ export class CSpyDebugSession extends LoggingDebugSession {
     protected override async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments) {
         console.log("setVariable");
         await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
-            const newVal = await stackManager.setVariable(args.variablesReference, args.name, args.value);
+            const { newValue, changedAddress } = await stackManager.setVariable(args.variablesReference, args.name, args.value);
             response.body = {
-                value: newVal,
+                value: newValue
             };
+            // Notify the client that some memory changed
+            if (changedAddress) {
+                this.sendEvent(new Event("memory", {
+                    memoryReference: changedAddress,
+                    offset: 0,
+                    count: 1024, // We don't know the size, so just update a big chunk
+                }));
+            }
         });
         this.sendResponse(response);
         // When changing a variable, other variables pointing to the same memory may change, so force the UI to reload all variables
@@ -448,6 +461,32 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.sendResponse(response);
     }
 
+    protected override async readMemoryRequest(response: DebugProtocol.ReadMemoryResponse, args: DebugProtocol.ReadMemoryArguments) {
+        console.log("Read " + args.memoryReference + " " + args.offset + " " + args.count);
+        await CSpyDebugSession.tryResponseWith(this.memoryManager, response, async memoryManager => {
+            const data = await memoryManager.readMemory(args.memoryReference, args.offset ?? 0, args.count);
+            response.body = {
+                address: args.memoryReference,
+                data: data[0],
+                unreadableBytes: args.count - data[1],
+            };
+        });
+        this.sendResponse(response);
+    }
+    protected override async writeMemoryRequest(response: DebugProtocol.WriteMemoryResponse, args: DebugProtocol.WriteMemoryArguments) {
+        console.log("Write", args);
+        await CSpyDebugSession.tryResponseWith(this.memoryManager, response, async memoryManager => {
+            const bytesWritten = await memoryManager.writeMemory(args.memoryReference, args.offset ?? 0, args.data);
+            response.body = {
+                bytesWritten: bytesWritten,
+                offset: 0,
+            };
+        });
+        this.sendResponse(response);
+        // This memory may be used by a variable, so refresh all variables
+        this.sendEvent(new InvalidatedEvent(["variables"]));
+    }
+
     protected override async customRequest(command: string, response: DebugProtocol.Response, args: unknown) {
         if (this.customRequestRegistry.hasCommand(command)) {
             try {
@@ -506,6 +545,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         await this.stackManager?.dispose();
         this.breakpointManager?.dispose();
         this.disassemblyManager?.dispose();
+        this.memoryManager?.dispose();
         // Will disconnect this DAP debugger client
         this.cspyDebugger?.dispose();
         // VSC-3 This will take care of orderly shutting down CSpyServer
