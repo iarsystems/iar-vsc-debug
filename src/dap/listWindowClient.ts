@@ -159,7 +159,7 @@ export class ListWindowClient implements Disposable {
             return new Promise((resolve, _) => {
                 this.onChangeOnce(() => {
                     resolve(this.rows);
-                })
+                });
             });
         }
     }

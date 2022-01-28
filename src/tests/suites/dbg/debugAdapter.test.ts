@@ -624,7 +624,7 @@ suite("Test Debug Adapter", () =>{
                 const vars = await dc.variablesRequest({ variablesReference: staticsScope.variablesReference });
                 const callCount = vars.body.variables.find(variable => variable.name.startsWith("callCount"));
                 Assert(callCount);
-                Assert(callCount?.memoryReference)
+                Assert(callCount?.memoryReference);
 
                 // Read the variable value from memory --- should be 10
                 const response = await dc.customRequest("readMemory", { memoryReference: callCount.memoryReference, count: 4 });
