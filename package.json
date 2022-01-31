@@ -3,6 +3,7 @@
 	"displayName": "C-SPY Debug",
 	"version": "0.25.0",
 	"publisher": "hampusad",
+	"icon": "images/logo.png",
 	"description": "An example extension & Debug Adapter for C-SPY with VS Code",
 	"repository": {
 		"type": "git",
@@ -109,42 +110,8 @@
 			}
 		},
 		"menus": {
-			"debug/toolBar": [
-				{
-					"command": "iar.stepOverInstruction",
-					"when": "debugType == cspy"
-				},
-				{
-					"command": "iar.stepIntoInstruction",
-					"when": "debugType == cspy"
-				}
-			],
-			"commandPalette": [
-				{
-					"command": "iar.stepOverInstruction",
-					"when": "false"
-				},
-				{
-					"command": "iar.stepIntoInstruction",
-					"when": "false"
-				}
-			]
 		},
 		"commands": [
-			{
-				"command": "iar.stepOverInstruction",
-				"icon": "images/istepover.png",
-				"category": "IAR Debug",
-				"title": "Instruction Step Over",
-				"enablement": "debugType == cspy"
-			},
-			{
-				"command": "iar.stepIntoInstruction",
-				"icon": "images/istepin.png",
-				"category": "IAR Debug",
-				"title": "Instruction Step Into",
-				"enablement": "debugType == cspy"
-			},
 			{
 				"command": "iar.useAutoBreakpoints",
 				"category": "IAR Debug",
