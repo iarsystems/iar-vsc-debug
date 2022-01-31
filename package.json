@@ -1,19 +1,36 @@
 {
-	"name": "cspy-debug",
+	"name": "iar-dbg",
 	"displayName": "C-SPY Debug",
 	"version": "0.25.0",
 	"publisher": "hampusad",
 	"icon": "images/logo.png",
+	"galleryBanner": {
+		"color": "#ffe000",
+		"theme": "light"
+	},
 	"description": "An example extension & Debug Adapter for C-SPY with VS Code",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/mario-pi/iar-vsc-debug"
 	},
+	"homepage": "https://www.iar.com/",
 	"author": {
 		"name": "Hampus Adolfsson",
 		"email": "hampusad@iar.com"
 	},
 	"keywords": [
+		"IAR",
+		"C-SPY",
+		"debuggers",
+		"ARM",
+		"Embedded",
+		"IoT",
+		"c",
+		"c++",
+		"cpp",
+		"i-jet",
+		"j-link",
+		"jlink",
 		"multi-root ready"
 	],
 	"engines": {
@@ -25,18 +42,14 @@
 	],
 	"private": true,
 	"dependencies": {
-		"@types/thrift": "^0.10.9",
-		"arraybuffer-to-string": "^1.0.1",
 		"await-notify": "1.0.1",
-		"mutex-promise": "^0.1.0",
 		"thrift": "^0.12.0",
 		"uuid": "^8.3.2",
 		"vscode-debugadapter": "^1.51.0",
-		"vscode-debugprotocol": "^1.51.0",
-		"vscode-languageserver": "^3.5.0"
+		"vscode-debugprotocol": "^1.51.0"
 	},
 	"devDependencies": {
-		"@types/glob": "^7.1.1",
+		"@types/thrift": "^0.10.9",
 		"@types/mocha": "^5.2.7",
 		"@types/node": "^14.7.0",
 		"@types/node-int64": "^0.4.29",
@@ -49,7 +62,6 @@
 		"java-properties": "^1.0.2",
 		"mocha": "^9.2.0",
 		"mocha-junit-reporter": "^2.0.2",
-		"tslint": "^5.8.0",
 		"typescript": "^4.3.0",
 		"vsce": "^2.6.4",
 		"vscode-debugadapter-testsupport": "^1.51.0",
@@ -59,10 +71,7 @@
 		"prepublish": "tsc -p .",
 		"compile": "tsc -p .",
 		"watch": "tsc -w -p .",
-		"test": "mocha -u tdd ./out/tests/",
 		"package": "vsce package",
-		"publish": "vsce publish",
-		"pkgvars": "node ./node_modules/vscode/bin/install",
 		"lint": "eslint . --ext .ts"
 	},
 	"main": "./out/extension",
@@ -74,25 +83,10 @@
 		"onCommand:iar.useSoftwareBreakpoints"
 	],
 	"contributes": {
-		"languages": [
-			{
-				"id": "iarmemory",
-				"extensions": [
-					".iarmem"
-				]
-			}
-		],
-		"grammars": [
-			{
-				"language": "iarmemory",
-				"scopeName": "source.iarmemory",
-				"path": "./syntaxes/iarmemory.tmLanguage.json"
-			}
-		],
 		"configuration": {
 			"title": "IAR C-SPY Debugging",
 			"properties": {
-				"iardbg.breakpointType": {
+				"iar-dbg.breakpointType": {
 					"default": "Auto",
 					"description": "Whether to set hardware- or software breakpoints. This only affects drivers that support it. Changing this setting will not affect already installed breakpoints in active sessions.",
 					"type": "string",
@@ -178,7 +172,7 @@
 						"properties": {
 							"target": {
 								"type": "string",
-								"description": "The target type, e.g, arm, in lower case.",
+								"description": "The target type, e.g 'arm', in lower case.",
 								"default": "arm"
 							},
 							"program": {
@@ -198,8 +192,8 @@
 							},
 							"projectPath": {
 								"type": "string",
-								"description": "The workspace to use during the debug session",
-								"default": "${command:iar-settings.project-file} for an iar-vsc projects or path to project (${workspaceFolder} for current folder)"
+								"description": "The workspace to use during the debug session.",
+								"default": "${command:iar-settings.project-file} for an iar-vsc project or path to project (${workspaceFolder} for current folder)"
 							},
 							"projectConfiguration": {
 								"type": "string",
@@ -223,7 +217,7 @@
 							},
 							"driverOptions": {
 								"type": "array",
-								"description": "The commandline to use when launching.",
+								"description": "The command line to use when launching the debugger. For reference, see \"Summary of C-SPY command line options\" in the C-SPY Debugging Guide: https://wwwfiles.iar.com/arm/webic/doc/EWARM_DebuggingGuide.ENU.pdf",
 								"items": {
 									"type": "string"
 								},
@@ -240,7 +234,7 @@
 								"properties": {
 									"flashLoader": {
 										"type": "string",
-										"description": "A flash loader specification XML file, with the filename extension board.",
+										"description": "A flash loader specification XML file, with the filename extension '.board'.",
 										"format": "uri"
 									},
 									"deviceMacros": {
@@ -255,17 +249,19 @@
 							},
 							"plugins": {
 								"type": "array",
-								"description": "The set of plugins to be loaded during the debug session",
+								"description": "The set of plugins to be loaded during the debug session.",
 								"items": {
-									"type": "string"
+									"type": "string",
+									"format": "uri"
 								},
 								"default": []
 							},
 							"setupMacros": {
 								"type": "array",
-								"description": "List of macros to be loaded with the debug session",
+								"description": "A list of macros to be loaded with the debug session.",
 								"items": {
-									"type": "string"
+									"type": "string",
+									"format": "uri"
 								},
 								"default": []
 							}
@@ -281,7 +277,7 @@
 						"program": "${workspaceFolder}/Debug/Exe/ewproj.out",
 						"stopOnEntry": true,
 						"workbenchPath": "${command:iar-settings.workbench} for an iar-vsc project or path to EW root.",
-						"projectPath": "${command:iar-settings.project-file} for an iar-vsc projects or path to project (${workspaceFolder} for current folder)",
+						"projectPath": "${command:iar-settings.project-file} for an iar-vsc projects or path to project (${workspaceFolder} for current folder).",
 						"projectConfiguration": "${command:iar-settings.project-configuration} for an iar-vsc projects or the name of the configuration.",
 						"driver": "sim2",
 						"driverOptions": [
@@ -294,8 +290,8 @@
 				],
 				"configurationSnippets": [
 					{
-						"label": "C-SPY Debug: Launch iar-vsc project",
-						"description": "A new configuration for debugging a program with C-SPY that is using the iar-vsc extension",
+						"label": "C-SPY Debug: Launch .ewp project",
+						"description": "A new configuration for debugging a program with C-SPY that is using the iar-vsc extension.",
 						"body": {
 							"type": "cspy",
 							"request": "launch",
@@ -321,7 +317,7 @@
 					},
 					{
 						"label": "C-SPY Debug: Generic launch configuration",
-						"description": "A new configuration for debugging a program with C-SPY",
+						"description": "A new configuration for debugging a program with C-SPY.",
 						"body": {
 							"type": "cspy",
 							"request": "launch",
