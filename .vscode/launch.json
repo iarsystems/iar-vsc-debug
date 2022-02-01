@@ -5,13 +5,13 @@
 			"type": "extensionHost",
 			"request": "launch",
 			"name": "Extension",
-			"preLaunchTask": "npm",
+			"preLaunchTask": "npm: webpack-watch",
 			"runtimeExecutable": "${execPath}",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}",
 				"${workspaceFolder}/samples/GettingStarted"
 			],
-			"outFiles": [ "${workspaceFolder}/out/**/*.js" ]
+			"outFiles": [ "${workspaceFolder}/dist/**/*.js" ]
 		},
 		{
 			"name": "Run Debugger Tests",
@@ -23,7 +23,7 @@
 				"--extensionTestsPath=${workspaceFolder}/out/tests/suites/dbg/index"
 			],
 			"outFiles": [ "${workspaceFolder}/out/**/*.js" ],
-			"preLaunchTask": "npm: compile",
+			"preLaunchTask": "npm: test-compile",
             "presentation": {
                 "group": "Tests",
             }
@@ -39,7 +39,7 @@
 				"${workspaceFolder}/src/tests/TestProjects/ConfigTests"
 			],
 			"outFiles": [ "${workspaceFolder}/out/**/*.js" ],
-			"preLaunchTask": "npm: compile",
+			"preLaunchTask": "npm: test-compile",
             "presentation": {
                 "group": "Tests",
             }

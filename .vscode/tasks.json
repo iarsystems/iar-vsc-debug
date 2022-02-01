@@ -3,10 +3,9 @@
 	"tasks": [
 		{
 			"type": "npm",
-			"identifier": "npm",
-			"script": "watch",
+			"script": "webpack-watch",
 			"problemMatcher": [
-				"$tsc-watch"
+				"$ts-webpack-watch"
 			],
 			"isBackground": true,
 			"group": {
@@ -16,8 +15,11 @@
 		},
 		{
 			"type": "npm",
-			"script": "compile",
-			"problemMatcher": []
+			"script": "test-compile",
+			"group": "build",
+			"problemMatcher": [],
+			"label": "npm: test-compile",
+			"detail": "npm run webpack && tsc -p ./"
 		}
 	]
 }

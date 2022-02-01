@@ -1,6 +1,7 @@
 .DS_Store
 node_modules/
 out/
+dist/
 test-sandbox/
 npm-debug.log
 mock-debug.txt

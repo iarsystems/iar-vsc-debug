@@ -1,7 +1,12 @@
-.vscode/**/*
-.gitignore
-.travis.yml
-appveyor.yml
-src/**/*
-out/tests/**/*
-**/*.js.map
+# Ignore everything
+*
+*/**
+
+# Include only the files that should be in the .vsix
+!dist/main.js
+!README.md
+!CHANGELOG.md
+!LICENSE
+!KNOWN_ISSUES.md
+!md-images/**/*
+!images/**/*

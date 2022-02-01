@@ -5,6 +5,7 @@
 		"lib": ["es2020", "DOM"],
 		"outDir": "out",
 
+        "rootDir": ".",
         "sourceMap": true,
         "allowJs": true,
         /* Strict Type-Checking Option */
@@ -18,12 +19,15 @@
         "strictFunctionTypes": true, /* Stricter type checks for function parameters */
         "noImplicitOverride": true, /* Force use of 'override' keyword */
         "noPropertyAccessFromIndexSignature": true, /* Report errors when accessing nonexistent fields */
-        "noUncheckedIndexedAccess": true /* Add 'undefined' to the type returned from indexed accesses */
+        "noUncheckedIndexedAccess": true, /* Add 'undefined' to the type returned from indexed accesses */
+        "isolatedModules": true, /* Recommended when using bundlers */
 	},
 	"include": [
 		"src/**/*",
 	],
 	"exclude": [
-		"out/**/*"
+		"out/**/*",
+        "node_modules",
+        ".vscode-test"
 	]
 }
