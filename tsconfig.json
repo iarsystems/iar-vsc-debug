@@ -5,7 +5,6 @@
 		"lib": ["es2020", "DOM"],
 		"outDir": "out",
 
-        "rootDir": ".",
         "sourceMap": true,
         "allowJs": true,
         /* Strict Type-Checking Option */
