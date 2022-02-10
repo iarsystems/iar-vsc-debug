@@ -1,14 +1,13 @@
 
 
 import * as vscode from "vscode";
-import { MemoryDocumentProvider } from "./memoryDocumentProvider";
 import { CSpyDebugSession } from "./dap/cspyDebug";
-import { CSpyConfigurationProvider } from "./dap/configresolution/cspyConfigurationProvider";
 import { DebugSessionTracker } from "./debugSessionTracker";
 import { BreakpointCommands } from "./breakpointCommands";
-
-/** Set to <tt>true</tt> to enable the Symbolic Memory view */
-const ENABLE_MEMORY_VIEW = false;
+import { CSpyConfigurationResolver } from "./configresolution/cspyConfigurationResolver";
+import { CSpyConfigurationsProvider } from "./configresolution/cspyConfigurationsProvider";
+import { SettingsConstants } from "./settingsConstants";
+import { BreakpointType } from "./dap/breakpoints/cspyBreakpointManager";
 
 let sessionTracker: DebugSessionTracker | undefined;
 
@@ -21,41 +20,22 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", CSpyConfigurationProvider.getProvider(), vscode.DebugConfigurationProviderTriggerKind.Initial));
-    context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", CSpyConfigurationProvider.getProvider(), vscode.DebugConfigurationProviderTriggerKind.Dynamic));
-
-    // register commands to be called when pressing instruction step buttons
-    context.subscriptions.push(vscode.commands.registerCommand("iar.stepOverInstruction", () => {
-        vscode.debug.activeDebugSession?.customRequest("next", {granularity: "instruction"});
-    }));
-    context.subscriptions.push(vscode.commands.registerCommand("iar.stepIntoInstruction", () => {
-        vscode.debug.activeDebugSession?.customRequest("stepIn", {granularity: "instruction"});
-    }));
-
-    const memoryDocumentProvider = new MemoryDocumentProvider();
-    context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider("memory", memoryDocumentProvider));
-
-    context.subscriptions.push(vscode.debug.onDidStartDebugSession(async session => {
-        if (session.type === "cspy") {
-            // TODO: should probably not open automatically (maybe add a setting for it)
-            if (ENABLE_MEMORY_VIEW) {
-                const memoryDocument = await vscode.workspace.openTextDocument(vscode.Uri.parse("memory:Symbolic Memory.iarmem"));
-                await vscode.window.showTextDocument(memoryDocument, { preview: false, preserveFocus: true, viewColumn: vscode.ViewColumn.Three });
-            }
-        }
-    }));
-
-    // Note: sometimes, VS Code calls this handler before onDidStartDebugSession
-    context.subscriptions.push(vscode.debug.onDidReceiveDebugSessionCustomEvent((e: vscode.DebugSessionCustomEvent) => {
-        if (e.session.type === "cspy") {
-            if (ENABLE_MEMORY_VIEW && e.event === "memory") {
-                memoryDocumentProvider.setData(e.body, vscode.Uri.parse("memory:Symbolic Memory.iarmem"));
-            }
-        }
-    }));
+    context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", new CSpyConfigurationsProvider(), vscode.DebugConfigurationProviderTriggerKind.Initial));
+    context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", new CSpyConfigurationsProvider(), vscode.DebugConfigurationProviderTriggerKind.Dynamic));
+    context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", CSpyConfigurationResolver.getInstance()));
 
     sessionTracker = new DebugSessionTracker(context);
     BreakpointCommands.registerCommands(context, sessionTracker);
+    CSpyConfigurationResolver.getInstance().addModifier(config => {
+        // Pass along the user's selection of breakpoint type to the adapter
+        // Allow overriding the user setting from launch.json, even if we don't advertise that possibility anywhere
+        if (!config["breakpointType"]) {
+            const bpType = vscode.workspace.getConfiguration(SettingsConstants.MAIN_SECTION).get(SettingsConstants.BREAKPOINT_TYPE);
+            const actualType = bpType === SettingsConstants.BreakpointTypeValues.HARDWARE ? BreakpointType.HARDWARE :
+                bpType === SettingsConstants.BreakpointTypeValues.SOFTWARE ? BreakpointType.SOFTWARE : BreakpointType.AUTO;
+            config["breakpointType"] = actualType;
+        }
+    });
 }
 
 export function deactivate() {

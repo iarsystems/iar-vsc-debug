@@ -3,8 +3,11 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-import { CSpyConfigurationProvider } from "../../../dap/configresolution/cspyConfigurationProvider";
+import { CSpyConfigurationsProvider } from "../../../configresolution/cspyConfigurationsProvider";
 import { OsUtils } from "../../../utils/osUtils";
+import { CSpyConfigurationResolver } from "../../../configresolution/cspyConfigurationResolver";
+import { XclConfigurationProvider } from "../../../configresolution/xclConfigurationProvider";
+import { BuildExtensionInteraction } from "../../../configresolution/buildExtensionInteraction";
 
 /**
  * This test suite tests our ability to generate a launch configuration based on the xcl files
@@ -33,7 +36,8 @@ suite("Configuration tests", () => {
 
         console.log("Build extensions not install: Patching the iar-vsc.json file");
         // Slurp the content of the iar-vsc-file and patch the path to the ewp-file.
-        const vscContent = CSpyConfigurationProvider.getProvider().getVscJson(rootFolder);
+        const jsonPath = path.join(rootFolder.uri.fsPath, ".vscode", "iar-vsc.json");
+        const vscContent = JSON.parse(fs.readFileSync(jsonPath).toString());
         vscContent["ewp"] = path.join(rootFolder.uri.fsPath, "BasicDebugging.ewp");
         fs.writeFileSync(path.join(rootFolder.uri.fsPath, ".vscode", "iar-vsc.json"), JSON.stringify(vscContent, undefined, 4));
 
@@ -65,8 +69,8 @@ suite("Configuration tests", () => {
 	 * Test that we're able to list all available launches based on the content of the
 	 * settings folder.
 	 */
-    test("Test dynamic configurations", async() => {
-        const cspyConfigs = await CSpyConfigurationProvider.getProvider().provideDebugConfigurations(rootFolder);
+    test("Test dynamic configurations", () => {
+        const cspyConfigs = new CSpyConfigurationsProvider().provideDebugConfigurations(rootFolder);
         if (!cspyConfigs) {
             assert.fail("Failed to generate a configuration");
         }
@@ -89,15 +93,15 @@ suite("Configuration tests", () => {
     /**
 	 * Test that we're able to read the content of the vsc file and select the appropriate configuration.
 	 */
-    test("Test initial configurations", async() => {
+    test("Test initial configurations", () => {
         const dummyConfig: any = {};
-        const cspyConfig = await CSpyConfigurationProvider.getProvider().resolveDebugConfiguration(rootFolder, dummyConfig, undefined);
+        const cspyConfig = CSpyConfigurationResolver.getInstance().resolveDebugConfiguration(rootFolder, dummyConfig, undefined);
 
         if (!cspyConfig || cspyConfig === null) {
             assert.fail("Failed to generate a configuration");
         }
 
-        const config = CSpyConfigurationProvider.getProvider().getVscJson(rootFolder)["configuration"];
+        const config = BuildExtensionInteraction.getSelectedConfiguration(rootFolder);
 
         // Check that we've collected the correct information for the project
         assert.deepStrictEqual(cspyConfig["name"], "BasicDebugging." + config);
@@ -121,12 +125,12 @@ suite("Configuration tests", () => {
         const program = path.join("output", "exe", "foo.out");
 
         // Run with empty cli and we should get an undefined as return.
-        let configTest = CSpyConfigurationProvider.getProvider().generateDebugConfiguration(wsDir, ewpDir, launchName, config, [], driverOpts);
+        let configTest = XclConfigurationProvider.generateDebugConfiguration(wsDir, ewpDir, launchName, config, [], driverOpts);
         assert.deepStrictEqual(configTest, undefined);
 
         // Test that the driver and target can be extracted.
         const genOpt = ["skipMe", "arm/bin/libarmsim2.so", path.join(wsDir, program)];
-        configTest = CSpyConfigurationProvider.getProvider().generateDebugConfiguration(wsDir, ewpDir, launchName, config, genOpt, driverOpts);
+        configTest = XclConfigurationProvider.generateDebugConfiguration(wsDir, ewpDir, launchName, config, genOpt, driverOpts);
         if (!configTest) {
             assert.fail("Failed to generate configuration");
         }
@@ -138,7 +142,7 @@ suite("Configuration tests", () => {
         assert.deepStrictEqual(configTest["driverOptions"], driverOpts);
 
         const genOpt2 = ["skipMe", "arm\\bin\\armjet.dll", path.join(wsDir, program)];
-        configTest = CSpyConfigurationProvider.getProvider().generateDebugConfiguration(wsDir, ewpDir, launchName, config, genOpt2, driverOpts);
+        configTest = XclConfigurationProvider.generateDebugConfiguration(wsDir, ewpDir, launchName, config, genOpt2, driverOpts);
         if (!configTest) {
             assert.fail("Failed to generate configuration");
         }
@@ -147,7 +151,7 @@ suite("Configuration tests", () => {
 
         // Ensure that we can collect all listed plugins and macros
         const genOpt3 = ["skipMe", "arm\\bin\\armijet.dll", path.resolve(wsDir, program), "--plugin=bat.dll", "--plugin=test1", "--macro=macro1", "--macro=macro2"];
-        configTest = CSpyConfigurationProvider.getProvider().generateDebugConfiguration(wsDir, ewpDir, launchName, config, genOpt3, driverOpts);
+        configTest = XclConfigurationProvider.generateDebugConfiguration(wsDir, ewpDir, launchName, config, genOpt3, driverOpts);
         if (!configTest) {
             assert.fail("Failed to generate configuration");
         }

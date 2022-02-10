@@ -5,8 +5,8 @@ import { IarOsUtils } from "../../utils/osUtils";
 import { spawnSync } from "child_process";
 import { TestSandbox } from "../../utils/testutils/testSandbox";
 import { CSpyLaunchRequestArguments } from "../../dap/cspyDebug";
-import { CSpyConfigurationProvider } from "../../dap/configresolution/cspyConfigurationProvider";
 import { BreakpointType } from "../../dap/breakpoints/cspyBreakpointManager";
+import { XclConfigurationProvider } from "../../configresolution/xclConfigurationProvider";
 
 /**
  *  Class contaning utility methods for the tests.
@@ -29,7 +29,7 @@ export namespace TestUtils {
             // split on unescaped whitespace
             const args = process.env["cspybat-args"].split(/(?<!\\)\s+/g);
             const backendIdx = args.indexOf("--backend");
-            const launchConfig = CSpyConfigurationProvider.getProvider().generateDebugConfiguration(
+            const launchConfig = XclConfigurationProvider.generateDebugConfiguration(
                 "", "", "",
                 config,
                 args.slice(0, backendIdx),
