@@ -5,10 +5,12 @@ import { XclConfigurationProvider } from "./xclConfigurationProvider";
 /**
  * A function that alters a debug configuration in some way before it is launched.
  */
-export type DebugConfigurationModifier = (config: vscode.DebugConfiguration) => Promise<void>;
+export type DebugConfigurationModifier = (config: vscode.DebugConfiguration) => void | Promise<void>;
 
 /**
  * Modifies cspy debug (launch.json) configurations before they are launched.
+ * For empty debug configurations, it also tries to provide a full debug configuration
+ * based on the project selected in the build extension (if installed).
  */
 export class CSpyConfigurationResolver implements vscode.DebugConfigurationProvider {
     private static instance: CSpyConfigurationResolver | undefined = undefined;

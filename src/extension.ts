@@ -50,6 +50,7 @@ export function activate(context: vscode.ExtensionContext) {
             const outPath = path.join(tmpdir(), "iar-vsc-svd", crypto.createHash("md5").update(JSON.stringify(config)).digest("hex") + ".svd");
             if (!fs.existsSync(outPath)) {
                 await fsProm.mkdir(path.dirname(outPath), {recursive: true});
+                // This cast is a little dirty, but vs code should alert the user if the debug config is not complete.
                 const svdData = await SvdGenerator.generateSvd(config as unknown as CSpyLaunchRequestArguments);
                 await fsProm.writeFile(outPath, SvdGenerator.toSvdXml(svdData));
             }
