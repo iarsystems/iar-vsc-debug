@@ -239,7 +239,7 @@
 							},
 							"download": {
 								"type": "object",
-								"description": "Options for downloading to hardware. Can be omitted. Will be ignored for simulator drivers.",
+								"description": "Options for downloading to hardware. Can be omitted.",
 								"properties": {
 									"flashLoader": {
 										"type": "string",
