@@ -184,7 +184,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             const driver = CSpyDriver.fromDriverName(args.driver ?? sessionConfig.driverName); // TODO: figure out how to best do this
 
             // do flashing & downloading
-            if (!driver.isSimulator() && args.download) {
+            if (args.download) {
                 await Utils.loadMacros(this.cspyDebugger.service, args.download.deviceMacros ?? []);
                 if (args.download.flashLoader) {
                     await this.cspyDebugger.service.flashModule(args.download.flashLoader, sessionConfig.executable, [], []);
