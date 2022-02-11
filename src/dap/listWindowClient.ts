@@ -165,8 +165,10 @@ export class ListWindowClient implements Disposable {
     }
 
     private updateAllRows() {
-        const updatePromise = this.backend.service.getNumberOfRows().then(async(val) => {
-            let nRows = val.toNumber();
+        // The update algorithm is not safe to run concurrently, so wait for the previous update before starting
+        const previousUpdate = this.currentUpdate !== undefined ? this.currentUpdate : Q.resolve();
+        const updatePromise = previousUpdate.then(async() => {
+            let nRows = (await this.backend.service.getNumberOfRows()).toNumber();
             const rows: Row[] = [];
             for (let i = 0; i < nRows; i++) {
                 const row = await this.backend.service.getRow(new Int64(i));
