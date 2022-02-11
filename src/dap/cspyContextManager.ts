@@ -127,7 +127,7 @@ export class CSpyContextManager implements Disposable {
         const scopes = new Array<Scope>();
         scopes.push(new Scope("Local", this.scopeAndVariableHandles.create(new ScopeReference(this.localsProvider, context)), false));
         scopes.push(new Scope("Static", this.scopeAndVariableHandles.create(new ScopeReference(this.staticsProvider, context)), false));
-        scopes.push(new Scope("Registers", this.scopeAndVariableHandles.create(new ScopeReference(this.registersProvider, context)), false));
+        scopes.push(new Scope("CPU Registers", this.scopeAndVariableHandles.create(new ScopeReference(this.registersProvider, context)), false));
 
         return scopes;
     }
