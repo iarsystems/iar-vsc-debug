@@ -67,7 +67,7 @@ export namespace XclConfigurationProvider {
     export function provideDebugConfigurationFor(workspaceFolder: vscode.WorkspaceFolder, project: string, configuration: string): vscode.DebugConfiguration {
         const projName = path.basename(project, ".ewp");
         const projDir = path.dirname(project);
-        const xclBaseName = projName + "." + configuration;
+        const xclBaseName = generateXclBasename(projName, configuration);
         const genXclFile = path.join(projDir, FileNames.settingsCatalog, `${xclBaseName}${FileNames.genXcl}`);
         const drvXclFile = path.join(projDir, FileNames.settingsCatalog, `${xclBaseName}${FileNames.drvXcl}`);
         // Ensure that both the files exists on disk.
@@ -98,7 +98,7 @@ export namespace XclConfigurationProvider {
             return undefined;
         }
 
-        const baseName = projName + "." + configName;
+        const baseName = generateXclBasename(projName, configName);
         const genXclFile = path.join(ewpDir, FileNames.settingsCatalog, baseName + FileNames.genXcl);
         const drvXclFile = path.join(ewpDir, FileNames.settingsCatalog, baseName + FileNames.drvXcl);
 
@@ -127,7 +127,7 @@ export namespace XclConfigurationProvider {
             "name": launchName,
             "type": "cspy",
             "request": "launch",
-            "stopOnEntry": false
+            "stopOnEntry": true
         };
 
         // The set of listed plugins (--plugins option) and regex
@@ -240,5 +240,9 @@ export namespace XclConfigurationProvider {
             str = str.slice(0, -1);
         }
         return str;
+    }
+
+    function generateXclBasename(projectName: string, configuration: string) {
+        return projectName + "." + configuration.replace(/ /g, "_");
     }
 }
