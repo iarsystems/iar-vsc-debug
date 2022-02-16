@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { BuildExtensionInteraction } from "./buildExtensionInteraction";
+import { BuildExtensionChannel } from "./buildExtensionChannel";
 import { XclConfigurationProvider } from "./xclConfigurationProvider";
 
 /**
@@ -32,18 +32,18 @@ export class CSpyConfigurationResolver implements vscode.DebugConfigurationProvi
         this.modifiers.push(modifier);
     }
 
-    resolveDebugConfiguration(
+    async resolveDebugConfiguration(
         folder: vscode.WorkspaceFolder | undefined,
         debugConfiguration: vscode.DebugConfiguration,
         __?: vscode.CancellationToken
-    ): vscode.DebugConfiguration | undefined {
+    ): Promise<vscode.DebugConfiguration | undefined> {
         // Handle empty or non-existant launches
         if (!debugConfiguration.type && !debugConfiguration.request && !debugConfiguration.name) {
             if (folder === undefined) {
                 throw new Error("Can not start a debug session without an open folder.");
             }
-            const project = BuildExtensionInteraction.getSelectedProject(folder);
-            const config = BuildExtensionInteraction.getSelectedConfiguration(folder);
+            const project = await BuildExtensionChannel.getInstance()?.getLoadedProject();
+            const config = await BuildExtensionChannel.getInstance()?.getSelectedConfiguration();
             if (project === undefined || config === undefined) {
                 throw new Error("Could not find a project and configuration to launch.");
             }

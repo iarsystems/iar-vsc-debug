@@ -2,12 +2,11 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
 import * as path from "path";
-import * as fs from "fs";
 import { CSpyConfigurationsProvider } from "../../../configresolution/cspyConfigurationsProvider";
 import { OsUtils } from "../../../utils/osUtils";
 import { CSpyConfigurationResolver } from "../../../configresolution/cspyConfigurationResolver";
 import { XclConfigurationProvider } from "../../../configresolution/xclConfigurationProvider";
-import { BuildExtensionInteraction } from "../../../configresolution/buildExtensionInteraction";
+import { BuildExtensionChannel } from "../../../configresolution/buildExtensionChannel";
 
 /**
  * This test suite tests our ability to generate a launch configuration based on the xcl files
@@ -28,19 +27,21 @@ suite("Configuration tests", () => {
         }
         rootFolder = folders[0];
 
-        // Skip the rest if hte build plugin is installed.
-        if (vscode.extensions.getExtension("pluyckx.iar-vsc")) {
-            console.log("Build extension is installed!");
-            return;
-        }
-
-        console.log("Build extensions not install: Patching the iar-vsc.json file");
-        // Slurp the content of the iar-vsc-file and patch the path to the ewp-file.
-        const jsonPath = path.join(rootFolder.uri.fsPath, ".vscode", "iar-vsc.json");
-        const vscContent = JSON.parse(fs.readFileSync(jsonPath).toString());
-        vscContent["ewp"] = path.join(rootFolder.uri.fsPath, "BasicDebugging.ewp");
-        fs.writeFileSync(path.join(rootFolder.uri.fsPath, ".vscode", "iar-vsc.json"), JSON.stringify(vscContent, undefined, 4));
-
+        // Create a mock build extension api with test values
+        BuildExtensionChannel.initialize({
+            getLoadedProject() {
+                return Promise.resolve(path.join(rootFolder.uri.fsPath, "BasicDebugging.ewp"));
+            },
+            getSelectedWorkbench() {
+                return Promise.resolve(undefined);
+            },
+            getSelectedConfiguration() {
+                return Promise.resolve("Debug");
+            },
+            getCSpyCommandline() {
+                return Promise.resolve(undefined);
+            }
+        });
     });
 
     /**
@@ -69,8 +70,8 @@ suite("Configuration tests", () => {
 	 * Test that we're able to list all available launches based on the content of the
 	 * settings folder.
 	 */
-    test("Test dynamic configurations", () => {
-        const cspyConfigs = new CSpyConfigurationsProvider().provideDebugConfigurations(rootFolder);
+    test("Test dynamic configurations", async() => {
+        const cspyConfigs = await new CSpyConfigurationsProvider().provideDebugConfigurations(rootFolder);
         if (!cspyConfigs) {
             assert.fail("Failed to generate a configuration");
         }
@@ -93,15 +94,15 @@ suite("Configuration tests", () => {
     /**
 	 * Test that we're able to read the content of the vsc file and select the appropriate configuration.
 	 */
-    test("Test initial configurations", () => {
+    test("Test initial configurations", async() => {
         const dummyConfig: any = {};
-        const cspyConfig = CSpyConfigurationResolver.getInstance().resolveDebugConfiguration(rootFolder, dummyConfig, undefined);
+        const cspyConfig = await CSpyConfigurationResolver.getInstance().resolveDebugConfiguration(rootFolder, dummyConfig, undefined);
 
         if (!cspyConfig || cspyConfig === null) {
             assert.fail("Failed to generate a configuration");
         }
 
-        const config = BuildExtensionInteraction.getSelectedConfiguration(rootFolder);
+        const config = await BuildExtensionChannel.getInstance()!.getSelectedConfiguration();
 
         // Check that we've collected the correct information for the project
         assert.deepStrictEqual(cspyConfig["name"], "BasicDebugging." + config);

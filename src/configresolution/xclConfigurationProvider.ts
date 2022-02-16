@@ -49,7 +49,7 @@ export namespace XclConfigurationProvider {
         const configs: vscode.DebugConfiguration[] = [];
         targetXcls.forEach(target => {
             const filePaths = target.split(".");
-            const config = convertXclToDebugConfiguration(workspaceFolder.uri.path, projectFolder, filePaths[0], filePaths[1]);
+            const config = convertXclToDebugConfiguration(workspaceFolder.uri.fsPath, projectFolder, filePaths[0], filePaths[1]);
             if (config) {
                 configs.push(config);
             }
@@ -73,7 +73,7 @@ export namespace XclConfigurationProvider {
         // Ensure that both the files exists on disk.
         let errMsg = "Unknown error.";
         if (fs.existsSync(genXclFile) && fs.existsSync(drvXclFile)) {
-            const config = convertXclToDebugConfiguration(workspaceFolder.uri.path, projDir, projName, configuration);
+            const config = convertXclToDebugConfiguration(workspaceFolder.uri.fsPath, projDir, projName, configuration);
             if (config) {
                 return config;
             }
