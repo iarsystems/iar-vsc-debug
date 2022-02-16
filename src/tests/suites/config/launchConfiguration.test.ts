@@ -129,7 +129,7 @@ suite("Configuration tests", () => {
         assert.deepStrictEqual(configTest, undefined);
 
         // Test that the driver and target can be extracted.
-        const genOpt = ["skipMe", "arm/bin/libarmsim2.so", path.join(wsDir, program)];
+        const genOpt = ["skipMe", "arm/bin/libarmsim2.so", path.resolve(path.join(wsDir, program))];
         configTest = XclConfigurationProvider.generateDebugConfiguration(wsDir, ewpDir, launchName, config, genOpt, driverOpts);
         if (!configTest) {
             assert.fail("Failed to generate configuration");

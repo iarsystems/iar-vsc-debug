@@ -159,14 +159,11 @@ export namespace XclConfigurationProvider {
             }
             if (generalCommands[2]) {
                 // This is the binary. Resolve it if it's placed in the current ws.
-                // Split the path into it's segments and try to find the common folder.
-                const pathSegments = OsUtils.splitPath(generalCommands[2]);
-                const wsDirBase = path.basename(wsDir);
-                const index = pathSegments.findIndex(segment => segment === wsDirBase);
+                const wsRelativePath = path.relative(wsDir, generalCommands[2]);
 
-                if (index !== -1) {
+                if (!wsRelativePath.startsWith("..") && !path.isAbsolute(wsRelativePath)) {
                     // Add the path as a relative path.
-                    config["program"] = "${workspaceFolder}" + path.sep + pathSegments.slice(index + 1).join(path.sep);
+                    config["program"] = path.join("${workspaceFolder}", wsRelativePath);
                 } else {
                     // Just add it as is
                     config["program"] = generalCommands[2];
