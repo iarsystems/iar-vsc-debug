@@ -8,6 +8,7 @@ import { JSDOM } from "jsdom";
 import { DebugClient } from "vscode-debugadapter-testsupport";
 import { ChildProcess, spawn } from "child_process";
 import { CustomRequest, RegistersResponse } from "../../../dap/customRequest";
+import { tmpdir } from "os";
 
 // NOTE: These tests should be run with a release-flavored EW, otherwise they can take a lot of time
 suite("SVD generator tests", () => {
@@ -45,6 +46,10 @@ suite("SVD generator tests", () => {
             ],
         };
 
+        const theDebugger = Path.join(__dirname, "../../../dap/cspyDebug.js");
+        if (!Fs.existsSync(theDebugger)) {
+            Assert.fail("No debugger is available.");
+        }
         // For some reason DebugClient isnt able to start the adapter itself, so start it manually as a tcp server
         debugAdapter = spawn("node", [Path.join(__dirname, "../../../dap/cspyDebug.js"), `--server=${ADAPTER_PORT}`]);
         debugAdapter.stdout?.on("data", dat => {
@@ -67,6 +72,11 @@ suite("SVD generator tests", () => {
             console.log("CONSOLE OUT: " + ev.body.output.trim());
         });
         await dc.start(ADAPTER_PORT);
+    });
+    teardown(async()=>{
+        await dc.stop();
+        // Need to wait a bit for the adapter to be ready again
+        await TestUtils.wait(1000);
     });
 
     function assertCspyMatchesSvdFile(cspySvd: Document, svdFile: string) {
@@ -142,7 +152,7 @@ suite("SVD generator tests", () => {
         return undefined;
     }
 
-    test("Returns undefined SVD for simulator", () => {
+    test("Returns undefined SVD for unspecificed device", () => {
         return Promise.all([
             dc.configurationSequence(),
             dc.launch(config),
@@ -153,14 +163,43 @@ suite("SVD generator tests", () => {
         ]);
     });
 
-    test("STM32F401CB", () => {
-        return Promise.all([
+    test("STM32F401CB", async() => {
+        // delete cached register data
+        await Fs.promises.rm(Path.join(tmpdir(), "iar-vsc-svdcache"), { recursive: true, force: true });
+
+        let svdContent: string;
+        await Promise.all([
             dc.configurationSequence(),
             dc.launch(stm32Config),
             dc.waitForEvent("initialized").then(async() => {
                 const cspyData: RegistersResponse = (await dc.customRequest(CustomRequest.REGISTERS)).body;
                 Assert(cspyData.svdContent);
+                svdContent = cspyData.svdContent;
                 assertCspyMatchesSvdFile(new JSDOM(cspyData.svdContent).window.document, stm32Svd);
+
+                // This should fetch from in-memory cache
+                const cspyData2: RegistersResponse = (await dc.customRequest(CustomRequest.REGISTERS)).body;
+                Assert.deepStrictEqual(cspyData, cspyData2);
+            }),
+        ]);
+
+        // Restart the session and test that it works now that we have it cached
+        await dc.stop();
+        // Need to wait a bit for the adapter to be ready again
+        await TestUtils.wait(1000);
+        dc = new DebugClient("node", "", "cspy");
+        dc.on("output", ev => {
+            console.log("CONSOLE OUT: " + ev.body.output.trim());
+        });
+        await dc.start(ADAPTER_PORT);
+
+        await Promise.all([
+            dc.configurationSequence(),
+            dc.launch(stm32Config),
+            dc.waitForEvent("initialized").then(async() => {
+                const cachedRegistersData: RegistersResponse = (await dc.customRequest(CustomRequest.REGISTERS)).body;
+                Assert(cachedRegistersData.svdContent);
+                Assert(svdContent, cachedRegistersData.svdContent);
             }),
         ]);
     });

@@ -1,53 +1,76 @@
 import * as Debugger from "./thrift/bindings/Debugger";
+import * as crypto from "crypto";
+import * as path from "path";
+import * as fs from "fs";
 import { create } from "xmlbuilder2";
 import { NamedLocation } from "./thrift/bindings/cspy_types";
+import { tmpdir } from "os";
+
+// SVD format specification: https://www.keil.com/pack/doc/CMSIS/SVD/html/svd_Format_pg.html
+export interface SvdDevice {
+    name: string,
+    addressUnitBits: number,
+    width: number,
+    resetValue: string,
+    peripherals: {
+        peripheral: Array<{
+            name: string,
+            description: string,
+            baseAddress: string,
+            registers: { register: Array<SvdRegister> },
+        }>,
+    };
+}
+export interface SvdRegister {
+    name: string,
+    displayName: string,
+    description: string,
+    addressOffset: string,
+    size: number,
+    access: string,
+    fields: {
+        field: Array<{
+            name: string,
+            description: string,
+            lsb: number,
+            msb: number,
+        }>,
+    },
+}
+
+// The data we get from cspyserver (e.g. getRegisterGroups, getLocationNames)
+interface CspyRegisterData {
+    groups: Array<{
+        name: string,
+        registers: Array<{
+            location: NamedLocation;
+            fields: Array<NamedLocation>;
+        }>;
+    }>;
+}
+
 
 /**
  * Functions for generating and handling System View Description (SVD) data to describe a device and its peripherals.
+ * Generating this information can be slow, so we try to cache it for when the same device is debugged again.
  */
-export namespace SvdGenerator {
+export class SvdGenerator {
+    private cachedSvd: SvdDevice | undefined = undefined;
+    // A unique identifier to use when loading or storing cached svd's for this session.
+    private readonly cacheId: string;
 
-    // SVD format specification: https://www.keil.com/pack/doc/CMSIS/SVD/html/svd_Format_pg.html
-    export interface SvdDevice {
-        name: string,
-        addressUnitBits: number,
-        width: number,
-        resetValue: string,
-        peripherals: {
-            peripheral: Array<{
-                name: string,
-                description: string,
-                baseAddress: string,
-                registers: { register: Array<SvdRegister> },
-            }>,
-        };
-    }
-    export interface SvdRegister {
-        name: string,
-        displayName: string,
-        description: string,
-        addressOffset: string,
-        size: number,
-        access: string,
-        fields: {
-            field: Array<{
-                name: string,
-                description: string,
-                lsb: number,
-                msb: number,
-            }>,
-        },
-    }
+    /**
+     *
+     * @param driverOptions
+     */
+    constructor(driverOptions: string[]) {
+        // We identify identical "devices" by hashing all driver options. It might be more accurate to try to parse
+        // out e.g. the device-description file, but that would also be more error-prone.
+        this.cacheId = crypto.createHash("md5").update(driverOptions.sort().join(", ")).digest("hex");
 
-    // The data we get from cspyserver (e.g. getRegisterGroups, getLocationNames)
-    interface CspyRegisterData {
-        groups: Array<{
-            name: string,
-            registers: Array<{
-                location: NamedLocation;
-                fields: Array<NamedLocation>;
-            }>;
-        }>;
+        if (fs.existsSync(this.getCacheFile())) {
+            this.cachedSvd = JSON.parse(fs.readFileSync(this.getCacheFile()).toString());
+        }
     }
 
     /**
@@ -55,7 +78,10 @@ export namespace SvdGenerator {
      * The svd data returned will describe the device specified by the supplied launch arguments.
      * The svd data will not necessarily describe the device fully, this function only guarantees correct register information.
      */
-    export async function generateSvd(dbgr: Debugger.Client): Promise<SvdDevice> {
+    async generateSvd(dbgr: Debugger.Client): Promise<SvdDevice> {
+        if (this.cachedSvd !== undefined) {
+            return this.cachedSvd;
+        }
 
         // Create a tree of register groups, registers and register fields.
         const groupNames = await dbgr.getRegisterGroups();
@@ -100,15 +126,20 @@ export namespace SvdGenerator {
         }));
 
         // Remove cpu registers
-        const filtered = filterRawData(rawData);
+        const filtered = SvdGenerator.filterRawData(rawData);
 
         // Format the data into an svd device
-        const svdData = createSvdDevice(filtered, dbgr);
+        const svdData = SvdGenerator.createSvdDevice(filtered, dbgr);
+
+        this.cachedSvd = await svdData;
+        fs.promises.mkdir(path.dirname(this.getCacheFile()), { recursive: true });
+        fs.promises.writeFile(this.getCacheFile(), JSON.stringify(this.cachedSvd));
+
         return svdData;
     }
 
     /** Create an xml string from an svd device. */
-    export function toSvdXml(svdData: SvdDevice): string {
+    toSvdXml(svdData: SvdDevice): string {
         const root = create({device: svdData});
 
         // convert the XML tree to string
@@ -116,10 +147,14 @@ export namespace SvdGenerator {
         return xml;
     }
 
+    private getCacheFile() {
+        return path.join(tmpdir(), "iar-vsc-svdcache", this.cacheId + ".json");
+    }
+
 
     // Filters out CPU registers (only memory-mapped registers can be described in SVD format),
     // and filters out empty groups.
-    function filterRawData(data: CspyRegisterData): CspyRegisterData {
+    private static filterRawData(data: CspyRegisterData): CspyRegisterData {
         data.groups.forEach(group => {
             group.registers = group.registers.filter(register => register.location.realLocation.zone.id === 0);
         });
@@ -127,7 +162,7 @@ export namespace SvdGenerator {
         return data;
     }
 
-    async function createSvdDevice(data: CspyRegisterData, dbgr: Debugger.Client): Promise<SvdDevice> {
+    private static async createSvdDevice(data: CspyRegisterData, dbgr: Debugger.Client): Promise<SvdDevice> {
         return {
             name: "Auto-Generated",
             addressUnitBits: (await dbgr.getZoneById(0)).bitsPerUnit,
@@ -136,7 +171,7 @@ export namespace SvdGenerator {
             peripherals: { peripheral: data.groups.map(group => {
                 const baseAddress = group.registers.reduce((currentMin, register) => currentMin.compare(register.location.realLocation.address.buffer) === -1 ? currentMin : register.location.realLocation.address.buffer, Buffer.from("ffffffffffffffff", "hex"));
                 const baseAddressInt = BigInt("0x" + baseAddress.toString("hex"));
-                const registers: SvdRegister[] = group.registers.map(reg => createSvdRegister(reg, baseAddressInt));
+                const registers: SvdRegister[] = group.registers.map(reg => SvdGenerator.createSvdRegister(reg, baseAddressInt));
 
                 return {
                     name: group.name,
@@ -148,7 +183,7 @@ export namespace SvdGenerator {
         };
     }
 
-    function createSvdRegister(register: { location: NamedLocation, fields: Array<NamedLocation> }, baseAddress: bigint): SvdRegister {
+    private static createSvdRegister(register: { location: NamedLocation, fields: Array<NamedLocation> }, baseAddress: bigint): SvdRegister {
         const addrOffset = BigInt("0x" + register.location.realLocation.address.toString(16)) - baseAddress;
         return {
             name: register.location.name,
@@ -165,7 +200,7 @@ export namespace SvdGenerator {
                     // cspy supports having multiple bit ranges for a field, but the svd format does not.
                     // Instead we use the largest range that includes all cspy ranges.
                     [lsb, msb] = usedMasks.reduce(([lsb, msb], mask) => {
-                        return [Math.min(lsb, getLeastSignificantBit(mask.mask.buffer)), Math.max(msb, getMostSignificantBit(mask.mask.buffer))];
+                        return [Math.min(lsb, SvdGenerator.getLeastSignificantBit(mask.mask.buffer)), Math.max(msb, SvdGenerator.getMostSignificantBit(mask.mask.buffer))];
                     }, [register.location.fullBitSize, 0]);
                 } else {
                     lsb = 0;
@@ -182,7 +217,7 @@ export namespace SvdGenerator {
     }
 
     // Returns the index of the least significant 1 bit in a big-endian integer
-    function getLeastSignificantBit(buffer: Buffer): number {
+    private static getLeastSignificantBit(buffer: Buffer): number {
         for (let byte = 0; byte < buffer.length; byte++) {
             const byteVal = buffer[buffer.length - 1 - byte];
             if (byteVal !== undefined && byteVal !== 0) {
@@ -193,7 +228,7 @@ export namespace SvdGenerator {
         return 0;
     }
     // Returns the index of the most significant 1 bit in a big-endian integer
-    function getMostSignificantBit(buffer: Buffer): number {
+    private static getMostSignificantBit(buffer: Buffer): number {
         for (let byte = buffer.length - 1; byte >= 0; byte--) {
             const byteVal = buffer[buffer.length - 1 - byte];
             if (byteVal !== undefined && byteVal !== 0) {

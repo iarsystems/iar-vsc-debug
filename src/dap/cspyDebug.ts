@@ -207,7 +207,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 this.clientColumnsStartAt1,
                 driver);
             this.setupBreakpointRequests(args.breakpointType);
-            this.setupRegistersRequest();
+            this.setupRegistersRequest(args.driverOptions);
 
         } catch (e) {
             response.success = false;
@@ -543,12 +543,17 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.USE_SOFTWARE_BREAKPOINTS, BreakpointType.SOFTWARE));
     }
 
-    private setupRegistersRequest() {
+    /**
+     * Sets up a custom request that returns the peripheral registers for the current device as an SVD string.
+     * @param driverOptions The driverOptions field of the launch request arguments. This determines the device.
+     */
+    private setupRegistersRequest(driverOptions: string[]) {
+        const svdGenerator = new SvdGenerator(driverOptions);
         this.customRequestRegistry.registerCommand(new Command(CustomRequest.REGISTERS, async() => {
             if (this.cspyDebugger) {
-                const svd = await SvdGenerator.generateSvd(this.cspyDebugger.service);
+                const svd = await svdGenerator.generateSvd(this.cspyDebugger.service);
                 if (svd.peripherals.peripheral.length > 0) {
-                    return { svdContent: SvdGenerator.toSvdXml(svd) };
+                    return { svdContent: svdGenerator.toSvdXml(svd) };
                 }
             }
             return { svdContent: undefined };
