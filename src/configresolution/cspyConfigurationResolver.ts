@@ -3,34 +3,10 @@ import { BuildExtensionChannel } from "./buildExtensionChannel";
 import { XclConfigurationProvider } from "./xclConfigurationProvider";
 
 /**
- * A function that alters a debug configuration in some way before it is launched.
- */
-export type DebugConfigurationModifier = (config: vscode.DebugConfiguration) => void | Promise<void>;
-
-/**
- * Modifies cspy debug (launch.json) configurations before they are launched.
- * For empty debug configurations, it also tries to provide a full debug configuration
+ * For empty debug configurations, tries to provide a full debug configuration
  * based on the project selected in the build extension (if installed).
  */
 export class CSpyConfigurationResolver implements vscode.DebugConfigurationProvider {
-    private static instance: CSpyConfigurationResolver | undefined = undefined;
-
-    public static getInstance(): CSpyConfigurationResolver {
-        if (this.instance === undefined) {
-            this.instance = new CSpyConfigurationResolver();
-        }
-        return this.instance;
-    }
-
-    private readonly modifiers: DebugConfigurationModifier[] = [];
-
-    private constructor() {
-        // empty
-    }
-
-    addModifier(modifier: DebugConfigurationModifier) {
-        this.modifiers.push(modifier);
-    }
 
     async resolveDebugConfiguration(
         folder: vscode.WorkspaceFolder | undefined,
@@ -51,17 +27,5 @@ export class CSpyConfigurationResolver implements vscode.DebugConfigurationProvi
         }
         return debugConfiguration;
 
-    }
-
-    async resolveDebugConfigurationWithSubstitutedVariables(
-        __: vscode.WorkspaceFolder | undefined,
-        debugConfiguration: vscode.DebugConfiguration,
-        _?: vscode.CancellationToken
-    ): Promise<vscode.DebugConfiguration | undefined> {
-
-        for (const modifier of this.modifiers) {
-            await modifier(debugConfiguration);
-        }
-        return debugConfiguration;
     }
 }

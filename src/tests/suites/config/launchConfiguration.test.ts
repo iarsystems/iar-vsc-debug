@@ -96,7 +96,7 @@ suite("Configuration tests", () => {
 	 */
     test("Test initial configurations", async() => {
         const dummyConfig: any = {};
-        const cspyConfig = await CSpyConfigurationResolver.getInstance().resolveDebugConfiguration(rootFolder, dummyConfig, undefined);
+        const cspyConfig = await new CSpyConfigurationResolver().resolveDebugConfiguration(rootFolder, dummyConfig, undefined);
 
         if (!cspyConfig || cspyConfig === null) {
             assert.fail("Failed to generate a configuration");

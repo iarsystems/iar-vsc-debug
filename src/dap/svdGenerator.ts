@@ -1,11 +1,6 @@
-import { DEBUGEVENT_SERVICE, DEBUGGER_SERVICE, NamedLocation, SessionConfiguration } from "./dap/thrift/bindings/cspy_types";
-import { ThriftServiceManager } from "./dap/thrift/thriftServiceManager";
-import * as Debugger from "./dap/thrift/bindings/Debugger";
-import * as DebugEventListener from "./dap/thrift/bindings/DebugEventListener";
-import { CSpyLaunchRequestArguments } from "./dap/cspyDebug";
-import { LaunchArgumentConfigurationResolver } from "./dap/configresolution/launchArgumentConfigurationResolver";
+import * as Debugger from "./thrift/bindings/Debugger";
 import { create } from "xmlbuilder2";
-import { DebugEventListenerHandler } from "./dap/debugEventListenerHandler";
+import { NamedLocation } from "./thrift/bindings/cspy_types";
 
 /**
  * Functions for generating and handling System View Description (SVD) data to describe a device and its peripherals.
@@ -60,26 +55,18 @@ export namespace SvdGenerator {
      * The svd data returned will describe the device specified by the supplied launch arguments.
      * The svd data will not necessarily describe the device fully, this function only guarantees correct register information.
      */
-    export async function generateSvd(args: CSpyLaunchRequestArguments): Promise<SvdDevice> {
-        const sessionConfig: SessionConfiguration = await new LaunchArgumentConfigurationResolver().resolveLaunchArguments(args);
-
-        // Start the session. We need an event listener, otherwise cspyserver won't start the session.
-        const cspyServer = await ThriftServiceManager.fromWorkbench(args.workbenchPath);
-        const cspyDebugger = await cspyServer.findService(DEBUGGER_SERVICE, Debugger);
-        const cspyEventHandler = new DebugEventListenerHandler();
-        await cspyServer.startService(DEBUGEVENT_SERVICE, DebugEventListener, cspyEventHandler);
-        await cspyDebugger.service.startSession(sessionConfig);
+    export async function generateSvd(dbgr: Debugger.Client): Promise<SvdDevice> {
 
         // Create a tree of register groups, registers and register fields.
-        const groupNames = await cspyDebugger.service.getRegisterGroups();
+        const groupNames = await dbgr.getRegisterGroups();
         const groups: Array<{name: string, registers: string[]}> = [];
         await Promise.all(groupNames.map(async(group) => {
             // Note that getLocationNamesInGroup is _very_ slow on debug flavored EWs, especially for devices with lots of registers.
-            groups.push({name: group, registers: await cspyDebugger.service.getLocationNamesInGroup(group)});
+            groups.push({name: group, registers: await dbgr.getLocationNamesInGroup(group)});
         }));
 
         const fieldsInRegisters = new Map<string, string[]>();
-        const allLocations = await cspyDebugger.service.getLocationNames();
+        const allLocations = await dbgr.getLocationNames();
         allLocations.forEach(locationName => {
             const parts = locationName.split(".");
             const reg = parts[0];
@@ -103,9 +90,9 @@ export namespace SvdGenerator {
                 registers: await Promise.all(group.registers.map(async(reg) => {
                     const fieldNames = fieldsInRegisters.get(reg) ?? [];
                     return {
-                        location: await cspyDebugger.service.getNamedLocation(reg),
+                        location: await dbgr.getNamedLocation(reg),
                         fields: await Promise.all(fieldNames.map(field => {
-                            return cspyDebugger.service.getNamedLocation(field);
+                            return dbgr.getNamedLocation(field);
                         })),
                     };
                 })),
@@ -116,9 +103,7 @@ export namespace SvdGenerator {
         const filtered = filterRawData(rawData);
 
         // Format the data into an svd device
-        const svdData = createSvdDevice(filtered, cspyDebugger.service);
-        cspyDebugger.dispose();
-        await cspyServer.dispose();
+        const svdData = createSvdDevice(filtered, dbgr);
         return svdData;
     }
 

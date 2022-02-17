@@ -23,6 +23,7 @@ import { Utils } from "./utils";
 import { CustomRequest } from "./customRequest";
 import { CspyDisassemblyManager } from "./cspyDisassemblyManager";
 import { CspyMemoryManager } from "./cspyMemoryManager";
+import { SvdGenerator } from "./svdGenerator";
 
 
 /**
@@ -205,7 +206,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1,
                 driver);
-            this.setupBreakpointCommands(args.breakpointType);
+            this.setupBreakpointRequests(args.breakpointType);
+            this.setupRegistersRequest();
 
         } catch (e) {
             response.success = false;
@@ -506,7 +508,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     /**
      * Registers commands for setting breakpoints type via console commands and custom dap requests.
      */
-    private setupBreakpointCommands(requestedInitialType: BreakpointType) {
+    private setupBreakpointRequests(requestedInitialType: BreakpointType) {
         const bpTypeMessage = (type: BreakpointType) => `Now using ${type} breakpoints (only applies to new breakpoints)`;
         // If the driver supports it, register console commands
         if (this.breakpointManager?.supportsBreakpointTypes()) {
@@ -539,6 +541,18 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.USE_AUTO_BREAKPOINTS, BreakpointType.AUTO));
         this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.USE_HARDWARE_BREAKPOINTS, BreakpointType.HARDWARE));
         this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.USE_SOFTWARE_BREAKPOINTS, BreakpointType.SOFTWARE));
+    }
+
+    private setupRegistersRequest() {
+        this.customRequestRegistry.registerCommand(new Command(CustomRequest.REGISTERS, async() => {
+            if (this.cspyDebugger) {
+                const svd = await SvdGenerator.generateSvd(this.cspyDebugger.service);
+                if (svd.peripherals.peripheral.length > 0) {
+                    return { svdContent: SvdGenerator.toSvdXml(svd) };
+                }
+            }
+            return { svdContent: undefined };
+        }));
     }
 
     private async endSession() {
