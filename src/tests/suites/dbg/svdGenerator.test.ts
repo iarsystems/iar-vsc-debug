@@ -5,7 +5,7 @@ import * as Fs from "fs";
 import { CSpyLaunchRequestArguments } from "../../../dap/cspyDebug";
 import { TestUtils } from "../testUtils";
 import { JSDOM } from "jsdom";
-import { DebugClient } from "vscode-debugadapter-testsupport";
+import { DebugClient } from "@vscode/debugadapter-testsupport";
 import { ChildProcess, spawn } from "child_process";
 import { CustomRequest, RegistersResponse } from "../../../dap/customRequest";
 import { tmpdir } from "os";

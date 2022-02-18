@@ -9,7 +9,7 @@ import { ContextRef, Location, SourceLocation, SourceRange } from "../../../dap/
 import { ThriftClient } from "../../../dap/thrift/thriftClient";
 import { DisassembledLocation } from "../../../dap/thrift/bindings/disassembly_types";
 import EventEmitter = require("events");
-import { Source } from "vscode-debugadapter";
+import { Source } from "@vscode/debugadapter";
 import { OsUtils } from "../../../utils/osUtils";
 
 /**

@@ -2,11 +2,11 @@ import * as Assert from "assert";
 import * as Path from "path";
 import * as Fs from "fs";
 import * as vscode from "vscode";
-import { DebugClient } from "vscode-debugadapter-testsupport";
+import { DebugClient } from "@vscode/debugadapter-testsupport";
 import { TestUtils } from "../testUtils";
 import { ChildProcess, spawn } from "child_process";
 import { CSpyLaunchRequestArguments } from "../../../dap/cspyDebug";
-import { DebugProtocol } from "vscode-debugprotocol";
+import { DebugProtocol } from "@vscode/debugprotocol";
 import { OsUtils } from "../../../utils/osUtils";
 
 namespace Utils {

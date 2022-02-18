@@ -3,7 +3,7 @@
 import { ContextRef, ContextType, ExprFormat } from "./thrift/bindings/shared_types";
 import * as ContextManager from "./thrift/bindings/ContextManager";
 import * as Debugger from "./thrift/bindings/Debugger";
-import { StackFrame, Source, Scope, Handles, Variable } from "vscode-debugadapter";
+import { StackFrame, Source, Scope, Handles, Variable } from "@vscode/debugadapter";
 import { basename } from "path";
 import { ExprValue, CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE, DkNotifyConstant } from "./thrift/bindings/cspy_types";
 import { Disposable } from "./disposable";

@@ -1,7 +1,7 @@
 
 
 import * as Breakpoints from "../thrift/bindings/Breakpoints";
-import { DebugProtocol } from "vscode-debugprotocol";
+import { DebugProtocol } from "@vscode/debugprotocol";
 import * as Thrift from "../thrift/bindings/shared_types";
 import { Disposable } from "../disposable";
 import { ThriftServiceManager } from "../thrift/thriftServiceManager";

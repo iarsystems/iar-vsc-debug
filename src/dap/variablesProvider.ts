@@ -1,10 +1,10 @@
 
 
-import { Variable, Handles } from "vscode-debugadapter";
+import { Variable, Handles } from "@vscode/debugadapter";
 import { ThriftServiceManager } from "./thrift/thriftServiceManager";
 import { ListWindowClient, ListWindowRowReference } from "./listWindowClient";
 import { Disposable } from "./disposable";
-import { DebugProtocol } from "vscode-debugprotocol";
+import { DebugProtocol } from "@vscode/debugprotocol";
 
 /**
  * Provides a list of (expandable) variables. Just like in DAP, expandable variables
