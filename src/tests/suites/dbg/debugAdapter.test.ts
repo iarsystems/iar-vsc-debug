@@ -491,6 +491,35 @@ suite("Test Debug Adapter", () =>{
                     Assert.fail("Does not fail when evaluating nonexistent symbol");
                 } catch (e) {
                 }
+
+                // Evaling nested variables
+                const fibArray = (await dc.evaluateRequest({expression: "Fib"})).body;
+                Assert.strictEqual(fibArray.result, "<array>");
+                Assert(fibArray.type !== undefined);
+                Assert.strictEqual(fibArray.type, "uint32_t[10]");
+                Assert(fibArray.variablesReference > 0); // Should be nested
+                const arrContents = (await dc.variablesRequest({variablesReference: fibArray.variablesReference})).body.variables;
+                Assert.strictEqual(arrContents.length, 10);
+                for (let i = 0; i < 10; i++) {
+                    Assert.strictEqual(arrContents[i]!.name, `[${i}]`);
+                    Assert.strictEqual(arrContents[i]!.value, "0");
+                    Assert.strictEqual(arrContents[i]!.type!, "uint32_t");
+                }
+
+                const nestedStruct = (await dc.evaluateRequest({expression: "nested_struct"})).body;
+                Assert(nestedStruct !== undefined);
+                Assert(nestedStruct.variablesReference > 0);
+                const nestedContents = (await dc.variablesRequest({variablesReference: nestedStruct.variablesReference})).body.variables;
+                const innerUnion = nestedContents.find(variable => variable.name === "un");
+                Assert(innerUnion !== undefined);
+                Assert(innerUnion.variablesReference > 0);
+                const innerContents = (await dc.variablesRequest({variablesReference: innerUnion.variablesReference})).body.variables;
+                Assert.strictEqual(innerContents.length, 2);
+                const innerChar = innerContents.find(variable => variable.name === "b");
+                Assert(innerChar !== undefined);
+                Assert.strictEqual(innerChar.value, "'\\0' (0x00)");
+                Assert(innerChar.type !== undefined);
+                Assert.match(innerChar.type, /char/);
             })
         ]);
     });
@@ -548,6 +577,13 @@ suite("Test Debug Adapter", () =>{
                     Assert(innerUnion.variablesReference > 0);
                     dc.setVariableRequest({ name: "a", value: "0x41", variablesReference: innerUnion.variablesReference});
                 }
+                {
+                    // Setting eval'd variables uses different code, so test it too
+                    const fibArray = (await dc.evaluateRequest({expression: "Fib"})).body;
+                    Assert(fibArray !== undefined);
+                    Assert(fibArray.variablesReference > 0);
+                    dc.setVariableRequest({ name: "[3]", value: "37", variablesReference: fibArray.variablesReference});
+                }
 
                 // Now check that the values changed
                 const locals = (await dc.variablesRequest({variablesReference: scopes.body.scopes[0]!.variablesReference})).body.variables;
@@ -568,6 +604,13 @@ suite("Test Debug Adapter", () =>{
                     Assert.strictEqual(innerChar.value, "'A' (0x41)");
                     Assert(innerChar.type !== undefined);
                     Assert.match(innerChar.type, /char @ 0x/);
+
+                    const fibArray = statics.find(variable => variable.name === "Fib <Utilities\\Fib>");
+                    Assert(fibArray !== undefined);
+                    Assert(fibArray.variablesReference > 0);
+                    const arrContents = (await dc.variablesRequest({variablesReference: fibArray.variablesReference})).body.variables;
+                    Assert.strictEqual(arrContents[3]!.name, "[3]");
+                    Assert.strictEqual(arrContents[3]!.value, "37");
                 }
             })
         ]);

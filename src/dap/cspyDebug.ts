@@ -426,14 +426,20 @@ export class CSpyDebugSession extends LoggingDebugSession {
             }
         } else {
             await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
-                const val = await stackManager.evalExpression(args.frameId, args.expression);
-                // TODO: expandable variables using subexpressions
-                response.body = {
-                    result: val.value,
-                    type: val.type,
-                    memoryReference: val.hasLocation ? "0x" + val.location.address.toOctetString() : undefined,
-                    variablesReference: 0,
-                };
+                try {
+                    const val = await stackManager.evalExpression(args.frameId, args.expression);
+                    response.body = {
+                        result: val[0].value,
+                        type: val[0].type,
+                        memoryReference: val[0].hasLocation ? "0x" + val[0].location.address.toOctetString() : undefined,
+                        variablesReference: val[1],
+                    };
+                } catch (_) {
+                    response.body = {
+                        result: "",
+                        variablesReference: 0,
+                    };
+                }
             });
         }
         this.sendResponse(response);
