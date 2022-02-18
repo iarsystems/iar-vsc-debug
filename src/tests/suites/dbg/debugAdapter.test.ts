@@ -285,7 +285,7 @@ suite("Test Debug Adapter", () =>{
                 const scopes = await dc.scopesRequest({frameId: stack.body.stackFrames[0]!.id});
 
                 const statics = (await dc.variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
-                Assert.strictEqual(statics.length, 5, "Expected 5 statics, found: " + statics.map(v => v.name).join(", "));
+                Assert.strictEqual(statics.length, 6, "Expected 6 statics, found: " + statics.map(v => v.name).join(", "));
                 Assert(statics.some(variable => variable.name === "str <Fibonacci\\str>" && variable.value.match(/"This is a sträng"$/) && variable.type?.match(/char const \* @ 0x/)));
 
                 { // Check array
@@ -325,7 +325,7 @@ suite("Test Debug Adapter", () =>{
                 const scopes = await dc.scopesRequest({frameId: stack.body.stackFrames[0]!.id});
 
                 const statics = (await dc.variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
-                Assert.strictEqual(statics.length, 5, "Expected 5 statics, found: " + statics.map(v => v.name).join(", "));
+                Assert.strictEqual(statics.length, 6, "Expected 6 statics, found: " + statics.map(v => v.name).join(", "));
                 { // Check nested struct
                     const nestedStruct = statics.find(variable => variable.name === "nested_struct <Fibonacci\\nested_struct>");
                     Assert(nestedStruct !== undefined);
@@ -392,6 +392,41 @@ suite("Test Debug Adapter", () =>{
             }),
         ]);
     });
+    test("Supports cyclic variables", () => {
+        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig));
+        dbgConfigCopy.stopOnEntry = false;
+        return Promise.all([
+            dc.configurationSequence(),
+            dc.launch(dbgConfigCopy),
+            dc.waitForEvent("stopped").then(async() => {
+                const stack = await dc.stackTraceRequest({ threadId: 1});
+                const scopes = await dc.scopesRequest({frameId: stack.body.stackFrames[0]!.id});
+
+                const statics = (await dc.variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
+                { // Check nested struct
+                    const firstReference = statics.find(variable => variable.name === "references_self <Fibonacci\\references_self>");
+                    Assert(firstReference !== undefined);
+                    Assert.strictEqual(firstReference.value, "<struct>");
+                    Assert(firstReference.variablesReference > 0);
+                    const firstReferenceContents = (await dc.variablesRequest({variablesReference: firstReference.variablesReference})).body.variables;
+                    Assert.strictEqual(firstReferenceContents.length, 2);
+                    { // Check pointer to self
+                        const secondReference = firstReferenceContents.find(variable => variable.name === "self");
+                        Assert(secondReference !== undefined);
+                        Assert.match(secondReference.value, /references_self \(0x/);
+                        Assert(secondReference.variablesReference > 0);
+                        const secondReferenceContents = (await dc.variablesRequest({variablesReference: secondReference.variablesReference})).body.variables;
+                        Assert.strictEqual(secondReferenceContents.length, 2);
+                        const thirdReference = secondReferenceContents.find(variable => variable.name === "self");
+                        Assert.strictEqual(secondReference.value, thirdReference?.value);
+                        Assert.strictEqual(secondReference.type, thirdReference?.type);
+                        Assert.strictEqual(secondReference.memoryReference, thirdReference?.memoryReference);
+                    }
+                }
+            }),
+        ]);
+    });
+
 
     test("Supports stepping", () => {
         return Promise.all([

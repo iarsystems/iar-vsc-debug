@@ -2,7 +2,7 @@
 
 import { Variable, Handles } from "vscode-debugadapter";
 import { ThriftServiceManager } from "./thrift/thriftServiceManager";
-import { ListWindowClient, ListWindowRow } from "./listWindowClient";
+import { ListWindowClient, ListWindowRowReference } from "./listWindowClient";
 import { Disposable } from "./disposable";
 import { DebugProtocol } from "vscode-debugprotocol";
 
@@ -53,11 +53,11 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
         varTypeColumn: number,
         varLocationColumn: number): Promise<ListWindowVariablesProvider> {
 
-        const windowClient = await ListWindowClient.instantiate(serviceMgr, windowServiceId);
+        const windowClient = await ListWindowClient.instantiate(serviceMgr, windowServiceId, varNameColumn);
         return new ListWindowVariablesProvider(windowClient, varNameColumn, varValueColumn, varTypeColumn, varLocationColumn);
     }
 
-    private readonly variableReferences: Handles<ListWindowRow> = new Handles();
+    private readonly variableReferences: Handles<ListWindowRowReference> = new Handles();
     // While this is pending, do not request updates from the listwindow. It is about to update!
     private backendUpdate: Thenable<void>;
 
@@ -92,7 +92,7 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
 
     async setVariable(name: string, variableReference: number | undefined, value: string): Promise<{newValue: string, changedAddress?: string}> {
         await this.backendUpdate;
-        let rows: ListWindowRow[];
+        let rows: ListWindowRowReference[];
         if (!variableReference) {
             rows = await this.windowClient.getTopLevelRows();
         } else {
@@ -128,7 +128,7 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
         await this.windowClient.dispose();
     }
 
-    private createVariableFromRow(row: ListWindowRow): DebugProtocol.Variable {
+    private createVariableFromRow(row: ListWindowRowReference): DebugProtocol.Variable {
         const name = row.values[this.varNameColumn];
         const value = row.values[this.varValueColumn];
         if (name === undefined || value === undefined) {

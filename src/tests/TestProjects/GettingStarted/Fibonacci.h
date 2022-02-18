@@ -35,4 +35,11 @@ struct nest {
 struct nest nested_struct;
 struct nest nested_struct2;
 
+struct recursive {
+	int a;
+	struct recursive *self;
+};
+struct recursive references_self = { 10, &references_self };
+
+
 #endif
