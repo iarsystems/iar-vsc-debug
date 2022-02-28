@@ -7,7 +7,7 @@ import * as LibSupportService2 from "./thrift/bindings/LibSupportService2";
 import { ThriftClient } from "./thrift/thriftClient";
 import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant, SessionConfiguration } from "./thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
-import { CSpyContextManager } from "./cspyContextManager";
+import { CSpyContextManager } from "./contexts/cspyContextManager";
 import { BreakpointType, CSpyBreakpointManager } from "./breakpoints/cspyBreakpointManager";
 import { LaunchArgumentConfigurationResolver}  from "./configresolution/launchArgumentConfigurationResolver";
 import { CSpyException } from "./thrift/bindings/shared_types";
@@ -24,7 +24,6 @@ import { CustomRequest } from "./customRequest";
 import { CspyDisassemblyManager } from "./cspyDisassemblyManager";
 import { CspyMemoryManager } from "./cspyMemoryManager";
 import { SvdGenerator } from "./svdGenerator";
-
 
 /**
  * This interface describes the cspy-debug specific launch attributes
@@ -153,29 +152,29 @@ export class CSpyDebugSession extends LoggingDebugSession {
         // make sure to 'Stop' the buffered logging if 'trace' is not set
         logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false);
 
-        // initialize all the services we need
-        this.serviceManager = await ThriftServiceManager.fromWorkbench(args.workbenchPath);
-
-        this.cspyEventHandler = new DebugEventListenerHandler();
-        await this.serviceManager.startService(DEBUGEVENT_SERVICE, DebugEventListener, this.cspyEventHandler);
-        this.cspyEventHandler.observeLogEvents(event => {
-            if (!event.text.endsWith("\n")) {
-                event.text += "\n";
-            }
-            this.sendEvent(new OutputEvent(event.text));
-        });
-
-        const libSupportHandler = new LibSupportHandler();
-        libSupportHandler.observeOutput(data => {
-            this.sendEvent(new OutputEvent(data, "stdout"));
-        });
-        libSupportHandler.observeExit(code => {
-            this.sendEvent(new OutputEvent("Target program terminated, exit code " + code + "\n"));
-            this.expectedStoppingReason = "exit";
-        });
-        this.serviceManager.startService(LIBSUPPORT_SERVICE, LibSupportService2, libSupportHandler);
-
         try {
+            // initialize all the services we need
+            this.serviceManager = await ThriftServiceManager.fromWorkbench(args.workbenchPath);
+
+            this.cspyEventHandler = new DebugEventListenerHandler();
+            await this.serviceManager.startService(DEBUGEVENT_SERVICE, DebugEventListener, this.cspyEventHandler);
+            this.cspyEventHandler.observeLogEvents(event => {
+                if (!event.text.endsWith("\n")) {
+                    event.text += "\n";
+                }
+                this.sendEvent(new OutputEvent(event.text));
+            });
+
+            const libSupportHandler = new LibSupportHandler();
+            libSupportHandler.observeOutput(data => {
+                this.sendEvent(new OutputEvent(data, "stdout"));
+            });
+            libSupportHandler.observeExit(code => {
+                this.sendEvent(new OutputEvent("Target program terminated, exit code " + code + "\n"));
+                this.expectedStoppingReason = "exit";
+            });
+            this.serviceManager.startService(LIBSUPPORT_SERVICE, LibSupportService2, libSupportHandler);
+
             const sessionConfig: SessionConfiguration = await new LaunchArgumentConfigurationResolver().resolveLaunchArguments(args);
 
             this.cspyDebugger = await this.serviceManager.findService(DEBUGGER_SERVICE, Debugger);
@@ -378,7 +377,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     protected override async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments) {
-        console.log("Variables");
+        console.log("Variables " + args.variablesReference);
         await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
             const variables = await stackManager.fetchVariables(args.variablesReference);
             response.body = {
@@ -411,7 +410,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
 
     protected override async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments) {
-        console.log("Eval");
+        console.log("Eval " + args.expression);
         if (args.context === "repl" && this.consoleCommandRegistry.hasCommand(args.expression)) {
             try {
                 const res = await this.consoleCommandRegistry.runCommand(args.expression);
@@ -427,14 +426,15 @@ export class CSpyDebugSession extends LoggingDebugSession {
         } else {
             await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
                 try {
-                    const val = await stackManager.evalExpression(args.frameId, args.expression);
+                    const result = await stackManager.evalExpression(args.frameId, args.expression);
                     response.body = {
-                        result: val[0].value,
-                        type: val[0].type,
-                        memoryReference: val[0].hasLocation ? "0x" + val[0].location.address.toOctetString() : undefined,
-                        variablesReference: val[1],
+                        result: result.value,
+                        type: result.type,
+                        memoryReference: result.memoryReference,
+                        variablesReference: result.variablesReference,
                     };
-                } catch (_) {
+                } catch (e) {
+                    console.error(e);
                     response.body = {
                         result: "",
                         variablesReference: 0,

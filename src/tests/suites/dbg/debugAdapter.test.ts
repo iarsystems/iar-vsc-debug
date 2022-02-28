@@ -285,8 +285,19 @@ suite("Test Debug Adapter", () =>{
                 const scopes = await dc.scopesRequest({frameId: stack.body.stackFrames[0]!.id});
 
                 const statics = (await dc.variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
-                Assert.strictEqual(statics.length, 6, "Expected 6 statics, found: " + statics.map(v => v.name).join(", "));
-                Assert(statics.some(variable => variable.name === "str <Fibonacci\\str>" && variable.value.match(/"This is a sträng"$/) && variable.type?.match(/char const \* @ 0x/)));
+                Assert.strictEqual(statics.length, 7, "Expected 7 statics, found: " + statics.map(v => v.name).join(", "));
+                { // Check string
+                    const str = statics.find(variable => variable.name === "str <Fibonacci\\str>");
+                    Assert(str, "Could not find str variable");
+                    Assert.match(str.value, /"This is a sträng"$/);
+                    Assert(str.type);
+                    Assert.match(str.type, /char const \* @ 0x/);
+                    Assert(str.evaluateName);
+                    const evalResult = (await dc.evaluateRequest({expression: str.evaluateName})).body;
+                    Assert.strictEqual(evalResult.result, str.value);
+                    Assert.match(evalResult.type!, /char * \* @ 0x/);
+                    Assert.strictEqual(evalResult.memoryReference, str.memoryReference);
+                }
 
                 { // Check array
                     const fibArray = statics.find(variable => variable.name === "Fib <Utilities\\Fib>");
@@ -301,6 +312,11 @@ suite("Test Debug Adapter", () =>{
                         Assert.strictEqual(arrContents[i]!.name, `[${i}]`);
                         Assert.strictEqual(arrContents[i]!.value, FIBS[i]!.toString());
                         Assert.match(arrContents[i]!.type!, /uint32_t @ 0x/);
+                        Assert(arrContents[i]!.evaluateName);
+                        const evalResult = (await dc.evaluateRequest({expression: arrContents[i]!.evaluateName!})).body;
+                        Assert.strictEqual(evalResult.result, arrContents[i]!.value);
+                        Assert.strictEqual(evalResult.type, arrContents[i]!.type);
+                        Assert.strictEqual(evalResult.memoryReference, arrContents[i]!.memoryReference);
                     }
                 }
 
@@ -325,7 +341,7 @@ suite("Test Debug Adapter", () =>{
                 const scopes = await dc.scopesRequest({frameId: stack.body.stackFrames[0]!.id});
 
                 const statics = (await dc.variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
-                Assert.strictEqual(statics.length, 6, "Expected 6 statics, found: " + statics.map(v => v.name).join(", "));
+                Assert.strictEqual(statics.length, 7, "Expected 7 statics, found: " + statics.map(v => v.name).join(", "));
                 { // Check nested struct
                     const nestedStruct = statics.find(variable => variable.name === "nested_struct <Fibonacci\\nested_struct>");
                     Assert(nestedStruct !== undefined);
@@ -531,14 +547,14 @@ suite("Test Debug Adapter", () =>{
                 const fibArray = (await dc.evaluateRequest({expression: "Fib"})).body;
                 Assert.strictEqual(fibArray.result, "<array>");
                 Assert(fibArray.type !== undefined);
-                Assert.strictEqual(fibArray.type, "uint32_t[10]");
+                Assert.match(fibArray.type, /uint32_t\[10\] @ 0x/);
                 Assert(fibArray.variablesReference > 0); // Should be nested
                 const arrContents = (await dc.variablesRequest({variablesReference: fibArray.variablesReference})).body.variables;
                 Assert.strictEqual(arrContents.length, 10);
                 for (let i = 0; i < 10; i++) {
                     Assert.strictEqual(arrContents[i]!.name, `[${i}]`);
                     Assert.strictEqual(arrContents[i]!.value, "0");
-                    Assert.strictEqual(arrContents[i]!.type!, "uint32_t");
+                    Assert.match(arrContents[i]!.type!, /uint32_t @ 0x/);
                 }
 
                 const nestedStruct = (await dc.evaluateRequest({expression: "nested_struct"})).body;
@@ -719,6 +735,27 @@ suite("Test Debug Adapter", () =>{
                     Assert(updatedCallCount);
                     Assert.strictEqual(updatedCallCount?.value, "16'781'823");
                 }
+            })
+        ]);
+    });
+
+    // The specification is a bit iffy, but it seems pointers should use their value as memoryReference,
+    // rather than the address of the pointer itself.
+    test("Pointer memoryReference uses value", () => {
+        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig));
+        dbgConfigCopy.stopOnEntry = false;
+        return Promise.all([
+            dc.configurationSequence(),
+            dc.launch(dbgConfigCopy),
+            dc.waitForEvent("stopped").then(async() => {
+                const stack = await dc.stackTraceRequest({ threadId: 1});
+                const scopes = await dc.scopesRequest({frameId: stack.body.stackFrames[0]!.id});
+                const staticsScope = scopes.body.scopes[1]!;
+
+                const vars = await dc.variablesRequest({ variablesReference: staticsScope.variablesReference });
+                const pointer = vars.body.variables.find(variable => variable.name.startsWith("pointer"));
+                Assert(pointer);
+                Assert.strictEqual(pointer.memoryReference, "0x1337");
             })
         ]);
     });

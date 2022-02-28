@@ -1,17 +1,19 @@
 
 
-import { ContextRef, ContextType, ExprFormat } from "./thrift/bindings/shared_types";
-import * as ContextManager from "./thrift/bindings/ContextManager";
-import * as Debugger from "./thrift/bindings/Debugger";
+import { ContextRef, ContextType, ExprFormat } from "../thrift/bindings/shared_types";
+import * as ContextManager from "../thrift/bindings/ContextManager";
+import * as Debugger from "../thrift/bindings/Debugger";
 import { StackFrame, Source, Scope, Handles, Variable } from "@vscode/debugadapter";
 import { basename } from "path";
-import { ExprValue, CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE, DkNotifyConstant } from "./thrift/bindings/cspy_types";
-import { Disposable } from "./disposable";
-import { ThriftServiceManager } from "./thrift/thriftServiceManager";
-import { ThriftClient } from "./thrift/thriftClient";
-import { WindowNames } from "./listWindowConstants";
+import { CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE, DkNotifyConstant } from "../thrift/bindings/cspy_types";
+import { Disposable } from "../disposable";
+import { ThriftServiceManager } from "../thrift/thriftServiceManager";
+import { ThriftClient } from "../thrift/thriftClient";
+import { WindowNames } from "../listWindowConstants";
 import { ListWindowVariablesProvider, VariablesProvider } from "./variablesProvider";
-import { DebugEventListenerHandler } from "./debugEventListenerHandler";
+import { DebugEventListenerHandler } from "../debugEventListenerHandler";
+import { VariablesUtils } from "./variablesUtils";
+import { DebugProtocol } from "@vscode/debugprotocol";
 
 /**
  * Describes a scope, i.e. a C-SPY context used to access the scope,
@@ -170,9 +172,8 @@ export class CSpyContextManager implements Disposable {
                 // Get the i-th subexpression of the expression this reference points to
                 const subExprIndices = reference.subExprIndex.concat([i]);
                 const expr = await this.dbgr.service.evalExpression(reference.context, reference.rootExpression, subExprIndices, ExprFormat.kDefault, true);
-
-                let variablesReference = 0;
                 // subexpressions should be expandable themselves if they have subexpressions
+                let variablesReference = 0;
                 if (expr.subExprCount > 0) {
                     variablesReference = this.scopeAndVariableHandles.create({
                         context: reference.context,
@@ -181,12 +182,8 @@ export class CSpyContextManager implements Disposable {
                         subExprIndex: subExprIndices,
                     });
                 }
-                return {
-                    name: exprName,
-                    value: expr.value,
-                    type: expr.type,
-                    variablesReference: variablesReference
-                };
+                const memoryReference = expr.hasLocation ? "0x" + expr.location.address.toOctetString() : undefined;
+                return VariablesUtils.createVariable(exprName, expr.value, expr.type, variablesReference, memoryReference);
             }));
         }
         throw new Error("Unknown handle type.");
@@ -223,23 +220,24 @@ export class CSpyContextManager implements Disposable {
     /**
      * Evaluates some expression at the specified stack frame.
      */
-    async evalExpression(frameIndex: number | undefined, expression: string): Promise<[ExprValue, number]> {
+    async evalExpression(frameIndex: number | undefined, expression: string): Promise<DebugProtocol.Variable> {
         const context = frameIndex === undefined ? this.baseContext : this.contextReferences[frameIndex];
         if (!context) {
             throw new Error(`Frame index ${frameIndex} is out of bounds`);
         }
         await this.setInspectionContext(context);
         const result = await this.dbgr.service.evalExpression(context, expression, [], ExprFormat.kDefault, true);
+        let variablesReference = 0;
         if (result.subExprCount > 0) {
-            const ref = this.scopeAndVariableHandles.create({
+            variablesReference = this.scopeAndVariableHandles.create({
                 context: context,
                 rootExpression: expression,
                 subExpressions: result.subExprCount,
                 subExprIndex: [],
             });
-            return [result, ref];
         }
-        return [result, 0];
+        const memoryReference = result.hasLocation ? "0x" + result.location.address.toOctetString() : undefined;
+        return VariablesUtils.createVariable(expression, result.value, result.type, variablesReference, memoryReference);
     }
 
     async dispose() {

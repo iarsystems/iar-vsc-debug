@@ -40,6 +40,7 @@ struct recursive {
 	struct recursive *self;
 };
 struct recursive references_self = { 10, &references_self };
+int *pointer;
 
 
 #endif

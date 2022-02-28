@@ -1,10 +1,11 @@
 
 
 import { Variable, Handles } from "@vscode/debugadapter";
-import { ThriftServiceManager } from "./thrift/thriftServiceManager";
-import { ListWindowClient, ListWindowRowReference } from "./listWindowClient";
-import { Disposable } from "./disposable";
+import { ThriftServiceManager } from "../thrift/thriftServiceManager";
+import { ListWindowClient, ListWindowRowReference } from "../listWindowClient";
+import { Disposable } from "../disposable";
 import { DebugProtocol } from "@vscode/debugprotocol";
+import { VariablesUtils } from "./variablesUtils";
 
 /**
  * Provides a list of (expandable) variables. Just like in DAP, expandable variables
@@ -107,7 +108,7 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
         const newVal = await this.windowClient.setValueOf(row, this.varValueColumn, value);
 
         const location = row.values[this.varLocationColumn];
-        return { newValue: newVal, changedAddress: location ? this.locationToMemoryReference(location) : undefined };
+        return { newValue: newVal, changedAddress: location ? this.locationToAddress(location) : undefined };
     }
 
     /**
@@ -135,22 +136,19 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
             throw new Error("Not enough data in row to parse variable");
         }
         const location = row.values[this.varLocationColumn];
-        return {
-            name: name,
-            value: value,
-            type: row.values[this.varTypeColumn] + (row.values[this.varLocationColumn] ? ` @ ${row.values[this.varLocationColumn]}` : ""),
-            memoryReference: location ? this.locationToMemoryReference(location) : undefined,
-            variablesReference: row.hasChildren ? this.variableReferences.create(row) : 0,
-        };
+        const address = location ? this.locationToAddress(location) : undefined;
+        const type = row.values[this.varTypeColumn];
+        return VariablesUtils.createVariable(name, value, type, row.hasChildren ? this.variableReferences.create(row) : 0, address);
     }
 
     // converts the contents of a list window cell to a dap memory reference, if possible
-    private locationToMemoryReference(cellText: string): string | undefined {
+    private locationToAddress(cellText: string): string | undefined {
         // should only return if it's a memory address (and not e.g. a register)
         if (cellText.match(/0x[a-fA-F0-9']/)) {
             // remove ' from number, makes for easier parsing
-            return cellText.replace("'", "");
+            return cellText;
         }
         return undefined;
     }
+
 }
