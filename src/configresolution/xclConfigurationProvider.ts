@@ -195,7 +195,7 @@ export namespace XclConfigurationProvider {
         }
 
         // Add the workbench options.
-        config["workbenchPath"] = "${command:iar-settings.workbench}";
+        config["workbenchPath"] = "${command:iar-settings.toolchain}";
         config["projectPath"] = ewpDir;
         config["projectConfiguration"] = configuration;
 

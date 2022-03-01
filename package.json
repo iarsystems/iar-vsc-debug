@@ -196,8 +196,8 @@
 							},
 							"workbenchPath": {
 								"type": "string",
-								"description": "Path to the Embedded Workbench installation to use (e.g. \"C:\\\\Program Files (x86)\\\\IAR Systems\\\\Embedded Workbench 8.3\").",
-								"default": "${command:iar-settings.workbench} for an iar-vsc project or path to EW root."
+								"description": "Path to the IAR Embedded Workbench installation to use (e.g. \"C:\\\\Program Files (x86)\\\\IAR Systems\\\\Embedded Workbench 8.3\").",
+								"default": "${command:iar-settings.toolchain} for an iar-vsc project or path to EW root."
 							},
 							"projectPath": {
 								"type": "string",
@@ -285,7 +285,7 @@
 						"target": "arm",
 						"program": "${workspaceFolder}/Debug/Exe/ewproj.out",
 						"stopOnEntry": true,
-						"workbenchPath": "${command:iar-settings.workbench} for an iar-vsc project or path to EW root.",
+						"workbenchPath": "${command:iar-settings.toolchain} for an iar-vsc project or path to EW root.",
 						"projectPath": "${command:iar-settings.project-file} for an iar-vsc projects or path to project (${workspaceFolder} for current folder).",
 						"projectConfiguration": "${command:iar-settings.project-configuration} for an iar-vsc projects or the name of the configuration.",
 						"driver": "sim2",
@@ -308,7 +308,7 @@
 							"target": "arm",
 							"program": "^\"\\${workspaceFolder}/\\${command:iar-settings.project-configuration}/Exe/${2:ewproj.out}\"",
 							"stopOnEntry": true,
-							"workbenchPath": "^\"\\${command:iar-settings.workbench}\"",
+							"workbenchPath": "^\"\\${command:iar-settings.toolchain}\"",
 							"projectPath": "^\"\\${command:iar-settings.project-file}\"",
 							"projectConfiguration": "^\"\\${command:iar-settings.project-configuration}\"",
 							"driver": "sim2",
