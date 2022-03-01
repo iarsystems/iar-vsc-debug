@@ -10,7 +10,7 @@ export class BuildExtensionChannel implements BuildExtensionApi {
 
     public static getInstance(): BuildExtensionChannel | undefined {
         if (!this.instance) {
-            const buildExtension = vscode.extensions.getExtension("pluyckx.iar-vsc");
+            const buildExtension = vscode.extensions.getExtension("iarsystems.iar-vsc");
             if (!buildExtension || !buildExtension.isActive) {
                 throw new Error("Build extension communication channel could not be initialized");
             }

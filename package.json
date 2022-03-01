@@ -1,8 +1,8 @@
 {
 	"name": "iar-dbg",
-	"displayName": "C-SPY Debug",
+	"displayName": "IAR C-SPY Debug",
 	"version": "0.25.0",
-	"publisher": "hampusad",
+	"publisher": "iarsystems",
 	"icon": "images/logo.png",
 	"galleryBanner": {
 		"color": "#ffe000",
@@ -14,10 +14,6 @@
 		"url": "https://github.com/mario-pi/iar-vsc-debug"
 	},
 	"homepage": "https://www.iar.com/",
-	"author": {
-		"name": "Hampus Adolfsson",
-		"email": "hampusad@iar.com"
-	},
 	"keywords": [
 		"IAR",
 		"C-SPY",
@@ -94,7 +90,7 @@
 	],
 	"contributes": {
 		"configuration": {
-			"title": "IAR C-SPY Debugging",
+			"title": "IAR C-SPY Debug",
 			"properties": {
 				"iar-dbg.breakpointType": {
 					"default": "Auto",
@@ -160,7 +156,7 @@
 		"debuggers": [
 			{
 				"type": "cspy",
-				"label": "C-SPY Debug",
+				"label": "IAR C-SPY Debug",
 				"program": "./out/dap/cspyDebug.js",
 				"runtime": "node",
 				"languages": [
