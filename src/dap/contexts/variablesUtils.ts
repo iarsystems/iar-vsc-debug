@@ -21,9 +21,12 @@ export namespace VariablesUtils {
             memoryReference = address ? address : undefined;
         }
         // massage the type to make it eval'able:
-        // * remove any 'const'
+        // * remove any 'const' or 'volatile'
         // * change arrays to pointers (e.g. int[6] to int*)
-        const evalType = type?.replace(/\s+const\s+/g, " ").replace(/\[\d+\]$/, "");
+        const evalType = type?.
+            replace(/\s+const\s+/g, " ").
+            replace(/\s+volatile\s+/g, " ").
+            replace(/\[\d+\]/g, "*");
         return {
             name: name,
             value: value,
