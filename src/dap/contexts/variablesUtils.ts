@@ -1,4 +1,5 @@
 import { DebugProtocol } from "@vscode/debugprotocol";
+import { BasicExprType, ExprValue } from "../thrift/bindings/cspy_types";
 
 export namespace VariablesUtils {
 
@@ -12,6 +13,64 @@ export namespace VariablesUtils {
      * @returns A DAP variable
      */
     export function createVariable(name: string, value: string, type: string | undefined, variablesReference: number, address: string | undefined): DebugProtocol.Variable {
+        // remove any 'const' or 'volatile'
+        let evalType = type?.
+            replace(/\s+const\s+/g, " ").
+            replace(/\s+volatile\s+/g, " ");
+        let evaluateName: string | undefined;
+        if (evalType?.match(/\[\d+\]/)) {
+            evalType = evalType.replace(/\[\d+\]/g, "");
+            evaluateName = address ? `(${evalType}*)(${address})` : undefined;
+        } else {
+            evaluateName = address && evalType ? `*(${evalType}*)(${address})` : undefined;
+        }
+        return createVariableInternal(name, value, type, variablesReference, address, evaluateName);
+    }
+
+    /**
+     * Creates a new DAP variable. This method standardises some of the derived properties (such as memoryReference and evaluateName).
+     * Since evaluted expressions have more type information, we can construct better (more robust) evaluateNames for them.
+     * @param name The expression that was evaluated
+     * @param value The value of the evaluated expression
+     * @param variablesReference A reference that can be used to fetch the variable's children (or 0 if it has no children)
+     * @param parents The parent expressions of this expression. Used to construct evalutateName
+     * @returns A DAP variable
+     */
+    export function createVariableFromExpression(name: string, value: ExprValue, variablesReference: number, parents: Array<{exprName: string, val: ExprValue}>): DebugProtocol.Variable {
+        const allElems = parents.concat({exprName: name, val: value});
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        let prevItem = allElems.shift()!;
+        let evaluateName = prevItem.exprName;
+        for (const item of allElems) {
+            if (item.exprName === "") {
+                continue; // ignore e.g. unnamed <struct> children of pointer expressions
+            }
+            let joinOperator: string;
+            switch (prevItem.val.basicType) {
+            case BasicExprType.Array:
+                joinOperator = "";
+                break;
+            case BasicExprType.Pointer:
+                joinOperator = "->";
+                break;
+            case BasicExprType.Unknown:
+            case BasicExprType.Basic:
+            case BasicExprType.Composite:
+            case BasicExprType.Enumeration:
+            case BasicExprType.Function:
+            case BasicExprType.Custom:
+            default:
+                joinOperator = ".";
+                break;
+            }
+            evaluateName = `(${evaluateName})${joinOperator}${item.exprName}`;
+            prevItem = item;
+        }
+        const address = value.hasLocation ? "0x" + value.location.address.toOctetString() : undefined;
+        return createVariableInternal(name, value.value, value.type, variablesReference, address, evaluateName);
+    }
+
+    function createVariableInternal(name: string, value: string, type: string | undefined, variablesReference: number, address: string | undefined, evaluateName: string | undefined): DebugProtocol.Variable {
         let memoryReference;
         // The specs are not very clear, but it seems pointer values should be treated specially, and use their value
         // as memory reference rather then the address of the pointer variable. This is how MS's RTOS view expects things to be.
@@ -23,10 +82,6 @@ export namespace VariablesUtils {
         // massage the type to make it eval'able:
         // * remove any 'const' or 'volatile'
         // * change arrays to pointers (e.g. int[6] to int*)
-        const evalType = type?.
-            replace(/\s+const\s+/g, " ").
-            replace(/\s+volatile\s+/g, " ").
-            replace(/\[\d+\]/g, "*");
         return {
             name: name,
             value: value,
@@ -34,7 +89,7 @@ export namespace VariablesUtils {
             variablesReference: variablesReference,
             memoryReference: memoryReference?.replace(/'/g, ""),
             // This only works for some types (e.g. not arrays)
-            evaluateName: address && evalType ? `*(${evalType}*)(${address})` : undefined,
+            evaluateName: evaluateName,
         };
     }
 

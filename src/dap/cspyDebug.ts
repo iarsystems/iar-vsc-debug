@@ -472,7 +472,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     protected override async readMemoryRequest(response: DebugProtocol.ReadMemoryResponse, args: DebugProtocol.ReadMemoryArguments) {
         console.log("Read " + args.memoryReference + " " + args.offset + " " + args.count);
         await CSpyDebugSession.tryResponseWith(this.memoryManager, response, async memoryManager => {
-            const data = await memoryManager.readMemory(args.memoryReference, args.offset ?? 0, args.count);
+            const data = await memoryManager.readMemory(args.memoryReference.replace("'", ""), args.offset ?? 0, args.count);
             response.body = {
                 address: args.memoryReference,
                 data: data[0],
@@ -484,7 +484,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     protected override async writeMemoryRequest(response: DebugProtocol.WriteMemoryResponse, args: DebugProtocol.WriteMemoryArguments) {
         console.log("Write", args);
         await CSpyDebugSession.tryResponseWith(this.memoryManager, response, async memoryManager => {
-            const bytesWritten = await memoryManager.writeMemory(args.memoryReference, args.offset ?? 0, args.data);
+            const bytesWritten = await memoryManager.writeMemory(args.memoryReference.replace("'", ""), args.offset ?? 0, args.data);
             response.body = {
                 bytesWritten: bytesWritten,
                 offset: 0,

@@ -555,22 +555,34 @@ suite("Test Debug Adapter", () =>{
                     Assert.strictEqual(arrContents[i]!.name, `[${i}]`);
                     Assert.strictEqual(arrContents[i]!.value, "0");
                     Assert.match(arrContents[i]!.type!, /uint32_t @ 0x/);
+                    // check that evaluateName property is correct
+                    const evalResult = (await dc.evaluateRequest({expression: arrContents[i]!.evaluateName!})).body;
+                    Assert.strictEqual(evalResult.result, arrContents[i]!.value);
+                    Assert.strictEqual(evalResult.type, arrContents[i]!.type);
+                    Assert.strictEqual(evalResult.memoryReference, arrContents[i]!.memoryReference);
                 }
 
-                const nestedStruct = (await dc.evaluateRequest({expression: "nested_struct"})).body;
-                Assert(nestedStruct !== undefined);
-                Assert(nestedStruct.variablesReference > 0);
-                const nestedContents = (await dc.variablesRequest({variablesReference: nestedStruct.variablesReference})).body.variables;
-                const innerUnion = nestedContents.find(variable => variable.name === "un");
-                Assert(innerUnion !== undefined);
-                Assert(innerUnion.variablesReference > 0);
-                const innerContents = (await dc.variablesRequest({variablesReference: innerUnion.variablesReference})).body.variables;
-                Assert.strictEqual(innerContents.length, 2);
-                const innerChar = innerContents.find(variable => variable.name === "b");
-                Assert(innerChar !== undefined);
-                Assert.strictEqual(innerChar.value, "'\\0' (0x00)");
-                Assert(innerChar.type !== undefined);
-                Assert.match(innerChar.type, /char/);
+                {
+                    const nestedStruct = (await dc.evaluateRequest({expression: "nested_struct"})).body;
+                    Assert(nestedStruct !== undefined);
+                    Assert(nestedStruct.variablesReference > 0);
+                    const nestedContents = (await dc.variablesRequest({variablesReference: nestedStruct.variablesReference})).body.variables;
+                    const innerUnion = nestedContents.find(variable => variable.name === "un");
+                    Assert(innerUnion !== undefined);
+                    Assert(innerUnion.variablesReference > 0);
+                    const innerContents = (await dc.variablesRequest({variablesReference: innerUnion.variablesReference})).body.variables;
+                    Assert.strictEqual(innerContents.length, 2);
+                    const innerChar = innerContents.find(variable => variable.name === "b");
+                    Assert(innerChar !== undefined);
+                    Assert.strictEqual(innerChar.value, "'\\0' (0x00)");
+                    Assert(innerChar.type !== undefined);
+                    Assert.match(innerChar.type, /char/);
+
+                    const evalResult = (await dc.evaluateRequest({expression: innerChar.evaluateName!})).body;
+                    Assert.strictEqual(evalResult.result, innerChar.value);
+                    Assert.strictEqual(evalResult.type, innerChar.type);
+                    Assert.strictEqual(evalResult.memoryReference, innerChar.memoryReference);
+                }
             })
         ]);
     });

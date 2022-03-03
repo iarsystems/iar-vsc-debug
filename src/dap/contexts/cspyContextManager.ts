@@ -5,7 +5,7 @@ import * as ContextManager from "../thrift/bindings/ContextManager";
 import * as Debugger from "../thrift/bindings/Debugger";
 import { StackFrame, Source, Scope, Handles, Variable } from "@vscode/debugadapter";
 import { basename } from "path";
-import { CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE, DkNotifyConstant } from "../thrift/bindings/cspy_types";
+import { CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE, DkNotifyConstant, ExprValue } from "../thrift/bindings/cspy_types";
 import { Disposable } from "../disposable";
 import { ThriftServiceManager } from "../thrift/thriftServiceManager";
 import { ThriftClient } from "../thrift/thriftClient";
@@ -45,6 +45,7 @@ class EvalExpressionReference {
         readonly rootExpression: string,
         readonly subExpressions: number,
         readonly subExprIndex: number[],
+        readonly parentExpressions: Array<{ exprName: string, val: ExprValue }>,
         readonly context: ContextRef,
     ) { }
 }
@@ -180,10 +181,10 @@ export class CSpyContextManager implements Disposable {
                         rootExpression: reference.rootExpression,
                         subExpressions: expr.subExprCount,
                         subExprIndex: subExprIndices,
+                        parentExpressions: reference.parentExpressions.concat([{exprName: exprName, val: expr}]),
                     });
                 }
-                const memoryReference = expr.hasLocation ? "0x" + expr.location.address.toOctetString() : undefined;
-                return VariablesUtils.createVariable(exprName, expr.value, expr.type, variablesReference, memoryReference);
+                return VariablesUtils.createVariableFromExpression(exprName, expr, variablesReference, reference.parentExpressions);
             }));
         }
         throw new Error("Unknown handle type.");
@@ -234,10 +235,10 @@ export class CSpyContextManager implements Disposable {
                 rootExpression: expression,
                 subExpressions: result.subExprCount,
                 subExprIndex: [],
+                parentExpressions: [{exprName: expression, val: result}],
             });
         }
-        const memoryReference = result.hasLocation ? "0x" + result.location.address.toOctetString() : undefined;
-        return VariablesUtils.createVariable(expression, result.value, result.type, variablesReference, memoryReference);
+        return VariablesUtils.createVariableFromExpression(expression, result, variablesReference, []);
     }
 
     async dispose() {
