@@ -16,6 +16,7 @@
 #ifndef TUTOR_H
 #define TUTOR_H
 #include "Utilities.h"
+#include <stdio.h>
 
 // some global variables for testing purposes
 const char *str = "This is a sträng";
@@ -41,6 +42,9 @@ struct recursive {
 };
 struct recursive references_self = { 10, &references_self };
 int *pointer;
+
+char buf[12];
+int scan_to_me;
 
 
 #endif

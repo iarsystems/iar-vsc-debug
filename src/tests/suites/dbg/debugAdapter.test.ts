@@ -94,6 +94,12 @@ suite("Test Debug Adapter", () =>{
         dc.on("output", ev => {
             console.log("CONSOLE OUT: " + ev.body.output.trim());
         });
+        // The test program requests terminal input, we always respond with this.
+        dc.on("output", (ev: DebugProtocol.OutputEvent) => {
+            if (ev.body.output.includes("requested terminal input")) {
+                dc.evaluateRequest({ expression: "1234\nhello", context: "repl" });
+            }
+        });
         await dc.start(ADAPTER_PORT);
     });
 
@@ -284,7 +290,7 @@ suite("Test Debug Adapter", () =>{
                 const scopes = await dc.scopesRequest({frameId: stack.body.stackFrames[0]!.id});
 
                 const statics = (await dc.variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
-                Assert.strictEqual(statics.length, 7, "Expected 7 statics, found: " + statics.map(v => v.name).join(", "));
+                Assert.strictEqual(statics.length, 9, "Expected 9 statics, found: " + statics.map(v => v.name).join(", "));
                 { // Check string
                     const str = statics.find(variable => variable.name === "str <Fibonacci\\str>");
                     Assert(str, "Could not find str variable");
@@ -340,7 +346,7 @@ suite("Test Debug Adapter", () =>{
                 const scopes = await dc.scopesRequest({frameId: stack.body.stackFrames[0]!.id});
 
                 const statics = (await dc.variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
-                Assert.strictEqual(statics.length, 7, "Expected 7 statics, found: " + statics.map(v => v.name).join(", "));
+                Assert.strictEqual(statics.length, 9, "Expected 9 statics, found: " + statics.map(v => v.name).join(", "));
                 { // Check nested struct
                     const nestedStruct = statics.find(variable => variable.name === "nested_struct <Fibonacci\\nested_struct>");
                     Assert(nestedStruct !== undefined);
@@ -769,6 +775,31 @@ suite("Test Debug Adapter", () =>{
                 Assert(pointer);
                 Assert.strictEqual(pointer.memoryReference, "0x1337");
             })
+        ]);
+    });
+
+    test("Supports terminal input", () => {
+        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig));
+        dbgConfigCopy.stopOnEntry = false;
+        return Promise.all([
+            dc.configurationSequence(),
+            dc.launch(dbgConfigCopy),
+            // Wait until the client is ready to accept input
+            dc.waitForEvent("stopped").then(async() => {
+                // Sending input to the program is automatically handled in the test setup function at the top of the file.
+                // Here we just have to verify that the variables are set according to the input.
+                const stack = await dc.stackTraceRequest({ threadId: 1});
+                const scopes = await dc.scopesRequest({frameId: stack.body.stackFrames[0]!.id});
+                const staticsScope = scopes.body.scopes[1]!;
+
+                const vars = await dc.variablesRequest({ variablesReference: staticsScope.variablesReference });
+                const int = vars.body.variables.find(variable => variable.name.startsWith("scan_to_me"));
+                Assert(int);
+                Assert.strictEqual(int.value, "1'234");
+                const buf = vars.body.variables.find(variable => variable.name.startsWith("buf"));
+                Assert(buf);
+                Assert.strictEqual(buf.value, "<array>\"hello\"");
+            }),
         ]);
     });
 

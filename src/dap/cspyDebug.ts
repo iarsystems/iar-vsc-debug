@@ -82,7 +82,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     private cspyDebugger: ThriftClient<Debugger.Client> | undefined = undefined;
 
-    private cspyEventHandler: DebugEventListenerHandler | undefined = undefined;
+    private readonly cspyEventHandler = new DebugEventListenerHandler();
+    private readonly libSupportHandler = new LibSupportHandler();
 
     private stackManager: CSpyContextManager | undefined = undefined;
     private breakpointManager: CSpyBreakpointManager | undefined = undefined;
@@ -159,7 +160,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
             // initialize all the services we need
             this.serviceManager = await ThriftServiceManager.fromWorkbench(args.workbenchPath);
 
-            this.cspyEventHandler = new DebugEventListenerHandler();
             await this.serviceManager.startService(DEBUGEVENT_SERVICE, DebugEventListener, this.cspyEventHandler);
             this.cspyEventHandler.observeLogEvents(event => {
                 if (!event.text.endsWith("\n")) {
@@ -168,15 +168,17 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 this.sendEvent(new OutputEvent(event.text));
             });
 
-            const libSupportHandler = new LibSupportHandler();
-            libSupportHandler.observeOutput(data => {
+            this.libSupportHandler.observeOutput(data => {
                 this.sendEvent(new OutputEvent(data, "stdout"));
             });
-            libSupportHandler.observeExit(code => {
-                this.sendEvent(new OutputEvent("Target program terminated, exit code " + code + "\n"));
+            this.libSupportHandler.observeExit(code => {
+                this.sendEvent(new OutputEvent("Debugee terminated, exit code " + code + "\n"));
                 this.expectedStoppingReason = "exit";
             });
-            this.serviceManager.startService(LIBSUPPORT_SERVICE, LibSupportService2, libSupportHandler);
+            this.libSupportHandler.observeInputRequest(() => {
+                this.sendEvent(new OutputEvent("Debugee requested terminal input:"));
+            });
+            this.serviceManager.startService(LIBSUPPORT_SERVICE, LibSupportService2, this.libSupportHandler);
 
             const frontendHandler = new FrontendHandler();
             this.serviceManager.startService(FRONTEND_SERVICE, Frontend, frontendHandler);
@@ -417,7 +419,13 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     protected override async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments) {
         console.log("Eval " + args.expression);
-        if (args.context === "repl" && this.consoleCommandRegistry.hasCommand(args.expression)) {
+        if (args.context === "repl" && this.libSupportHandler.isExpectingInput()) {
+            this.libSupportHandler.sendInput(Buffer.from(args.expression + "\n", "utf-8"));
+            response.body = {
+                result: args.expression,
+                variablesReference: 0,
+            };
+        } else if (args.context === "repl" && this.consoleCommandRegistry.hasCommand(args.expression)) {
             try {
                 const res = await this.consoleCommandRegistry.runCommand(args.expression);
                 if (res) {

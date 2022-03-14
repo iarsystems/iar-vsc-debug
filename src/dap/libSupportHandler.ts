@@ -9,6 +9,14 @@ export class LibSupportHandler {
     private readonly outputCallbacks: Array<(data: string) => void> = [];
     private readonly exitCallbacks: Array<(code: number) => void> = [];
 
+    private readonly inputRequestedCallbacks: Array<() => void> = [];
+    // When we have more input than has been requested, it is placed into the buffer.
+    // When we have more requested input than the user has provided, we store the requests in the queue.
+    private inputBuffer = Buffer.alloc(0);
+    private bufferPosition = 0;
+    // A FIFO queue of all pending input requests
+    private readonly requestQueue: Array<{ len: number, resolve: (s: string) => void}> = [];
+
     /**
      * Registers a callback to run when the debugee produces some output
      */
@@ -23,6 +31,35 @@ export class LibSupportHandler {
         this.exitCallbacks.push(callback);
     }
 
+    /**
+     * Registers a callback to run when the debugee requests console input
+     */
+    public observeInputRequest(callback: () => void) {
+        this.inputRequestedCallbacks.push(callback);
+    }
+
+    public isExpectingInput(): boolean {
+        return this.requestQueue.length > 0;
+    }
+
+    public sendInput(val: Buffer) {
+        // Add new input and shave off what we've already used
+        this.inputBuffer = Buffer.concat([this.inputBuffer.slice(this.bufferPosition), val]);
+        this.bufferPosition = 0;
+        // See if we can resolve any waiting requests
+        let resolved = 0;
+        for (const request of this.requestQueue) {
+            if (this.inputBuffer.length - this.bufferPosition < request.len) {
+                break;
+            }
+            request.resolve(this.inputBuffer.slice(this.bufferPosition, this.bufferPosition + request.len).toString());
+            this.bufferPosition += request.len;
+            resolved++;
+        }
+        // Remove resolved requests
+        this.requestQueue.splice(0, resolved);
+    }
+
     //////
     // Thrift procedure implementations
     //////
@@ -30,15 +67,23 @@ export class LibSupportHandler {
     /**
      * Request input from the terminal I/O console.
      */
-    requestInputBinary(_len: number): Q.Promise<string> {
-        // TODO: implement
-        // The implementation will be slightly complicated, since DAP doesn't support any way to request
-        // console input from the user. Instead, we have to set some state indicating that we're waiting
-        // on user input, which tells the 'Evaluate' request handler to send the next REPL input here,
-        // so we can send it back to C-SPY.
-        // A better way might be to use cspybat instead of the thrift libsupport, and use the RunInTerminal
-        // reverse request to create a terminal we can use for user I/O.
-        return Q.resolve("");
+    requestInputBinary(len: number): Q.Promise<string> {
+        console.log("Debugee requested input of length " + len);
+        // Can we serve the request immediately?
+        if (this.inputBuffer.length - this.bufferPosition >= len) {
+            const response = this.inputBuffer.slice(this.bufferPosition, this.bufferPosition + len).toString();
+            this.bufferPosition += len;
+            return Q.resolve(response);
+        } else {
+            // push it to the queue and wait for input
+            const deferred = Q.defer<string>();
+            this.requestQueue.push({ len: len, resolve: deferred.resolve });
+            if (this.requestQueue.length === 1) {
+                // We weren't already waiting for input
+                this.inputRequestedCallbacks.forEach(cb => cb());
+            }
+            return deferred.promise;
+        }
     }
 
     /**
