@@ -68,17 +68,17 @@ export namespace CSpyDriver {
         }
 
         const driverMap: Array<{ name: string, driver: () => CSpyDriver }> = [
-            { name: "SIM2", driver: () => new Sim2Driver() },
-            { name: "IMPERAS", driver: () => new ImperasDriver() },
-            { name: "JET", driver: () => new IJetDriver() },
-            { name: "JLINK", driver: () => new JLinkDriver() },
-            { name: "GDBSERV", driver: () => new GdbServerDriver() },
-            { name: "CADI", driver: () => new CADIDriver() },
-            { name: "LMIFTDI", driver: () => new StellarisDriver() },
-            { name: "PEMICRO", driver: () => new PEMicroDriver() },
-            { name: "STLINK", driver: () => new STLinkDriver() },
-            { name: "XDS", driver: () => new XDSDriver() },
-            { name: "TIFET", driver: () => new TIMSPFETDriver() }
+            { name: "sim2", driver: () => new Sim2Driver() },
+            { name: "imperas", driver: () => new ImperasDriver() },
+            { name: "jet", driver: () => new IJetDriver() },
+            { name: "jlink", driver: () => new JLinkDriver() },
+            { name: "gdbserv", driver: () => new GdbServerDriver() },
+            { name: "cadi", driver: () => new CADIDriver() },
+            { name: "lmiftdi", driver: () => new StellarisDriver() },
+            { name: "pemicro", driver: () => new PEMicroDriver() },
+            { name: "stlink", driver: () => new STLinkDriver() },
+            { name: "xds", driver: () => new XDSDriver() },
+            { name: "tifet", driver: () => new TIMSPFETDriver() }
         ];
         const result = driverMap.find(({ name, }) => {
             return basename.endsWith(name.toLowerCase());

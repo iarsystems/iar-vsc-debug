@@ -155,7 +155,9 @@ export namespace XclConfigurationProvider {
                 // The driver is given as libarmsim2.so or armsim2.dll so remove
                 // the target name and any extensions
                 const driverRegex = new RegExp(`(lib|.so|.dll|${target})`, "g");
-                config["driver"] = pathSegments[pathSegments.length - 1]?.replace(driverRegex, "");
+                const driver = pathSegments[pathSegments.length - 1]?.replace(driverRegex, "");
+                // Drivers are resolved case-insensitive by the debug adapter, so we can standardize the name to lowercase
+                config["driver"] = driver?.toLowerCase();
             }
             if (generalCommands[2]) {
                 // This is the binary. Resolve it if it's placed in the current ws.

@@ -211,13 +211,29 @@
 								"default": "sim2",
 								"enum": [
 									"sim2",
+									"imperas",
 									"jet",
-									"jlink"
+									"jlink",
+									"gdbserv",
+									"cadi",
+									"lmiftdi",
+									"pemicro",
+									"stlink",
+									"xds",
+									"tifet"
 								],
 								"enumDescriptions": [
-									"The driver to use for running the simulator.",
-									"I-Jet driver for hardware debugging.",
-									"J-Link driver for hardware debugging."
+									"Simulator (32-bit)",
+									"Simulator (64-bit)",
+									"I-jet",
+									"J-Link/J-Trace",
+									"GDB Server",
+									"CADI",
+									"TI Stellaris",
+									"PE micro",
+									"ST-LINK",
+									"TI XDS",
+									"TI MSP-FET"
 								]
 							},
 							"driverOptions": {
