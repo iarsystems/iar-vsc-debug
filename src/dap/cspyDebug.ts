@@ -4,6 +4,7 @@ import { ThriftServiceManager } from "./thrift/thriftServiceManager";
 import * as Debugger from "./thrift/bindings/Debugger";
 import * as DebugEventListener from "./thrift/bindings/DebugEventListener";
 import * as LibSupportService2 from "./thrift/bindings/LibSupportService2";
+import * as Frontend from "./thrift/bindings/Frontend";
 import { ThriftClient } from "./thrift/thriftClient";
 import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant, SessionConfiguration } from "./thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
@@ -24,6 +25,8 @@ import { CustomRequest } from "./customRequest";
 import { CspyDisassemblyManager } from "./cspyDisassemblyManager";
 import { CspyMemoryManager } from "./cspyMemoryManager";
 import { SvdGenerator } from "./svdGenerator";
+import { FrontendHandler } from "./frontendHandler";
+import { FRONTEND_SERVICE } from "./thrift/bindings/frontend_types";
 
 /**
  * This interface describes the cspy-debug specific launch attributes
@@ -174,6 +177,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 this.expectedStoppingReason = "exit";
             });
             this.serviceManager.startService(LIBSUPPORT_SERVICE, LibSupportService2, libSupportHandler);
+
+            const frontendHandler = new FrontendHandler();
+            this.serviceManager.startService(FRONTEND_SERVICE, Frontend, frontendHandler);
 
             const sessionConfig: SessionConfiguration = await new LaunchArgumentConfigurationResolver().resolveLaunchArguments(args);
 
