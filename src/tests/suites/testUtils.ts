@@ -100,7 +100,7 @@ export namespace TestUtils {
         request: "launch",
         name: "C-SPY Debugging Tests",
         target: "arm",
-        driver: "armsim2",
+        driver: "sim2",
         driverOptions: ["--endian=little", "--cpu=ARM7TDMI", "--fpu=None", "--semihosting", "--multicore_nr_of_cores=1"],
         stopOnEntry:true
     };

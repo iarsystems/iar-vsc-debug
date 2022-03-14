@@ -224,16 +224,15 @@ suite("Test Debug Adapter", () =>{
             dc.launch(dbgConfig),
             dc.waitForEvent("stopped").then(async() => {
                 const res = await dc.evaluateRequest({expression: "GetFib"});
-                const match = res.body.result.match(/GetFib \((.*)\)/);
-                Assert(match && match[1]);
+                Assert(res.body.memoryReference);
                 const args: DebugProtocol.SetInstructionBreakpointsArguments = {
-                    breakpoints: [{instructionReference: match[1]}]
+                    breakpoints: [{instructionReference: res.body.memoryReference}]
                 };
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
                 const bpRes: DebugProtocol.SetInstructionBreakpointsResponse = await dc.customRequest("setInstructionBreakpoints", args);
                 Assert(bpRes.body.breakpoints[0]?.verified);
-                Assert.strictEqual(bpRes.body.breakpoints[0]?.instructionReference, match[1]);
+                Assert.strictEqual(bpRes.body.breakpoints[0]?.instructionReference, res.body.memoryReference);
                 await Promise.all([
                     dc.continueRequest({threadId: 0}),
                     Utils.assertStoppedLocation(dc, "breakpoint", 35, utilsFile, /GetFib/)
@@ -638,14 +637,14 @@ suite("Test Debug Adapter", () =>{
                     const innerUnion = nestedContents.find(variable => variable.name === "un");
                     Assert(innerUnion !== undefined);
                     Assert(innerUnion.variablesReference > 0);
-                    dc.setVariableRequest({ name: "a", value: "0x41", variablesReference: innerUnion.variablesReference});
+                    await dc.setVariableRequest({ name: "a", value: "0x41", variablesReference: innerUnion.variablesReference});
                 }
                 {
                     // Setting eval'd variables uses different code, so test it too
                     const fibArray = (await dc.evaluateRequest({expression: "Fib"})).body;
                     Assert(fibArray !== undefined);
                     Assert(fibArray.variablesReference > 0);
-                    dc.setVariableRequest({ name: "[3]", value: "37", variablesReference: fibArray.variablesReference});
+                    await dc.setVariableRequest({ name: "[3]", value: "37", variablesReference: fibArray.variablesReference});
                 }
 
                 // Now check that the values changed
@@ -696,7 +695,8 @@ suite("Test Debug Adapter", () =>{
                     const apsr = regs.find(reg => reg.name === "APSR");
                     Assert(apsr !== undefined);
                     Assert(apsr.variablesReference > 0);
-                    dc.setVariableRequest({ name: "V", value: "0b1", variablesReference: apsr.variablesReference});
+                    const res = await dc.setVariableRequest({ name: "V", value: "0b1", variablesReference: apsr.variablesReference});
+                    Assert.strictEqual(res.body.value, "1");
                 }
 
                 // Now check that the values changed
