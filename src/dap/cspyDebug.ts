@@ -472,11 +472,11 @@ export class CSpyDebugSession extends LoggingDebugSession {
     protected override async readMemoryRequest(response: DebugProtocol.ReadMemoryResponse, args: DebugProtocol.ReadMemoryArguments) {
         console.log("Read " + args.memoryReference + " " + args.offset + " " + args.count);
         await CSpyDebugSession.tryResponseWith(this.memoryManager, response, async memoryManager => {
-            const data = await memoryManager.readMemory(args.memoryReference.replace("'", ""), args.offset ?? 0, args.count);
+            const result = await memoryManager.readMemory(args.memoryReference.replace("'", ""), args.offset ?? 0, args.count);
             response.body = {
-                address: args.memoryReference,
-                data: data[0],
-                unreadableBytes: args.count - data[1],
+                address: "0x" + result.addr.toOctetString(),
+                data: result.data,
+                unreadableBytes: args.count - result.count,
             };
         });
         this.sendResponse(response);

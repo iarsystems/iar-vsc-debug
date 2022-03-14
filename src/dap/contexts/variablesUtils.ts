@@ -118,6 +118,12 @@ export namespace VariablesUtils {
                 return match[1];
             }
         }
+        {
+            const match = value.match(new RegExp(`^${hexRegex}\\s\\".*\\"$`));
+            if (match && match[1]) {
+                return match[1];
+            }
+        }
         return undefined;
     }
 }
