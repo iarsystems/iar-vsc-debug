@@ -42,8 +42,9 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     program: string;
     /** Automatically stop target after launch. If not specified, target does not stop. */
     stopOnEntry?: boolean;
-    /** The type of breakpoint to use by default. This isn't provided directly in the launch.json (it's not declared in package.json). Instead it is provided from the user's selection in the UI. */
-    breakpointType: BreakpointType;
+    /** The type of breakpoint to use by default. This isn't normally provided directly in the launch.json (it's not declared in package.json).
+    * Instead it is provided from the user's selection in the UI. */
+    breakpointType?: BreakpointType;
     /** enable logging the Debug Adapter Protocol */
     trace?: boolean;
     /** Path to the Embedded Workbench installation to use */
@@ -213,7 +214,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1,
                 driver);
-            this.setupBreakpointRequests(args.breakpointType);
+            this.setupBreakpointRequests(args.breakpointType ?? BreakpointType.AUTO);
             this.setupRegistersRequest(args.driverOptions);
 
         } catch (e) {
