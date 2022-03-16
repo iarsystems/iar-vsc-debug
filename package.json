@@ -169,8 +169,6 @@
 							"target",
 							"program",
 							"workbenchPath",
-							"projectPath",
-							"projectConfiguration",
 							"driver",
 							"driverOptions"
 						],
@@ -197,13 +195,13 @@
 							},
 							"projectPath": {
 								"type": "string",
-								"description": "The workspace to use during the debug session.",
-								"default": "${command:iar-settings.project-file} for an iar-vsc project or path to project (${workspaceFolder} for current folder)"
+								"description": "Path to a .ewp file, or a folder in which to place debug settings files.",
+								"default": "${command:iar-settings.project-file} for an iar-vsc project."
 							},
 							"projectConfiguration": {
 								"type": "string",
-								"description": "Name of the project configuration to debug (e.g. Debug).",
-								"default": "${command:iar-settings.project-configuration} for an iar-vsc projects or the name of the configuration."
+								"description": "Name of the project configuration to debug (e.g. Debug). Only applicable to .ewp projects",
+								"default": "${command:iar-settings.project-configuration} for an iar-vsc project. Remove this for other project types."
 							},
 							"driver": {
 								"type": "string",
@@ -298,8 +296,8 @@
 						"program": "${workspaceFolder}/Debug/Exe/ewproj.out",
 						"stopOnEntry": true,
 						"workbenchPath": "${command:iar-settings.toolchain} for an iar-vsc project or path to EW root.",
-						"projectPath": "${command:iar-settings.project-file} for an iar-vsc projects or path to project (${workspaceFolder} for current folder).",
-						"projectConfiguration": "${command:iar-settings.project-configuration} for an iar-vsc projects or the name of the configuration.",
+						"projectPath": "${command:iar-settings.project-file} for an iar-vsc project.",
+						"projectConfiguration": "${command:iar-settings.project-configuration} for an iar-vsc project. Remove this for other project types",
 						"driver": "sim2",
 						"driverOptions": [
 							"--endian=little",
@@ -347,8 +345,6 @@
 							"program": "^\"\\${workspaceFolder}/Debug/Exe/${2:ewproj.out}\"",
 							"stopOnEntry": true,
 							"workbenchPath": "${3:workbenchPath}",
-							"projectPath": "^\"\\${workspaceFolder}\"",
-							"projectConfiguration": "^\"Debug\"",
 							"driver": "sim2",
 							"driverOptions": [
 								"--endian=little",

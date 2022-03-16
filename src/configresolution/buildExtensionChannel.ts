@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { BuildExtensionApi } from "../utils/buildExtension";
+import { BuildExtensionApi, ProjectConfiguration } from "../utils/buildExtension";
 
 /**
  * A communication channel to the build extension. All interaction with the build extension should go through
@@ -12,7 +12,7 @@ export class BuildExtensionChannel implements BuildExtensionApi {
         if (!this.instance) {
             const buildExtension = vscode.extensions.getExtension("iarsystems.iar-vsc");
             if (!buildExtension || !buildExtension.isActive) {
-                throw new Error("Build extension communication channel could not be initialized");
+                return undefined;
             }
             this.initialize(buildExtension.exports);
         }
@@ -39,10 +39,19 @@ export class BuildExtensionChannel implements BuildExtensionApi {
         return this.api.getLoadedProject();
     }
     /**
-     * Returns the currently selected project configuration.
+     * Gets the name of the selected configuration for the project.
+     * If the project is not already loaded, returns undefined.
      */
-    getSelectedConfiguration(): Promise<string | undefined> {
-        return this.api.getSelectedConfiguration();
+    getSelectedConfiguration(project: string): Promise<ProjectConfiguration | undefined> {
+        return this.api.getSelectedConfiguration(project);
+    }
+
+    /**
+     * Gets all configurations of the project.
+     * If the project is not already loaded, returns undefined.
+     */
+    getProjectConfigurations(project: string): Promise<ProjectConfiguration[] | undefined> {
+        return this.api.getProjectConfigurations(project);
     }
 
     /**

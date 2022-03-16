@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
 import { OsUtils } from "../utils/osUtils";
+import { ConfigResolutionCommon } from "./common";
 
 /**
  * Provides automatic debug configurations from the .xcl files in a project folder
@@ -25,7 +26,7 @@ export namespace XclConfigurationProvider {
     /**
      * Provides all debug configurations from a project folder. This may include several projects and project configurations.
      */
-    export function provideDebugConfigurations(workspaceFolder: vscode.WorkspaceFolder | undefined, projectFolder: string): vscode.DebugConfiguration[] {
+    export function provideDebugConfigurations(workspaceFolder: vscode.WorkspaceFolder | undefined, projectFolder: string): ConfigResolutionCommon.PartialConfig[] {
         if (!workspaceFolder) {
             // Can't do anything without a folder.
             return [];
@@ -46,10 +47,11 @@ export namespace XclConfigurationProvider {
             }
         });
 
-        const configs: vscode.DebugConfiguration[] = [];
+        const configs: ConfigResolutionCommon.PartialConfig[] = [];
         targetXcls.forEach(target => {
             const filePaths = target.split(".");
-            const config = convertXclToDebugConfiguration(workspaceFolder.uri.fsPath, projectFolder, filePaths[0], filePaths[1]);
+            if (filePaths[0] === undefined || filePaths[1] === undefined) return;
+            const config = convertXclToDebugConfiguration(projectFolder, filePaths[0], filePaths[1]);
             if (config) {
                 configs.push(config);
             }
@@ -64,7 +66,7 @@ export namespace XclConfigurationProvider {
      * @param project The path to a .ewp file
      * @param configuration The name of the project configuration
      */
-    export function provideDebugConfigurationFor(workspaceFolder: vscode.WorkspaceFolder, project: string, configuration: string): vscode.DebugConfiguration {
+    export function provideDebugConfigurationFor(project: string, configuration: string): ConfigResolutionCommon.PartialConfig {
         const projName = path.basename(project, ".ewp");
         const projDir = path.dirname(project);
         const xclBaseName = generateXclBasename(projName, configuration);
@@ -73,7 +75,7 @@ export namespace XclConfigurationProvider {
         // Ensure that both the files exists on disk.
         let errMsg = "Unknown error.";
         if (fs.existsSync(genXclFile) && fs.existsSync(drvXclFile)) {
-            const config = convertXclToDebugConfiguration(workspaceFolder.uri.fsPath, projDir, projName, configuration);
+            const config = convertXclToDebugConfiguration(projDir, projName, configuration);
             if (config) {
                 return config;
             }
@@ -87,89 +89,65 @@ export namespace XclConfigurationProvider {
     /**
      * Reads the content from driver.xcl and general.xcl and attempts to generate a
      * valid launch configuration.
-     * @param wsDir The current workspace directory.
      * @param ewpDir The folder in which the ewp-file is located.
      * @param projName The name of the project
      * @param configName the name of the configuration
      * @returns undefined if fail or a valid launch configuration.
      */
-    function convertXclToDebugConfiguration(wsDir: string, ewpDir: string, projName: string | undefined, configName: string | undefined): vscode.DebugConfiguration | undefined {
-        if (!projName || !configName) {
-            return undefined;
-        }
-
+    function convertXclToDebugConfiguration(ewpDir: string, projName: string, configName: string): ConfigResolutionCommon.PartialConfig {
         const baseName = generateXclBasename(projName, configName);
         const genXclFile = path.join(ewpDir, FileNames.settingsCatalog, baseName + FileNames.genXcl);
         const drvXclFile = path.join(ewpDir, FileNames.settingsCatalog, baseName + FileNames.drvXcl);
 
         // We need both files to exist.
         if (!fs.existsSync(genXclFile) || !fs.existsSync(drvXclFile)) {
-            return undefined;
+            throw new Error("Missing xcl files");
         }
 
-        return generateDebugConfiguration(wsDir, ewpDir, baseName, configName, readLinesFromXclFile(genXclFile), readLinesFromXclFile(drvXclFile));
+        return generateDebugConfiguration(projName, configName, readLinesFromXclFile(genXclFile), readLinesFromXclFile(drvXclFile));
     }
 
     /**
      * Generate a configuration based on a command line intended for cspybat.
-     * @param wsDir The current workspace directory
-     * @param ewpDir The folder in which the ewp file is placed
-     * @param launchName The name of the launches
-     * @param configuration The name of the configuration.
+     * May throw if the commands are not well-formed
+     * @param projectName The name of the project this configuration is for
+     * @param configuration The name of the project configuration this is for.
      * @param generalCommands The set of general commands, i.e., placed before --backend.
      * @param driverCommands The set of options for the driver, i.e., placed after --backend.
      *                       Note that --backend should not be included.
-     * @returns undefined if fail or a valid launch configuration.
+     * @returns a valid launch configuration.
      */
-    export function generateDebugConfiguration(wsDir: string, ewpDir: string, launchName: string, configuration: string, generalCommands: string[], driverCommands: string[]): vscode.DebugConfiguration | undefined {
-        // Start to assemble the configuration
-        const config: vscode.DebugConfiguration = {
-            "name": launchName,
-            "type": "cspy",
-            "request": "launch",
-            "stopOnEntry": true
-        };
+    export function generateDebugConfiguration(
+        projectName: string,
+        configuration: string,
+        generalCommands: string[],
+        driverCommands: string[]
+    ): ConfigResolutionCommon.PartialConfig {
 
-        // The set of listed plugins (--plugins option) and regex
+        let program: string | undefined;
+        let driver: string | undefined;
+        let target: string | undefined;
+        let stopOnEntry = false;
         const plugins: string[] = [];
-        // The set of listed macros (--macros option) and regex
         const macros: string[] = [];
-        // The set of listed device macros (--device_macro option) and regex
         const deviceMacros: string[] = [];
-        // The selected flash loader (if any)
         let flashLoader: string | undefined;
-        // The rest which is just sent to the backend directly.
-        const options: string[] = [];
+        const driverOptions: string[] = [];
 
         // Read the content from the general file
         if (generalCommands.length < 3) {
-            console.error("To few entries in the file, Corrupt?");
-            return undefined;
+            throw new Error("To few entries in the file, Corrupt?");
         } else {
             if (generalCommands[1]) {
+                driver = generalCommands[1];
                 const pathSegments = OsUtils.splitPath(generalCommands[1]);
                 const noSegments = pathSegments.length;
                 // The target is listed before bin.
-                const target = pathSegments[noSegments - 3];
-                config["target"] = target;
-                // The driver is given as libarmsim2.so or armsim2.dll so remove
-                // the target name and any extensions
-                const driverRegex = new RegExp(`(lib|.so|.dll|${target})`, "g");
-                const driver = pathSegments[pathSegments.length - 1]?.replace(driverRegex, "");
-                // Drivers are resolved case-insensitive by the debug adapter, so we can standardize the name to lowercase
-                config["driver"] = driver?.toLowerCase();
+                target = pathSegments[noSegments - 3];
             }
             if (generalCommands[2]) {
-                // This is the binary. Resolve it if it's placed in the current ws.
-                const wsRelativePath = path.relative(wsDir, generalCommands[2]);
-
-                if (!wsRelativePath.startsWith("..") && !path.isAbsolute(wsRelativePath)) {
-                    // Add the path as a relative path.
-                    config["program"] = path.join("${workspaceFolder}", wsRelativePath);
-                } else {
-                    // Just add it as is
-                    config["program"] = generalCommands[2];
-                }
+                // This is the binary
+                program = generalCommands[2];
             }
 
             // Handle the remaining arguments
@@ -179,9 +157,7 @@ export namespace XclConfigurationProvider {
                 const deviceMacroMatch = Regexps._deviceMacroReg.exec(arg);
                 const flashLoaderMatch = Regexps._flashLoaderReg.exec(arg);
                 if (pluginMatch && pluginMatch[1]) {
-                    if (!/bat.(dll|so)$/.test(pluginMatch[1])) { // remove e.g. armbat plugin
-                        plugins.push(path.parse(stripQuotes(pluginMatch[1])).name);
-                    }
+                    plugins.push(stripQuotes(pluginMatch[1]));
                 } else if (macroMatch && macroMatch[1]) {
                     macros.push(stripQuotes(macroMatch[1])); // not tested
                 } else if (deviceMacroMatch && deviceMacroMatch[1]) {
@@ -189,38 +165,39 @@ export namespace XclConfigurationProvider {
                 } else if (flashLoaderMatch && flashLoaderMatch[1]) {
                     flashLoader = stripQuotes(flashLoaderMatch[1]);
                 } else if (Regexps._attachReg.test(arg)) {
-                    config["stopOnEntry"] = false;
+                    stopOnEntry = false;
                 } else {
-                    options.push(arg);
+                    driverOptions.push(arg);
                 }
             });
         }
 
-        // Add the workbench options.
-        config["workbenchPath"] = "${command:iar-settings.toolchain}";
-        config["projectPath"] = ewpDir;
-        config["projectConfiguration"] = configuration;
-
-        if (macros.length > 0) {
-            config["setupMacros"] = macros;
+        if (program === undefined) {
+            throw new Error("No program was specified.");
         }
-
-        if (deviceMacros.length > 0 || flashLoader !== undefined) {
-            config["download"] = {
-                flashLoader: flashLoader,
-                deviceMacros: deviceMacros,
-            };
+        if (driver === undefined) {
+            throw new Error("No driver was specified.");
         }
-
-
-        if (plugins.length > 0) {
-            config["plugins"] = plugins;
+        if (target === undefined) {
+            throw new Error("No target was specified.");
         }
 
         // Everything in the driver segment can be sent directly to the driverOptions segment
-        config["driverOptions"] = options.concat(driverCommands);
+        driverOptions.push(...driverCommands);
 
-        return config;
+        return {
+            program,
+            driverPath: driver,
+            target,
+            stopOnEntry,
+            projectName,
+            configuration,
+            plugins,
+            macros,
+            deviceMacros,
+            flashLoader,
+            driverOptions,
+        };
     }
 
     function readLinesFromXclFile(xclPath: string): string[] {

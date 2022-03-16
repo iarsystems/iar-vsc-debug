@@ -7,6 +7,7 @@ import { TestSandbox } from "../../utils/testutils/testSandbox";
 import { CSpyLaunchRequestArguments } from "../../dap/cspyDebug";
 import { BreakpointType } from "../../dap/breakpoints/cspyBreakpointManager";
 import { XclConfigurationProvider } from "../../configresolution/xclConfigurationProvider";
+import { ConfigResolutionCommon } from "../../configresolution/common";
 
 /**
  *  Class contaning utility methods for the tests.
@@ -29,11 +30,12 @@ export namespace TestUtils {
             // split on unescaped whitespace
             const args = process.env["cspybat-args"].split(/(?<!\\)\s+/g);
             const backendIdx = args.indexOf("--backend");
-            const launchConfig = XclConfigurationProvider.generateDebugConfiguration(
-                "", "", "",
+            const partialConfig = XclConfigurationProvider.generateDebugConfiguration(
+                "",
                 config,
                 args.slice(0, backendIdx),
                 args.slice(backendIdx+1));
+            const launchConfig = ConfigResolutionCommon.instantiateConfiguration(partialConfig);
 
             if (launchConfig === undefined) {
                 throw new Error("Unable to create launch config from cspybat cmdline. Check its validity.");
