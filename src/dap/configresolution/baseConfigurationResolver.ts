@@ -51,7 +51,7 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
             // which the file is located.
             projectDir = Path.parse(projectDir).dir;
         }
-        const projectName: string = launchArguments.projectPath ? Path.basename(launchArguments.projectPath) : "";
+        const projectName: string = launchArguments.projectPath ? Path.basename(launchArguments.projectPath) : "GenericProject";
 
         // we don't support multicore yet
         partialValues.options = partialValues.options.filter(option => !option.match(/--multicore_nr_of_cores=\d+/));
