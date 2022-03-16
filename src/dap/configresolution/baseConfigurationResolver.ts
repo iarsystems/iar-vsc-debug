@@ -53,6 +53,9 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
             projectPath = Path.parse(projectPath).dir;
         }
 
+        // we don't support multicore yet
+        partialValues.options = partialValues.options.filter(option => !option.match(/--multicore_nr_of_cores=\d+/));
+
         const config: SessionConfiguration = new SessionConfiguration({
             attachToTarget: partialValues.attachToTarget,
             driverName: partialValues.driverName,
