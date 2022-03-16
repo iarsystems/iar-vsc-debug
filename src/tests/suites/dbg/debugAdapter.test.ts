@@ -59,8 +59,8 @@ suite("Test Debug Adapter", () =>{
 
         dbgConfig = TestUtils.doSetup(workbench);
 
-        fibonacciFile = Utils.sourceFilePath(dbgConfig.projectPath, "Fibonacci.c");
-        utilsFile = Utils.sourceFilePath(dbgConfig.projectPath, "Utilities.c");
+        fibonacciFile = Utils.sourceFilePath(dbgConfig.projectPath!, "Fibonacci.c");
+        utilsFile = Utils.sourceFilePath(dbgConfig.projectPath!, "Utilities.c");
     });
 
     let dc: DebugClient;

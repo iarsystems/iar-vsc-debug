@@ -50,9 +50,9 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     /** Path to the Embedded Workbench installation to use */
     workbenchPath: string;
     /** Path to the .ewp file of the project to debug */
-    projectPath: string;
+    projectPath?: string;
     /** Name of the project configuration to debug (e.g. Debug) */
-    projectConfiguration: string;
+    projectConfiguration?: string;
     /** The name of the driver library to use.*/
     driver: string;
     /** The driver options as a list of string*/

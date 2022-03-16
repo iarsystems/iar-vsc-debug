@@ -34,7 +34,7 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
         if (!Fs.existsSync(launchArguments.program)) {
             return Promise.reject(new Error(`The program '${launchArguments.program}' does not exist.`));
         }
-        if (!Fs.existsSync(launchArguments.projectPath)) {
+        if (launchArguments.projectPath && !Fs.existsSync(launchArguments.projectPath)) {
             return Promise.reject(new Error(`The path '${launchArguments.projectPath}' does not exist.`));
         }
         if (!Fs.existsSync(launchArguments.workbenchPath)) {
@@ -45,13 +45,13 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
         const libsupportPath = IarOsUtils.resolveTargetLibrary(launchArguments.workbenchPath, partialValues.target, "LibSupportEclipse");
 
         // Do the work on the project path which may be an ewp-file or a directory.
-        let projectPath: string = launchArguments.projectPath;
-        const projectName: string = Path.basename(launchArguments.projectPath);
-        if (Fs.lstatSync(projectPath).isFile()) {
+        let projectDir = launchArguments.projectPath;
+        if (projectDir && Fs.lstatSync(projectDir).isFile()) {
             // The user has given a file, so get the path to the directory in
             // which the file is located.
-            projectPath = Path.parse(projectPath).dir;
+            projectDir = Path.parse(projectDir).dir;
         }
+        const projectName: string = launchArguments.projectPath ? Path.basename(launchArguments.projectPath) : "";
 
         const config: SessionConfiguration = new SessionConfiguration({
             attachToTarget: partialValues.attachToTarget,
@@ -59,12 +59,12 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
             processorName: partialValues.processorName,
             type: partialValues.type,
             executable: launchArguments.program,
-            configName: launchArguments.projectConfiguration,
+            configName: launchArguments.projectConfiguration ?? "",
             leaveRunning: false,
             enableCRun: false,
             options: partialValues.options,
             plugins: partialValues.plugins.concat([libsupportPath]),
-            projectDir: projectPath,
+            projectDir: projectDir ?? Path.dirname(launchArguments.program),
             projectName: projectName,
             setupMacros: partialValues.setupMacros,
             target: partialValues.target,
