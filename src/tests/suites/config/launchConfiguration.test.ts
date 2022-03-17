@@ -44,7 +44,7 @@ suite("Configuration tests", () => {
                 return Promise.reject(new Error());
             },
             getCSpyCommandline() {
-                return Promise.resolve(["/program", "test.out", "/driver", "armSIM2.dll"]);
+                return Promise.resolve(undefined);
             }
         });
     });
