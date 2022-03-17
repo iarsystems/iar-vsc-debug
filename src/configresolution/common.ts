@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import * as Path from "path";
 import { CSpyLaunchRequestArguments } from "../dap/cspyDebug";
+import { OsUtils } from "../utils/osUtils";
 
 /**
  * Helpers for creating/resolving C-SPY debug configurations
@@ -35,7 +36,7 @@ export namespace ConfigResolutionCommon {
 
         // The driver is usually given as a path to libarmsim2.so or armsim2.dll so remove
         // directory part, the target name and any extensions
-        const driverFile = Path.basename(parts.driverPath);
+        const driverFile = basename(parts.driverPath);
         // Lowercase here is mostly for display purposes - the debug adapter resolves drivers case-insensitive anyway
         const driverName = driverFile.replace(new RegExp(`lib|.so|.dll|${parts.target}`, "ig"), "").toLowerCase();
 
@@ -80,9 +81,18 @@ export namespace ConfigResolutionCommon {
             return !/libsupport.(dll|so)$/.test(plugin) && !/bat.(dll|so)$/.test(plugin);
         });
         if (parts.plugins.length > 0) {
-            config.plugins = parts.plugins.map(plugin => Path.parse(plugin).name);
+            config.plugins = parts.plugins.map(basename);
         }
 
         return config;
+    }
+
+    // Gets the basename (the last portion) of a path. This function handles both back- and forward slashes,
+    // regardless of what OS it is run on.
+    function basename(path: string): string {
+        const pathSegments = OsUtils.splitPath(path);
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        return pathSegments[pathSegments.length - 1]!;
+
     }
 }
