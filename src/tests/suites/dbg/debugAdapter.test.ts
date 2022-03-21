@@ -327,10 +327,30 @@ suite("Test Debug Adapter", () =>{
 
                 { // Check registers
                     const registers = (await dc.variablesRequest({variablesReference: scopes.body.scopes[2]!.variablesReference})).body.variables;
-                    Assert(registers.some(reg => reg.name === "R4"));
-                    Assert(registers.some(reg => reg.name === "SP"));
-                    Assert(registers.some(reg => reg.name === "PC"));
-                    Assert(registers.some(reg => reg.name === "CPSR" && reg.variablesReference > 0)); // Should be nested
+                    Assert(registers.some(group => group.name === "Current CPU Registers" && group.variablesReference > 0));
+                    const cpuRegisters = registers.find(group => group.name === "CPU Registers" && group.variablesReference > 0);
+                    Assert(cpuRegisters, "Found no register group called 'CPU Registers'");
+                    const floatRegisters = registers.find(group => group.name === "Floating-Point Extension registers" && group.variablesReference > 0);
+                    Assert(floatRegisters, "Found no register group called 'Floating-Point Extension registers'");
+
+                    const groupContents = await Promise.all([
+                        dc.variablesRequest({variablesReference: cpuRegisters.variablesReference}),
+                        dc.variablesRequest({variablesReference: floatRegisters.variablesReference}),
+                    ]);
+                    {
+                        const registers = groupContents[0].body.variables;
+                        Assert(registers.some(reg => reg.name === "R4"));
+                        Assert(registers.some(reg => reg.name === "SP"));
+                        Assert(registers.some(reg => reg.name === "PC"));
+                        Assert(registers.some(reg => reg.name === "CPSR" && reg.variablesReference > 0)); // Should be nested
+
+                    }
+                    {
+                        const registers = groupContents[1].body.variables;
+                        Assert(registers.some(reg => reg.name === "S6" && reg.variablesReference > 0)); // Should be nested
+                        Assert(registers.some(reg => reg.name === "D12"));
+
+                    }
                 }
             }),
         ]);
@@ -692,12 +712,15 @@ suite("Test Debug Adapter", () =>{
                 const stack = await dc.stackTraceRequest({ threadId: 1});
                 const scopes = await dc.scopesRequest({frameId: stack.body.stackFrames[0]!.id});
                 const registersScope = scopes.body.scopes[2]!;
+                const registerGroups = (await dc.variablesRequest({ variablesReference: registersScope.variablesReference })).body.variables;
+                const cpuRegisters = registerGroups.find(group => group.name === "Current CPU Registers");
+                Assert(cpuRegisters);
 
                 // First set new values
-                dc.setVariableRequest({name: "R8", value: "0xDEAD'BEEF", variablesReference: registersScope.variablesReference});
+                dc.setVariableRequest({name: "R8", value: "0xDEAD'BEEF", variablesReference: cpuRegisters.variablesReference});
 
                 {
-                    const regs = (await dc.variablesRequest({variablesReference: registersScope.variablesReference})).body.variables;
+                    const regs = (await dc.variablesRequest({variablesReference: cpuRegisters.variablesReference})).body.variables;
                     const apsr = regs.find(reg => reg.name === "APSR");
                     Assert(apsr !== undefined);
                     Assert(apsr.variablesReference > 0);
@@ -706,7 +729,7 @@ suite("Test Debug Adapter", () =>{
                 }
 
                 // Now check that the values changed
-                const regs = (await dc.variablesRequest({variablesReference: registersScope.variablesReference})).body.variables;
+                const regs = (await dc.variablesRequest({variablesReference: cpuRegisters.variablesReference})).body.variables;
                 Assert(regs.some(reg => reg.name === "R8" && reg.value === "0xdead'beef"), JSON.stringify(regs));
                 {
                     const apsr = regs.find(reg => reg.name === "APSR");

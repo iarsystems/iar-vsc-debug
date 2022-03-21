@@ -5,6 +5,8 @@ import { ThriftServiceManager } from "../thrift/thriftServiceManager";
 import { ListWindowClient } from "../listWindowClient";
 import Int64 = require("node-int64");
 import { Mutex } from "async-mutex";
+import { WindowNames } from "../listWindowConstants";
+import { RegisterInformationGenerator } from "../registerInformationGenerator";
 
 interface RegisterReference {
     group: GroupReference,
@@ -25,21 +27,16 @@ export class RegistersVariablesProvider implements VariablesProvider, Disposable
     private availableGroups: Array<GroupReference> | undefined = undefined;
     private readonly readLock = new Mutex();
 
-    static async instantiate(serviceMgr: ThriftServiceManager,
-        windowServiceId: string,
-        varNameColumn: number,
-        varValueColumn: number,
-        varTypeColumn: number,
-        varLocationColumn: number): Promise<RegistersVariablesProvider> {
-
-        const windowClient = await ListWindowClient.instantiate(serviceMgr, windowServiceId, varNameColumn);
-        const listWindowProvider = new ListWindowVariablesProvider(windowClient, varNameColumn, varValueColumn, varTypeColumn, varLocationColumn);
-        return new RegistersVariablesProvider(listWindowProvider, windowClient);
+    static async instantiate(serviceMgr: ThriftServiceManager, registerInfoGen: RegisterInformationGenerator): Promise<RegistersVariablesProvider> {
+        const windowClient = await ListWindowClient.instantiate(serviceMgr, WindowNames.REGISTERS, 0);
+        const listWindowProvider = new ListWindowVariablesProvider(windowClient, 0, 1, 2, -1);
+        return new RegistersVariablesProvider(listWindowProvider, windowClient, registerInfoGen);
     }
 
     private constructor(
         private readonly varProvider: ListWindowVariablesProvider,
-        private readonly windowClient: ListWindowClient) { }
+        private readonly windowClient: ListWindowClient,
+        private readonly registerInfoGenerator: RegisterInformationGenerator) { }
 
     async getVariables(): Promise<Variable[]> {
         this.availableGroups ??= await this.fetchGroups();
@@ -115,6 +112,7 @@ export class RegistersVariablesProvider implements VariablesProvider, Disposable
             return [];
         }
         const availableGroups = [];
+        const cpuRegs = await this.registerInfoGenerator.getCpuRegisterGroups();
         for (const item of contextItems.slice(start + 1)) {
             if (item.text === "<") {
                 break;
@@ -122,7 +120,9 @@ export class RegistersVariablesProvider implements VariablesProvider, Disposable
             if (item.checked) {
                 this.visibleGroup = item.text;
             }
-            availableGroups.push({name: item.text, command: item.command});
+            if (cpuRegs.some(reg => reg.name === item.text)) {
+                availableGroups.push({name: item.text, command: item.command});
+            }
         }
         return availableGroups;
     }

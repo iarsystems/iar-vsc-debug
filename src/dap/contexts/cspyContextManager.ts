@@ -15,6 +15,7 @@ import { DebugEventListenerHandler } from "../debugEventListenerHandler";
 import { VariablesUtils } from "./variablesUtils";
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { RegistersVariablesProvider } from "./registersVariablesProvider";
+import { RegisterInformationGenerator } from "../registerInformationGenerator";
 
 /**
  * Describes a scope, i.e. a C-SPY context used to access the scope,
@@ -61,7 +62,7 @@ export class CSpyContextManager implements Disposable {
     /**
      * Creates a new context manager using services from the given service manager.
      */
-    static async instantiate(serviceMgr: ThriftServiceManager, cspyEventListener: DebugEventListenerHandler): Promise<CSpyContextManager> {
+    static async instantiate(serviceMgr: ThriftServiceManager, cspyEventListener: DebugEventListenerHandler, regInfoGen: RegisterInformationGenerator): Promise<CSpyContextManager> {
         const onProviderUnavailable = (reason: unknown) => {
             throw reason;
         };
@@ -71,7 +72,7 @@ export class CSpyContextManager implements Disposable {
             await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.LOCALS, 0, 1, 3, 2).catch(onProviderUnavailable),
             await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.STATICS, 0, 1, 3, 2).catch(onProviderUnavailable),
             // Registers need a special implementation to handle all the register groups
-            await RegistersVariablesProvider.instantiate(serviceMgr, WindowNames.REGISTERS, 0, 1, 2, -1).catch(onProviderUnavailable),
+            await RegistersVariablesProvider.instantiate(serviceMgr, regInfoGen).catch(onProviderUnavailable),
             cspyEventListener,
         );
     }

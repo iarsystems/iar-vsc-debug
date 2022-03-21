@@ -165,7 +165,7 @@ suite("SVD generator tests", () => {
 
     test("STM32F401CB", async() => {
         // delete cached register data
-        await Fs.promises.rm(Path.join(tmpdir(), "iar-vsc-svdcache"), { recursive: true, force: true });
+        await Fs.promises.rm(Path.join(tmpdir(), "iar-vsc-registercache"), { recursive: true, force: true });
 
         let svdContent: string;
         await Promise.all([

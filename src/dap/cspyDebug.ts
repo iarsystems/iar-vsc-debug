@@ -24,7 +24,7 @@ import { Utils } from "./utils";
 import { CustomRequest } from "./customRequest";
 import { CspyDisassemblyManager } from "./cspyDisassemblyManager";
 import { CspyMemoryManager } from "./cspyMemoryManager";
-import { SvdGenerator } from "./svdGenerator";
+import { RegisterInformationGenerator } from "./registerInformationGenerator";
 import { FrontendHandler } from "./frontendHandler";
 import { FRONTEND_SERVICE } from "./thrift/bindings/frontend_types";
 
@@ -86,6 +86,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     private readonly cspyEventHandler = new DebugEventListenerHandler();
     private readonly libSupportHandler = new LibSupportHandler();
 
+    private registerInfoGenerator: RegisterInformationGenerator | undefined = undefined;
     private stackManager: CSpyContextManager | undefined = undefined;
     private breakpointManager: CSpyBreakpointManager | undefined = undefined;
     private disassemblyManager: CspyDisassemblyManager | undefined = undefined;
@@ -203,8 +204,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
             await this.cspyDebugger.service.loadModule(args.program);
             this.sendEvent(new OutputEvent("Session started\n"));
 
+            this.registerInfoGenerator = new RegisterInformationGenerator(args.driverOptions, await this.serviceManager.findService(DEBUGGER_SERVICE, Debugger));
             // only after loading modules can we initialize services using listwindows
-            this.stackManager = await CSpyContextManager.instantiate(this.serviceManager, this.cspyEventHandler);
+            this.stackManager = await CSpyContextManager.instantiate(this.serviceManager, this.cspyEventHandler, this.registerInfoGenerator);
             this.memoryManager = await CspyMemoryManager.instantiate(this.serviceManager);
             this.disassemblyManager = await CspyDisassemblyManager.instantiate(this.serviceManager,
                 this.clientLinesStartAt1,
@@ -215,7 +217,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 this.clientColumnsStartAt1,
                 driver);
             this.setupBreakpointRequests(args.breakpointType ?? BreakpointType.AUTO);
-            this.setupRegistersRequest(args.driverOptions);
+            this.setupRegistersRequest();
 
         } catch (e) {
             response.success = false;
@@ -566,16 +568,11 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     /**
      * Sets up a custom request that returns the peripheral registers for the current device as an SVD string.
-     * @param driverOptions The driverOptions field of the launch request arguments. This determines the device.
      */
-    private setupRegistersRequest(driverOptions: string[]) {
-        const svdGenerator = new SvdGenerator(driverOptions);
+    private setupRegistersRequest() {
         this.customRequestRegistry.registerCommand(new Command(CustomRequest.REGISTERS, async() => {
-            if (this.cspyDebugger) {
-                const svd = await svdGenerator.generateSvd(this.cspyDebugger.service);
-                if (svd.peripherals.peripheral.length > 0) {
-                    return { svdContent: svdGenerator.toSvdXml(svd) };
-                }
+            if (this.registerInfoGenerator) {
+                return { svdContent: await this.registerInfoGenerator.getSvdXml() };
             }
             return { svdContent: undefined };
         }));
