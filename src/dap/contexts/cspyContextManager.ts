@@ -14,6 +14,7 @@ import { ListWindowVariablesProvider, VariablesProvider } from "./variablesProvi
 import { DebugEventListenerHandler } from "../debugEventListenerHandler";
 import { VariablesUtils } from "./variablesUtils";
 import { DebugProtocol } from "@vscode/debugprotocol";
+import { RegistersVariablesProvider } from "./registersVariablesProvider";
 
 /**
  * Describes a scope, i.e. a C-SPY context used to access the scope,
@@ -69,7 +70,8 @@ export class CSpyContextManager implements Disposable {
             await serviceMgr.findService(DEBUGGER_SERVICE, Debugger.Client),
             await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.LOCALS, 0, 1, 3, 2).catch(onProviderUnavailable),
             await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.STATICS, 0, 1, 3, 2).catch(onProviderUnavailable),
-            await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.REGISTERS, 0, 1, 2, -1).catch(onProviderUnavailable),
+            // Registers need a special implementation to handle all the register groups
+            await RegistersVariablesProvider.instantiate(serviceMgr, WindowNames.REGISTERS, 0, 1, 2, -1).catch(onProviderUnavailable),
             cspyEventListener,
         );
     }
@@ -93,7 +95,7 @@ export class CSpyContextManager implements Disposable {
                         private readonly dbgr: ThriftClient<Debugger.Client>,
                         private readonly localsProvider: ListWindowVariablesProvider | undefined,
                         private readonly staticsProvider: ListWindowVariablesProvider | undefined,
-                        private readonly registersProvider: ListWindowVariablesProvider | undefined,
+                        private readonly registersProvider: RegistersVariablesProvider | undefined,
                         cspyEventListener: DebugEventListenerHandler) {
         cspyEventListener.observeDebugEvents(DkNotifyConstant.kDkTargetStarted, () => {
             this.currentInspectionContext = undefined;

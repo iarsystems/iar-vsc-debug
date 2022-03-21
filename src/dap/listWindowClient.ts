@@ -1,5 +1,5 @@
 import * as Q from "q";
-import { Note, Row, What } from "./thrift/bindings/listwindow_types";
+import { MenuItem, Note, Row, What } from "./thrift/bindings/listwindow_types";
 import * as ListWindowBackend from "./thrift/bindings/ListWindowBackend";
 import * as ListWindowFrontend from "./thrift/bindings/ListWindowFrontend";
 import { ThriftClient } from "./thrift/thriftClient";
@@ -120,6 +120,19 @@ export class ListWindowClient implements Disposable {
             throw new Error("No value in this column");
         }
         return updatedValue.text;
+    }
+
+    /**
+     * Gets the context menu for clicking the given cell. Parsing the menu items is left to the caller.
+     */
+    async getContextMenu(row: Int64, col: number): Promise<MenuItem[]> {
+        return await this.backend.service.getContextMenu(row, col);
+    }
+    /**
+     * Clicks the context menu item corresponding to a command previously returned from {@link getContextMenu}.
+     */
+    async clickContextMenu(command: number) {
+        await this.backend.service.handleContextMenu(command);
     }
 
     /**

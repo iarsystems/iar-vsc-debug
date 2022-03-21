@@ -45,7 +45,8 @@
 		"uuid": "^8.3.2",
 		"@vscode/debugadapter": "^1.53.0",
 		"@vscode/debugprotocol": "^1.53.0",
-		"xmlbuilder2": "^3.0.2"
+		"xmlbuilder2": "^3.0.2",
+		"async-mutex": "^0.3.2"
 	},
 	"devDependencies": {
 		"@types/jsdom": "^16.2.14",

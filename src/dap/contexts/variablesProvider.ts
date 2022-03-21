@@ -62,7 +62,7 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
     // While this is pending, do not request updates from the listwindow. It is about to update!
     private backendUpdate: Thenable<void>;
 
-    private constructor(private readonly windowClient: ListWindowClient,
+    constructor(private readonly windowClient: ListWindowClient,
         private readonly varNameColumn: number,
         private readonly varValueColumn: number,
         private readonly varTypeColumn: number,
