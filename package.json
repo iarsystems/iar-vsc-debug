@@ -36,6 +36,9 @@
 	"categories": [
 		"Debuggers"
 	],
+	"extensionDependencies": [
+		"ms-vscode.vscode-embedded-tools"
+	],
 	"private": true,
 	"dependencies": {
 		"await-notify": "1.0.1",
