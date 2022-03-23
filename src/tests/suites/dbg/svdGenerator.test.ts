@@ -30,7 +30,7 @@ suite("SVD generator tests", () => {
 
         config = TestUtils.doSetup(workbench);
 
-        stm32Svd = Path.join(workbench, "arm/CONFIG/debugger/ST/STM32F401.svd"),
+        stm32Svd = Path.join(workbench, "arm/config/debugger/ST/STM32F401.svd"),
         stm32Config = {
             ...config,
             driver: "sim2",
@@ -39,7 +39,7 @@ suite("SVD generator tests", () => {
                 "--cpu=Cortex-M4",
                 "--fpu=VFPv4_SP",
                 "-p",
-                Path.join(workbench, "arm/CONFIG/debugger/ST/STM32F401CB.ddf"),
+                Path.join(workbench, "arm/config/debugger/ST/STM32F401CB.ddf"),
                 "--semihosting",
                 "--device=STM32F401CB",
                 "--multicore_nr_of_cores=1"
