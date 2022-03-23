@@ -199,7 +199,7 @@ suite("SVD generator tests", () => {
             dc.waitForEvent("initialized").then(async() => {
                 const cachedRegistersData: RegistersResponse = (await dc.customRequest(CustomRequest.REGISTERS)).body;
                 Assert(cachedRegistersData.svdContent);
-                Assert(svdContent, cachedRegistersData.svdContent);
+                Assert.strictEqual(svdContent, cachedRegistersData.svdContent);
             }),
         ]);
     });
