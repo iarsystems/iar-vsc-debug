@@ -1,23 +1,25 @@
 ###############################################################################
 #
-# IAR ELF Linker V8.50.6.265/W32 for ARM                  16/Feb/2021  00:12:52
-# Copyright 2007-2020 IAR Systems AB.
+# IAR ELF Linker V9.20.1.315/W64 for ARM                  15/Mar/2022  14:24:03
+# Copyright 2007-2021 IAR Systems AB.
 #
 #    Output file  =
-#        e:\iar-vscode-github\iar-vsc-debug\samples\GettingStarted\Debug\Exe\BasicDebugging.out
+#        e:\repos\VSCode\iar-vsc-debug\samples\GettingStarted\Debug\Exe\BasicDebugging.out
 #    Map file     =
-#        e:\iar-vscode-github\iar-vsc-debug\samples\GettingStarted\Debug\List\BasicDebugging.map
+#        e:\repos\VSCode\iar-vsc-debug\samples\GettingStarted\Debug\List\BasicDebugging.map
 #    Command line =
-#        -f C:\Users\mariopi\AppData\Local\Temp\EWF32E.tmp
-#        (e:\iar-vscode-github\iar-vsc-debug\samples\GettingStarted\Debug\Obj\Fibonacci.o
-#        e:\iar-vscode-github\iar-vsc-debug\samples\GettingStarted\Debug\Obj\Utilities.o
+#        -f
+#        e:\repos\VSCode\iar-vsc-debug\samples\GettingStarted\Debug\Exe\BasicDebugging.out.rsp
+#        (e:\repos\VSCode\iar-vsc-debug\samples\GettingStarted\Debug\Obj\Fibonacci.o
+#        e:\repos\VSCode\iar-vsc-debug\samples\GettingStarted\Debug\Obj\Utilities.o
 #        --no_out_extension -o
-#        e:\iar-vscode-github\iar-vsc-debug\samples\GettingStarted\Debug\Exe\BasicDebugging.out
+#        e:\repos\VSCode\iar-vsc-debug\samples\GettingStarted\Debug\Exe\BasicDebugging.out
 #        --map
-#        e:\iar-vscode-github\iar-vsc-debug\samples\GettingStarted\Debug\List\BasicDebugging.map
-#        --config "E:\Program Files (x86)\IAR Systems\Embedded Workbench for
-#        ARM 8.50.6\arm\CONFIG\generic.icf" --semihosting --entry
-#        __iar_program_start --vfe --text_out locale)
+#        e:\repos\VSCode\iar-vsc-debug\samples\GettingStarted\Debug\List\BasicDebugging.map
+#        --config
+#        e:\Build\master2\StageWin64_16\Release\arm\config\linker\ST\stm32f429xI.icf
+#        --semihosting --entry __iar_program_start --vfe --text_out locale
+#        --cpu=Cortex-M4 --fpu=VFPv4_sp)
 #
 ###############################################################################
 
@@ -26,6 +28,7 @@
 ***
 
 CppFlavor       = *
+__CPP_Runtime   = 1
 __SystemLibrary = DLib
 __dlib_version  = 6
 
@@ -44,97 +47,106 @@ application.
 *** PLACEMENT SUMMARY
 ***
 
-"A0":  place at address 0x0 { ro section .intvec };
-"P1":  place in [from 0x80 to 0x7'ffff] { ro };
+"A0":  place at address 0x800'0000 { ro section .intvec };
+"P1":  place in [from 0x800'0000 to 0x81f'ffff] { ro };
 define block CSTACK with size = 8K, alignment = 8 { };
-define block SVC_STACK with size = 256, alignment = 8 { };
-define block IRQ_STACK with size = 256, alignment = 8 { };
-define block FIQ_STACK with size = 256, alignment = 8 { };
-define block UND_STACK with size = 256, alignment = 8 { };
-define block ABT_STACK with size = 256, alignment = 8 { };
-define block HEAP with size = 32K, alignment = 8 { };
-"P2":  place in [from 0x10'0000 to 0x1f'ffff] {
-          rw, block CSTACK, block SVC_STACK, block IRQ_STACK, block FIQ_STACK,
-          block UND_STACK, block ABT_STACK, block HEAP };
+define block HEAP with size = 8K, alignment = 8 { };
+"P4":  place in [from 0x2000'0000 to 0x2001'bfff] |
+                [from 0x2001'c000 to 0x2001'ffff] |
+                [from 0x2002'0000 to 0x2002'ffff] {
+          rw, block CSTACK, block HEAP };
 initialize by copy { rw };
 
-  Section            Kind       Address    Size  Object
-  -------            ----       -------    ----  ------
-"A0":                                      0x3c
-  .intvec            ro code        0x0    0x3c  cstartup.o [3]
-                                 - 0x3c    0x3c
+No sections matched the following patterns:
 
-"P1":                                     0x5fc
-  Veneer             ro code       0x80     0x4  - Linker created -
-  .text              ro code       0x84   0x1a4  I32DivMod.o [3]
-  .text              ro code      0x228     0x4  IntDivZer.o [3]
-  Veneer             ro code      0x22c     0xc  - Linker created -
-  .text              ro code      0x238    0xd4  iarttio.o [4]
-  .text              ro code      0x30c     0x8  XShttio.o [2]
-  .text              ro code      0x314    0xbc  Utilities.o [1]
-  .text              ro code      0x3d0    0x20  putchar.o [2]
-  Veneer             ro code      0x3f0     0x4  - Linker created -
-  .text              ro code      0x3f4    0x10  write.o [4]
-  .text              ro code      0x404    0x24  dwrite.o [4]
-  .text              ro code      0x428    0x40  iarwstd.o [4]
-  .text              ro code      0x468    0x44  iarwrite.o [4]
-  .text              ro code      0x4ac    0x58  cstartup.o [3]
-  Veneer             ro code      0x504     0xc  - Linker created -
-  Veneer             ro code      0x510     0xc  - Linker created -
-  Veneer             ro code      0x51c     0xc  - Linker created -
-  Veneer             ro code      0x528     0xc  - Linker created -
-  .text              ro code      0x534    0x30  cmain.o [3]
-  .text              ro code      0x564     0x4  low_level_init.o [2]
-  .text              ro code      0x568    0x32  data_init.o [3]
-  .text              ro code      0x59c    0x44  Fibonacci.o [1]
-  .text              ro code      0x5e0     0xa  exit.o [2]
-  .text              ro code      0x5ec    0x20  exit.o [4]
-  Veneer             ro code      0x60c     0x4  - Linker created -
-  .text              ro code      0x610    0x10  cexit.o [3]
-  .text              ro code      0x620    0x40  packbits_init_single.o [3]
-  .iar.init_table    const        0x660    0x10  - Linker created -
-  .text              ro code      0x670     0x4  vectortrap.o [3]
-  .text              ro code      0x674     0x4  xreturnswi.o [4]
-  .rodata            const        0x678     0x0  packbits_init_single.o [3]
-  Initializer bytes  const        0x678     0x4  <for P2-1>
-                                - 0x67c   0x5fc
+  ro section application_specific_ro  in "P2|P6"
+  rw section application_specific_rw  in "P2|P6"
+  section .backup_sram                in "P5"
+  section .ccram                      in "P3"
 
-"P2", part 1 of 2:                         0x34
-  P2-1                        0x10'0000    0x34  <Init block>
-    .data            inited   0x10'0000     0x8  XShttio.o [2]
-    .bss             inited   0x10'0008     0x4  Fibonacci.o [1]
-    .bss             inited   0x10'000c    0x28  Utilities.o [1]
-                            - 0x10'0034    0x34
 
-"P2", part 2 of 2:                       0x2200
-  CSTACK                      0x10'0038  0x2000  <Block>
-    CSTACK           uninit   0x10'0038  0x2000  <Block tail>
-  IRQ_STACK                   0x10'2038   0x100  <Block>
-    IRQ_STACK        uninit   0x10'2038   0x100  <Block tail>
-  FIQ_STACK                   0x10'2138   0x100  <Block>
-    FIQ_STACK        uninit   0x10'2138   0x100  <Block tail>
-                            - 0x10'2238  0x2200
+  Section            Kind         Address    Size  Object
+  -------            ----         -------    ----  ------
+"A0":                                        0x40
+  .intvec            ro code   0x800'0000    0x40  vector_table_M.o [4]
+                             - 0x800'0040    0x40
+
+"P1":                                       0xd80
+  .text              ro code   0x800'0040   0x688  xscanfsmall_nomb.o [2]
+  .text              ro code   0x800'06c8    0x16  strchr.o [4]
+  .text              ro code   0x800'06de    0x2a  copy_init3.o [4]
+  .text              ro code   0x800'0708   0x14a  iar_Stoulx.o [2]
+  .text              ro code   0x800'0852     0x2  vectortrap_M.o [4]
+  .text              ro code   0x800'0854    0x40  xfail_s.o [2]
+  .text              ro code   0x800'0894    0x94  iar_Stolx.o [2]
+  .text              ro code   0x800'0928    0x58  memchr.o [4]
+  .text              ro code   0x800'0980     0x6  abort.o [2]
+  .text              ro code   0x800'0988    0x14  exit.o [5]
+  .text              ro code   0x800'099c    0x7c  iarttio.o [5]
+  .text              ro code   0x800'0a18     0x8  XShttio.o [2]
+  .text              ro code   0x800'0a20    0x98  Utilities.o [1]
+  .text              ro code   0x800'0ab8    0x20  putchar.o [2]
+  .text              ro code   0x800'0ad8    0x10  write.o [5]
+  .text              ro code   0x800'0ae8    0x1e  dwrite.o [5]
+  .text              ro code   0x800'0b06    0x20  iarwstd.o [5]
+  .text              ro code   0x800'0b26    0x22  iarwrite.o [5]
+  .text              ro code   0x800'0b48    0x60  Fibonacci.o [1]
+  .text              ro code   0x800'0ba8    0x24  scanf.o [2]
+  .rodata            const     0x800'0bcc    0x50  iar_Stoulx.o [2]
+  .text              ro code   0x800'0c1c    0x38  getchar.o [2]
+  .text              ro code   0x800'0c54    0x30  read.o [5]
+  .text              ro code   0x800'0c84    0x28  data_init.o [4]
+  .rodata            const     0x800'0cac    0x24  xscanfsmall_nomb.o [2]
+  .text              ro code   0x800'0cd0    0x22  fpinit_M.o [3]
+  .iar.init_table    const     0x800'0cf4    0x14  - Linker created -
+  .text              ro code   0x800'0d08    0x1e  cmain.o [4]
+  .text              ro code   0x800'0d26     0x4  low_level_init.o [2]
+  .text              ro code   0x800'0d2a     0x4  exit.o [2]
+  .text              ro code   0x800'0d30     0xa  cexit.o [4]
+  .text              ro code   0x800'0d3c    0x1c  cstartup_M.o [4]
+  .text              ro code   0x800'0d58     0xe  xscin.o [2]
+  .rodata            const     0x800'0d68     0x8  Fibonacci.o [1]
+  .rodata            const     0x800'0d70     0x0  copy_init3.o [4]
+  Initializer bytes  const     0x800'0d70    0x50  <for P4 s0>
+                             - 0x800'0dc0   0xd80
+
+"P4", part 1 of 2:                           0x50
+  P4 s0                       0x2000'0000    0x50  <Init block>
+    .bss             inited   0x2000'0000    0x28  Utilities.o [1]
+    .data            inited   0x2000'0028    0x10  Fibonacci.o [1]
+    .data            inited   0x2000'0038     0x8  XShttio.o [2]
+    .data            inited   0x2000'0040     0x4  getchar.o [2]
+    .bss             inited   0x2000'0044     0x4  Fibonacci.o [1]
+    .bss             inited   0x2000'0048     0x4  Fibonacci.o [1]
+    .bss             inited   0x2000'004c     0x4  xfail_s.o [2]
+                            - 0x2000'0050    0x50
+
+"P4", part 2 of 2:                         0x2000
+  CSTACK                      0x2000'0050  0x2000  <Block>
+    CSTACK           uninit   0x2000'0050  0x2000  <Block tail>
+                            - 0x2000'2050  0x2000
 
 Unused ranges:
 
-       From         To      Size
-       ----         --      ----
-      0x67c   0x7'ffff  0x7'f984
-  0x10'0034  0x10'0037       0x4
-  0x10'2238  0x1f'ffff  0xf'ddc8
+         From           To       Size
+         ----           --       ----
+   0x800'0dc0   0x81f'ffff  0x1f'f240
+  0x2000'2050  0x2001'bfff   0x1'9fb0
+  0x2001'c000  0x2001'ffff     0x4000
+  0x2002'0000  0x2002'ffff   0x1'0000
 
 
 *******************************************************************************
 *** INIT TABLE
 ***
 
-          Address    Size
-          -------    ----
-Copy/packbits (__iar_packbits_init_single3)
-    1 source range, total size 0x4 (7% of destination):
-              0x678   0x4
-    1 destination range, total size 0x34:
-          0x10'0000  0x34
+          Address      Size
+          -------      ----
+Copy (__iar_copy_init3)
+    1 source range, total size 0x50:
+           0x800'0d70  0x50
+    1 destination range, total size 0x50:
+          0x2000'0000  0x50
 
 
 
@@ -142,121 +154,156 @@ Copy/packbits (__iar_packbits_init_single3)
 *** MODULE SUMMARY
 ***
 
-    Module                  ro code  ro data  rw data
-    ------                  -------  -------  -------
+    Module              ro code  ro data  rw data
+    ------              -------  -------  -------
 command line/config:
-    -------------------------------------------------
+    ---------------------------------------------
     Total:
 
-e:\iar-vscode-github\iar-vsc-debug\samples\GettingStarted\Debug\Obj: [1]
-    Fibonacci.o                  68                 4
-    Utilities.o                 188        4       40
-    -------------------------------------------------
-    Total:                      256        4       44
+e:\repos\VSCode\iar-vsc-debug\samples\GettingStarted\Debug\Obj: [1]
+    Fibonacci.o              96       32       24
+    Utilities.o             152       40       40
+    ---------------------------------------------
+    Total:                  248       72       64
 
-dl4t_tln.a: [2]
-    XShttio.o                     8                 8
-    exit.o                       10
-    low_level_init.o              4
-    putchar.o                    32
-    -------------------------------------------------
-    Total:                       54                 8
+dl7M_tln.a: [2]
+    XShttio.o                 8        8        8
+    abort.o                   6
+    exit.o                    4
+    getchar.o                56        4        4
+    iar_Stolx.o             148
+    iar_Stoulx.o            330       80
+    low_level_init.o          4
+    putchar.o                32
+    scanf.o                  36
+    xfail_s.o                64        4        4
+    xscanfsmall_nomb.o    1'672       36
+    xscin.o                  14
+    ---------------------------------------------
+    Total:                2'374      132       16
 
-rt4t_al.a: [3]
-    I32DivMod.o                 420
-    IntDivZer.o                   4
-    cexit.o                      16
-    cmain.o                      48
-    cstartup.o                  148
-    data_init.o                  50
-    packbits_init_single.o       64
-    vectortrap.o                  4
-    -------------------------------------------------
-    Total:                      754
+m7M_tls.a: [3]
+    fpinit_M.o               34
+    ---------------------------------------------
+    Total:                   34
 
-shs_l.a: [4]
-    dwrite.o                     36
-    exit.o                       32
-    iarttio.o                   212
-    iarwrite.o                   68
-    iarwstd.o                    64
-    write.o                      16
-    xreturnswi.o                  4
-    -------------------------------------------------
-    Total:                      432
+rt7M_tl.a: [4]
+    cexit.o                  10
+    cmain.o                  30
+    copy_init3.o             42
+    cstartup_M.o             28
+    data_init.o              40
+    memchr.o                 88
+    strchr.o                 22
+    vector_table_M.o         64
+    vectortrap_M.o            2
+    ---------------------------------------------
+    Total:                  326
 
-    Gaps                          4
-    Linker created               72       16    8'704
------------------------------------------------------
-    Grand Total:              1'572       20    8'756
+shb_l.a: [5]
+    dwrite.o                 30
+    exit.o                   20
+    iarttio.o               124
+    iarwrite.o               34
+    iarwstd.o                32
+    read.o                   48
+    write.o                  16
+    ---------------------------------------------
+    Total:                  304
+
+    Gaps                      6        4
+    Linker created                    20    8'192
+-------------------------------------------------
+    Grand Total:          3'292      228    8'272
 
 
 *******************************************************************************
 *** ENTRY LIST
 ***
 
-Entry                     Address  Size  Type      Object
------                     -------  ----  ----      ------
-.iar.init_table$$Base       0x660         --   Gb  - Linker created -
-.iar.init_table$$Limit      0x670         --   Gb  - Linker created -
-?main                       0x534        Code  Gb  cmain.o [3]
-Abort_Handler               0x670        Code  Wk  vectortrap.o [3]
-CSTACK$$Base            0x10'0038         --   Gb  - Linker created -
-CSTACK$$Limit           0x10'2038         --   Gb  - Linker created -
-DoForegroundProcess         0x5a7  0x16  Code  Lc  Fibonacci.o [1]
-FIQ_Handler                 0x670        Code  Wk  vectortrap.o [3]
-FIQ_STACK$$Base         0x10'2138         --   Gb  - Linker created -
-FIQ_STACK$$Limit        0x10'2238         --   Gb  - Linker created -
-Fib                     0x10'000c  0x28  Data  Lc  Utilities.o [1]
-GetFib                      0x347  0x1e  Code  Gb  Utilities.o [1]
-IRQ_Handler                 0x670        Code  Wk  vectortrap.o [3]
-IRQ_STACK$$Base         0x10'2038         --   Gb  - Linker created -
-IRQ_STACK$$Limit        0x10'2138         --   Gb  - Linker created -
-InitFib                     0x315  0x32  Code  Gb  Utilities.o [1]
-NextCounter                 0x59d   0xa  Code  Lc  Fibonacci.o [1]
-Prefetch_Handler            0x670        Code  Wk  vectortrap.o [3]
-PutFib                      0x365  0x62  Code  Gb  Utilities.o [1]
-Region$$Table$$Base         0x660         --   Gb  - Linker created -
-Region$$Table$$Limit        0x670         --   Gb  - Linker created -
-SWI_Handler                 0x670        Code  Wk  vectortrap.o [3]
-Undefined_Handler           0x670        Code  Wk  vectortrap.o [3]
-__aeabi_idiv0               0x228        Code  Gb  IntDivZer.o [3]
-__aeabi_uidiv                0x84        Code  Gb  I32DivMod.o [3]
-__aeabi_uidivmod             0x84        Code  Gb  I32DivMod.o [3]
-__cmain                     0x534        Code  Gb  cmain.o [3]
-__dwrite                    0x404  0x24  Code  Gb  dwrite.o [4]
-__exit                      0x5ec  0x20  Code  Gb  exit.o [4]
-__iar_close_ttio            0x238  0x54  Code  Gb  iarttio.o [4]
-__iar_data_init3            0x569  0x30  Code  Gb  data_init.o [3]
-__iar_get_ttio              0x28c  0x7c  Code  Gb  iarttio.o [4]
-__iar_lookup_ttioh          0x30d   0x8  Code  Gb  XShttio.o [2]
-__iar_packbits_init_single3
-                            0x621  0x40  Code  Gb  packbits_init_single.o [3]
-__iar_program_start         0x4ac        Code  Gb  cstartup.o [3]
-__iar_return_from_swi       0x674   0x4  Code  Gb  xreturnswi.o [4]
-__iar_sh_stdout             0x428  0x40  Code  Gb  iarwstd.o [4]
-__iar_sh_write              0x468  0x44  Code  Gb  iarwrite.o [4]
-__iar_ttio_handles      0x10'0000   0x8  Data  Lc  XShttio.o [2]
-__low_level_init            0x565   0x4  Code  Gb  low_level_init.o [2]
-__vector                      0x0        Data  Gb  cstartup.o [3]
-__write                     0x3f4  0x10  Code  Gb  write.o [4]
-_call_main                  0x54c        Code  Gb  cmain.o [3]
-_exit                       0x610        Code  Gb  cexit.o [3]
-_main                       0x554        Code  Gb  cmain.o [3]
-callCount               0x10'0008   0x4  Data  Lc  Fibonacci.o [1]
-exit                        0x5e1   0xa  Code  Gb  exit.o [2]
-main                        0x5bd  0x20  Code  Gb  Fibonacci.o [1]
-putchar                     0x3d1  0x20  Code  Gb  putchar.o [2]
+Entry                       Address   Size  Type      Object
+-----                       -------   ----  ----      ------
+.iar.init_table$$Base    0x800'0cf4          --   Gb  - Linker created -
+.iar.init_table$$Limit   0x800'0d08          --   Gb  - Linker created -
+?main                    0x800'0d09         Code  Gb  cmain.o [4]
+BusFault_Handler         0x800'0853         Code  Wk  vectortrap_M.o [4]
+CSTACK$$Base            0x2000'0050          --   Gb  - Linker created -
+CSTACK$$Limit           0x2000'2050          --   Gb  - Linker created -
+DebugMon_Handler         0x800'0853         Code  Wk  vectortrap_M.o [4]
+DoForegroundProcess      0x800'0b53   0x14  Code  Lc  Fibonacci.o [1]
+Fib                     0x2000'0000   0x28  Data  Lc  Utilities.o [1]
+GetFib                   0x800'0a4d   0x16  Code  Gb  Utilities.o [1]
+HardFault_Handler        0x800'0853         Code  Wk  vectortrap_M.o [4]
+InitFib                  0x800'0a21   0x2c  Code  Gb  Utilities.o [1]
+MemManage_Handler        0x800'0853         Code  Wk  vectortrap_M.o [4]
+NMI_Handler              0x800'0853         Code  Wk  vectortrap_M.o [4]
+NextCounter              0x800'0b49    0xa  Code  Lc  Fibonacci.o [1]
+PendSV_Handler           0x800'0853         Code  Wk  vectortrap_M.o [4]
+PutFib                   0x800'0a69   0x50  Code  Gb  Utilities.o [1]
+Region$$Table$$Base      0x800'0cf4          --   Gb  - Linker created -
+Region$$Table$$Limit     0x800'0d08          --   Gb  - Linker created -
+SVC_Handler              0x800'0853         Code  Wk  vectortrap_M.o [4]
+SysTick_Handler          0x800'0853         Code  Wk  vectortrap_M.o [4]
+UsageFault_Handler       0x800'0853         Code  Wk  vectortrap_M.o [4]
+_Get                     0x800'0041   0x12  Code  Lc  xscanfsmall_nomb.o [2]
+_GetN                    0x800'0053   0x22  Code  Lc  xscanfsmall_nomb.o [2]
+_GetstrSmallNoMb         0x800'059d   0xd8  Code  Lc  xscanfsmall_nomb.o [2]
+_ScanfSmallNoMb          0x800'0091  0x504  Code  Gb  xscanfsmall_nomb.o [2]
+_Scin                    0x800'0d59    0xe  Code  Gb  xscin.o [2]
+_UngetChar              0x2000'0040    0x4  Data  Lc  getchar.o [2]
+_UngetN                  0x800'0075   0x1a  Code  Lc  xscanfsmall_nomb.o [2]
+__cmain                  0x800'0d09         Code  Gb  cmain.o [4]
+__dwrite                 0x800'0ae9   0x1e  Code  Gb  dwrite.o [5]
+__exit                   0x800'0989   0x14  Code  Gb  exit.o [5]
+__iar_Fail_s             0x800'0855   0x1c  Code  Gb  xfail_s.o [2]
+__iar_Memchr             0x800'0929         Code  Gb  memchr.o [4]
+__iar_Stolx              0x800'0895   0x90  Code  Gb  iar_Stolx.o [2]
+__iar_Stoulx             0x800'0709  0x13e  Code  Gb  iar_Stoulx.o [2]
+__iar_Strchr             0x800'06c9         Code  Gb  strchr.o [4]
+__iar_close_ttio         0x800'099d   0x2c  Code  Gb  iarttio.o [5]
+__iar_copy_init3         0x800'06df   0x2a  Code  Gb  copy_init3.o [4]
+__iar_data_init3         0x800'0c85   0x28  Code  Gb  data_init.o [4]
+__iar_get_ttio           0x800'09c9   0x4c  Code  Gb  iarttio.o [5]
+__iar_init_vfp           0x800'0cd1         Code  Gb  fpinit_M.o [3]
+__iar_lookup_ttioh       0x800'0a19    0x8  Code  Gb  XShttio.o [2]
+__iar_program_start      0x800'0d3d         Code  Gb  cstartup_M.o [4]
+__iar_sh_stdout          0x800'0b07   0x20  Code  Gb  iarwstd.o [5]
+__iar_sh_write           0x800'0b27   0x22  Code  Gb  iarwrite.o [5]
+__iar_ttio_handles      0x2000'0038    0x8  Data  Lc  XShttio.o [2]
+__low_level_init         0x800'0d27    0x4  Code  Gb  low_level_init.o [2]
+__read                   0x800'0c55   0x30  Code  Gb  read.o [5]
+__ungetchar              0x800'0c4b    0x6  Code  Gb  getchar.o [2]
+__vector_table           0x800'0000         Data  Gb  vector_table_M.o [4]
+__write                  0x800'0ad9   0x10  Code  Gb  write.o [5]
+_call_main               0x800'0d15         Code  Gb  cmain.o [4]
+_exit                    0x800'0d31         Code  Gb  cexit.o [4]
+abort                    0x800'0981    0x6  Code  Gb  abort.o [2]
+asdf                    0x2000'0048    0x4  Data  Gb  Fibonacci.o [1]
+callCount               0x2000'0044    0x4  Data  Lc  Fibonacci.o [1]
+digits                   0x800'0bf4   0x28  Data  Lc  iar_Stoulx.o [2]
+exit                     0x800'0d2b    0x4  Code  Gb  exit.o [2]
+getchar                  0x800'0c1d   0x2e  Code  Gb  getchar.o [2]
+main                     0x800'0b67   0x30  Code  Gb  Fibonacci.o [1]
+memchr                   0x800'0929         Code  Gb  memchr.o [4]
+myString                0x2000'0028   0x10  Data  Gb  Fibonacci.o [1]
+ndigs                    0x800'0bcc   0x28  Data  Lc  iar_Stoulx.o [2]
+putchar                  0x800'0ab9   0x20  Code  Gb  putchar.o [2]
+scanf                    0x800'0ba9   0x24  Code  Gb  scanf.o [2]
+sec_hand                0x2000'004c    0x4  Data  Lc  xfail_s.o [2]
+strchr                   0x800'06c9         Code  Gb  strchr.o [4]
+strtol                   0x800'0925    0x4  Code  Gb  iar_Stolx.o [2]
+strtoul                  0x800'084d    0x2  Code  Gb  iar_Stoulx.o [2]
 
 
-[1] = e:\iar-vscode-github\iar-vsc-debug\samples\GettingStarted\Debug\Obj
-[2] = dl4t_tln.a
-[3] = rt4t_al.a
-[4] = shs_l.a
+[1] = e:\repos\VSCode\iar-vsc-debug\samples\GettingStarted\Debug\Obj
+[2] = dl7M_tln.a
+[3] = m7M_tls.a
+[4] = rt7M_tl.a
+[5] = shb_l.a
 
-  1'572 bytes of readonly  code memory
-     20 bytes of readonly  data memory
-  8'756 bytes of readwrite data memory
+  3'292 bytes of readonly  code memory
+    228 bytes of readonly  data memory
+  8'272 bytes of readwrite data memory
 
 Errors: none
 Warnings: none

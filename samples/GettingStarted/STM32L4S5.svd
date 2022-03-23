@@ -14550,7 +14550,7 @@ xs:noNamespaceSchemaLocation="CMSIS-SVD_Schema_1_1.xsd">
               <bitWidth>6</bitWidth>
             </field>
           </fields>
-        </register>
+        </register>     
 		<register>
           <name>CH2CFGR1</name>
           <displayName>CH2CFGR1</displayName>
@@ -14724,7 +14724,7 @@ xs:noNamespaceSchemaLocation="CMSIS-SVD_Schema_1_1.xsd">
               <bitWidth>6</bitWidth>
             </field>
           </fields>
-        </register>
+        </register>        
 		<register>
           <name>CH3CFGR1</name>
           <displayName>CH3CFGR1</displayName>
@@ -14898,7 +14898,7 @@ xs:noNamespaceSchemaLocation="CMSIS-SVD_Schema_1_1.xsd">
               <bitWidth>6</bitWidth>
             </field>
           </fields>
-        </register>
+        </register>        
 		<register>
           <name>CH4CFGR1</name>
           <displayName>CH4CFGR1</displayName>
@@ -15072,7 +15072,7 @@ xs:noNamespaceSchemaLocation="CMSIS-SVD_Schema_1_1.xsd">
               <bitWidth>6</bitWidth>
             </field>
           </fields>
-        </register>
+        </register>        
 		<register>
           <name>CH5CFGR1</name>
           <displayName>CH5CFGR1</displayName>
@@ -15246,7 +15246,7 @@ xs:noNamespaceSchemaLocation="CMSIS-SVD_Schema_1_1.xsd">
               <bitWidth>6</bitWidth>
             </field>
           </fields>
-        </register>
+        </register>            
 		<register>
           <name>CH6CFGR1</name>
           <displayName>CH6CFGR1</displayName>
@@ -15420,7 +15420,7 @@ xs:noNamespaceSchemaLocation="CMSIS-SVD_Schema_1_1.xsd">
               <bitWidth>6</bitWidth>
             </field>
           </fields>
-        </register>
+        </register> 
         <register>
           <name>CH7CFGR1</name>
           <displayName>CH7CFGR1</displayName>
@@ -15594,7 +15594,7 @@ xs:noNamespaceSchemaLocation="CMSIS-SVD_Schema_1_1.xsd">
               <bitWidth>6</bitWidth>
             </field>
           </fields>
-        </register>
+        </register>     
         <register>
           <name>DFSDM_FLT0CR1</name>
           <displayName>DFSDM_FLT0CR1</displayName>
@@ -110622,84 +110622,6 @@ xs:noNamespaceSchemaLocation="CMSIS-SVD_Schema_1_1.xsd">
               <name>DISOOFP</name>
               <description>DISOOFP</description>
               <bitOffset>9</bitOffset>
-              <bitWidth>1</bitWidth>
-            </field>
-          </fields>
-        </register>
-      </registers>
-    </peripheral>
-    <peripheral>
-      <name>ATestPeripheral</name>
-      <description>My Test Peripheral</description>
-      <groupName>ATest</groupName>
-      <baseAddress>0xdeadbeef</baseAddress>
-      <registers>
-        <register>
-          <name>CR</name>
-          <displayName>CR</displayName>
-          <description>Control register</description>
-          <addressOffset>0x0</addressOffset>
-          <size>0x20</size>
-          <access>read-write</access>
-          <resetValue>0x0000007F</resetValue>
-          <fields>
-            <field>
-              <name>WDGA</name>
-              <description>Activation bit</description>
-              <bitOffset>7</bitOffset>
-              <bitWidth>1</bitWidth>
-            </field>
-            <field>
-              <name>T</name>
-              <description>7-bit counter (MSB to LSB)</description>
-              <bitOffset>0</bitOffset>
-              <bitWidth>7</bitWidth>
-            </field>
-          </fields>
-        </register>
-        <register>
-          <name>CFR</name>
-          <displayName>CFR</displayName>
-          <description>Configuration register</description>
-          <addressOffset>0x4</addressOffset>
-          <size>0x20</size>
-          <access>read-write</access>
-          <resetValue>0x0000007F</resetValue>
-          <fields>
-            <field>
-              <name>EWI</name>
-              <description>Early wakeup interrupt</description>
-              <bitOffset>9</bitOffset>
-              <bitWidth>1</bitWidth>
-            </field>
-            <field>
-              <name>WDGTB</name>
-              <description>Timer base</description>
-              <bitOffset>7</bitOffset>
-              <bitWidth>2</bitWidth>
-            </field>
-            <field>
-              <name>W</name>
-              <description>7-bit window value</description>
-              <bitOffset>0</bitOffset>
-              <bitWidth>7</bitWidth>
-            </field>
-          </fields>
-        </register>
-        <register>
-          <name>SR</name>
-          <displayName>SR</displayName>
-          <description>Status register</description>
-          <addressOffset>0x8</addressOffset>
-          <size>0x20</size>
-          <access>read-write</access>
-          <resetValue>0x00000000</resetValue>
-          <fields>
-            <field>
-              <name>EWIF</name>
-              <description>Early wakeup interrupt
-              flag</description>
-              <bitOffset>0</bitOffset>
               <bitWidth>1</bitWidth>
             </field>
           </fields>

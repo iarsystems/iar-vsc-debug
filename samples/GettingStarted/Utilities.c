@@ -8,7 +8,7 @@
  * Contains utility functions used in Fibonacci.c.
  *
  * See the file <cpuname>/doc/licenses/IARSourceLicense.txt for detailed
- * license information. 
+ * license information.
  *
  * $Revision: 113247 $
  */
@@ -68,7 +68,7 @@ void PutFib(uint32_t out)
       temp = out / dec;
       putchar('0' + (char)temp);
       out -= temp * dec;
-    }     
+    }
 
     putchar('0' + (char)out);
   }

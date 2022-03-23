@@ -8,12 +8,13 @@
  * Prints the Fibonacci sequence.
  *
  * See the file <cpuname>/doc/licenses/IARSourceLicense.txt for detailed
- * license information. 
+ * license information.
  *
  * $Revision: 113247 $
  */
 
 #include <stdint.h>
+#include <stdio.h>
 #include "Fibonacci.h"
 
 static void NextCounter(void);
@@ -37,12 +38,21 @@ static void DoForegroundProcess(void)
   fib = GetFib(callCount);
   PutFib(fib);
 }
+struct s {
+  int a;
+} asdf;
+char myString[16] = "hello there";
 
 /* Main program. */
 /* Prints the Fibonacci sequence. */
 int32_t main(void)
 {
-  callCount = 0;
+  char buf[20];
+
+  // scanf("%d", &a);
+  scanf("%19s", &buf);
+  struct s *p = &asdf;
+  callCount = p->a;
 
   InitFib();
 
@@ -50,5 +60,6 @@ int32_t main(void)
   {
     DoForegroundProcess();
   }
+  myString[14] = 'g';
   return 0;
 }
