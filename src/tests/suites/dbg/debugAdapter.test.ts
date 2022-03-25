@@ -103,10 +103,15 @@ suite("Test Debug Adapter", () =>{
         await dc.start(ADAPTER_PORT);
     });
 
-    teardown(async()=>{
-        await dc.stop();
-        // Need to wait a bit for the adapter to be ready again
-        await TestUtils.wait(1000);
+    teardown(function() {
+        // Stop the debug adapter.
+        // A real timeout here will cause the entire suite to abort so we implement our own timeout
+        // with Mocha.Runnable.emit(), which doesn't cause an abort but still reports an error.
+        return Promise.race([
+            // The debug adapter needs some time after stopping to be ready for new connections
+            dc.stop().then(() => TestUtils.wait(1000)),
+            TestUtils.wait(19000).then(() => this.test?.emit("error", new Error("Timed out waiting for adapter to exit"))),
+        ]);
     });
 
 
