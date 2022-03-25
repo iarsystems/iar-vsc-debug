@@ -1,18 +1,54 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
     "configurations": [
         {
             "type": "cspy",
             "request": "launch",
-            "name": "Debug with C-SPY",
-            "program": "${workspaceFolder}/Debug/Exe/BasicDebugging.out",
+            "name": "BasicDebugging.Debug22",
+            "target": "arm",
+            "program": "${workspaceFolder}\\Debug2\\Exe\\BasicDebugging.out",
+            "driver": "sim2",
+            "stopOnEntry": false,
+            "workbenchPath": "${command:iar-settings.toolchain}",
+            "projectPath": "e:\\repos\\VSCode\\iar-vsc-debug\\samples\\GettingStarted",
+            "projectConfiguration": "Debug2",
+            "driverOptions": [
+                "--endian=little",
+                "--cpu=Cortex-A9",
+                "--fpu=VFPv3Neon",
+                "-p",
+                "E:\\Build\\master2\\StageWin64_16\\Release\\arm\\CONFIG\\debugger\\NXP\\MCIMX6QP.ddf",
+                "--semihosting",
+                "--device=MCIMX6QP",
+                "--multicore_nr_of_cores=1"
+            ],
+            "download": {
+                "deviceMacros": [
+                    "E:\\Build\\master2\\StageWin64_16\\Release\\arm\\config\\debugger\\NXP\\iMX6.dmac",
+                    "E:\\Build\\master2\\StageWin64_16\\Release\\arm\\config\\debugger\\NXP\\iMX6Q_Trace.dmac"
+                ]
+            }
+        },
+        {
+            "name": "BasicDebugging.Debug3",
+            "type": "cspy",
+            "request": "launch",
             "stopOnEntry": true,
-            "workbenchPath": "${command:iar-settings.workbench}",
-            "projectPath": "${command:iar-settings.project-file}",
-            "projectConfiguration": "${command:iar-settings.project-configuration}"
+            "target": "arm",
+            "driver": "sim2",
+            "program": "${workspaceFolder}\\Debug\\Exe\\BasicDebugging.out",
+            "workbenchPath": "${command:iar-settings.toolchain}",
+            "projectPath": "e:\\repos\\VSCode\\iar-vsc-debug\\samples\\GettingStarted",
+            "projectConfiguration": "Debug",
+            "driverOptions": [
+                "--endian=little",
+                "--cpu=Cortex-M4",
+                "--fpu=VFPv4_SP",
+                "-p",
+                "E:\\Build\\master2\\StageWin64_16\\Release\\arm\\CONFIG\\debugger\\ST\\STM32F429II.ddf",
+                "--semihosting",
+                "--device=STM32F429II",
+                "--multicore_nr_of_cores=1"
+            ]
         }
     ]
 }

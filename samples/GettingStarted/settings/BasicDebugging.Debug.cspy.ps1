@@ -23,9 +23,9 @@
 
 if ($debugfile -eq "")
 {
-& "E:\Program Files (x86)\IAR Systems\Embedded Workbench for ARM 8.50.6\common\bin\cspybat" -f "E:\iar-vscode-github\iar-vsc-debug\samples\GettingStarted\settings\BasicDebugging.Debug.general.xcl" --backend -f "E:\iar-vscode-github\iar-vsc-debug\samples\GettingStarted\settings\BasicDebugging.Debug.driver.xcl" 
+& "E:\Build\master2\StageWin64_16\Release\common\bin\cspybat" -f "e:\repos\VSCode\iar-vsc-debug\samples\GettingStarted\settings\BasicDebugging.Debug.general.xcl" --backend -f "e:\repos\VSCode\iar-vsc-debug\samples\GettingStarted\settings\BasicDebugging.Debug.driver.xcl" 
 }
 else
 {
-& "E:\Program Files (x86)\IAR Systems\Embedded Workbench for ARM 8.50.6\common\bin\cspybat" -f "E:\iar-vscode-github\iar-vsc-debug\samples\GettingStarted\settings\BasicDebugging.Debug.general.xcl" --debug_file=$debugfile --backend -f "E:\iar-vscode-github\iar-vsc-debug\samples\GettingStarted\settings\BasicDebugging.Debug.driver.xcl" 
+& "E:\Build\master2\StageWin64_16\Release\common\bin\cspybat" -f "e:\repos\VSCode\iar-vsc-debug\samples\GettingStarted\settings\BasicDebugging.Debug.general.xcl" --debug_file=$debugfile --backend -f "e:\repos\VSCode\iar-vsc-debug\samples\GettingStarted\settings\BasicDebugging.Debug.driver.xcl" 
 }

@@ -5,7 +5,8 @@ import * as fs from "fs";
 import { create } from "xmlbuilder2";
 import { tmpdir } from "os";
 import { ThriftClient } from "./thrift/thriftClient";
-import { NamedLocation, NamedLocationMask } from "./thrift/bindings/cspy_types";
+import { NamedLocation } from "./thrift/bindings/cspy_types";
+import Int64 = require("node-int64");
 
 // SVD format specification: https://www.keil.com/pack/doc/CMSIS/SVD/html/svd_Format_pg.html
 export interface SvdDevice {
@@ -39,7 +40,7 @@ export interface SvdRegister {
     },
 }
 
-/** {@link NamedLocation} contains Buffers, which can't be json-ified and then parsed without changing the structure of the data */
+/** {@link NamedLocation} contains Buffers and Int64s, which can't be json-ified and then parsed without changing the structure of the data */
 interface SerializableNamedLocation {
     name: string,
     nameAlias: string,
@@ -51,7 +52,10 @@ interface SerializableNamedLocation {
         address: string,
         zone: number,
     },
-    masks: NamedLocationMask[];
+    masks: Array<{
+        used: boolean,
+        mask: string,
+    }>,
 }
 
 interface RegisterGroup {
@@ -240,7 +244,7 @@ namespace RegistersHelpers {
     }
 
     function createSvdRegister(register: { location: SerializableNamedLocation, fields: Array<SerializableNamedLocation> }, baseAddress: bigint): SvdRegister {
-        const addrOffset = BigInt(register.location.realLocation.address) - baseAddress;
+        const addrOffset = BigInt("0x" + register.location.realLocation.address) - baseAddress;
         return {
             name: register.location.name,
             displayName: register.location.nameAlias ? register.location.nameAlias : register.location.name,
@@ -256,7 +260,7 @@ namespace RegistersHelpers {
                     // cspy supports having multiple bit ranges for a field, but the svd format does not.
                     // Instead we use the largest range that includes all cspy ranges.
                     [lsb, msb] = usedMasks.reduce(([lsb, msb], mask) => {
-                        return [Math.min(lsb, getLeastSignificantBit(mask.mask.buffer)), Math.max(msb, getMostSignificantBit(mask.mask.buffer))];
+                        return [Math.min(lsb, getLeastSignificantBit(new Int64(mask.mask).buffer)), Math.max(msb, getMostSignificantBit(new Int64(mask.mask).buffer))];
                     }, [register.location.fullBitSize, 0]);
                 } else {
                     lsb = 0;
@@ -298,9 +302,12 @@ namespace RegistersHelpers {
         return {
             ...location,
             realLocation: {
-                address: location.realLocation.address.toString(),
+                address: location.realLocation.address.toString(16),
                 zone: location.realLocation.zone.id,
             },
+            masks: location.masks.map(mask => {
+                return { used: mask.used, mask: mask.mask.toOctetString() };
+            }),
         };
     }
 }
