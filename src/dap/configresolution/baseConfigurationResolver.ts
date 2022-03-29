@@ -37,8 +37,8 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
         if (launchArguments.projectPath && !Fs.existsSync(launchArguments.projectPath)) {
             return Promise.reject(new Error(`The path '${launchArguments.projectPath}' does not exist.`));
         }
-        if (!Fs.existsSync(launchArguments.workbenchPath)) {
-            return Promise.reject(new Error(`The workbench folder '${launchArguments.workbenchPath}' does not exist.`));
+        if (launchArguments.target !== "arm") {
+            return Promise.reject(new Error(`Unsupported target '${launchArguments.target}'. Currently, only arm is supported.`));
         }
 
         const partialValues = await this.resolveLaunchArgumentsPartial(launchArguments);
