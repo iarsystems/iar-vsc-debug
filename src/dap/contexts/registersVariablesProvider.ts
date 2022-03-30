@@ -39,7 +39,9 @@ export class RegistersVariablesProvider implements VariablesProvider, Disposable
         private readonly registerInfoGenerator: RegisterInformationGenerator) { }
 
     async getVariables(): Promise<Variable[]> {
-        this.availableGroups ??= await this.fetchGroups();
+        if (this.availableGroups === undefined) {
+            this.availableGroups = await this.fetchGroups();
+        }
         return this.availableGroups.map(group => {
             return {
                 name: group.name,
