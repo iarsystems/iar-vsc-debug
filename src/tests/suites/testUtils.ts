@@ -5,9 +5,7 @@ import { IarOsUtils } from "../../utils/osUtils";
 import { spawnSync } from "child_process";
 import { TestSandbox } from "../../utils/testutils/testSandbox";
 import { CSpyLaunchRequestArguments } from "../../dap/cspyDebug";
-import { BreakpointType } from "../../dap/breakpoints/cspyBreakpointManager";
-import { XclConfigurationProvider } from "../../configresolution/xclConfigurationProvider";
-import { ConfigResolutionCommon } from "../../configresolution/common";
+import { TestParameters } from "./testParameters";
 
 /**
  *  Class contaning utility methods for the tests.
@@ -23,43 +21,36 @@ export namespace TestUtils {
      * * Returns a launch config using the determined project and driver
      */
     export function doSetup(workbenchPath: string): vscode.DebugConfiguration & CSpyLaunchRequestArguments {
-        const config = "Debug";
+        const parameters = TestParameters.getParameters();
+        if (parameters === undefined) throw "Must specify parameters";
 
-        // If overriding program, the user is responsible for having built it. Otherwise we build it ourselves.
-        if (process.env["cspybat-args"] && process.env["source-dir"]) {
-            // split on unescaped whitespace
-            const args = process.env["cspybat-args"].split(/(?<!\\)\s+/g);
-            const backendIdx = args.indexOf("--backend");
-            const partialConfig = XclConfigurationProvider.generateDebugConfiguration(
-                "",
-                config,
-                args.slice(0, backendIdx),
-                args.slice(backendIdx+1));
-            const launchConfig = ConfigResolutionCommon.instantiateConfiguration(partialConfig);
+        let program: string;
+        let projectDir: string;
+        let configuration: string;
 
-            if (launchConfig === undefined) {
-                throw new Error("Unable to create launch config from cspybat cmdline. Check its validity.");
-            }
-            launchConfig["workbenchPath"] = workbenchPath;
-            launchConfig["stopOnEntry"] = defaultConfig.stopOnEntry;
-            launchConfig["projectPath"] = process.env["source-dir"];
-            return launchConfig as vscode.DebugConfiguration & CSpyLaunchRequestArguments;
-        } else {
+        if (parameters.testProgram.variant === "doBuild") {
             const targetProject = Path.join(TestUtils.PROJECT_ROOT, "src/tests/TestProjects/GettingStarted/BasicDebugging.ewp");
             const sandbox = new TestSandbox(PROJECT_ROOT);
-            const projectDir = sandbox.copyToSandbox(Path.dirname(targetProject));
+            projectDir = sandbox.copyToSandbox(Path.dirname(targetProject));
             const project = Path.join(projectDir, Path.basename(targetProject));
-            const program = Path.join(Path.dirname(project), config, "Exe", Path.basename(project, ".ewp") + ".out");
-            buildProject(workbenchPath, project, config);
-            return {
-                ...defaultConfig,
-                projectPath: project,
-                projectConfiguration: config,
-                program: program,
-                workbenchPath: workbenchPath,
-                breakpointType: BreakpointType.AUTO
-            };
+            configuration = parameters.testProgram.projectConfiguration;
+            program = Path.join(Path.dirname(project), configuration, "Exe", Path.basename(project, ".ewp") + ".out");
+            buildProject(workbenchPath, project, configuration);
+        } else { // use a prebuilt binary
+            projectDir = parameters.testProgram.sourceDir;
+            program = parameters.testProgram.binaryPath;
+            configuration = "Debug"; // just make something up
         }
+        return {
+            type: "cspy",
+            request: "launch",
+            name: "C-SPY Debugging Tests",
+            ...parameters.debugConfiguration,
+            projectPath: projectDir,
+            projectConfiguration: configuration,
+            program: program,
+            workbenchPath: workbenchPath,
+        };
     }
 
     // Gets a list of paths to available ews, either from user settings or from an env variable set by the test runner
@@ -96,14 +87,4 @@ export namespace TestUtils {
             throw new Error(`Failed building test project (code ${proc.status}), iarbuild output: ${proc.stdout.toString()}`);
         }
     }
-
-    const defaultConfig = {
-        type: "cspy",
-        request: "launch",
-        name: "C-SPY Debugging Tests",
-        target: "arm",
-        driver: "sim2",
-        driverOptions: ["--endian=little", "--cpu=ARM7TDMI", "--fpu=None", "--semihosting", "--multicore_nr_of_cores=1"],
-        stopOnEntry:true
-    };
 }
