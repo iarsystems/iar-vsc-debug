@@ -12,8 +12,8 @@ import { OsUtils } from "../../../utils/osUtils";
 namespace Utils {
     // Given an ewp file and a source file in the same directory, returns
     // the path to the source file
-    export function sourceFilePath(ewpFile: string, sourceName: string) {
-        const sourcePath = Path.join(Path.dirname(ewpFile), sourceName);
+    export function sourceFilePath(projDir: string, sourceName: string) {
+        const sourcePath = Path.join(projDir, sourceName);
         return sourcePath;
     }
 
@@ -81,7 +81,7 @@ suite("Test Debug Adapter", () =>{
             console.log("ERR: " + dat.toString());
         });
         // Need to wait a bit for the adapter to start
-        await TestUtils.wait(2000);
+        await TestUtils.wait(4000);
     });
 
     suiteTeardown(() => {

@@ -4,7 +4,7 @@ import { CSpyLaunchRequestArguments } from "../../dap/cspyDebug";
  * Global parameters for a test run. These can be configured e.g. from the command line
  * to run the tests for a specific driver or device. See runTest.ts for how to specify parameters.
  */
-export interface TestParameters {
+export interface TestConfiguration {
     /**
      * For all tests that need to start a debug session, this is the base configuration to use.
      */
@@ -27,8 +27,8 @@ export interface TestParameters {
     };
 }
 
-export namespace TestParameters {
-    let parameters: TestParameters | undefined;
+export namespace TestConfiguration {
+    let parameters: TestConfiguration | undefined;
     const ENV_KEY = "TEST_PARAMETERS";
 
     /**
@@ -36,7 +36,7 @@ export namespace TestParameters {
      * This should only be called from the same process as the tests will run in.
      * When running tests from the command line, use {@link asEnvVars} instead.
      */
-    export function setParameters(params: TestParameters) {
+    export function setParameters(params: TestConfiguration) {
         parameters = params;
     }
 
@@ -45,17 +45,18 @@ export namespace TestParameters {
      * this can be used to pass parameters to the tests before starting the VS Code test process.
      * Simply pass the returned variables as environment variables to the test process.
      */
-    export function asEnvVars(params: TestParameters): { [key: string]: string } {
-        return {
-            ENV_KEY: JSON.stringify(params),
-        };
+    export function asEnvVars(params: TestConfiguration): Record<string, string> {
+        const result: Record<string, string> = {};
+        result[ENV_KEY] = JSON.stringify(params);
+        return result;
     }
 
     /**
      * Returns the parameters to use for the current test run,
      * if any have been set using the methods above.
+     * Defaults to {@link ARMSIM2_CONFIG}.
      */
-    export function getParameters(): TestParameters | undefined {
+    export function getParameters(): TestConfiguration {
         if (parameters) {
             return parameters;
         }
@@ -63,6 +64,26 @@ export namespace TestParameters {
         if (envParams) {
             return JSON.parse(envParams);
         }
-        return undefined;
+        return ARMSIM2_CONFIG;
     }
+
+    /// Standard test configurations below
+    export const ARMSIM2_CONFIG: TestConfiguration = {
+        debugConfiguration: {
+            target: "arm",
+            driver: "sim2",
+            driverOptions: ["--endian=little", "--cpu=ARM7TDMI", "--fpu=None", "--semihosting"],
+            stopOnEntry:true
+        },
+        testProgram: { projectConfiguration: "Debug", variant: "doBuild" },
+    };
+    export const ARMIMPERAS_CONFIG: TestConfiguration = {
+        debugConfiguration: {
+            target: "arm",
+            driver: "imperas",
+            driverOptions: ["--endian=little", "--cpu=Cortex-A53", "--abi=ilp32", "--fpu=None", "--semihosting"],
+            stopOnEntry:true
+        },
+        testProgram: { projectConfiguration: "Imperas", variant: "doBuild" },
+    };
 }

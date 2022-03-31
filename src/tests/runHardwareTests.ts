@@ -1,7 +1,5 @@
 // import { readFileSync } from "fs";
-import * as path from "path";
 import { exit } from "process";
-import { getEnvs, runTestsIn } from "../utils/testutils/testRunner";
 
 // !
 // This way of starting tests is functionally no different fron runTest.ts -- all arguments are converted to environment variables
@@ -17,13 +15,13 @@ function printHelp() {
     console.log("--source-dir=[path]  The path to the directory containing the source files you have built your debugee from. Needed to resolve the expected source info paths.");
 }
 
-async function main() {
+function main() {
     if (process.argv.includes("--help")) {
         printHelp();
         exit(0);
     }
     // Get the list of variables
-    const envs = getEnvs();
+    /*const envs = getEnvs();
     if (!envs["cspybat-args"]) {
         console.error("Need to provide a cspybat command line.");
         printHelp();
@@ -33,11 +31,12 @@ async function main() {
         console.error("Need to provide the path to your source directory");
         printHelp();
         exit(1);
-    }
+    } */
 
     // Note that the cmdline parameters will be automatically passed to the test suites as
     // environment variables. Using envvars also lets us use the same mechanism when running tests from a launch.json.
-    await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index");
+    // TODO: temporarily broken
+    // await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index");
 }
 
 main();

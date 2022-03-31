@@ -5,7 +5,7 @@ import { IarOsUtils } from "../../utils/osUtils";
 import { spawnSync } from "child_process";
 import { TestSandbox } from "../../utils/testutils/testSandbox";
 import { CSpyLaunchRequestArguments } from "../../dap/cspyDebug";
-import { TestParameters } from "./testParameters";
+import { TestConfiguration } from "./testConfiguration";
 
 /**
  *  Class contaning utility methods for the tests.
@@ -21,8 +21,7 @@ export namespace TestUtils {
      * * Returns a launch config using the determined project and driver
      */
     export function doSetup(workbenchPath: string): vscode.DebugConfiguration & CSpyLaunchRequestArguments {
-        const parameters = TestParameters.getParameters();
-        if (parameters === undefined) throw "Must specify parameters";
+        const parameters = TestConfiguration.getParameters();
 
         let program: string;
         let projectDir: string;

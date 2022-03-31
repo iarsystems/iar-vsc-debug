@@ -1,10 +1,41 @@
 import * as path from "path";
 import { runTestsIn} from "../utils/testutils/testRunner";
+import { TestConfiguration } from "./suites/testConfiguration";
 
 async function main() {
-    await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", undefined, "Sim2");
-    await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", undefined, "Imperas");
-    await runTestsIn(path.resolve(__dirname), "../../", "./suites/config/index", "../../src/tests/TestProjects/ConfigTests");
+    const armsimEnvs = TestConfiguration.asEnvVars(TestConfiguration.ARMSIM2_CONFIG);
+    const armimperasEnvs = TestConfiguration.asEnvVars(TestConfiguration.ARMIMPERAS_CONFIG);
+    const cmdlineEnvs = getEnvs();
+    // Configuration tests are not driver-dependent, so running it with only one config is fine
+    await runTestsIn(path.resolve(__dirname), "../../", "./suites/config/index", {...cmdlineEnvs, ...armsimEnvs}, "../../src/tests/TestProjects/ConfigTests");
+
+    // Run debugger tests with both 32-bit and 64-bit simulator
+    console.log("------Running sim2 tests------");
+    await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", {...cmdlineEnvs, ...armsimEnvs}, undefined, "Sim2");
+    console.log("------Running imperas tests------");
+    await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", {...cmdlineEnvs, ...armimperasEnvs}, undefined, "Imperas");
+}
+
+/**
+ * Construct a key:string based on the supplied options from the commandline.
+ * @returns
+ */
+export function getEnvs(): Record<string, string> {
+    const envs: Record<string, string> = {};
+    for (const opt of process.argv.slice(2)) {
+        if (opt.startsWith("--")) {
+            const separatorIdx = opt.indexOf("=");
+            if (separatorIdx === -1) {
+                const optName = opt.substr(2);
+                envs[optName] = "true";
+            } else {
+                const optName = opt.substr(2, separatorIdx - 2);
+                const val = opt.substr(separatorIdx + 1);
+                envs[optName] = val;
+            }
+        }
+    }
+    return envs;
 }
 
 main();
