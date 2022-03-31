@@ -53,7 +53,7 @@ suite("New tests", () =>{
         await TestUtils.assertCurrentLineIs(activeSession, "", 43, 1);
         await activeSession.customRequest("next", {granularity: ""});
         await TestUtils.wait(1000);
-        TestUtils.assertCurrentLineIs(activeSession, "", 45, 1);
+        await TestUtils.assertCurrentLineIs(activeSession, "", 45, 3);
     });
 
 });

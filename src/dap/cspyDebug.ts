@@ -27,6 +27,7 @@ import { CspyMemoryManager } from "./cspyMemoryManager";
 import { RegisterInformationGenerator } from "./registerInformationGenerator";
 import { FrontendHandler } from "./frontendHandler";
 import { FRONTEND_SERVICE } from "./thrift/bindings/frontend_types";
+import { Workbench, WorkbenchType } from "../utils/workbench";
 
 /**
  * This interface describes the cspy-debug specific launch attributes
@@ -159,8 +160,16 @@ export class CSpyDebugSession extends LoggingDebugSession {
         logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false);
 
         try {
+            // validate the workbench before trying to use it
+            const workbench = Workbench.create(args.workbenchPath);
+            if (workbench === undefined) {
+                throw new Error(`'${args.workbenchPath}' does not point to a valid IAR Embedded Workbench installation.`);
+            }
+            if (workbench.type === WorkbenchType.BX) {
+                throw new Error(`'${workbench.name}' is an IAR Build Tools installation. Debugging is only supported for full IAR Embedded Workbench installations.`);
+            }
             // initialize all the services we need
-            this.serviceManager = await ThriftServiceManager.fromWorkbench(args.workbenchPath);
+            this.serviceManager = await ThriftServiceManager.fromWorkbench(workbench.path);
 
             await this.serviceManager.startService(DEBUGEVENT_SERVICE, DebugEventListener, this.cspyEventHandler);
             this.cspyEventHandler.observeLogEvents(event => {
