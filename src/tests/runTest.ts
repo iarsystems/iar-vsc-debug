@@ -1,4 +1,5 @@
 import * as path from "path";
+import { OsUtils } from "../utils/osUtils";
 import { runTestsIn} from "../utils/testutils/testRunner";
 import { TestConfiguration } from "./suites/testConfiguration";
 
@@ -12,8 +13,10 @@ async function main() {
     // Run debugger tests with both 32-bit and 64-bit simulator
     console.log("------Running sim2 tests------");
     await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", {...cmdlineEnvs, ...armsimEnvs}, undefined, "Sim2");
-    console.log("------Running imperas tests------");
-    await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", {...cmdlineEnvs, ...armimperasEnvs}, undefined, "Imperas");
+    if (OsUtils.OsType.Windows === OsUtils.detectOsType()) {
+        console.log("------Running imperas tests------");
+        await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", {...cmdlineEnvs, ...armimperasEnvs}, undefined, "Imperas");
+    }
 }
 
 /**
