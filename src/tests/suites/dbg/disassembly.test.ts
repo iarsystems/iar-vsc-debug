@@ -11,13 +11,15 @@ import { DisassembledLocation } from "../../../dap/thrift/bindings/disassembly_t
 import EventEmitter = require("events");
 import { Source } from "@vscode/debugadapter";
 import { OsUtils } from "../../../utils/osUtils";
+import { debugAdapterSuite } from "./debugAdapterSuite";
+import { DebugProtocol } from "@vscode/debugprotocol";
 
 /**
  * Uses mock disassembly and source lookup services to test disassembly requests.
  * This lets us test it in a way that doesn't rely on the target having a specific memory layout,
  * so that it works on any device.
  */
-suite("Test Disassembly", () =>{
+suite("Disassembly with mock service", () =>{
     let disasm: CspyDisassemblyManager;
     let instruction = `0x${"f".repeat(16)}: 0x${"f".repeat(16)}: BL main`;
     let sourceRange: SourceRange | undefined;
@@ -170,4 +172,34 @@ suite("Test Disassembly", () =>{
         });
     });
 
+});
+
+debugAdapterSuite("Disassembly with real service", (dc, dbgConfig, fibonacciFile) => {
+
+    // Testing disassemble requests against the real debugger in a device-independent way is difficult.
+    // The source references are device-independent, though.
+    test("Disassembly provides source lines", () => {
+        return Promise.all([
+            dc().configurationSequence(),
+            dc().launch(dbgConfig()),
+            dc().waitForEvent("stopped").then(async() => {
+                const res = await dc().stackTraceRequest({threadId: 0});
+                const stackFrames = res.body.stackFrames;
+                Assert.strictEqual(stackFrames.length, 2);
+                // Disassemble request is not yet added to the test support library
+                const args: DebugProtocol.DisassembleArguments = {
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
+                    memoryReference: stackFrames[0]?.instructionPointerReference!,
+                    instructionCount: 1
+                };
+                const disAsm: DebugProtocol.DisassembleResponse = await dc().customRequest("disassemble", args);
+                Assert.strictEqual(disAsm.body?.instructions.length, 1);
+                const instr = disAsm.body.instructions[0];
+                Assert.strictEqual(instr?.address, stackFrames[0]?.instructionPointerReference);
+                Assert.strictEqual(instr?.location?.path, fibonacciFile());
+                Assert.strictEqual(instr?.line, 43);
+                Assert.strictEqual(instr?.endLine, 44);
+            })
+        ]);
+    });
 });

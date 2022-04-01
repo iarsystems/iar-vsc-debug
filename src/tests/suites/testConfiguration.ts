@@ -25,6 +25,11 @@ export interface TestConfiguration {
         binaryPath: string,
         sourceDir: string, // Directory where the source files were when you compiled the program (i.e. where the debug info will point)
     };
+    /**
+     * Whether to expect (and test for) the debugger to provide peripheral register.
+     * This is roughly the same as whether we are targeting a real device, as opposed to just a cpu model.
+     */
+    expectPeriphals: boolean,
 }
 
 export namespace TestConfiguration {
@@ -56,7 +61,7 @@ export namespace TestConfiguration {
      * if any have been set using the methods above.
      * Defaults to {@link ARMSIM2_CONFIG}.
      */
-    export function getParameters(): TestConfiguration {
+    export function getConfiguration(): TestConfiguration {
         if (parameters) {
             return parameters;
         }
@@ -76,6 +81,7 @@ export namespace TestConfiguration {
             stopOnEntry:true
         },
         testProgram: { projectConfiguration: "Debug", variant: "doBuild" },
+        expectPeriphals: false,
     };
     export const ARMIMPERAS_CONFIG: TestConfiguration = {
         debugConfiguration: {
@@ -85,5 +91,6 @@ export namespace TestConfiguration {
             stopOnEntry:true
         },
         testProgram: { projectConfiguration: "Imperas", variant: "doBuild" },
+        expectPeriphals: false,
     };
 }

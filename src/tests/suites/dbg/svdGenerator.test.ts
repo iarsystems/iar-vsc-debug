@@ -5,83 +5,56 @@ import * as Fs from "fs";
 import { CSpyLaunchRequestArguments } from "../../../dap/cspyDebug";
 import { TestUtils } from "../testUtils";
 import { JSDOM } from "jsdom";
-import { DebugClient } from "@vscode/debugadapter-testsupport";
-import { ChildProcess, spawn } from "child_process";
 import { CustomRequest, RegistersResponse } from "../../../dap/customRequest";
 import { tmpdir } from "os";
+import { ADAPTER_PORT, debugAdapterSuite } from "./debugAdapterSuite";
+import { TestConfiguration } from "../testConfiguration";
 
 // NOTE: These tests should be run with a release-flavored EW, otherwise they can take a lot of time
-suite("SVD generator tests", () => {
-    let config: vscode.DebugConfiguration & CSpyLaunchRequestArguments;
+debugAdapterSuite("SVD generator tests", function(dc, dbgConfig)  {
+    if (TestConfiguration.getConfiguration().debugConfiguration.target !== "arm") {
+        console.log("Skipping SVD generator tests -- we are not on arm");
+        return;
+    }
+    let genericConfig: vscode.DebugConfiguration & CSpyLaunchRequestArguments;
 
     let stm32Config: vscode.DebugConfiguration & CSpyLaunchRequestArguments;
     let stm32Svd: string;
 
-    const ADAPTER_PORT = 4711;
-    let dc: DebugClient;
-    let debugAdapter: ChildProcess;
-
-    suiteSetup(async() => {
+    suiteSetup(() => {
         // Find a workbench to build with
         const installDirs = TestUtils.getEwPaths();
         Assert(installDirs, "No workbenches found to use for debugging");
         // For now just use the first entry, and assume it points directly to a top-level ew directory
         const workbench = installDirs[0];
 
-        config = TestUtils.doSetup(workbench);
+        genericConfig = {
+            type: "cspy",
+            name: "SVD test",
+            request: "launch",
+            target: "arm",
+            program: dbgConfig().program,
+            workbenchPath: dbgConfig().workbenchPath,
+            driver: "sim2",
+            driverOptions: ["--endian=little", "--cpu=ARM7TDMI", "--fpu=None", "--semihosting"],
+        };
 
         stm32Svd = Path.join(workbench, "arm/config/debugger/ST/STM32F401.svd"),
         stm32Config = {
-            ...config,
+            ...genericConfig,
             driver: "sim2",
             driverOptions: [
                 "--endian=little",
                 "--cpu=Cortex-M4",
                 "--fpu=VFPv4_SP",
                 "-p",
-                Path.join(workbench, "arm/config/debugger/ST/STM32F401CB.ddf"),
+                Path.join(dbgConfig().workbenchPath, "arm/config/debugger/ST/STM32F401CB.ddf"),
                 "--semihosting",
                 "--device=STM32F401CB",
                 "--multicore_nr_of_cores=1"
             ],
         };
-
-        const theDebugger = Path.join(__dirname, "../../../dap/cspyDebug.js");
-        if (!Fs.existsSync(theDebugger)) {
-            Assert.fail("No debugger is available.");
-        }
-        // For some reason DebugClient isnt able to start the adapter itself, so start it manually as a tcp server
-        debugAdapter = spawn("node", [Path.join(__dirname, "../../../dap/cspyDebug.js"), `--server=${ADAPTER_PORT}`]);
-        debugAdapter.stdout?.on("data", dat => {
-            console.log("OUT: " + dat.toString());
-        });
-        debugAdapter.stderr?.on("data", dat => {
-            console.log("ERR: " + dat.toString());
-        });
-        // Need to wait a bit for the adapter to start
-        await TestUtils.wait(2000);
-    });
-    suiteTeardown(() => {
-        debugAdapter.kill();
-    });
-
-    setup(async function()  {
-        console.log("\n==========================================================" + this.currentTest!.title + "==========================================================\n");
-        dc = new DebugClient("node", "", "cspy");
-        dc.on("output", ev => {
-            console.log("CONSOLE OUT: " + ev.body.output.trim());
-        });
-        await dc.start(ADAPTER_PORT);
-    });
-    teardown(function() {
-        // Stop the debug adapter.
-        // A real timeout here will cause the entire suite to abort so we implement our own timeout
-        // with Mocha.Runnable.emit(), which doesn't cause an abort but still reports an error.
-        return Promise.race([
-            // The debug adapter needs some time after stopping to be ready for new connections
-            dc.stop().then(() => TestUtils.wait(1000)),
-            TestUtils.wait(19000).then(() => this.test?.emit("error", new Error("Timed out waiting for adapter to exit"))),
-        ]);
+        console.log(stm32Config);
     });
 
     function assertCspyMatchesSvdFile(cspySvd: Document, svdFile: string) {
@@ -159,10 +132,10 @@ suite("SVD generator tests", () => {
 
     test("Returns undefined SVD for unspecificed device", () => {
         return Promise.all([
-            dc.configurationSequence(),
-            dc.launch(config),
-            dc.waitForEvent("initialized").then(async() => {
-                const cspyData: RegistersResponse = (await dc.customRequest(CustomRequest.REGISTERS)).body;
+            dc().configurationSequence(),
+            dc().launch(genericConfig),
+            dc().waitForEvent("initialized").then(async() => {
+                const cspyData: RegistersResponse = (await dc().customRequest(CustomRequest.REGISTERS)).body;
                 Assert.strictEqual(cspyData.svdContent, undefined);
             }),
         ]);
@@ -174,38 +147,57 @@ suite("SVD generator tests", () => {
 
         let svdContent: string;
         await Promise.all([
-            dc.configurationSequence(),
-            dc.launch(stm32Config),
-            dc.waitForEvent("initialized").then(async() => {
-                const cspyData: RegistersResponse = (await dc.customRequest(CustomRequest.REGISTERS)).body;
+            dc().configurationSequence(),
+            dc().launch(stm32Config),
+            dc().waitForEvent("initialized").then(async() => {
+                const cspyData: RegistersResponse = (await dc().customRequest(CustomRequest.REGISTERS)).body;
                 Assert(cspyData.svdContent);
                 svdContent = cspyData.svdContent;
                 assertCspyMatchesSvdFile(new JSDOM(cspyData.svdContent).window.document, stm32Svd);
 
                 // This should fetch from in-memory cache
-                const cspyData2: RegistersResponse = (await dc.customRequest(CustomRequest.REGISTERS)).body;
+                const cspyData2: RegistersResponse = (await dc().customRequest(CustomRequest.REGISTERS)).body;
                 Assert.deepStrictEqual(cspyData, cspyData2);
             }),
         ]);
 
         // Restart the session and test that it works now that we have it cached
-        await dc.stop();
+        await dc().stop();
         // Need to wait a bit for the adapter to be ready again
         await TestUtils.wait(1000);
-        dc = new DebugClient("node", "", "cspy");
-        dc.on("output", ev => {
+        // dc = new DebugClient("node", "", "cspy");
+        dc().on("output", ev => {
             console.log("CONSOLE OUT: " + ev.body.output.trim());
         });
-        await dc.start(ADAPTER_PORT);
+        await dc().start(ADAPTER_PORT);
 
         await Promise.all([
-            dc.configurationSequence(),
-            dc.launch(stm32Config),
-            dc.waitForEvent("initialized").then(async() => {
-                const cachedRegistersData: RegistersResponse = (await dc.customRequest(CustomRequest.REGISTERS)).body;
+            dc().configurationSequence(),
+            dc().launch(stm32Config),
+            dc().waitForEvent("initialized").then(async() => {
+                const cachedRegistersData: RegistersResponse = (await dc().customRequest(CustomRequest.REGISTERS)).body;
                 Assert(cachedRegistersData.svdContent);
                 Assert.strictEqual(svdContent, cachedRegistersData.svdContent);
             }),
         ]);
     });
+
+    test("Returns SVD for configured device", () => {
+        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
+        dbgConfigCopy.stopOnEntry = false;
+        return Promise.all([
+            dc().configurationSequence(),
+            dc().launch(dbgConfigCopy),
+            dc().waitForEvent("initialized").then(async() => {
+                const svdResponse: RegistersResponse = (await dc().customRequest(CustomRequest.REGISTERS)).body;
+                if (TestConfiguration.getConfiguration().expectPeriphals) {
+                    Assert(svdResponse.svdContent !== undefined);
+                    Assert(svdResponse.svdContent.length > 0);
+                } else {
+                    Assert(svdResponse.svdContent === undefined);
+                }
+            }),
+        ]);
+    });
+
 });

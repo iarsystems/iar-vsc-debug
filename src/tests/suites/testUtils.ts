@@ -6,6 +6,7 @@ import { spawnSync } from "child_process";
 import { TestSandbox } from "../../utils/testutils/testSandbox";
 import { CSpyLaunchRequestArguments } from "../../dap/cspyDebug";
 import { TestConfiguration } from "./testConfiguration";
+import { DebugClient } from "@vscode/debugadapter-testsupport";
 
 /**
  *  Class contaning utility methods for the tests.
@@ -21,7 +22,7 @@ export namespace TestUtils {
      * * Returns a launch config using the determined project and driver
      */
     export function doSetup(workbenchPath: string): vscode.DebugConfiguration & CSpyLaunchRequestArguments {
-        const parameters = TestConfiguration.getParameters();
+        const parameters = TestConfiguration.getConfiguration();
 
         let program: string;
         let projectDir: string;
@@ -75,6 +76,18 @@ export namespace TestUtils {
     export function wait(time: number) {
         return new Promise((resolve, _) => {
             setTimeout(resolve, time);
+        });
+    }
+
+    export function assertStoppedLocation(dc: DebugClient, reason: string, line: number, file: string | undefined, name: RegExp) {
+        return dc.waitForEvent("stopped").then(async(event) => {
+            assert.strictEqual(event.body?.reason, reason);
+            const stack = await dc.stackTraceRequest({threadId: 1});
+            const topStack = stack.body.stackFrames[0];
+            assert(topStack);
+            assert.strictEqual(topStack.line, line);
+            assert.strictEqual(topStack.source?.path, file);
+            assert.match(topStack.name, name);
         });
     }
 
