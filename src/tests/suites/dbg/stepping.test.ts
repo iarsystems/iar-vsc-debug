@@ -43,21 +43,22 @@ debugAdapterSuite("Stepping", (dc, dbgConfig, fibonacciFile, utilsFile) => {
         ]);
     });
     test("Supports instruction stepping", () => {
+        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
+        dbgConfigCopy.stopOnEntry = false;
         return Promise.all([
-            dc().configurationSequence(),
-            dc().launch(dbgConfig()),
-            dc().waitForEvent("stopped").then(async() => {
-                for (let i = 0; i < 3; i++) {
-                    await Promise.all([
-                        dc().nextRequest({threadId: 1, granularity: "instruction"}),
-                        TestUtils.assertStoppedLocation(dc(), "step", 45,
-                            fibonacciFile(), /main/),
-                    ]);
-                }
+            dc().hitBreakpoint(
+                dbgConfigCopy,
+                { line: 47, path: fibonacciFile() }
+            ).then(async() => {
+                await Promise.all([
+                    dc().stepInRequest({threadId: 1, granularity: "instruction"}),
+                    TestUtils.assertStoppedLocation(dc(), "step", 23,
+                        utilsFile(), /InitFib/),
+                ]);
                 await Promise.all([
                     dc().nextRequest({threadId: 1, granularity: "instruction"}),
-                    TestUtils.assertStoppedLocation(dc(), "step", 47,
-                        fibonacciFile(), /main/),
+                    TestUtils.assertStoppedLocation(dc(), "step", 23,
+                        utilsFile(), /InitFib/),
                 ]);
             })
         ]);

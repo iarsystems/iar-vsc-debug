@@ -271,26 +271,29 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                 const cpuRegisters = registerGroups.find(group => group.name === "Current CPU Registers");
                 Assert(cpuRegisters);
 
+                const isAArch64 = registerGroups.some(group => group.name.startsWith("AArch64"));
                 // First set new values
-                dc().setVariableRequest({name: "R8", value: "0xDEAD'BEEF", variablesReference: cpuRegisters.variablesReference});
-
+                const regName =  isAArch64 ? "X8" : "R8";
+                const regVal = isAArch64 ?  "0xDEAD'BEEF'DEAD'BEEF" : "0xDEAD'BEEF";
+                dc().setVariableRequest({name: regName, value: regVal, variablesReference: cpuRegisters.variablesReference});
+                const statusRegName = isAArch64 ? "PSTATE" : "APSR";
                 {
                     const regs = (await dc().variablesRequest({variablesReference: cpuRegisters.variablesReference})).body.variables;
-                    const apsr = regs.find(reg => reg.name === "APSR");
-                    Assert(apsr !== undefined);
-                    Assert(apsr.variablesReference > 0);
-                    const res = await dc().setVariableRequest({ name: "V", value: "0b1", variablesReference: apsr.variablesReference});
+                    const statusReg = regs.find(reg => reg.name === statusRegName);
+                    Assert(statusReg !== undefined);
+                    Assert(statusReg.variablesReference > 0);
+                    const res = await dc().setVariableRequest({ name: "V", value: "0b1", variablesReference: statusReg.variablesReference});
                     Assert.strictEqual(res.body.value, "1");
                 }
 
                 // Now check that the values changed
                 const regs = (await dc().variablesRequest({variablesReference: cpuRegisters.variablesReference})).body.variables;
-                Assert(regs.some(reg => reg.name === "R8" && reg.value === "0xdead'beef"), JSON.stringify(regs));
+                Assert(regs.some(reg => reg.name === regName && reg.value === regVal.toLowerCase()), JSON.stringify(regs));
                 {
-                    const apsr = regs.find(reg => reg.name === "APSR");
-                    Assert(apsr !== undefined);
-                    Assert(apsr.variablesReference > 0);
-                    const apsrContents = (await dc().variablesRequest({variablesReference: apsr.variablesReference})).body.variables;
+                    const statusReg = regs.find(reg => reg.name === statusRegName);
+                    Assert(statusReg !== undefined);
+                    Assert(statusReg.variablesReference > 0);
+                    const apsrContents = (await dc().variablesRequest({variablesReference: statusReg.variablesReference})).body.variables;
                     const v = apsrContents.find(reg => reg.name === "V");
                     Assert(v !== undefined);
                     Assert.strictEqual(v.value, "1");

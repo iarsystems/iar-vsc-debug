@@ -77,7 +77,7 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
             dc().configurationSequence(),
             dc().launch(dbgConfig()),
             dc().waitForEvent("stopped").then(async() => {
-                const res = await dc().evaluateRequest({expression: "GetFib"});
+                const res = await dc().evaluateRequest({expression: "PutFib"});
                 Assert(res.body.memoryReference);
                 const args: DebugProtocol.SetInstructionBreakpointsArguments = {
                     breakpoints: [{instructionReference: res.body.memoryReference}]
@@ -89,7 +89,7 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                 Assert.strictEqual(bpRes.body.breakpoints[0]?.instructionReference, res.body.memoryReference);
                 await Promise.all([
                     dc().continueRequest({threadId: 0}),
-                    TestUtils.assertStoppedLocation(dc(), "breakpoint", 35, utilsFile(), /GetFib/)
+                    TestUtils.assertStoppedLocation(dc(), "breakpoint", 50, utilsFile(), /PutFib/)
                 ]);
             }),
         ]);
