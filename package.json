@@ -1,5 +1,5 @@
 {
-	"name": "iar-dbg",
+	"name": "iar-debug",
 	"displayName": "IAR C-SPY Debug",
 	"version": "0.25.0",
 	"publisher": "iarsystems",
