@@ -187,7 +187,7 @@ export namespace ThriftServiceManager {
     // several cspy processes are run at the same time.
     function getTmpDir(): string {
         // Generate a uuid-based name and place in /tmp or similar
-        const tmpPath = path.join(tmpdir(), "iar-vsc", uuidv4());
+        const tmpPath = path.join(tmpdir(), "iar-debug", uuidv4());
         if (!fs.existsSync(tmpPath)) {
             fs.mkdirSync(tmpPath, {recursive: true});
         }

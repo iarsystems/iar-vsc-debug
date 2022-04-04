@@ -1,6 +1,6 @@
 # IAR C-SPY Debug - Getting started
 
-This is the user documentation for the [IAR C-SPY Debug](https://marketplace.visualstudio.com/items?itemName=iarsystems.iar-dbg) Visual Studio Code extension.
+This is the user documentation for the [IAR C-SPY Debug](https://marketplace.visualstudio.com/items?itemName=iarsystems.iar-debug) Visual Studio Code extension.
 
 * **Getting started**
 * [Debugging an IAR Embedded Workbench project](debugging-ewp.md)

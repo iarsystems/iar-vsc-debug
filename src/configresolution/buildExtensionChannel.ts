@@ -10,7 +10,7 @@ export class BuildExtensionChannel implements BuildExtensionApi {
 
     public static getInstance(): BuildExtensionChannel | undefined {
         if (!this.instance) {
-            const buildExtension = vscode.extensions.getExtension("iarsystems.iar-vsc");
+            const buildExtension = vscode.extensions.getExtension("iarsystems.iar-build");
             if (!buildExtension || !buildExtension.isActive) {
                 return undefined;
             }

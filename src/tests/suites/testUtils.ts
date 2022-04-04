@@ -55,7 +55,7 @@ export namespace TestUtils {
 
     // Gets a list of paths to available ews, either from user settings or from an env variable set by the test runner
     export function getEwPaths() {
-        const installDirs = vscode.workspace.getConfiguration("iarvsc").get<string[]>("iarInstallDirectories");
+        const installDirs = vscode.workspace.getConfiguration("iar-build").get<string[]>("iarInstallDirectories");
         if (installDirs) {
             return installDirs;
         }

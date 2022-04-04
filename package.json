@@ -96,7 +96,7 @@
 		"configuration": {
 			"title": "IAR C-SPY Debug",
 			"properties": {
-				"iar-dbg.breakpointType": {
+				"iar-debug.breakpointType": {
 					"default": "Auto",
 					"description": "Whether to set hardware- or software breakpoints. This only affects drivers that support it. Changing this setting will not affect already installed breakpoints in active sessions.",
 					"type": "string",
@@ -195,17 +195,17 @@
 							"workbenchPath": {
 								"type": "string",
 								"description": "Path to the IAR Embedded Workbench installation to use (e.g. \"C:\\\\Program Files (x86)\\\\IAR Systems\\\\Embedded Workbench 8.3\").",
-								"default": "${command:iar-settings.toolchain} for an iar-vsc project or path to EW root."
+								"default": "${command:iar-settings.toolchain} for an iar-build project or path to EW root."
 							},
 							"projectPath": {
 								"type": "string",
 								"description": "Path to a .ewp file, or a folder in which to place debug settings files.",
-								"default": "${command:iar-settings.project-file} for an iar-vsc project."
+								"default": "${command:iar-settings.project-file} for an iar-build project."
 							},
 							"projectConfiguration": {
 								"type": "string",
 								"description": "Name of the project configuration to debug (e.g. Debug). Only applicable to .ewp projects",
-								"default": "${command:iar-settings.project-configuration} for an iar-vsc project. Remove this for other project types."
+								"default": "${command:iar-settings.project-configuration} for an iar-build project. Remove this for other project types."
 							},
 							"driver": {
 								"type": "string",
@@ -299,9 +299,9 @@
 						"target": "arm",
 						"program": "${workspaceFolder}/Debug/Exe/ewproj.out",
 						"stopOnEntry": true,
-						"workbenchPath": "${command:iar-settings.toolchain} for an iar-vsc project or path to EW root.",
-						"projectPath": "${command:iar-settings.project-file} for an iar-vsc project.",
-						"projectConfiguration": "${command:iar-settings.project-configuration} for an iar-vsc project. Remove this for other project types",
+						"workbenchPath": "${command:iar-settings.toolchain} for an iar-build project or path to EW root.",
+						"projectPath": "${command:iar-settings.project-file} for an iar-build project.",
+						"projectConfiguration": "${command:iar-settings.project-configuration} for an iar-build project. Remove this for other project types",
 						"driver": "sim2",
 						"driverOptions": [
 							"--endian=little",
@@ -314,7 +314,7 @@
 				"configurationSnippets": [
 					{
 						"label": "C-SPY Debug: Launch .ewp project",
-						"description": "A new configuration for debugging a program with C-SPY that is using the iar-vsc extension.",
+						"description": "A new configuration for debugging a program with C-SPY that is using the iar-build extension.",
 						"body": {
 							"type": "cspy",
 							"request": "launch",

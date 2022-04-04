@@ -10,7 +10,7 @@
 
 ---
 
-To debug an IAR Embedded Workbench (`.ewp`) project, we highly recommend also installing the [IAR Build](https://marketplace.visualstudio.com/items?itemName=iarsystems.iar-vsc) extension.
+To debug an IAR Embedded Workbench (`.ewp`) project, we highly recommend also installing the [IAR Build](https://marketplace.visualstudio.com/items?itemName=iarsystems.iar-build) extension.
 
 If you wish to debug a project without the IAR Build extension, you must manually provide a debug configuration, please see [the launch.json format](launch-json-format.md).
 The rest of this section assumes that you have installed the IAR Build extension.
