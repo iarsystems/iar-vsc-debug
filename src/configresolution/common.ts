@@ -54,7 +54,7 @@ export namespace ConfigResolutionCommon {
             type: "cspy",
             request: "launch",
             name: parts.projectName + "." + parts.configuration.replace(/ /g, "_"),
-            target: parts.target,
+            target: parts.target.toLowerCase(),
             program: program,
             driver: driverName,
             stopOnEntry: parts.stopOnEntry,
