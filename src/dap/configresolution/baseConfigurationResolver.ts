@@ -37,7 +37,7 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
         if (launchArguments.projectPath && !Fs.existsSync(launchArguments.projectPath)) {
             return Promise.reject(new Error(`The path '${launchArguments.projectPath}' does not exist.`));
         }
-        if (launchArguments.target.toLowerCase() !== "arm") {
+        if (!launchArguments.bypassTargetRestriction && launchArguments.target.toLowerCase() !== "arm") {
             return Promise.reject(new Error(`Unsupported target '${launchArguments.target}'. Currently, only arm is supported.`));
         }
 

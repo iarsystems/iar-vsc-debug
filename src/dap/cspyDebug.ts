@@ -69,6 +69,8 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     }
     /** A list of plugins to load */
     plugins?: string[];
+    /** Hidden option. Allows starting sessions with any target (although it might not work) */
+    bypassTargetRestriction?: boolean;
 }
 
 /**
