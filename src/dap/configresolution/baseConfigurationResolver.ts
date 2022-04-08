@@ -43,6 +43,12 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
 
         const partialValues = await this.resolveLaunchArgumentsPartial(launchArguments);
         const libsupportPath = IarOsUtils.resolveTargetLibrary(launchArguments.workbenchPath, partialValues.target, "LibSupportEclipse");
+        if (libsupportPath !== undefined) {
+            partialValues.plugins.push(libsupportPath);
+        } else {
+            // Don't abort here: we can still launch the session, but e.g. terminal i/o won't work
+            console.error("LibSupportEclipse is missing from " + launchArguments.workbenchPath);
+        }
 
         // Do the work on the project path which may be an ewp-file or a directory.
         let projectDir = launchArguments.projectPath;
@@ -66,7 +72,7 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
             leaveRunning: false,
             enableCRun: false,
             options: partialValues.options,
-            plugins: partialValues.plugins.concat([libsupportPath]),
+            plugins: partialValues.plugins,
             projectDir: projectDir ?? Path.dirname(launchArguments.program),
             projectName: projectName,
             setupMacros: partialValues.setupMacros,
