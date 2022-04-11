@@ -1,4 +1,4 @@
-import { DebugEvent, LogEvent, InspectionContextChangedEvent, BaseContextChangedEvent, DkNotifyConstant } from "./thrift/bindings/cspy_types";
+import { DebugEvent, LogEvent, InspectionContextChangedEvent, BaseContextChangedEvent, DkNotifyConstant } from "../utils/thrift/bindings/cspy_types";
 import * as Q from "q";
 
 type EventCallback<T> = (event: T) => void;

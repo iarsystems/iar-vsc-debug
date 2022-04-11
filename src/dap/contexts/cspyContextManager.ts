@@ -1,14 +1,14 @@
 
 
-import { ContextRef, ContextType, ExprFormat } from "../thrift/bindings/shared_types";
-import * as ContextManager from "../thrift/bindings/ContextManager";
-import * as Debugger from "../thrift/bindings/Debugger";
+import { ContextRef, ContextType, ExprFormat } from "../../utils/thrift/bindings/shared_types";
+import * as ContextManager from "../../utils/thrift/bindings/ContextManager";
+import * as Debugger from "../../utils/thrift/bindings/Debugger";
 import { StackFrame, Source, Scope, Handles, Variable } from "@vscode/debugadapter";
 import { basename } from "path";
-import { CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE, DkNotifyConstant, ExprValue } from "../thrift/bindings/cspy_types";
+import { CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE, DkNotifyConstant, ExprValue } from "../../utils/thrift/bindings/cspy_types";
 import { Disposable } from "../disposable";
 import { ThriftServiceManager } from "../thrift/thriftServiceManager";
-import { ThriftClient } from "../thrift/thriftClient";
+import { ThriftClient } from "../../utils/thrift/thriftClient";
 import { WindowNames } from "../listWindowConstants";
 import { ListWindowVariablesProvider, VariablesProvider } from "./variablesProvider";
 import { DebugEventListenerHandler } from "../debugEventListenerHandler";
@@ -248,8 +248,8 @@ export class CSpyContextManager implements Disposable {
         await this.localsProvider?.dispose();
         await this.staticsProvider?.dispose();
         await this.registersProvider?.dispose();
-        this.contextManager.dispose();
-        this.dbgr.dispose();
+        this.contextManager.close();
+        this.dbgr.close();
     }
 
     private async setInspectionContext(context: ContextRef) {

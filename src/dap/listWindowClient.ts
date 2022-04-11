@@ -1,8 +1,8 @@
 import * as Q from "q";
-import { MenuItem, Note, Row, What } from "./thrift/bindings/listwindow_types";
-import * as ListWindowBackend from "./thrift/bindings/ListWindowBackend";
-import * as ListWindowFrontend from "./thrift/bindings/ListWindowFrontend";
-import { ThriftClient } from "./thrift/thriftClient";
+import { MenuItem, Note, Row, What } from "../utils/thrift/bindings/listwindow_types";
+import * as ListWindowBackend from "../utils/thrift/bindings/ListWindowBackend";
+import * as ListWindowFrontend from "../utils/thrift/bindings/ListWindowFrontend";
+import { ThriftClient } from "../utils/thrift/thriftClient";
 import { ThriftServiceManager } from "./thrift/thriftServiceManager";
 import { Int64 } from "thrift";
 import { Disposable } from "./disposable";
@@ -161,7 +161,7 @@ export class ListWindowClient implements Disposable {
 
     async dispose(): Promise<void> {
         await this.backend.service.disconnect();
-        this.backend.dispose();
+        this.backend.close();
     }
 
     /**

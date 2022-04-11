@@ -1,6 +1,6 @@
 
 
-import { SessionConfiguration } from "../thrift/bindings/cspy_types";
+import { SessionConfiguration } from "../../utils/thrift/bindings/cspy_types";
 import { CSpyLaunchRequestArguments } from "../cspyDebug";
 
 

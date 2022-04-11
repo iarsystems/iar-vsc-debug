@@ -1,8 +1,8 @@
 import Int64 = require("node-int64");
-import * as Memory from "./thrift/bindings/CSpyMemory";
-import { MEMORY_SERVICE } from "./thrift/bindings/cspy_types";
-import { Location, Zone } from "./thrift/bindings/shared_types";
-import { ThriftClient } from "./thrift/thriftClient";
+import * as Memory from "../utils/thrift/bindings/CSpyMemory";
+import { MEMORY_SERVICE } from "../utils/thrift/bindings/cspy_types";
+import { Location, Zone } from "../utils/thrift/bindings/shared_types";
+import { ThriftClient } from "../utils/thrift/thriftClient";
 import { ThriftServiceManager } from "./thrift/thriftServiceManager";
 import { Disposable } from "./disposable";
 
@@ -38,7 +38,7 @@ export class CspyMemoryManager implements Disposable {
     }
 
     dispose() {
-        this.memory.dispose();
+        this.memory.close();
     }
 
 }

@@ -1,18 +1,18 @@
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, DebugSession, TerminatedEvent, InvalidatedEvent, Event } from "@vscode/debugadapter";
 import { ThriftServiceManager } from "./thrift/thriftServiceManager";
-import * as Debugger from "./thrift/bindings/Debugger";
-import * as DebugEventListener from "./thrift/bindings/DebugEventListener";
-import * as LibSupportService2 from "./thrift/bindings/LibSupportService2";
-import * as Frontend from "./thrift/bindings/Frontend";
-import { ThriftClient } from "./thrift/thriftClient";
-import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant, SessionConfiguration } from "./thrift/bindings/cspy_types";
+import * as Debugger from "../utils/thrift/bindings/Debugger";
+import * as DebugEventListener from "../utils/thrift/bindings/DebugEventListener";
+import * as LibSupportService2 from "../utils/thrift/bindings/LibSupportService2";
+import * as Frontend from "../utils/thrift/bindings/Frontend";
+import { ThriftClient } from "../utils/thrift/thriftClient";
+import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant, SessionConfiguration } from "../utils/thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
 import { CSpyContextManager } from "./contexts/cspyContextManager";
 import { BreakpointType, CSpyBreakpointManager } from "./breakpoints/cspyBreakpointManager";
 import { LaunchArgumentConfigurationResolver}  from "./configresolution/launchArgumentConfigurationResolver";
-import { CSpyException } from "./thrift/bindings/shared_types";
-import { LIBSUPPORT_SERVICE } from "./thrift/bindings/libsupport_types";
+import { CSpyException } from "../utils/thrift/bindings/shared_types";
+import { LIBSUPPORT_SERVICE } from "../utils/thrift/bindings/libsupport_types";
 import { LibSupportHandler } from "./libSupportHandler";
 // There are no types for this library. We should probably look to replace it.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -26,7 +26,7 @@ import { CspyDisassemblyManager } from "./cspyDisassemblyManager";
 import { CspyMemoryManager } from "./cspyMemoryManager";
 import { RegisterInformationGenerator } from "./registerInformationGenerator";
 import { FrontendHandler } from "./frontendHandler";
-import { FRONTEND_SERVICE } from "./thrift/bindings/frontend_types";
+import { FRONTEND_SERVICE } from "../utils/thrift/bindings/frontend_types";
 import { Workbench, WorkbenchType } from "../utils/workbench";
 
 /**
@@ -595,7 +595,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.disassemblyManager?.dispose();
         this.memoryManager?.dispose();
         // Will disconnect this DAP debugger client
-        this.cspyDebugger?.dispose();
+        this.cspyDebugger?.close();
         // VSC-3 This will take care of orderly shutting down CSpyServer
         await this.serviceManager?.dispose();
     }

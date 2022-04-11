@@ -1,11 +1,11 @@
-import * as Debugger from "./thrift/bindings/Debugger";
+import * as Debugger from "../utils/thrift/bindings/Debugger";
 import * as crypto from "crypto";
 import * as path from "path";
 import * as fs from "fs";
 import { create } from "xmlbuilder2";
 import { tmpdir } from "os";
-import { ThriftClient } from "./thrift/thriftClient";
-import { NamedLocation } from "./thrift/bindings/cspy_types";
+import { ThriftClient } from "../utils/thrift/thriftClient";
+import { NamedLocation } from "../utils/thrift/bindings/cspy_types";
 import Int64 = require("node-int64");
 
 // SVD format specification: https://www.keil.com/pack/doc/CMSIS/SVD/html/svd_Format_pg.html
@@ -98,13 +98,13 @@ export class RegisterInformationGenerator {
         // Try to fetch cached register information, or generate it if it's not available.
         if (fs.existsSync(this.getCacheFile())) {
             this.registerInfo = Promise.resolve(JSON.parse(fs.readFileSync(this.getCacheFile()).toString()));
-            dbgr.dispose();
+            dbgr.close();
         } else {
             this.registerInfo = RegistersHelpers.generateRegisterInformation(dbgr.service);
             this.registerInfo.then(regData => {
                 fs.promises.mkdir(path.dirname(this.getCacheFile()), { recursive: true });
                 fs.promises.writeFile(this.getCacheFile(), JSON.stringify(regData));
-                dbgr.dispose();
+                dbgr.close();
             });
         }
     }

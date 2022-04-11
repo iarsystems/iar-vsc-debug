@@ -6,15 +6,15 @@ import * as Thrift from "thrift";
 import { spawn, ChildProcess } from "child_process";
 import * as path from "path";
 import * as fs from "fs";
-import { ServiceLocation, Transport, Protocol } from "./bindings/ServiceRegistry_types";
-import { ThriftClient } from "./thriftClient";
+import { ServiceLocation, Transport, Protocol } from "../../utils/thrift/bindings/ServiceRegistry_types";
+import { ThriftClient } from "../../utils/thrift/thriftClient";
 
-import * as CSpyServiceRegistry from "./bindings/CSpyServiceRegistry";
-import * as Debugger from "./bindings/Debugger";
+import * as CSpyServiceRegistry from "../../utils/thrift/bindings/CSpyServiceRegistry";
+import * as Debugger from "../../utils/thrift/bindings/Debugger";
 import { tmpdir } from "os";
 import { Server, AddressInfo } from "net";
 import { Disposable } from "../disposable";
-import { DEBUGGER_SERVICE } from "./bindings/cspy_types";
+import { DEBUGGER_SERVICE } from "../../utils/thrift/bindings/cspy_types";
 import { IarOsUtils } from "../../utils/osUtils";
 import { v4 as uuidv4 } from "uuid";
 
@@ -44,7 +44,7 @@ export class ThriftServiceManager implements Disposable {
         // VSC-3 CSpyServer will stop the C-Spy session before exiting
         const dgbr = await this.findService(DEBUGGER_SERVICE, Debugger);
         await dgbr.service.exit();
-        dgbr.dispose();
+        dgbr.close();
         this.activeServers.forEach(server => server.close());
         // Wait for cspyserver process to exit
         if (this.cspyProcess.exitCode === null) {
@@ -70,7 +70,7 @@ export class ThriftServiceManager implements Disposable {
         const location = await registry.service.waitForService(serviceId, ThriftServiceManager.SERVICE_LOOKUP_TIMEOUT);
         const service = await this.getServiceAt(location, serviceType);
 
-        registry.dispose();
+        registry.close();
 
         return service;
     }
@@ -99,7 +99,7 @@ export class ThriftServiceManager implements Disposable {
 
         this.activeServers.push(server);
 
-        registry.dispose();
+        registry.close();
         return location;
     }
 

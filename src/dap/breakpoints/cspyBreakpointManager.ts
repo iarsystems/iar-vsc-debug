@@ -1,12 +1,12 @@
 
 
-import * as Breakpoints from "../thrift/bindings/Breakpoints";
+import * as Breakpoints from "../../utils/thrift/bindings/Breakpoints";
 import { DebugProtocol } from "@vscode/debugprotocol";
-import * as Thrift from "../thrift/bindings/shared_types";
+import * as Thrift from "../../utils/thrift/bindings/shared_types";
 import { Disposable } from "../disposable";
 import { ThriftServiceManager } from "../thrift/thriftServiceManager";
-import { BREAKPOINTS_SERVICE } from "../thrift/bindings/breakpoints_types";
-import { ThriftClient } from "../thrift/thriftClient";
+import { BREAKPOINTS_SERVICE } from "../../utils/thrift/bindings/breakpoints_types";
+import { ThriftClient } from "../../utils/thrift/thriftClient";
 import { DescriptorWriter } from "./descriptors/descriptorWriter";
 import { CSpyDriver } from "./cspyDriver";
 import { CodeBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
@@ -211,7 +211,7 @@ export class CSpyBreakpointManager implements Disposable {
     }
 
     dispose(): void {
-        this.breakpointService.dispose();
+        this.breakpointService.close();
     }
 
     /**
