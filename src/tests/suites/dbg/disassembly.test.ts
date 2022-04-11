@@ -3,7 +3,7 @@ import Int64 = require("node-int64");
 import * as Assert from "assert";
 import Q = thrift.Q;
 import * as Disassembly from "../../../utils/thrift/bindings/Disassembly";
-import * as SourceLookup from "../../../utilS/thrift/bindings/SourceLookup";
+import * as SourceLookup from "../../../utils/thrift/bindings/SourceLookup";
 import { CspyDisassemblyManager } from "../../../dap/cspyDisassemblyManager";
 import { ContextRef, Location, SourceLocation, SourceRange } from "../../../utils/thrift/bindings/shared_types";
 import { ThriftClient } from "../../../utils/thrift/thriftClient";
