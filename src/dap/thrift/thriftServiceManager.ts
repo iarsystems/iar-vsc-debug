@@ -17,6 +17,7 @@ import { Disposable } from "../disposable";
 import { DEBUGGER_SERVICE } from "../../utils/thrift/bindings/cspy_types";
 import { IarOsUtils } from "../../utils/osUtils";
 import { v4 as uuidv4 } from "uuid";
+import { logger } from "@vscode/debugadapter/lib/logger";
 
 /**
  * Provides and manages a set of thrift services.
@@ -89,7 +90,7 @@ export class ThriftServiceManager implements Disposable {
             protocol: Thrift.TBinaryProtocol,
         };
         const server = Thrift.createServer(serviceType, handler, serverOpt).
-            on("error", console.log).
+            on("error", logger.error).
             listen(0); // port 0 lets node figure out what to use
 
         const port = (server.address() as AddressInfo).port; // this cast is safe since we know it's an IP socket
@@ -135,11 +136,11 @@ export namespace ThriftServiceManager {
         serviceRegistryProcess.stdout?.on("data", dat => {
             process.stdout.write(dat.toString());
         });
-        serviceRegistryProcess.stderr?.on("data", _ => {
-            // console.log("ERR: " + dat.toString());
+        serviceRegistryProcess.stderr?.on("data", dat => {
+            logger.error(dat);
         });
         serviceRegistryProcess.on("exit", code => {
-            console.log("CSpyServer exited: " + code);
+            logger.verbose("CSpyServer exited: " + code);
         });
 
         try {
@@ -171,7 +172,7 @@ export namespace ThriftServiceManager {
             const onData = (data: Buffer | string) => {
                 output += data;
                 if (output.includes("running")) {
-                    console.log("CSpyServer has launched.");
+                    logger.verbose("CSpyServer has launched.");
                     process.stdout?.removeListener("data", onData);
                     resolve();
                 }

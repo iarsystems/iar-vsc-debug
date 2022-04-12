@@ -7,6 +7,7 @@ import Int64 = require("node-int64");
 import { Mutex } from "async-mutex";
 import { WindowNames } from "../listWindowConstants";
 import { RegisterInformationGenerator } from "../registerInformationGenerator";
+import { logger } from "@vscode/debugadapter/lib/logger";
 
 interface RegisterReference {
     group: GroupReference,
@@ -102,7 +103,7 @@ export class RegistersVariablesProvider implements VariablesProvider, Disposable
 
     private async ensureGroupIsVisible(group: GroupReference) {
         this.varProvider.notifyUpdateImminent();
-        console.log("Switching to " + group.name);
+        logger.verbose("Switching to " + group.name);
         this.visibleGroup = group.name;
         await this.windowClient.clickContextMenu(group.command);
     }

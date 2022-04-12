@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { logger } from "../utils/logger";
 import { BuildExtensionChannel } from "./buildExtensionChannel";
 import { BuildExtensionConfigurationProvider } from "./buildExtensionConfigurationProvider";
 import { ConfigResolutionCommon } from "./common";
@@ -40,13 +41,18 @@ export class CSpyConfigurationResolver implements vscode.DebugConfigurationProvi
                 if (!cmds) {
                     throw new Error("Could not get C-SPY cmdline");
                 }
+                logger.debug("Got C-SPY command line: " + cmds);
                 const partialConfig = BuildExtensionConfigurationProvider.provideDebugConfigurationFor(cmds, project, config.name, config.target);
                 return ConfigResolutionCommon.instantiateConfiguration(partialConfig, folder.uri.fsPath);
-            } catch (_) { }
+            } catch (e) {
+                logger.debug("Failed to generate config from build extension: " + e);
+            }
             try {
                 const partialConfig = XclConfigurationProvider.provideDebugConfigurationFor(project, config.name);
                 return ConfigResolutionCommon.instantiateConfiguration(partialConfig, folder.uri.fsPath);
-            } catch (_) { }
+            } catch (e) {
+                logger.debug("Failed to generate config from .xcl files: " + e);
+            }
             vscode.window.showErrorMessage(`IAR: Unable to provide an automatic debug configuration: Please launch the configuration in Embedded Workbench once and then try again. For help, see [Debugging an Embedded Workbench project](${CSpyConfigurationResolver.HELP_LINK}).`);
         }
 

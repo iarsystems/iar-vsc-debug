@@ -10,6 +10,7 @@ import { SOURCE_LOOKUP_SERVICE } from "../utils/thrift/bindings/sourcelookup_typ
 import { Source } from "@vscode/debugadapter";
 import { Disposable } from "./disposable";
 import { basename } from "path";
+import { logger } from "@vscode/debugadapter/lib/logger";
 
 /**
  * Requests disassembly from cspyserver and converts it to a dap-friendly format.
@@ -76,7 +77,7 @@ export class CspyDisassemblyManager implements Disposable {
                 if (lessThan(currentEndAddr, startAddr)) { // We underflowed, use 0
                     startAddr = new Int64(0);
                 }
-                console.log(`Fetching ${startAddr.toOctetString()}-${currentEndAddr.toOctetString()}`);
+                logger.verbose(`Fetching ${startAddr.toOctetString()}-${currentEndAddr.toOctetString()}`);
                 let fetched = await this.fetchDisassemblyRange(startAddr, currentEndAddr, zone);
                 if (fetched.length > linesBackward) {
                     fetched = fetched.slice(fetched.length - linesBackward, fetched.length);
@@ -98,7 +99,7 @@ export class CspyDisassemblyManager implements Disposable {
                 if (lessThan(endAddr, currentStartAddr)) { // We overflowed, use max 64-bit value
                     endAddr = new Int64(Buffer.alloc(8, 0xff));
                 }
-                console.log(`Fetching ${currentStartAddr.toOctetString()}-${endAddr.toOctetString()}`);
+                logger.verbose(`Fetching ${currentStartAddr.toOctetString()}-${endAddr.toOctetString()}`);
                 let fetched = await this.fetchDisassemblyRange(currentStartAddr, endAddr, zone);
                 fetched = fetched.slice(0, linesForward);
                 if (fetched.length === 0) {
@@ -139,7 +140,7 @@ export class CspyDisassemblyManager implements Disposable {
                     // label(s) (group #1), address (group #4), opcodes (group #5), instruction (group #7)
                     const instrMatch = instr.match(/(((.+):\n)*)\s*([\w|']+):\s+((0x[\w|']+\s+)*)([\s\S]*)/m);
                     if (instrMatch === null || instrMatch[7] === undefined) {
-                        console.error("Failed to parse instruction: " + instr);
+                        logger.error("Failed to parse instruction: " + instr);
                         return [{
                             instruction: instr,
                             address: addressStr,
@@ -211,7 +212,7 @@ export class CspyDisassemblyManager implements Disposable {
                     }
                 }
                 if (ranges.length > 1) {
-                    console.error("Got multiple source ranges for line: " + instruction.instruction);
+                    logger.error("Got multiple source ranges for line: " + instruction.instruction);
                 }
             } catch {}
         }

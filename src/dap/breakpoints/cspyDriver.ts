@@ -1,6 +1,7 @@
 import { IarOsUtils } from "../../utils/osUtils";
 import * as Path from "path";
 import { CodeBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory, StdCode2BreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
+import { logger } from "@vscode/debugadapter/lib/logger";
 
 /**
  * Provides some driver-specific information.
@@ -84,7 +85,7 @@ export namespace CSpyDriver {
             return basename.endsWith(name.toLowerCase());
         });
         if (!result) {
-            console.error("Unable to recognize driver: " + driverName);
+            logger.error("Unable to recognize driver: " + driverName);
             // For unknown drivers, we just guess at some properties and hope it works.
             return new UnknownDriver();
         }

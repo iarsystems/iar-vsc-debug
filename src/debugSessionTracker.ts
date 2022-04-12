@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { logger } from "./utils/logger";
 
 /**
  * The VSCode api has no way of getting all running sessions, only the 'active' one.
@@ -9,13 +10,13 @@ export class DebugSessionTracker {
 
     constructor(context: vscode.ExtensionContext) {
         context.subscriptions.push(vscode.debug.onDidStartDebugSession(session => {
-            console.log(session);
+            logger.debug(`Session Tracker: Started '${session.name}'`);
             if (session.type === "cspy") {
                 this.sessions.push(session);
             }
         }));
         context.subscriptions.push(vscode.debug.onDidTerminateDebugSession(session => {
-            console.log(session);
+            logger.debug(`Session Tracker: Terminated '${session.name}'`);
 
             if (this.sessions.includes(session)) {
                 this.sessions.splice(this.sessions.indexOf(session), 1);

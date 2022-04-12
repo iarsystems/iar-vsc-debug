@@ -4,6 +4,7 @@ import { XclConfigurationProvider } from "./xclConfigurationProvider";
 import { BuildExtensionChannel } from "./buildExtensionChannel";
 import { BuildExtensionConfigurationProvider } from "./buildExtensionConfigurationProvider";
 import { ConfigResolutionCommon } from "./common";
+import { logger } from "../utils/logger";
 
 /**
  * Provides automatic debug configurations from a folder containing .ewp projects
@@ -33,17 +34,22 @@ export class CSpyConfigurationsProvider implements vscode.DebugConfigurationProv
                     return await Promise.all(configs.map(async(conf) => {
                         const cmds = await buildExtensionChannel.getCSpyCommandline(project, conf.name);
                         if (!cmds) {
-                            return Promise.reject(new Error("Could not get C-SPY cmdline"));
+                            throw new Error("Could not get C-SPY cmdline");
                         }
+                        logger.debug("Got C-SPY command line: " + cmds);
                         const partialConfig = BuildExtensionConfigurationProvider.provideDebugConfigurationFor(cmds, project, conf.name, conf.target);
                         return ConfigResolutionCommon.instantiateConfiguration(partialConfig, folder.uri.fsPath);
                     }));
                 }
-            } catch (_) {}
+            } catch (e) {
+                logger.debug("Failed to generate config from build extension: " + e);
+            }
             try {
                 const partialConfigs = XclConfigurationProvider.provideDebugConfigurations(folder, path.dirname(project));
                 return partialConfigs.map(config => ConfigResolutionCommon.instantiateConfiguration(config, folder.uri.fsPath));
-            } catch (_) { }
+            } catch (e) {
+                logger.debug("Failed to generate config from .xcl files: " + e);
+            }
             vscode.window.showErrorMessage(`IAR: Unable to provide automatic debug configurations: Please debug the project in Embedded Workbench once and then try again. For help, see [Debugging an Embedded Workbench project](${CSpyConfigurationsProvider.HELP_LINK}).`);
         }
         return [];

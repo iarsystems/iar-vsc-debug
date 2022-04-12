@@ -1,6 +1,6 @@
 import { DebugProtocol } from "@vscode/debugprotocol";
-import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, DebugSession, TerminatedEvent, InvalidatedEvent, Event } from "@vscode/debugadapter";
 import { ThriftServiceManager } from "./thrift/thriftServiceManager";
+import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, TerminatedEvent, InvalidatedEvent, Event } from "@vscode/debugadapter";
 import * as Debugger from "../utils/thrift/bindings/Debugger";
 import * as DebugEventListener from "../utils/thrift/bindings/DebugEventListener";
 import * as LibSupportService2 from "../utils/thrift/bindings/LibSupportService2";
@@ -21,9 +21,9 @@ import { Subject } from "await-notify";
 import { CSpyDriver } from "./breakpoints/cspyDriver";
 import { Command, CommandRegistry } from "./commandRegistry";
 import { Utils } from "./utils";
-import { CustomRequest } from "./customRequest";
 import { CspyDisassemblyManager } from "./cspyDisassemblyManager";
 import { CspyMemoryManager } from "./cspyMemoryManager";
+import { CustomRequest } from "./customRequest";
 import { RegisterInformationGenerator } from "./registerInformationGenerator";
 import { FrontendHandler } from "./frontendHandler";
 import { FRONTEND_SERVICE } from "../utils/thrift/bindings/frontend_types";
@@ -46,7 +46,7 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     /** The type of breakpoint to use by default. This isn't normally provided directly in the launch.json (it's not declared in package.json).
     * Instead it is provided from the user's selection in the UI. */
     breakpointType?: BreakpointType;
-    /** enable logging the Debug Adapter Protocol */
+    /** Enable logging the Debug Adapter Protocol */
     trace?: boolean;
     /** Path to the Embedded Workbench installation to use */
     workbenchPath: string;
@@ -144,7 +144,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.clientColumnsStartAt1 = args.columnsStartAt1 || false;
 
         if (!args.supportsInvalidatedEvent) {
-            console.error("Client does not support invalidated event, setting variables may give inconsistent behaviour.");
+            this.sendEvent(new OutputEvent("Client does not support invalidated event, setting variables may give inconsistent behaviour."));
         }
 
         this.sendResponse(response);
@@ -152,14 +152,13 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     protected override configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments) {
         super.configurationDoneRequest(response, args);
-        console.log("ConfigDone");
         this.configurationDone.notify();
     }
 
     // TODO: report progress using a frontend service and the Progress(Start|Update|End) DAP events
     protected override async launchRequest(response: DebugProtocol.LaunchResponse, args: CSpyLaunchRequestArguments) {
-        // make sure to 'Stop' the buffered logging if 'trace' is not set
-        logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false);
+        logger.init(e => this.sendEvent(e), undefined, true);
+        logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop);
 
         try {
             // validate the workbench before trying to use it
@@ -267,8 +266,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
             throw new Error("Expected CSPY event handler to be initialized, but it is not");
         }
         this.cspyEventHandler.observeDebugEvents(DkNotifyConstant.kDkTargetStopped, () => {
-            // TODO: figure out if it's feasible to get a precise reason for stopping from C-SPY
-            console.log("Target stopped, sending StoppedEvent");
             this.sendEvent(new StoppedEvent(this.expectedStoppingReason, CSpyDebugSession.THREAD_ID));
         });
     }
@@ -279,7 +276,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.sendEvent(new OutputEvent("Shutting down C-SPY...\n"));
             await this.endSession();
         } catch (e) {
-            console.log(e);
+            if (e instanceof Error || typeof(e) === "string") {
+                logger.error(e.toString());
+            }
         }
         this.sendEvent(new TerminatedEvent());
     }
@@ -314,6 +313,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     protected override async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments) {
+        this.sendEvent(new Logger.LogOutputEvent("Testmessage\n", Logger.LogLevel.Warn));
         await CSpyDebugSession.tryResponseWith(this.cspyDebugger, response, cspyDebugger => {
             this.expectedStoppingReason = "step";
             if (args.granularity === "instruction") {
@@ -346,7 +346,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     protected override async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments) {
-        console.log("SetBPs");
         await CSpyDebugSession.tryResponseWith(this.breakpointManager, response, async breakpointManager => {
             const bps = await breakpointManager.setBreakpointsFor(args.source, args.breakpoints ?? []);
             response.body = {
@@ -376,7 +375,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     protected override async stackTraceRequest(response: DebugProtocol.StackTraceResponse, _args: DebugProtocol.StackTraceArguments) {
-        console.log("StackTrace");
         await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
             const frames = await stackManager.fetchStackFrames();
             response.body = {
@@ -388,7 +386,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     protected override async scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments) {
-        console.log("Scopes");
         await CSpyDebugSession.tryResponseWith(this.stackManager, response, stackManager => {
             const scopes = stackManager.fetchScopes(args.frameId);
             response.body = {
@@ -399,7 +396,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     protected override async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments) {
-        console.log("Variables " + args.variablesReference);
         await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
             const variables = await stackManager.fetchVariables(args.variablesReference);
             response.body = {
@@ -410,7 +406,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     protected override async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments) {
-        console.log("setVariable");
         await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
             const { newValue, changedAddress } = await stackManager.setVariable(args.variablesReference, args.name, args.value);
             response.body = {
@@ -432,7 +427,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
 
     protected override async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments) {
-        console.log("Eval " + args.expression);
         if (args.context === "repl" && this.libSupportHandler.isExpectingInput()) {
             this.libSupportHandler.sendInput(Buffer.from(args.expression + "\n", "utf-8"));
             response.body = {
@@ -462,7 +456,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
                         variablesReference: result.variablesReference,
                     };
                 } catch (e) {
-                    console.error(e);
+                    if (e instanceof Error || typeof(e) === "string") {
+                        logger.error(e.toString());
+                    }
                     response.body = {
                         result: "",
                         variablesReference: 0,
@@ -475,7 +471,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     // Currently not supported by VSCode
     protected override async disassembleRequest(response: DebugProtocol.DisassembleResponse, args: DebugProtocol.DisassembleArguments, _request?: DebugProtocol.Request) {
-        console.log("DAP Disassemble", args);
         await CSpyDebugSession.tryResponseWith(this.disassemblyManager, response, async disassemblyManager => {
             const instructions = await disassemblyManager.fetchDisassembly(args.memoryReference, args.instructionCount, args.offset, args.instructionOffset);
             response.body = {
@@ -498,7 +493,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     protected override async readMemoryRequest(response: DebugProtocol.ReadMemoryResponse, args: DebugProtocol.ReadMemoryArguments) {
-        console.log("Read " + args.memoryReference + " " + args.offset + " " + args.count);
         await CSpyDebugSession.tryResponseWith(this.memoryManager, response, async memoryManager => {
             const result = await memoryManager.readMemory(args.memoryReference.replace("'", ""), args.offset ?? 0, args.count);
             response.body = {
@@ -510,7 +504,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.sendResponse(response);
     }
     protected override async writeMemoryRequest(response: DebugProtocol.WriteMemoryResponse, args: DebugProtocol.WriteMemoryArguments) {
-        console.log("Write", args);
         await CSpyDebugSession.tryResponseWith(this.memoryManager, response, async memoryManager => {
             const bytesWritten = await memoryManager.writeMemory(args.memoryReference.replace("'", ""), args.offset ?? 0, args.data);
             response.body = {
@@ -615,12 +608,11 @@ export class CSpyDebugSession extends LoggingDebugSession {
             }
             await fun(obj);
         } catch (e) {
-            console.error(e);
             response.success = false;
             if (typeof e === "string" || e instanceof Error) {
                 response.message = e.toString();
+                logger.error(e.toString());
             }
         }
     }
 }
-DebugSession.run(CSpyDebugSession);

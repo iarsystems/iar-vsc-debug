@@ -192,6 +192,11 @@
 								"description": "Automatically stop after launch.",
 								"default": true
 							},
+							"trace": {
+								"type": "boolean",
+								"description": "Log all Debug Adapter Protocol traffic.",
+								"default": true
+							},
 							"workbenchPath": {
 								"type": "string",
 								"description": "Path to the IAR Embedded Workbench installation to use (e.g. \"C:\\\\Program Files (x86)\\\\IAR Systems\\\\Embedded Workbench 8.3\").",

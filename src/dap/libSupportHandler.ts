@@ -1,5 +1,6 @@
 
 
+import { logger } from "@vscode/debugadapter/lib/logger";
 import * as Q from "q";
 
 /**
@@ -68,7 +69,7 @@ export class LibSupportHandler {
      * Request input from the terminal I/O console.
      */
     requestInputBinary(len: number): Q.Promise<string> {
-        console.log("Debugee requested input of length " + len);
+        logger.verbose("Debugee requested input of length " + len);
         // Can we serve the request immediately?
         if (this.inputBuffer.length - this.bufferPosition >= len) {
             const response = this.inputBuffer.slice(this.bufferPosition, this.bufferPosition + len).toString();

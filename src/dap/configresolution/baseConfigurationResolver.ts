@@ -7,6 +7,7 @@ import * as Path from "path";
 import { StackSettings } from "../../utils/thrift/bindings/shared_types";
 import * as Fs from "fs";
 import { IarOsUtils } from "../../utils/osUtils";
+import { logger } from "@vscode/debugadapter/lib/logger";
 
 /**
  * A session config containing only the values {@link BaseConfigurationResolver} is not able to provide.
@@ -47,7 +48,7 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
             partialValues.plugins.push(libsupportPath);
         } else {
             // Don't abort here: we can still launch the session, but e.g. terminal i/o won't work
-            console.error("LibSupportEclipse is missing from " + launchArguments.workbenchPath);
+            logger.error("LibSupportEclipse is missing from " + launchArguments.workbenchPath);
         }
 
         // Do the work on the project path which may be an ewp-file or a directory.

@@ -9,11 +9,13 @@ import { CSpyConfigurationsProvider } from "./configresolution/cspyConfiguration
 import { SettingsConstants } from "./settingsConstants";
 import { BreakpointType } from "./dap/breakpoints/cspyBreakpointManager";
 import { CustomRequest, RegistersResponse } from "./dap/customRequest";
+import { logger } from "./utils/logger";
 
 let sessionTracker: DebugSessionTracker | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
-    console.log("activating");
+    logger.init("IAR C-SPY Debug");
+    logger.debug("Activating extension");
     // register a configuration provider for 'cspy' debug type
     vscode.debug.registerDebugAdapterDescriptorFactory("cspy", {
         createDebugAdapterDescriptor(_session: vscode.DebugSession, _executable: vscode.DebugAdapterExecutable | undefined): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
@@ -61,5 +63,5 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-    // nothing to do
+    logger.debug("Deactivating extension");
 }

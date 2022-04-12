@@ -6,6 +6,7 @@ import { ThriftClient } from "../utils/thrift/thriftClient";
 import { ThriftServiceManager } from "./thrift/thriftServiceManager";
 import { Int64 } from "thrift";
 import { Disposable } from "./disposable";
+import { logger } from "@vscode/debugadapter/lib/logger";
 
 export interface ListWindowRowReference {
     values: string[];
@@ -201,8 +202,7 @@ export class ListWindowClient implements Disposable {
                 this.oneshotChangeHandlers = [];
             }
         }).catch(err => {
-            console.error("Error updating listwindow:");
-            console.error(err);
+            logger.error("Error updating listwindow: " + err);
         });
         this.currentUpdate = updatePromise;
         return updatePromise;
@@ -234,8 +234,7 @@ export class ListWindowClient implements Disposable {
                 this.oneshotChangeHandlers = [];
             }
         }).catch(err => {
-            console.error("Error updating listwindow:");
-            console.error(err);
+            logger.error("Error updating listwindow: " + err);
         });
         this.currentUpdate = updatePromise;
     }

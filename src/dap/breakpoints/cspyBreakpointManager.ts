@@ -11,6 +11,7 @@ import { DescriptorWriter } from "./descriptors/descriptorWriter";
 import { CSpyDriver } from "./cspyDriver";
 import { CodeBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
 import { EmulCodeBreakpointType } from "./descriptors/emulCodeBreakpointDescriptor";
+import { logger } from "@vscode/debugadapter/lib/logger";
 
 
 /**
@@ -245,7 +246,9 @@ export class CSpyBreakpointManager implements Disposable {
                 const cspyBp = await this.breakpointService.service.setBreakpointFromDescriptor(writer.result);
                 installedBreakpoints.push({ cspyBp, dapBp });
             } catch (e) {
-                console.error(e);
+                if (e instanceof Error || typeof(e) === "string") {
+                    logger.error(e.toString());
+                }
             }
         }
     }
