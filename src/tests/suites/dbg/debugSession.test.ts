@@ -36,7 +36,7 @@ suite("New tests", () =>{
 
     setup(async()=>{
         await vscode.debug.startDebugging(undefined, dbgConfig);
-        await TestUtils.wait(1000);
+        await TestUtils.wait(2000);
 
     });
 

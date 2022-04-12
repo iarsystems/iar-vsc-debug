@@ -90,10 +90,11 @@ export class ThriftServiceManager implements Disposable {
             protocol: Thrift.TBinaryProtocol,
         };
         const server = Thrift.createServer(serviceType, handler, serverOpt).
-            on("error", logger.error).
+            on("error", err => logger.error(err.toString())).
             listen(0); // port 0 lets node figure out what to use
 
         const port = (server.address() as AddressInfo).port; // this cast is safe since we know it's an IP socket
+        logger.verbose(`Starting service '${serviceId}' at port ${port}`);
         const location = new ServiceLocation({ host: "localhost", port: port, protocol: Protocol.Binary, transport: Transport.Socket });
         const registry = await this.getServiceAt(this.registryLocation, CSpyServiceRegistry);
         await registry.service.registerService(serviceId, location);

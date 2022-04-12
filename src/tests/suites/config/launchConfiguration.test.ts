@@ -171,7 +171,7 @@ suite("Configuration tests", () => {
         const projectName = "MyProject";
         const config = "Test 123";
         const program = path.join("output", "exe", "foo.out");
-        const target = "ARM";
+        const target = "arm";
 
         // Run with empty cli and we should throw an error
         try {

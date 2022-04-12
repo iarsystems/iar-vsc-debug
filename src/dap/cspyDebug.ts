@@ -1,6 +1,6 @@
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { ThriftServiceManager } from "./thrift/thriftServiceManager";
-import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, TerminatedEvent, InvalidatedEvent, Event } from "@vscode/debugadapter";
+import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, TerminatedEvent, InvalidatedEvent, Event, DebugSession } from "@vscode/debugadapter";
 import * as Debugger from "../utils/thrift/bindings/Debugger";
 import * as DebugEventListener from "../utils/thrift/bindings/DebugEventListener";
 import * as LibSupportService2 from "../utils/thrift/bindings/LibSupportService2";
@@ -616,3 +616,5 @@ export class CSpyDebugSession extends LoggingDebugSession {
         }
     }
 }
+
+DebugSession.run(CSpyDebugSession);

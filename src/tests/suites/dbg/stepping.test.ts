@@ -48,17 +48,17 @@ debugAdapterSuite("Stepping", (dc, dbgConfig, fibonacciFile, utilsFile) => {
         return Promise.all([
             dc().hitBreakpoint(
                 dbgConfigCopy,
-                { line: 47, path: fibonacciFile() }
+                { line: 26, path: utilsFile() }
             ).then(async() => {
                 await Promise.all([
-                    dc().stepInRequest({threadId: 1, granularity: "instruction"}),
-                    TestUtils.assertStoppedLocation(dc(), "step", 23,
+                    dc().nextRequest({threadId: 1, granularity: "instruction"}),
+                    TestUtils.assertStoppedLocation(dc(), "step", 26,
                         utilsFile(), /InitFib/),
                 ]);
                 await Promise.all([
-                    dc().nextRequest({threadId: 1, granularity: "instruction"}),
-                    TestUtils.assertStoppedLocation(dc(), "step", 23,
-                        utilsFile(), /InitFib/),
+                    dc().stepOutRequest({threadId: 1, granularity: "instruction"}),
+                    TestUtils.assertStoppedLocation(dc(), "step", 49,
+                        fibonacciFile(), /main/),
                 ]);
             })
         ]);
