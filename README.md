@@ -42,24 +42,20 @@ The table below helps you find the extension version supported by your IAR Embed
 The IAR shared components version can be found in IAR Embedded Workbench by going to `Help->About->Product Info...`
 or by looking at the version number printed when running `iarbuild`.
 
+## Compatibility
+This extension is compatible with selected IAR Embedded Workbench (EW) products using IDE version 8 or newer. The following table decsribes the level of support for your specific product: 
+
 <details><summary>IAR EW - Compatibility table</summary>
 
-| IAR shared components version  | Compatible extension version | Download link
-|--------------|-----------|---------
-| 9.20 | >1.1 (current)  | Download from marketplace
-| 8.0 - 9.10.1      | 1.0 | [iar-dbg-1.0.vsix]()
-| < 8.0     | Unsupported | -
+| IAR EW version  | Limitation
+|--------------|---------
+| ARM v9.30 or later <br>RH850 v3.10 or later<br> | None |
+| ARM v8.40-9.20.4| An initial debug session with EW is required prior to debugging in VSCode. |
 
 </details>
 
-To download an older version of the extension, right click this extension in the Extensions view and select `Install Another Version...`.
-
 ## Feedback
-[Technical Support](https://www.iar.com/knowledge/support/)\
-File questions, issues or feature requests for the extension to IAR Systems technical support.
+Depending on which feedback you want to share with us, here are the preferred options:
+* If you have ideas on how to improve this extension or if you have found issues with it, see [contributing.md](https://www.iar.com/knowledge/support/) on how to proceed.
 
-[Known Problems]()\
-The list of known problems with this extension.
-
-<!-- ## Contributions
-Contributions are always welcome. Or did we decide to have a read-only repository? -->
+* If you have issues with the underlying IAR Embedded Workbench or IAR Built Tools product, report this via the IAR Systems technical support channel at [IAR Technical Support](https://www.iar.com/knowledge/support/).
