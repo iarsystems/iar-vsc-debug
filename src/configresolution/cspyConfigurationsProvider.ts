@@ -4,7 +4,7 @@ import { XclConfigurationProvider } from "./xclConfigurationProvider";
 import { BuildExtensionChannel } from "./buildExtensionChannel";
 import { BuildExtensionConfigurationProvider } from "./buildExtensionConfigurationProvider";
 import { ConfigResolutionCommon } from "./common";
-import { logger } from "../utils/logger";
+import { logger } from "iar-vsc-common/logger";
 
 /**
  * Provides automatic debug configurations from a folder containing .ewp projects

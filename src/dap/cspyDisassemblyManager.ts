@@ -1,12 +1,12 @@
 import Int64 = require("node-int64");
 import { DebugProtocol } from "@vscode/debugprotocol";
-import * as Disassembly from "../utils/thrift/bindings/Disassembly";
-import * as SourceLookup from "../utils/thrift/bindings/SourceLookup";
-import { DISASSEMBLY_SERVICE } from "../utils/thrift/bindings/disassembly_types";
-import { ContextRef, ContextType, Location, Zone } from "../utils/thrift/bindings/shared_types";
-import { ThriftClient } from "../utils/thrift/thriftClient";
+import * as Disassembly from "iar-vsc-common/thrift/bindings/Disassembly";
+import * as SourceLookup from "iar-vsc-common/thrift/bindings/SourceLookup";
+import { DISASSEMBLY_SERVICE } from "iar-vsc-common/thrift/bindings/disassembly_types";
+import { ContextRef, ContextType, Location, Zone } from "iar-vsc-common/thrift/bindings/shared_types";
+import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { ThriftServiceManager } from "./thrift/thriftServiceManager";
-import { SOURCE_LOOKUP_SERVICE } from "../utils/thrift/bindings/sourcelookup_types";
+import { SOURCE_LOOKUP_SERVICE } from "iar-vsc-common/thrift/bindings/sourcelookup_types";
 import { Source } from "@vscode/debugadapter";
 import { Disposable } from "./disposable";
 import { basename } from "path";

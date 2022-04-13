@@ -2,7 +2,7 @@ import { LaunchArgumentConfigurationResolver } from "../../../dap/configresoluti
 import { CSpyLaunchRequestArguments } from "../../../dap/cspyDebug";
 import * as assert from "assert";
 import * as path from "path";
-import { OsUtils } from "../../../utils/osUtils";
+import { OsUtils } from "iar-vsc-common/osUtils";
 import { TestUtils } from "../testUtils";
 import { BreakpointType } from "../../../dap/breakpoints/cspyBreakpointManager";
 

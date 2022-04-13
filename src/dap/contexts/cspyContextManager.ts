@@ -1,14 +1,14 @@
 
 
-import { ContextRef, ContextType, ExprFormat } from "../../utils/thrift/bindings/shared_types";
-import * as ContextManager from "../../utils/thrift/bindings/ContextManager";
-import * as Debugger from "../../utils/thrift/bindings/Debugger";
+import { ContextRef, ContextType, ExprFormat } from "iar-vsc-common/thrift/bindings/shared_types";
+import * as ContextManager from "iar-vsc-common/thrift/bindings/ContextManager";
+import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
 import { StackFrame, Source, Scope, Handles, Variable } from "@vscode/debugadapter";
 import { basename } from "path";
-import { CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE, DkNotifyConstant, ExprValue } from "../../utils/thrift/bindings/cspy_types";
+import { CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE, DkNotifyConstant, ExprValue } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { Disposable } from "../disposable";
 import { ThriftServiceManager } from "../thrift/thriftServiceManager";
-import { ThriftClient } from "../../utils/thrift/thriftClient";
+import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { WindowNames } from "../listWindowConstants";
 import { ListWindowVariablesProvider, VariablesProvider } from "./variablesProvider";
 import { DebugEventListenerHandler } from "../debugEventListenerHandler";

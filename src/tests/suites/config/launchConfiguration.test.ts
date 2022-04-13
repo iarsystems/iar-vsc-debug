@@ -3,7 +3,7 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import * as path from "path";
 import { CSpyConfigurationsProvider } from "../../../configresolution/cspyConfigurationsProvider";
-import { OsUtils } from "../../../utils/osUtils";
+import { OsUtils } from "iar-vsc-common/osUtils";
 import { CSpyConfigurationResolver } from "../../../configresolution/cspyConfigurationResolver";
 import { XclConfigurationProvider } from "../../../configresolution/xclConfigurationProvider";
 import { BuildExtensionChannel } from "../../../configresolution/buildExtensionChannel";

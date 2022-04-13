@@ -1,6 +1,6 @@
 import * as path from "path";
-import { OsUtils } from "../utils/osUtils";
-import { runTestsIn} from "../utils/testutils/testRunner";
+import { OsUtils } from "iar-vsc-common/osUtils";
+import { runTestsIn} from "iar-vsc-common/testutils/testRunner";
 import { TestConfiguration } from "./suites/testConfiguration";
 
 async function main() {

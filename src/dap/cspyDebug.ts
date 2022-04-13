@@ -1,18 +1,18 @@
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { ThriftServiceManager } from "./thrift/thriftServiceManager";
 import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, TerminatedEvent, InvalidatedEvent, Event, DebugSession } from "@vscode/debugadapter";
-import * as Debugger from "../utils/thrift/bindings/Debugger";
-import * as DebugEventListener from "../utils/thrift/bindings/DebugEventListener";
-import * as LibSupportService2 from "../utils/thrift/bindings/LibSupportService2";
-import * as Frontend from "../utils/thrift/bindings/Frontend";
-import { ThriftClient } from "../utils/thrift/thriftClient";
-import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant, SessionConfiguration } from "../utils/thrift/bindings/cspy_types";
+import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
+import * as DebugEventListener from "iar-vsc-common/thrift/bindings/DebugEventListener";
+import * as LibSupportService2 from "iar-vsc-common/thrift/bindings/LibSupportService2";
+import * as Frontend from "iar-vsc-common/thrift/bindings/Frontend";
+import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
+import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant, SessionConfiguration } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
 import { CSpyContextManager } from "./contexts/cspyContextManager";
 import { BreakpointType, CSpyBreakpointManager } from "./breakpoints/cspyBreakpointManager";
 import { LaunchArgumentConfigurationResolver}  from "./configresolution/launchArgumentConfigurationResolver";
-import { CSpyException } from "../utils/thrift/bindings/shared_types";
-import { LIBSUPPORT_SERVICE } from "../utils/thrift/bindings/libsupport_types";
+import { CSpyException } from "iar-vsc-common/thrift/bindings/shared_types";
+import { LIBSUPPORT_SERVICE } from "iar-vsc-common/thrift/bindings/libsupport_types";
 import { LibSupportHandler } from "./libSupportHandler";
 // There are no types for this library. We should probably look to replace it.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -26,8 +26,8 @@ import { CspyMemoryManager } from "./cspyMemoryManager";
 import { CustomRequest } from "./customRequest";
 import { RegisterInformationGenerator } from "./registerInformationGenerator";
 import { FrontendHandler } from "./frontendHandler";
-import { FRONTEND_SERVICE } from "../utils/thrift/bindings/frontend_types";
-import { Workbench, WorkbenchType } from "../utils/workbench";
+import { FRONTEND_SERVICE } from "iar-vsc-common/thrift/bindings/frontend_types";
+import { Workbench, WorkbenchType } from "iar-vsc-common/workbench";
 
 /**
  * This interface describes the cspy-debug specific launch attributes

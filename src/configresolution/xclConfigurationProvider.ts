@@ -1,9 +1,9 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-import { OsUtils } from "../utils/osUtils";
+import { OsUtils } from "iar-vsc-common/osUtils";
 import { ConfigResolutionCommon } from "./common";
-import { logger } from "../utils/logger";
+import { logger } from "iar-vsc-common/logger";
 
 /**
  * Provides automatic debug configurations from the .xcl files in a project folder

@@ -1,9 +1,9 @@
 import assert = require("assert")
 import * as vscode from "vscode";
 import * as Path from "path";
-import { IarOsUtils } from "../../utils/osUtils";
+import { IarOsUtils } from "iar-vsc-common/osUtils";
 import { spawnSync } from "child_process";
-import { TestSandbox } from "../../utils/testutils/testSandbox";
+import { TestSandbox } from "iar-vsc-common/testutils/testSandbox";
 import { CSpyLaunchRequestArguments } from "../../dap/cspyDebug";
 import { TestConfiguration } from "./testConfiguration";
 import { DebugClient } from "@vscode/debugadapter-testsupport";

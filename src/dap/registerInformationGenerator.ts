@@ -1,11 +1,11 @@
-import * as Debugger from "../utils/thrift/bindings/Debugger";
+import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
 import * as crypto from "crypto";
 import * as path from "path";
 import * as fs from "fs";
 import { create } from "xmlbuilder2";
 import { tmpdir } from "os";
-import { ThriftClient } from "../utils/thrift/thriftClient";
-import { NamedLocation } from "../utils/thrift/bindings/cspy_types";
+import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
+import { NamedLocation } from "iar-vsc-common/thrift/bindings/cspy_types";
 import Int64 = require("node-int64");
 
 // SVD format specification: https://www.keil.com/pack/doc/CMSIS/SVD/html/svd_Format_pg.html

@@ -2,7 +2,7 @@
 
 import { CSpyLaunchRequestArguments } from "../cspyDebug";
 import { BaseConfigurationResolver, PartialSessionConfiguration } from "./baseConfigurationResolver";
-import { IarOsUtils } from "../../utils/osUtils";
+import { IarOsUtils } from "iar-vsc-common/osUtils";
 
 /**
  * Attempts to create a C-SPY configuration by looking at `.xcl`

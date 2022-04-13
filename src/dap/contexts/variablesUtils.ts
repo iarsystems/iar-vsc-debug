@@ -1,5 +1,5 @@
 import { DebugProtocol } from "@vscode/debugprotocol";
-import { BasicExprType, ExprValue } from "../../utils/thrift/bindings/cspy_types";
+import { BasicExprType, ExprValue } from "iar-vsc-common/thrift/bindings/cspy_types";
 
 export namespace VariablesUtils {
 

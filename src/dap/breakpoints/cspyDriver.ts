@@ -1,4 +1,4 @@
-import { IarOsUtils } from "../../utils/osUtils";
+import { IarOsUtils } from "iar-vsc-common/osUtils";
 import * as Path from "path";
 import { CodeBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory, StdCode2BreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
 import { logger } from "@vscode/debugadapter/lib/logger";

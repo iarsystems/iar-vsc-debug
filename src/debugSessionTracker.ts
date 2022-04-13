@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { logger } from "./utils/logger";
+import { logger } from "iar-vsc-common/logger";
 
 /**
  * The VSCode api has no way of getting all running sessions, only the 'active' one.

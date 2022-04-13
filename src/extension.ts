@@ -9,7 +9,7 @@ import { CSpyConfigurationsProvider } from "./configresolution/cspyConfiguration
 import { SettingsConstants } from "./settingsConstants";
 import { BreakpointType } from "./dap/breakpoints/cspyBreakpointManager";
 import { CustomRequest, RegistersResponse } from "./dap/customRequest";
-import { logger } from "./utils/logger";
+import { logger } from "iar-vsc-common/logger";
 
 let sessionTracker: DebugSessionTracker | undefined;
 

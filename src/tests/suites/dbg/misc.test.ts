@@ -1,6 +1,6 @@
 import * as Assert from "assert";
 import * as Path from "path";
-import { OsUtils } from "../../../utils/osUtils";
+import { OsUtils } from "iar-vsc-common/osUtils";
 import { debugAdapterSuite } from "./debugAdapterSuite";
 import { TestUtils } from "../testUtils";
 

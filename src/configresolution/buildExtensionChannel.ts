@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { BuildExtensionApi, ProjectConfiguration } from "../utils/buildExtension";
+import { BuildExtensionApi, ProjectConfiguration } from "iar-vsc-common/buildExtension";
 
 /**
  * A communication channel to the build extension. All interaction with the build extension should go through

@@ -6,16 +6,16 @@ import * as Thrift from "thrift";
 import { spawn, ChildProcess } from "child_process";
 import * as path from "path";
 import * as fs from "fs";
-import { ServiceLocation, Transport, Protocol } from "../../utils/thrift/bindings/ServiceRegistry_types";
-import { ThriftClient } from "../../utils/thrift/thriftClient";
+import { ServiceLocation, Transport, Protocol } from "iar-vsc-common/thrift/bindings/ServiceRegistry_types";
+import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 
-import * as CSpyServiceRegistry from "../../utils/thrift/bindings/CSpyServiceRegistry";
-import * as Debugger from "../../utils/thrift/bindings/Debugger";
+import * as CSpyServiceRegistry from "iar-vsc-common/thrift/bindings/CSpyServiceRegistry";
+import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
 import { tmpdir } from "os";
 import { Server, AddressInfo } from "net";
 import { Disposable } from "../disposable";
-import { DEBUGGER_SERVICE } from "../../utils/thrift/bindings/cspy_types";
-import { IarOsUtils } from "../../utils/osUtils";
+import { DEBUGGER_SERVICE } from "iar-vsc-common/thrift/bindings/cspy_types";
+import { IarOsUtils } from "iar-vsc-common/osUtils";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "@vscode/debugadapter/lib/logger";
 

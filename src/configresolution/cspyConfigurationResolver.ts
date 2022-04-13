@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { logger } from "../utils/logger";
+import { logger } from "iar-vsc-common/logger";
 import { BuildExtensionChannel } from "./buildExtensionChannel";
 import { BuildExtensionConfigurationProvider } from "./buildExtensionConfigurationProvider";
 import { ConfigResolutionCommon } from "./common";

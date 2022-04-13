@@ -1,8 +1,8 @@
 import Int64 = require("node-int64");
-import * as Memory from "../utils/thrift/bindings/CSpyMemory";
-import { MEMORY_SERVICE } from "../utils/thrift/bindings/cspy_types";
-import { Location, Zone } from "../utils/thrift/bindings/shared_types";
-import { ThriftClient } from "../utils/thrift/thriftClient";
+import * as Memory from "iar-vsc-common/thrift/bindings/CSpyMemory";
+import { MEMORY_SERVICE } from "iar-vsc-common/thrift/bindings/cspy_types";
+import { Location, Zone } from "iar-vsc-common/thrift/bindings/shared_types";
+import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { ThriftServiceManager } from "./thrift/thriftServiceManager";
 import { Disposable } from "./disposable";
 

@@ -1,4 +1,0 @@
-[submodule "src/utils"]
-	path = src/utils
-	url = ssh://git@gitlab.iar.se:2222/ide/vscode/vs-code-utils.git
-	branch = master

@@ -1,4 +1,4 @@
-import * as Debugger from "../utils/thrift/bindings/Debugger";
+import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
 
 export namespace Utils {
     /**

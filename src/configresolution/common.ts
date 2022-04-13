@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as Path from "path";
 import { CSpyLaunchRequestArguments } from "../dap/cspyDebug";
-import { OsUtils } from "../utils/osUtils";
+import { OsUtils } from "iar-vsc-common/osUtils";
 
 /**
  * Helpers for creating/resolving C-SPY debug configurations

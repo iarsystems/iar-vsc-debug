@@ -1,12 +1,12 @@
 
 
 import { ConfigurationResolver } from "./configurationResolver";
-import { SessionConfiguration } from "../../utils/thrift/bindings/cspy_types";
+import { SessionConfiguration } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { CSpyLaunchRequestArguments } from "../cspyDebug";
 import * as Path from "path";
-import { StackSettings } from "../../utils/thrift/bindings/shared_types";
+import { StackSettings } from "iar-vsc-common/thrift/bindings/shared_types";
 import * as Fs from "fs";
-import { IarOsUtils } from "../../utils/osUtils";
+import { IarOsUtils } from "iar-vsc-common/osUtils";
 import { logger } from "@vscode/debugadapter/lib/logger";
 
 /**

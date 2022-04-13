@@ -1,8 +1,8 @@
 
 
 import * as Thrift from "thrift";
-import { MsgIcon, MsgKind, MsgResult } from "../utils/thrift/bindings/frontend_types";
-import { SourceLocation } from "../utils/thrift/bindings/shared_types";
+import { MsgIcon, MsgKind, MsgResult } from "iar-vsc-common/thrift/bindings/frontend_types";
+import { SourceLocation } from "iar-vsc-common/thrift/bindings/shared_types";
 import * as Q from "q";
 
 /**
