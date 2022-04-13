@@ -28,7 +28,11 @@ abstract class SimulatorDriver implements CSpyDriver {
     }
 }
 
+// Simulator for riscv
+export class SimDriver extends SimulatorDriver { }
+// Simulator for arm
 export class Sim2Driver extends SimulatorDriver { }
+// 64-bit simulator for arm
 export class ImperasDriver extends SimulatorDriver { }
 
 // Common properties for all hardware drivers
@@ -69,6 +73,7 @@ export namespace CSpyDriver {
         }
 
         const driverMap: Array<{ name: string, driver: () => CSpyDriver }> = [
+            { name: "sim", driver: () => new SimDriver() },
             { name: "sim2", driver: () => new Sim2Driver() },
             { name: "imperas", driver: () => new ImperasDriver() },
             { name: "jet", driver: () => new IJetDriver() },
