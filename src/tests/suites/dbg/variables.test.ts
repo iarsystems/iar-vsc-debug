@@ -46,7 +46,6 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                         Assert(arrContents[i]!.evaluateName);
                         const evalResult = (await dc().evaluateRequest({expression: arrContents[i]!.evaluateName!})).body;
                         Assert.strictEqual(evalResult.result, arrContents[i]!.value);
-                        Assert.strictEqual(evalResult.type, arrContents[i]!.type);
                         Assert.strictEqual(evalResult.memoryReference, arrContents[i]!.memoryReference);
                     }
                 }

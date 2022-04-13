@@ -188,7 +188,7 @@ suite("Configuration tests", () => {
         assert.deepStrictEqual(configTest["name"], "MyProject.Test_123");
         assert.deepStrictEqual(configTest["program"], path.join("${workspaceFolder}", program));
         assert.deepStrictEqual(configTest["driver"], "sim2");
-        assert.deepStrictEqual(configTest["target"], "ARM");
+        assert.deepStrictEqual(configTest["target"], "arm");
         assert.deepStrictEqual(configTest["stopOnEntry"], true);
         assert.deepStrictEqual(configTest["driverOptions"], ["some", "other", "opts"]);
 
@@ -197,7 +197,7 @@ suite("Configuration tests", () => {
         partialConfigTest = BuildExtensionConfigurationProvider.provideDebugConfigurationFor(opts2.concat(programOpt), projectName, config, target);
         configTest = ConfigResolutionCommon.instantiateConfiguration(partialConfigTest, wsDir);
         assert.deepStrictEqual(configTest["driver"], "jet");
-        assert.deepStrictEqual(configTest["target"], "ARM");
+        assert.deepStrictEqual(configTest["target"], "arm");
         assert.deepStrictEqual(configTest["stopOnEntry"], false);
         assert.deepStrictEqual(configTest["driverOptions"], []);
 
