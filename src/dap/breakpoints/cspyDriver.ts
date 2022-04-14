@@ -66,10 +66,10 @@ export namespace CSpyDriver {
         basename = basename.toLowerCase();
 
         if (basename.startsWith(IarOsUtils.libraryPrefix().toLowerCase())) {
-            basename = basename.substr(IarOsUtils.libraryPrefix().length);
+            basename = basename.substring(IarOsUtils.libraryPrefix().length);
         }
         if (targetName && basename.startsWith(targetName.toLowerCase())) {
-            basename = basename.substr(targetName.length);
+            basename = basename.substring(targetName.length);
         }
 
         const driverMap: Array<{ name: string, driver: () => CSpyDriver }> = [

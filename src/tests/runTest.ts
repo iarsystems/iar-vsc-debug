@@ -29,11 +29,11 @@ export function getEnvs(): Record<string, string> {
         if (opt.startsWith("--")) {
             const separatorIdx = opt.indexOf("=");
             if (separatorIdx === -1) {
-                const optName = opt.substr(2);
+                const optName = opt.substring(2);
                 envs[optName] = "true";
             } else {
-                const optName = opt.substr(2, separatorIdx - 2);
-                const val = opt.substr(separatorIdx + 1);
+                const optName = opt.substring(2, separatorIdx);
+                const val = opt.substring(separatorIdx + 1);
                 envs[optName] = val;
             }
         }

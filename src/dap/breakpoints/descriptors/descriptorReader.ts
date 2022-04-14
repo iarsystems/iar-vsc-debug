@@ -79,12 +79,12 @@ export class DescriptorReader {
 
     private consume(charCount: number) {
         const result = this.peek(charCount);
-        this.descriptor = this.descriptor.substr(charCount);
+        this.descriptor = this.descriptor.substring(charCount);
         return result;
     }
 
     private peek(charCount: number) {
-        return this.descriptor.substr(0, charCount);
+        return this.descriptor.substring(0, charCount);
     }
 
     private consumeToNextSeparator() {
