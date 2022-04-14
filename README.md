@@ -21,20 +21,28 @@ the debug configuration dropdown.
 **To debug a program without an IAR Embedded Workbench project** (e.g. from a CMake project) you need to manually provide a debug
 configuration in the form of a `launch.json` file.
 There are two ways to do this:
-* Follow the instructions for [generating a launch.json configuration]() from an IAR Embedded Workbench project and copy the `launch.json file`.
-* Create the configuration yourself. Please see the reference for [the launch.json format]().
+* Follow the instructions for [generating a launch.json configuration](https://github.com/IARSystems/iar-vsc-debug/blob/master/docs/README.md#CustomizingADebugConfig)
+from an IAR Embedded Workbench project and copy the `launch.json file`.
+* Create the configuration yourself. Please see the reference for [the launch.json format](https://github.com/IARSystems/iar-vsc-debug/blob/master/docs/README.md#launch-json-format).
 
-For more help, see [Debugging without an IAR Embedded Workbench project]().
+For more help, see [Debugging a stand-alone application](https://github.com/IARSystems/iar-vsc-debug/blob/master/docs/README.md#debuggingstandaloneprogram).
 
 ## Documentation
-* [Debugging an IAR Embedded Workbench project]()
-	* [Generating a launch.json configuration]()
-* [Debugging without an IAR Embedded Workbench project]()
-* [The launch.json format]()
-* [Using hardware breakpoints]()
-* [Disassembly and memory view]()
+* [Customizing a debug configuration](https://github.com/IARSystems/iar-vsc-debug/blob/master/docs/README.md#CustomizingADebugConfig)
 
-[Click here]() to view the full documentation.
+* [Making IAR C-SPY Debug settings](https://github.com/IARSystems/iar-vsc-debug/blob/master/docs/README.md#MakingIARC-SPYDebugSettings)
+
+* [Run menu](https://github.com/IARSystems/iar-vsc-debug/blob/master/docs/README.md#RunMenu)
+
+* [The Side Bar views](https://github.com/IARSystems/iar-vsc-debug/blob/master/docs/README.md#IARBuildTasks)
+
+* [Breakpoint types](https://github.com/IARSystems/iar-vsc-debug/blob/master/docs/README.md#BreakpointTypes)
+
+* [Debugging a stand-alone application](https://github.com/IARSystems/iar-vsc-debug/blob/master/docs/README.md#debuggingstandaloneprogram)
+
+* [The launch.json format](https://github.com/IARSystems/iar-vsc-debug/blob/master/docs/README.md#launch-json-format)
+
+[Click here](https://github.com/IARSystems/iar-vsc-debug/blob/master/docs/README.md) to view the full documentation.
 
 ## Compatibility
 This extension supports IAR Embedded Workbench for Arm and RISC-V.
@@ -43,7 +51,7 @@ The IAR shared components version can be found in IAR Embedded Workbench by goin
 or by looking at the version number printed when running `iarbuild`.
 
 ## Compatibility
-This extension is compatible with selected IAR Embedded Workbench (EW) products using IDE version 8 or newer. The following table decsribes the level of support for your specific product: 
+This extension is compatible with selected IAR Embedded Workbench (EW) products using IDE version 8 or newer. The following table decsribes the level of support for your specific product:
 
 <details><summary>IAR EW - Compatibility table</summary>
 

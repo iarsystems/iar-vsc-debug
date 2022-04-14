@@ -1,19 +1,258 @@
-# IAR C-SPY Debug - Getting started
+# IAR C-SPY Debug&mdash;Debugging projects
 
-This is the user documentation for the [IAR C-SPY Debug](https://marketplace.visualstudio.com/items?itemName=iarsystems.iar-debug) Visual Studio Code extension.
+The IAR C-SPY Debug extension lets you perform basic debugging of an existing IAR Embedded Workbench project or a stand-alone application. It supports most of the IAR C-SPY Debug drivers that IAR Embedded Workbench supports, and uses the **Disassembly**, **Memory**, **Peripheral**, and **RTOS** views provided by VS Code or the VS Code Embedded Tools extension.
 
-* **Getting started**
-* [Debugging an IAR Embedded Workbench project](debugging-ewp.md)
-	* [Customizing a debug configuration](debugging-ewp.md#customizing-a-debug-configuration)
-* [Debugging without an IAR Embedded Workbench project](debugging-no-ewp.md)
-* [The launch.json format](launch-json-format.md)
-* [Using hardware breakpoints](hardware-breakpoints.md)
-* [Disassembly and memory view](disassembly-memory-view.md)
+For more information about debugging a stand-alone application, see [Debugging a stand-alone application](#debuggingstandaloneprogram).
 
----
+To debug an IAR Embedded Workbench (`.ewp`) project, we highly recommend also installing the [IAR Build](https://marketplace.visualstudio.com/items?itemName=iarsystems.iar-vsc) extension. This extension will automatically provide debug configurations for your project.
 
-Similar to the section in the README:
+To debug a project without the IAR Build extension, you must manually provide a debug configuration. For information, see [The launch.json format](#launch-json-format). The descriptions in this guide assume that you have installed the IAR Build extension.
 
-[https://gitlab.iar.se/ide/vscode/iar-vsc-debug/-/blob/VSC-212-ha_example_readme/README.md](https://gitlab.iar.se/ide/vscode/iar-vsc-debug/-/blob/VSC-212-ha_example_readme/README.md)
+If you do not have a `launch.json` file in the workspace, click **Run and Debug** in the **Run and Debug** view to start debugging the current project and configuration.
 
-but perhaps a little more thorough.
+If you already have a `launch.json` file, the automatic C-SPY debug configurations can be accessed by choosing **IAR C-SPY Debug** from
+the debug configuration dropdown menu.
+
+## Table of contents
+
+* [Customizing a debug configuration](#CustomizingADebugConfig)
+
+* [Making IAR C-SPY Debug settings](#MakingIARC-SPYDebugSettings)
+
+* [Run menu](#RunMenu)
+
+* [The Side Bar views](#IARBuildTasks)
+
+* [Breakpoint types](#BreakpointTypes)
+
+* [Debugging a stand-alone application](#debuggingstandaloneprogram)
+
+* [The launch.json format](#launch-json-format)
+
+<h2 id="CustomizingADebugConfig">Customizing a debug configuration</h2>
+
+To change debugging parameters or set up VS Code to automatically build your project before starting a debug session, you can create a `launch.json` configuration.
+
+Click on **Show all automatic debug configurations** in the **Run and Debug** view, select **IAR C-SPY Debug** and click on the gear icon next to the configuration you want to customize. A `launch.json` file is created, or opened if one exists already.
+
+See [The launch.json format](#launch-json-format) for a description of the format.
+
+You can set up VS Code to automatically build the current project configuration before debugging, by adding a `preLaunchTask` to the `launch.json` configuration:
+```json
+"preLaunchTask": "iar: Build Project"
+```
+
+<h2 id="MakingIARC-SPYDebugSettings">Making IAR C-SPY Debug settings</h2>
+
+To make settings for IAR C-SPY Debug, choose **File>Preferences>Settings** and select the **Extensions** category in the side pane of the **Settings** view, and locate **IAR C-SPY Debug** in the list of extensions.
+
+You can click on the cog wheel to the right of the setting name to reset the setting to its factory setting, copy the setting ID, or copy the setting in JSON format.
+
+**Note:** Project settings cannot be made from VS Code, they must be made in the IAR Embedded Workbench IDE.
+
+<h2 id="RunMenu">Run menu</h2>
+
+[image]
+
+Some of the commands on the **Run** menu are also available as buttons on the Debug Bar.
+
+[image]
+
+**Start Debugging**
+
+Executes from the current statement or instruction until a breakpoint or program exit is reached.
+
+**Run without Debugging**
+
+Stop Debugging (Shift+F5), also available as a Debug Bar button.
+
+Stops the application execution.
+
+**Restart Debugging**
+
+Restarts the application execution.
+
+**Open Configurations**
+
+See the VS Code documentation.
+
+**Add Configuration**
+
+See the VS Code documentation.
+
+**Step Over (F10)**, also available as a Debug Bar button.
+
+Executes the next statement, function call, or instruction, without entering C or C++ functions or assembler subroutines.
+
+**Step Into (F11)**, also available as a Debug Bar button.
+
+Executes the next statement or instruction, or function call, entering C or C++ functions or assembler subroutines.
+
+**Step Out (Shift+F11)**, also available as a Debug Bar button.
+
+Executes from the current statement up to the statement after the call to the current function.
+
+**Restart (Ctrl+Shift+F5)**, also available as a Debug Bar button.
+
+Resets the target processor.
+
+**Toggle Breakpoint**
+
+Toggles a breakpoint at the cursor in the **Editor** view.
+
+**New Breakpoint**
+
+This command cannot be used with IAR C-SPY Debug.
+
+**Enable All Breakpoints**
+
+Enables all defined breakpoints.
+
+**Disable All Breakpoints**
+
+Disables all defined breakpoints.
+
+**Remove All Breakpoints**
+
+Removes all defined breakpoints.
+
+## The Side Bar views
+
+When you debug your project, these views are available in the Side Bar.
+
+### Variables view
+
+These types of variables are can be inspected in the **Variables** view:
+
+* Local
+
+* Static
+
+* CPU Registers. The CPU registers are grouped in register groups.
+
+Clicking the **View Binary Data** button opens the **Memory** view, where you can inspect the variable as binary data in memory. See [Memory view](#MemoryView).
+
+On the context menu are commands for setting or copying the value of the selected variable. Depending on the type of variable, there can also be commands for copying the variable as an expression or adding it to the **Watch** view.
+
+### Watch view
+
+Use this view to monitor the values of C-SPY expressions or variables. Tree structures of arrays, structs, and unions are expandable, which means that you can study each item of these. Every time execution stops, the values in the **Watch** view are recalculated.
+
+Use the context menu, or click the plus icon, to add an expression to this view. Use the context menu to remove all expressions from the view.
+
+### Call Stack view
+
+This view displays the C function call stack with the current function at the top. To inspect a function call, double-click it. The debugger now focuses on that call frame instead.
+
+Use the context menu to copy the call stack, if you want to save it to a file for analyzing. You can also use the context menu to display the selected function in the **Disassembly** view. See [Disassembly view](#DisassemblyView).
+
+### Breakpoints view
+
+Use this view to add new breakpoints, or toggle breakpoints on and off. Hover over a breakpoint to see the details.
+
+For information on specifying which type of breakpoints to use, hardware or software breakpoints, see [Breakpoint types](#BreakpointTypes).
+
+#### Context menu
+
+**Edit Condition**
+
+Brings up an input field where you can edit the selected breakpoint. Also available as a pen icon next to the name of the breakpoint.
+
+**Remove Breakpoint**
+
+Removes the selected breakpoint.
+
+**Remove All Breakpoints**
+
+Removes all defined breakpoints.
+
+**Enable All Breakpoints**
+
+Enables all defined breakpoints.
+
+**Disable All Breakpoints**
+
+Disables all defined breakpoints.
+
+**Reapply All Breakpoints**
+
+Restores all defined breakpoints to their original locations. This is helpful if your debug environment has "misplaced" breakpoints in source code that has not yet been executed.
+
+<h3 id="DisassemblyView">Disassembly view</h3>
+
+This view is provided by the VS Code and can be opened by right-clicking in the **Call Stack** view. See this article for an overview: [Disassembly view](https://devblogs.microsoft.com/cppblog/visual-studio-code-c-july-2021-update-disassembly-view-macro-expansion-and-windows-arm64-debugging/#disassembly-view)
+
+<h3 id="MemoryView">Memory view</h3>
+
+ This view is a hex editor that can be opened by clicking on the **View Binary Data** icon to the right of a static variable in the **Variables** view. The view opens at the variable's location in memory. Arbitrary memory locations cannot be opened.
+
+This view is provided by the VS Code.
+
+### Peripheral view
+
+This view is provided by the VS Code Embedded Tools extension. See the VS Code documentation for more information.
+
+### RTOS view
+
+This view is provided by the VS Code Embedded Tools extension. See the VS Code documentation for more information.
+
+<h2 id="BreakpointTypes">Breakpoint types</h2>
+
+For most debugger drivers, the IAR C-SPY Debugger lets you decide whether to use hardware breakpoints, software breakpoints, or whether to let the driver decide the type to use. To work with breakpoint types, use the commands on the command palette.
+
+Press F1 or Ctrl+Shift+P and start typing `IAR` to find the **IAR Debug: Set Breakpoint Type:** commands.
+
+* **Set Breakpoint Type: Auto** - Makes all new breakpoints use software breakpoints, for this and future debug sessions. If this is not possible, a hardware breakpoint will be used.
+* **Set Breakpoint Type: Auto (Current Session Only)** - Makes any new breakpoints set during this debug session use software breakpoints. If this is not possible, a hardware breakpoint will be used.
+* **Set Breakpoint Type: Hardware** - Makes all new breakpoints use hardware breakpoints, for this and future debug sessions. If this is not possible, no breakpoint will be set.
+* **Set Breakpoint Type: Hardware (Current Session Only)** - Makes any new breakpoints set during this debug session use hardware breakpoints. If this is not possible, no breakpoint will be set.
+* **Set Breakpoint Type: Software** - Makes all new breakpoints use software breakpoints, for this and future debug sessions. If this is not possible, no breakpoint will be set.
+* **Set Breakpoint Type: Software (Current Session Only)** - Makes any new breakpoints set during this debug session use software breakpoints. If this is not possible, no breakpoint will be set.
+
+Note that these commands do not affect existing breakpoints. To change the type of an existing breakpoint, you must set the breakpoint type globally and then remove and re-add the breakpoint (or disable and reenable it).
+
+<h2 id="debuggingstandaloneprogram">Debugging a stand-alone application</h2>
+
+You can use the IAR C-SPY Debug extension to debug a stand-alone application without an associated `.ewp` project, such as an application built with CMake.
+
+Because there is no project to automatically generate a debug configuration from, you must manually provide a debug configuration
+in the form of a `launch.json` file.
+
+There are two ways to do this:
+
+* Use the IAR Embedded Workbench IDE to create an empty project and select the desired device, driver, and options. Then, follow the instructions for [customizing a debug configuration](#CustomizingADebugConfig) from an IAR Embedded Workbench project, to create a `launch.json` file that you can copy to your VS Code workspace folder and use to start a debugging session.
+
+* Create the `launch.json` configuration yourself. Choose **Run>Add Configuration** and select **C-SPY Debug: Generic launch configuration**. See [the launch.json format](#launch-json-format) for help with filling in the provided stub.
+
+<h2 id="launch-json-format">The launch.json format</h2>
+
+Visual Studio Code uses a file called `launch.json` to manage custom debug configurations. For detailed descriptions, see [Launch configurations](https://code.visualstudio.com/Docs/editor/debugging#_launch-configurations) and [Launch.json attributes](https://code.visualstudio.com/Docs/editor/debugging#_launchjson-attributes).
+
+The easiest way to generate a `launch.json` configuration is from an IAR Embedded Workbench project, see the description under [Debugging a stand-alone application](#debuggingstandaloneprogram), but you can also write one yourself. This stub can get you started:
+
+```json
+{
+	"type": "cspy",
+	"request": "launch",
+	"name": "Debug with C-SPY",
+	"target": "arm",
+	"program": "${workspaceFolder}/Debug/Exe/<PROGRAM>.out",
+	"stopOnEntry": true,
+	"workbenchPath": "<WORKBENCH_PATH>",
+	"driver": "sim2",
+	"driverOptions": [
+		"--endian=little",
+		"--cpu=<CPU_NAME>",
+		"--fpu=None",
+		"--semihosting"
+	],
+	"download": {
+		"flashLoader": "<FLASHLOADER>",
+		"deviceMacros": []
+	}
+},
+```
+
+For information about each supported attribute, see the autocompletion and tooltips in the `launch.json` file.
+
+The `driverOptions` attribute takes C-SPY command line parameters. For reference information, see *The C-SPY command line utility—cspybat* in the *IAR Embedded Workbench C-SPY® Debugging Guide* (PDF).
