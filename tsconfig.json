@@ -1,10 +1,13 @@
 {
-	"compilerOptions": {
-		"module": "commonjs",
-		"target": "es2021",
-		"lib": ["es2021", "DOM"],
-		"outDir": "out",
-
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es2021",
+        "outDir": "out",
+        "lib": [
+            "es2021",
+            "DOM"
+        ],
+        "rootDir": ".",
         "sourceMap": true,
         "allowJs": true,
         /* Strict Type-Checking Option */
@@ -20,14 +23,14 @@
         "noPropertyAccessFromIndexSignature": true, /* Report errors when accessing nonexistent fields */
         "noUncheckedIndexedAccess": true, /* Add 'undefined' to the type returned from indexed accesses */
         "isolatedModules": true, /* Recommended when using bundlers */
-	},
-	"include": [
+    },
+    "include": [
         "src/**/*",
-        "test/**/*"
-	],
-	"exclude": [
-		"out/**/*",
+        "tests/**/*"
+    ],
+    "exclude": [
+        "out/**/*",
         "node_modules",
         ".vscode-test"
-	]
+    ]
 }
