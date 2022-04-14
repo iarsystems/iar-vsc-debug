@@ -4,7 +4,7 @@ import * as Path from "path";
 import { IarOsUtils } from "iar-vsc-common/osUtils";
 import { spawnSync } from "child_process";
 import { TestSandbox } from "iar-vsc-common/testutils/testSandbox";
-import { CSpyLaunchRequestArguments } from "../../dap/cspyDebug";
+import { CSpyLaunchRequestArguments } from "../../src/dap/cspyDebug";
 import { TestConfiguration } from "./testConfiguration";
 import { DebugClient } from "@vscode/debugadapter-testsupport";
 

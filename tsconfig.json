@@ -22,7 +22,8 @@
         "isolatedModules": true, /* Recommended when using bundlers */
 	},
 	"include": [
-		"src/**/*",
+        "src/**/*",
+        "test/**/*"
 	],
 	"exclude": [
 		"out/**/*",

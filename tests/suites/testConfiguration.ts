@@ -1,4 +1,4 @@
-import { CSpyLaunchRequestArguments } from "../../dap/cspyDebug";
+import { CSpyLaunchRequestArguments } from "../../src/dap/cspyDebug";
 
 /**
  * Global parameters for a test run. These can be configured e.g. from the command line
