@@ -4,7 +4,7 @@ import * as Assert from "assert";
 import Q = thrift.Q;
 import * as Disassembly from "iar-vsc-common/thrift/bindings/Disassembly";
 import * as SourceLookup from "iar-vsc-common/thrift/bindings/SourceLookup";
-import { CspyDisassemblyManager } from "../../../dap/cspyDisassemblyManager";
+import { CspyDisassemblyManager } from "../../../src/dap/cspyDisassemblyManager";
 import { ContextRef, Location, SourceLocation, SourceRange } from "iar-vsc-common/thrift/bindings/shared_types";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { DisassembledLocation } from "iar-vsc-common/thrift/bindings/disassembly_types";

@@ -5,7 +5,7 @@ import * as Path from "path";
 import * as Fs from "fs";
 import { ChildProcess, spawn } from "child_process";
 import * as vscode from "vscode";
-import { CSpyLaunchRequestArguments } from "../../../dap/cspyDebug";
+import { CSpyLaunchRequestArguments } from "../../../src/dap/cspyDebug";
 import { DebugClient } from "@vscode/debugadapter-testsupport";
 import { DebugProtocol } from "@vscode/debugprotocol";
 

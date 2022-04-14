@@ -1,10 +1,10 @@
-import { LaunchArgumentConfigurationResolver } from "../../../dap/configresolution/launchArgumentConfigurationResolver";
-import { CSpyLaunchRequestArguments } from "../../../dap/cspyDebug";
+import { LaunchArgumentConfigurationResolver } from "../../../src/dap/configresolution/launchArgumentConfigurationResolver";
+import { CSpyLaunchRequestArguments } from "../../../src/dap/cspyDebug";
 import * as assert from "assert";
 import * as path from "path";
 import { OsUtils } from "iar-vsc-common/osUtils";
 import { TestUtils } from "../testUtils";
-import { BreakpointType } from "../../../dap/breakpoints/cspyBreakpointManager";
+import { BreakpointType } from "../../../src/dap/breakpoints/cspyBreakpointManager";
 
 suite("Configuration resolution tests", () => {
 

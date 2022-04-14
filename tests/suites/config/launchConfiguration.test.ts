@@ -2,13 +2,13 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
 import * as path from "path";
-import { CSpyConfigurationsProvider } from "../../../configresolution/cspyConfigurationsProvider";
+import { CSpyConfigurationsProvider } from "../../../src/configresolution/cspyConfigurationsProvider";
 import { OsUtils } from "iar-vsc-common/osUtils";
-import { CSpyConfigurationResolver } from "../../../configresolution/cspyConfigurationResolver";
-import { XclConfigurationProvider } from "../../../configresolution/xclConfigurationProvider";
-import { BuildExtensionChannel } from "../../../configresolution/buildExtensionChannel";
-import { ConfigResolutionCommon } from "../../../configresolution/common";
-import { BuildExtensionConfigurationProvider } from "../../../configresolution/buildExtensionConfigurationProvider";
+import { CSpyConfigurationResolver } from "../../../src/configresolution/cspyConfigurationResolver";
+import { XclConfigurationProvider } from "../../../src/configresolution/xclConfigurationProvider";
+import { BuildExtensionChannel } from "../../../src/configresolution/buildExtensionChannel";
+import { ConfigResolutionCommon } from "../../../src/configresolution/common";
+import { BuildExtensionConfigurationProvider } from "../../../src/configresolution/buildExtensionConfigurationProvider";
 
 /**
  * This test suite tests our ability to generate a launch configuration based on the xcl files
