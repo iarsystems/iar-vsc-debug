@@ -29,7 +29,7 @@ export namespace TestUtils {
         let configuration: string;
 
         if (parameters.testProgram.variant === "doBuild") {
-            const targetProject = Path.join(TestUtils.PROJECT_ROOT, "src/tests/TestProjects/GettingStarted/BasicDebugging.ewp");
+            const targetProject = Path.join(TestUtils.PROJECT_ROOT, "tests/TestProjects/GettingStarted/BasicDebugging.ewp");
             const sandbox = new TestSandbox(PROJECT_ROOT);
             projectDir = sandbox.copyToSandbox(Path.dirname(targetProject));
             const project = Path.join(projectDir, Path.basename(targetProject));

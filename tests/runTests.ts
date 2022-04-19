@@ -8,7 +8,7 @@ async function main() {
     const armimperasEnvs = TestConfiguration.asEnvVars(TestConfiguration.ARMIMPERAS_CONFIG);
     const cmdlineEnvs = getEnvs();
     // Configuration tests are not driver-dependent, so running it with only one config is fine
-    await runTestsIn(path.resolve(__dirname), "../../", "./suites/config/index", {...cmdlineEnvs, ...armsimEnvs}, "../../src/tests/TestProjects/ConfigTests");
+    await runTestsIn(path.resolve(__dirname), "../../", "./suites/config/index", {...cmdlineEnvs, ...armsimEnvs}, "../../tests/TestProjects/ConfigTests");
 
     // Run debugger tests with both 32-bit and 64-bit simulator
     console.log("------Running sim2 tests------");
