@@ -5,14 +5,6 @@ import { ConfigResolutionCommon } from "../src/configresolution/common";
 import { XclConfigurationProvider } from "../src/configresolution/xclConfigurationProvider";
 import { TestConfiguration } from "./suites/testConfiguration";
 
-// !
-// This way of starting tests is functionally no different fron runTests.ts -- all arguments are converted to environment variables
-// anyway, and those vars are then read by the test suites. You could use the same command line with runTest.ts and get
-// the exact same results. However, this file provides some help and documentation for the parameters we expect when running hardware tests,
-// and avoids running test suites that are unnecessary to run on hardware.
-// !
-
-
 function printHelp() {
     console.log("Utility for running hardware tests");
     console.log("--cspybat-args=[args]   A complete cspybat command line used to determine the e.g. the driver and driver arguments.");
@@ -59,18 +51,13 @@ async function main() {
     };
     const configEnvs = TestConfiguration.asEnvVars(config);
     await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", {...cmdlineEnvs, ...configEnvs}, undefined, "Sim2");
-
-    // Note that the cmdline parameters will be automatically passed to the test suites as
-    // environment variables. Using envvars also lets us use the same mechanism when running tests from a launch.json.
-    // TODO: temporarily broken
-    // await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index");
 }
 
 /**
  * Construct a key:string based on the supplied options from the commandline.
  * @returns
  */
-export function getEnvs(): Record<string, string> {
+function getEnvs(): Record<string, string> {
     const envs: Record<string, string> = {};
     for (const opt of process.argv.slice(2)) {
         if (opt.startsWith("--")) {

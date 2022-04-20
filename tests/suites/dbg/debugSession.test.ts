@@ -34,7 +34,8 @@ suite("New tests", () =>{
         dbgConfig = TestUtils.doSetup(workbench);
     });
 
-    setup(async()=>{
+    setup(async function() {
+        console.log("\n==========================================================" + this.currentTest!.title + "==========================================================\n");
         await vscode.debug.startDebugging(undefined, dbgConfig);
         await TestUtils.wait(2000);
 

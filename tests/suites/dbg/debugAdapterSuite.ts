@@ -18,7 +18,7 @@ export const ADAPTER_PORT = 4711;
  *   Note that the parameters are provided as function so that they can be read lazily; they are only safe to call
  *   from inside mocha functions (i.e. after suiteSetup has run).
  */
-export type DebugAdapterSuiteRunner = (
+type DebugAdapterSuiteRunner = (
     dc: () => DebugClient,
     dbgConfig: () => Readonly<vscode.DebugConfiguration & CSpyLaunchRequestArguments>,
     fibonacciFile: () => string, // the Fibonacci.c source file

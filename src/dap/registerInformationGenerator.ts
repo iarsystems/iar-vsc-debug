@@ -9,7 +9,7 @@ import { NamedLocation } from "iar-vsc-common/thrift/bindings/cspy_types";
 import Int64 = require("node-int64");
 
 // SVD format specification: https://www.keil.com/pack/doc/CMSIS/SVD/html/svd_Format_pg.html
-export interface SvdDevice {
+interface SvdDevice {
     name: string,
     addressUnitBits: number,
     width: number,
@@ -23,7 +23,7 @@ export interface SvdDevice {
         }>,
     };
 }
-export interface SvdRegister {
+interface SvdRegister {
     name: string,
     displayName: string,
     description: string,
@@ -67,7 +67,7 @@ interface RegisterGroup {
 }
 
 // The data we get from cspyserver (e.g. getRegisterGroups, getLocationNames)
-export interface CspyRegisterData {
+interface CspyRegisterData {
     peripheralRegisterGroups: RegisterGroup[];
     cpuRegisterGroups: Array<{
         name: string,

@@ -33,9 +33,9 @@ class SimDriver extends SimulatorDriver { }
 // Emulator for rh850
 class OcdDriver extends SimulatorDriver { }
 // Simulator for arm
-export class Sim2Driver extends SimulatorDriver { }
+class Sim2Driver extends SimulatorDriver { }
 // 64-bit simulator for arm
-export class ImperasDriver extends SimulatorDriver { }
+class ImperasDriver extends SimulatorDriver { }
 
 // Common properties for all hardware drivers
 abstract class HardwareDriver implements CSpyDriver {
@@ -47,17 +47,17 @@ abstract class HardwareDriver implements CSpyDriver {
     }
 }
 
-export class IJetDriver extends HardwareDriver { }
-export class JLinkDriver extends HardwareDriver { }
-export class GdbServerDriver extends HardwareDriver { }
-export class CADIDriver extends HardwareDriver { }
-export class StellarisDriver extends HardwareDriver { }
-export class PEMicroDriver extends HardwareDriver { }
-export class STLinkDriver extends HardwareDriver { }
-export class XDSDriver extends HardwareDriver { }
-export class TIMSPFETDriver extends HardwareDriver { }
+class IJetDriver extends HardwareDriver { }
+class JLinkDriver extends HardwareDriver { }
+class GdbServerDriver extends HardwareDriver { }
+class CADIDriver extends HardwareDriver { }
+class StellarisDriver extends HardwareDriver { }
+class PEMicroDriver extends HardwareDriver { }
+class STLinkDriver extends HardwareDriver { }
+class XDSDriver extends HardwareDriver { }
+class TIMSPFETDriver extends HardwareDriver { }
 // Used for unrecognized drivers.
-export class UnknownDriver extends HardwareDriver { }
+class UnknownDriver extends HardwareDriver { }
 
 export namespace CSpyDriver {
     /**
