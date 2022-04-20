@@ -3,7 +3,6 @@ import * as path from "path";
 import * as fs from "fs";
 import { OsUtils } from "iar-vsc-common/osUtils";
 import { ConfigResolutionCommon } from "./common";
-import { logger } from "iar-vsc-common/logger";
 
 /**
  * Provides automatic debug configurations from the .xcl files in a project folder
@@ -35,7 +34,6 @@ export namespace XclConfigurationProvider {
 
         const settingsDir = path.resolve(projectFolder, FileNames.settingsCatalog);
         if (!fs.existsSync(settingsDir)) {
-            logger.error(`No settings catalog is available (${settingsDir})`);
             return [];
         }
 
