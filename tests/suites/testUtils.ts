@@ -45,6 +45,7 @@ export namespace TestUtils {
             type: "cspy",
             request: "launch",
             name: "C-SPY Debugging Tests",
+            stopOnEntry: true,
             ...parameters.debugConfiguration,
             projectPath: projectDir,
             projectConfiguration: configuration,
