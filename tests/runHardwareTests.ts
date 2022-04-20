@@ -52,7 +52,7 @@ async function main() {
         debugConfiguration: debugConfig,
         testProgram: {
             variant: "preBuilt",
-            binaryPath: "", // TODO:
+            binaryPath: cspyArgs[2]!,
             sourceDir: cmdlineEnvs["source-dir"],
         },
         expectPeriphals: true,

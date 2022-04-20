@@ -36,7 +36,7 @@
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}",
 				"--extensionTestsPath=${workspaceFolder}/out/tests/suites/config/index",
-				"${workspaceFolder}/src/tests/TestProjects/ConfigTests"
+				"${workspaceFolder}/tests/TestProjects/ConfigTests"
 			],
 			"outFiles": [ "${workspaceFolder}/out/**/*.js" ],
 			"preLaunchTask": "npm: test-compile",
