@@ -1,7 +1,7 @@
 {
 	"name": "iar-debug",
 	"displayName": "IAR C-SPY Debug",
-	"version": "0.25.0",
+	"version": "0.1.0",
 	"publisher": "iarsystems",
 	"icon": "images/logo.png",
 	"galleryBanner": {
@@ -46,7 +46,7 @@
 		"async-mutex": "^0.3.2",
 		"await-notify": "1.0.1",
 		"bufferutil": "^4.0.6",
-		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#04331d63",
+		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#986d6fae",
 		"thrift": "^0.12.0",
 		"utf-8-validate": "^5.0.9",
 		"uuid": "^8.3.2",
