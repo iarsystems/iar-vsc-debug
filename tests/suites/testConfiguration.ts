@@ -77,11 +77,11 @@ export namespace TestConfiguration {
         debugConfiguration: {
             target: "arm",
             driver: "sim2",
-            driverOptions: ["--endian=little", "--cpu=ARM7TDMI", "--fpu=None", "--semihosting"],
+            driverOptions: ["--endian=little", "--cpu=Cortex-M4", "--fpu=VFPv4_SP", "--semihosting"],
             stopOnEntry:true
         },
         testProgram: { projectConfiguration: "Debug", variant: "doBuild" },
-        expectPeriphals: false,
+        expectPeriphals: true,
     };
     export const ARMIMPERAS_CONFIG: TestConfiguration = {
         debugConfiguration: {

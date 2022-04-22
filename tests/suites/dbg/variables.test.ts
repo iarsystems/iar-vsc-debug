@@ -52,11 +52,10 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
 
                 { // Check registers
                     const registers = (await dc().variablesRequest({variablesReference: scopes.body.scopes[2]!.variablesReference})).body.variables;
-                    Assert(registers.some(group => group.name === "Current CPU Registers" && group.variablesReference > 0));
-                    const cpuRegisters = registers.find(group => group.name === "CPU Registers" && group.variablesReference > 0);
-                    Assert(cpuRegisters, "Found no register group called 'CPU Registers'");
-                    const floatRegisters = registers.find(group => group.name === "Floating-Point Extension registers" && group.variablesReference > 0);
-                    Assert(floatRegisters, "Found no register group called 'Floating-Point Extension registers'");
+                    const cpuRegisters = registers.find(group => group.name === "Current CPU Registers" && group.variablesReference > 0);
+                    Assert(cpuRegisters, "Found no register group called 'Current CPU Registers'");
+                    const floatRegisters = registers.find(group => ["Floating-point Extension registers", "Floating-point registers"].includes(group.name) && group.variablesReference > 0);
+                    Assert(floatRegisters, "Found no register group called 'Floating-point Extension registers' or 'Floating-point registers'");
 
                     const groupContents = await Promise.all([
                         dc().variablesRequest({variablesReference: cpuRegisters.variablesReference}),
@@ -64,10 +63,10 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                     ]);
                     {
                         const registers = groupContents[0].body.variables;
-                        Assert(registers.some(reg => reg.name === "R4"));
+                        Assert(registers.some(reg => reg.name === "R4" || reg.name === "X4"));
                         Assert(registers.some(reg => reg.name === "SP"));
                         Assert(registers.some(reg => reg.name === "PC"));
-                        Assert(registers.some(reg => reg.name === "CPSR" && reg.variablesReference > 0)); // Should be nested
+                        Assert(registers.some(reg => (reg.name === "APSR" || reg.name === "PSTATE") && reg.variablesReference > 0)); // Should be nested
 
                     }
                     {

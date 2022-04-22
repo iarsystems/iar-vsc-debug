@@ -82,7 +82,7 @@
                 </option>
                 <option>
                     <name>GEndianModeBE</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>OGBufferedTerminalOutput</name>
@@ -99,7 +99,7 @@
                 <option>
                     <name>GBECoreSlave</name>
                     <version>29</version>
-                    <state>0</state>
+                    <state>39</state>
                 </option>
                 <option>
                     <name>OGUseCmsis</name>
@@ -116,7 +116,7 @@
                 <option>
                     <name>CoreVariant</name>
                     <version>29</version>
-                    <state>0</state>
+                    <state>39</state>
                 </option>
                 <option>
                     <name>GFPUDeviceSlave</name>
@@ -125,12 +125,12 @@
                 <option>
                     <name>FPU2</name>
                     <version>0</version>
-                    <state>0</state>
+                    <state>4</state>
                 </option>
                 <option>
                     <name>NrRegs</name>
                     <version>0</version>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>NEON</name>
@@ -139,7 +139,7 @@
                 <option>
                     <name>GFPUCoreSlave2</name>
                     <version>29</version>
-                    <state>0</state>
+                    <state>39</state>
                 </option>
                 <option>
                     <name>OGCMSISPackSelectDevice</name>
@@ -180,7 +180,7 @@
                 </option>
                 <option>
                     <name>DSPExtension</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>TrustZone</name>
@@ -2166,7 +2166,7 @@
                 </option>
                 <option>
                     <name>GEndianModeBE</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>OGBufferedTerminalOutput</name>
@@ -2183,7 +2183,7 @@
                 <option>
                     <name>GBECoreSlave</name>
                     <version>29</version>
-                    <state>0</state>
+                    <state>62</state>
                 </option>
                 <option>
                     <name>OGUseCmsis</name>
@@ -2427,7 +2427,7 @@
                 </option>
                 <option>
                     <name>IProcessorMode2</name>
-                    <state>1</state>
+                    <state>0</state>
                 </option>
                 <option>
                     <name>CCOptLevel</name>
