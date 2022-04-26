@@ -3,7 +3,7 @@ import * as path from "path";
 import { exit } from "process";
 import { ConfigResolutionCommon } from "../src/configresolution/common";
 import { XclConfigurationProvider } from "../src/configresolution/xclConfigurationProvider";
-import { TestConfiguration } from "./suites/testConfiguration2";
+import { TestConfiguration } from "./suites/testConfiguration";
 
 function printHelp() {
     console.log("Utility for running hardware tests");

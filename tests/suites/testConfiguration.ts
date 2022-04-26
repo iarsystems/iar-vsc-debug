@@ -8,7 +8,7 @@ export interface TestConfiguration {
     /**
      * For all tests that need to start a debug session, this is the base configuration to use.
      */
-    debugConfiguration: Omit<CSpyLaunchRequestArguments, "workbenchPath" | "program" | "projectPath" | "projectConfiguration">,
+    debugConfiguration: Omit<CSpyLaunchRequestArguments, "workbenchPath" | "program" | "projectPath" | "projectConfiguration" | "stopOnEntry">,
     /**
      * The 'dbg' suite uses a specific test program to run debugging tests (see TestProjects/GettingStarted/).
      * The program needs to be built to match the {@link debugConfiguration} (e.g. for the same device).
@@ -78,7 +78,6 @@ export namespace TestConfiguration {
             target: "arm",
             driver: "sim2",
             driverOptions: ["--endian=little", "--cpu=Cortex-M4", "--fpu=VFPv4_SP", "--semihosting"],
-            stopOnEntry:true
         },
         testProgram: { projectConfiguration: "Debug", variant: "doBuild" },
         expectPeriphals: true,
@@ -88,7 +87,6 @@ export namespace TestConfiguration {
             target: "arm",
             driver: "imperas",
             driverOptions: ["--endian=little", "--cpu=Cortex-A53", "--abi=ilp32", "--fpu=None", "--semihosting"],
-            stopOnEntry:true
         },
         testProgram: { projectConfiguration: "Imperas", variant: "doBuild" },
         expectPeriphals: false,
