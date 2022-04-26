@@ -16,7 +16,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                 const scopes = await dc().scopesRequest({frameId: stack.body.stackFrames[0]!.id});
 
                 const statics = (await dc().variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
-                Assert.strictEqual(statics.length, 9, "Expected 9 statics, found: " + statics.map(v => v.name).join(", "));
+                Assert(statics.length >= 9, "Expected at least 9 statics, found: " + statics.map(v => v.name).join(", "));
                 { // Check string
                     const str = statics.find(variable => variable.name === "str <Fibonacci\\str>");
                     Assert(str, "Could not find str variable");
@@ -90,7 +90,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                 const scopes = await dc().scopesRequest({frameId: stack.body.stackFrames[0]!.id});
 
                 const statics = (await dc().variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
-                Assert.strictEqual(statics.length, 9, "Expected 9 statics, found: " + statics.map(v => v.name).join(", "));
+                Assert(statics.length >= 9, "Expected at least 9 statics, found: " + statics.map(v => v.name).join(", "));
                 { // Check nested struct
                     const nestedStruct = statics.find(variable => variable.name === "nested_struct <Fibonacci\\nested_struct>");
                     Assert(nestedStruct !== undefined);

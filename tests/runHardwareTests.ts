@@ -3,7 +3,7 @@ import * as path from "path";
 import { exit } from "process";
 import { ConfigResolutionCommon } from "../src/configresolution/common";
 import { XclConfigurationProvider } from "../src/configresolution/xclConfigurationProvider";
-import { TestConfiguration } from "./suites/testConfiguration";
+import { TestConfiguration } from "./suites/testConfiguration2";
 
 function printHelp() {
     console.log("Utility for running hardware tests");
@@ -40,6 +40,7 @@ async function main() {
     if (debugConfig === undefined) {
         throw new Error("Unable to create launch config from cspybat cmdline. Check its validity.");
     }
+    debugConfig.trace = true;
     const config: TestConfiguration = {
         debugConfiguration: debugConfig,
         testProgram: {
