@@ -32,8 +32,7 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
         try {
             await dc().send("illegal");
             Assert.fail("Unknown request did not prduce an error");
-        } catch (e) {
-            console.log(e);
+        } catch (_) {
         }
     });
 

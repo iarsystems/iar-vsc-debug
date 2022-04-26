@@ -126,7 +126,7 @@ export namespace XclConfigurationProvider {
         let program: string | undefined;
         let driver: string | undefined;
         let target: string | undefined;
-        let stopOnEntry = false;
+        let stopOnEntry = true;
         const plugins: string[] = [];
         const macros: string[] = [];
         const deviceMacros: string[] = [];

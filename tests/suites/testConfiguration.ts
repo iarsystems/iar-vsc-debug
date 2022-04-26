@@ -27,9 +27,12 @@ export interface TestConfiguration {
     };
     /**
      * Whether to expect (and test for) the debugger to provide peripheral register.
-     * This is roughly the same as whether we are targeting a real device, as opposed to just a cpu model.
      */
     expectPeriphals: boolean,
+    /**
+     * Whether to expect (and test for) the device to have floating-point registers.
+     */
+    hasFPU: boolean,
 }
 
 export namespace TestConfiguration {
@@ -81,6 +84,7 @@ export namespace TestConfiguration {
         },
         testProgram: { projectConfiguration: "Debug", variant: "doBuild" },
         expectPeriphals: true,
+        hasFPU: true,
     };
     export const ARMIMPERAS_CONFIG: TestConfiguration = {
         debugConfiguration: {
@@ -90,5 +94,6 @@ export namespace TestConfiguration {
         },
         testProgram: { projectConfiguration: "Imperas", variant: "doBuild" },
         expectPeriphals: false,
+        hasFPU: true,
     };
 }

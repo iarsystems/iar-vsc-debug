@@ -40,7 +40,6 @@ async function main() {
     if (debugConfig === undefined) {
         throw new Error("Unable to create launch config from cspybat cmdline. Check its validity.");
     }
-    debugConfig.trace = true;
     const config: TestConfiguration = {
         debugConfiguration: debugConfig,
         testProgram: {
@@ -49,6 +48,7 @@ async function main() {
             sourceDir: cmdlineEnvs["source-dir"],
         },
         expectPeriphals: true,
+        hasFPU: !cspyArgs.includes("--fpu=None"),
     };
     const configEnvs = TestConfiguration.asEnvVars(config);
     await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", {...cmdlineEnvs, ...configEnvs}, undefined, "Sim2");

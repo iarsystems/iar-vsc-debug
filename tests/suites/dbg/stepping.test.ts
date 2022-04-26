@@ -35,8 +35,7 @@ debugAdapterSuite("Stepping", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                         const vars = (await dc().variablesRequest({variablesReference: res.body.scopes[0]!.variablesReference})).body.variables;
                         Assert.strictEqual(vars.length, 1);
                         Assert.strictEqual(vars[0]!.name, "fib");
-                        Assert.strictEqual(vars[0]!.value, "<unavailable>");
-                        Assert.strictEqual(vars[0]!.type, "");
+                        Assert(vars[0]!.value === "<unavailable>" || vars[0]!.value === "1");
                     })
                 ]);
             })
@@ -75,7 +74,8 @@ debugAdapterSuite("Stepping", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                 let scopes = await dc().scopesRequest({frameId: 0});
                 let locals = (await dc().variablesRequest({variablesReference: scopes.body.scopes[0]!.variablesReference})).body.variables;
                 Assert.strictEqual(locals.length, 1);
-                Assert(locals.some(variable => variable.name === "fib" && variable.value === "<unavailable>" && variable.type === ""));
+                Assert.strictEqual(locals[0]!.name, "fib");
+                Assert(["0", "<unavailable>"].includes(locals[0]!.value), "Value was: " + locals[0]!.value);
 
                 await Promise.all([ dc().nextRequest({threadId: 0}), dc().waitForEvent("stopped") ]);
 

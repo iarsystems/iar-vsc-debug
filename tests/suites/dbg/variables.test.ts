@@ -1,4 +1,5 @@
 import * as Assert from "assert";
+import { TestConfiguration } from "../testConfiguration";
 import { debugAdapterSuite } from "./debugAdapterSuite";
 
 debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => {
@@ -51,29 +52,27 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                 }
 
                 { // Check registers
-                    const registers = (await dc().variablesRequest({variablesReference: scopes.body.scopes[2]!.variablesReference})).body.variables;
-                    const cpuRegisters = registers.find(group => group.name === "Current CPU Registers" && group.variablesReference > 0);
-                    Assert(cpuRegisters, "Found no register group called 'Current CPU Registers'");
-                    const floatRegisters = registers.find(group => ["Floating-point Extension registers", "Floating-point registers"].includes(group.name) && group.variablesReference > 0);
-                    Assert(floatRegisters, "Found no register group called 'Floating-point Extension registers' or 'Floating-point registers'");
-
-                    const groupContents = await Promise.all([
-                        dc().variablesRequest({variablesReference: cpuRegisters.variablesReference}),
-                        dc().variablesRequest({variablesReference: floatRegisters.variablesReference}),
-                    ]);
+                    const groups = (await dc().variablesRequest({variablesReference: scopes.body.scopes[2]!.variablesReference})).body.variables;
                     {
-                        const registers = groupContents[0].body.variables;
+                        const cpuRegisters = groups.find(group => group.name === "Current CPU Registers" && group.variablesReference > 0);
+                        Assert(cpuRegisters, "Found no register group called 'Current CPU Registers'");
+                        const cpuRegContents = await dc().variablesRequest({variablesReference: cpuRegisters.variablesReference});
+
+                        const registers = cpuRegContents.body.variables;
                         Assert(registers.some(reg => reg.name === "R4" || reg.name === "X4"));
                         Assert(registers.some(reg => reg.name === "SP"));
                         Assert(registers.some(reg => reg.name === "PC"));
                         Assert(registers.some(reg => (reg.name === "APSR" || reg.name === "PSTATE") && reg.variablesReference > 0)); // Should be nested
 
                     }
-                    {
-                        const registers = groupContents[1].body.variables;
+                    if (TestConfiguration.getConfiguration().hasFPU) {
+                        const floatRegisters = groups.find(group => ["Floating-point Extension registers", "Floating-point registers"].includes(group.name) && group.variablesReference > 0);
+                        Assert(floatRegisters, `Found no register group called 'Floating-point Extension registers' or 'Floating-point registers', found '${groups.map(g => g.name).join(", ")}'`);
+                        const fpRegContents = await dc().variablesRequest({variablesReference: floatRegisters.variablesReference});
+
+                        const registers = fpRegContents.body.variables;
                         Assert(registers.some(reg => reg.name === "S6" && reg.variablesReference > 0)); // Should be nested
                         Assert(registers.some(reg => reg.name === "D12"));
-
                     }
                 }
             }),
@@ -305,6 +304,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
     test("Pointer memoryReference uses value", () => {
         const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
         dbgConfigCopy.stopOnEntry = false;
+        dbgConfigCopy.trace = true;
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),

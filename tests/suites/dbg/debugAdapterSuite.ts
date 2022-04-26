@@ -96,7 +96,7 @@ export function debugAdapterSuite(title: string, runner: DebugAdapterSuiteRunner
             return Promise.race([
                 // The debug adapter needs some time after stopping to be ready for new connections
                 dc!.stop().then(() => {
-                    done = true; return TestUtils.wait(1000);
+                    done = true; return TestUtils.wait(1500);
                 }),
                 TestUtils.wait(19000).then(() => {
                     if (!done) {
