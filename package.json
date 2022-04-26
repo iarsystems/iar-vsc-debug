@@ -8,12 +8,14 @@
 		"color": "#ffe000",
 		"theme": "light"
 	},
-	"description": "An example extension & Debug Adapter for C-SPY with VS Code",
+	"description": "Debug embedded applications using the IAR C-SPY debugger.",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/mario-pi/iar-vsc-debug"
+		"url": "https://github.com/IARSystems/iar-vsc-debug"
 	},
+	"license": "MPL-2.0",
 	"homepage": "https://www.iar.com/",
+	"qna": "https://www.iar.com/support/",
 	"keywords": [
 		"IAR",
 		"C-SPY",

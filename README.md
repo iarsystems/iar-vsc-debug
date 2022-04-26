@@ -2,20 +2,20 @@
 
 Use IAR System's C-SPY Debugger to debug embedded programs using Visual Studio Code, with support for a wide range of embedded devices and debug probes. This extension can be used with IAR Embedded Workbench (.ewp) projects, or with other build systems such as CMake. An IAR Embedded Workbench installation for Arm or RISC-V is required to use this extension.
 
-![](../md-images/debug-session.png)
+![](https://github.com/IARSystems/iar-vsc-debug/blob/master/md-images/debug-session.png)
 
 ## Getting Started
-**To debug an IAR Embedded Workbench (`.ewp`) project**, we recommend also installing the [IAR Build](http://link.to/marketplace/for/the/extension) extension.
+**To debug an IAR Embedded Workbench (`.ewp`) project**, we recommend also installing the [IAR Build](https://marketplace.visualstudio.com/items?itemName=iarsystems.iar-build) extension.
 The extension will then automatically provide debug configurations for your project.
 If you do not have a `launch.json` file in the workspace,
 simply press `Run and Debug` in the Debug view to start debugging the current project and configuration.
 
-![](../md-images/start-session2.gif)
+![](https://github.com/IARSystems/iar-vsc-debug/blob/master/md-images/start-session2.gif)
 
 If you already have a `launch.json` file, automatic C-SPY debug configurations can be accessed by pressing `IAR C-SPY Debug...` in
 the debug configuration dropdown.
 
-![](../md-images/debug-dropdown.png)
+![](https://github.com/IARSystems/iar-vsc-debug/blob/master/md-images/debug-dropdown.png)
 
 
 **To debug a program without an IAR Embedded Workbench project** (e.g. from a CMake project) you need to manually provide a debug
@@ -64,6 +64,6 @@ This extension is compatible with selected IAR Embedded Workbench (EW) products 
 
 ## Feedback
 Depending on which feedback you want to share with us, here are the preferred options:
-* If you have ideas on how to improve this extension or if you have found issues with it, see [contributing.md](https://www.iar.com/knowledge/support/) on how to proceed.
+* If you have ideas on how to improve this extension or if you have found issues with it, see [CONTRIBUTING.md](https://github.com/IARSystems/iar-vsc-debug/blob/master/CONTRIBUTING.md) on how to proceed.
 
 * If you have issues with the underlying IAR Embedded Workbench or IAR Built Tools product, report this via the IAR Systems technical support channel at [IAR Technical Support](https://www.iar.com/knowledge/support/).
