@@ -18,7 +18,6 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
 
     test("Moves breakpoints on empty lines", () => {
         return Promise.all([
-            dc().configurationSequence(),
             dc().launch(dbgConfig()),
             dc().waitForEvent("initialized").then(async() => {
                 const response = await dc().setBreakpointsRequest(

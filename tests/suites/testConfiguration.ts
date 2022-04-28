@@ -8,7 +8,7 @@ export interface TestConfiguration {
     /**
      * For all tests that need to start a debug session, this is the base configuration to use.
      */
-    debugConfiguration: Omit<CSpyLaunchRequestArguments, "workbenchPath" | "program" | "projectPath" | "projectConfiguration">,
+    debugConfiguration: Omit<CSpyLaunchRequestArguments, "workbenchPath" | "program" | "projectPath" | "projectConfiguration" | "stopOnEntry">,
     /**
      * The 'dbg' suite uses a specific test program to run debugging tests (see TestProjects/GettingStarted/).
      * The program needs to be built to match the {@link debugConfiguration} (e.g. for the same device).
@@ -27,9 +27,12 @@ export interface TestConfiguration {
     };
     /**
      * Whether to expect (and test for) the debugger to provide peripheral register.
-     * This is roughly the same as whether we are targeting a real device, as opposed to just a cpu model.
      */
     expectPeriphals: boolean,
+    /**
+     * Whether to expect (and test for) the device to have floating-point registers.
+     */
+    hasFPU: boolean,
 }
 
 export namespace TestConfiguration {
@@ -78,19 +81,19 @@ export namespace TestConfiguration {
             target: "arm",
             driver: "sim2",
             driverOptions: ["--endian=little", "--cpu=Cortex-M4", "--fpu=VFPv4_SP", "--semihosting"],
-            stopOnEntry:true
         },
         testProgram: { projectConfiguration: "Debug", variant: "doBuild" },
         expectPeriphals: true,
+        hasFPU: true,
     };
     export const ARMIMPERAS_CONFIG: TestConfiguration = {
         debugConfiguration: {
             target: "arm",
             driver: "imperas",
             driverOptions: ["--endian=little", "--cpu=Cortex-A53", "--abi=ilp32", "--fpu=None", "--semihosting"],
-            stopOnEntry:true
         },
         testProgram: { projectConfiguration: "Imperas", variant: "doBuild" },
         expectPeriphals: false,
+        hasFPU: true,
     };
 }

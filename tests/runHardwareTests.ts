@@ -48,6 +48,7 @@ async function main() {
             sourceDir: cmdlineEnvs["source-dir"],
         },
         expectPeriphals: true,
+        hasFPU: !cspyArgs.includes("--fpu=None"),
     };
     const configEnvs = TestConfiguration.asEnvVars(config);
     await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", {...cmdlineEnvs, ...configEnvs}, undefined, "Sim2");

@@ -313,7 +313,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     protected override async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments) {
-        this.sendEvent(new Logger.LogOutputEvent("Testmessage\n", Logger.LogLevel.Warn));
         await CSpyDebugSession.tryResponseWith(this.cspyDebugger, response, cspyDebugger => {
             this.expectedStoppingReason = "step";
             if (args.granularity === "instruction") {

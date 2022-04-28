@@ -36,6 +36,7 @@ debugAdapterSuite("SVD generator tests", function(dc, dbgConfig)  {
             program: dbgConfig().program,
             workbenchPath: dbgConfig().workbenchPath,
             driver: "sim2",
+            trace: true,
             driverOptions: ["--endian=little", "--cpu=ARM7TDMI", "--fpu=None", "--semihosting"],
         };
 
@@ -54,7 +55,6 @@ debugAdapterSuite("SVD generator tests", function(dc, dbgConfig)  {
                 "--multicore_nr_of_cores=1"
             ],
         };
-        console.log(stm32Config);
     });
 
     function assertCspyMatchesSvdFile(cspySvd: Document, svdFile: string) {
@@ -134,61 +134,58 @@ debugAdapterSuite("SVD generator tests", function(dc, dbgConfig)  {
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(genericConfig),
-            dc().waitForEvent("initialized").then(async() => {
+            dc().waitForEvent("stopped").then(async() => {
                 const cspyData: RegistersResponse = (await dc().customRequest(CustomRequest.REGISTERS)).body;
                 Assert.strictEqual(cspyData.svdContent, undefined);
             }),
         ]);
     });
 
-    test("STM32F401CB", async() => {
-        // delete cached register data
-        await Fs.promises.rm(Path.join(tmpdir(), "iar-vsc-registercache"), { recursive: true, force: true });
+    if (JSON.stringify( TestConfiguration.getConfiguration()) === JSON.stringify(TestConfiguration.ARMSIM2_CONFIG)) {
+        test("STM32F401CB", async() => {
+            // delete cached register data
+            await Fs.promises.rm(Path.join(tmpdir(), "iar-vsc-registercache"), { recursive: true, force: true });
 
-        let svdContent: string;
-        await Promise.all([
-            dc().configurationSequence(),
-            dc().launch(stm32Config),
-            dc().waitForEvent("initialized").then(async() => {
-                const cspyData: RegistersResponse = (await dc().customRequest(CustomRequest.REGISTERS)).body;
-                Assert(cspyData.svdContent);
-                svdContent = cspyData.svdContent;
-                assertCspyMatchesSvdFile(new JSDOM(cspyData.svdContent).window.document, stm32Svd);
+            let svdContent: string;
+            await Promise.all([
+                dc().configurationSequence(),
+                dc().launch(stm32Config),
+                dc().waitForEvent("initialized").then(async() => {
+                    const cspyData: RegistersResponse = (await dc().customRequest(CustomRequest.REGISTERS)).body;
+                    Assert(cspyData.svdContent);
+                    svdContent = cspyData.svdContent;
+                    assertCspyMatchesSvdFile(new JSDOM(cspyData.svdContent).window.document, stm32Svd);
 
-                // This should fetch from in-memory cache
-                const cspyData2: RegistersResponse = (await dc().customRequest(CustomRequest.REGISTERS)).body;
-                Assert.deepStrictEqual(cspyData, cspyData2);
-            }),
-        ]);
+                    // This should fetch from in-memory cache
+                    const cspyData2: RegistersResponse = (await dc().customRequest(CustomRequest.REGISTERS)).body;
+                    Assert.deepStrictEqual(cspyData, cspyData2);
+                }),
+            ]);
 
-        // Restart the session and test that it works now that we have it cached
-        await dc().stop();
-        // Need to wait a bit for the adapter to be ready again
-        await TestUtils.wait(1000);
-        // dc = new DebugClient("node", "", "cspy");
-        dc().on("output", ev => {
-            console.log("CONSOLE OUT: " + ev.body.output.trim());
+            // Restart the session and test that it works now that we have it cached
+            await dc().stop();
+            // Need to wait a bit for the adapter to be ready again
+            await TestUtils.wait(1000);
+            await dc().start(ADAPTER_PORT);
+
+            await Promise.all([
+                dc().configurationSequence(),
+                dc().launch(stm32Config),
+                dc().waitForEvent("stopped").then(async() => {
+                    const cachedRegistersData: RegistersResponse = (await dc().customRequest(CustomRequest.REGISTERS)).body;
+                    Assert(cachedRegistersData.svdContent);
+                    Assert.strictEqual(svdContent, cachedRegistersData.svdContent);
+                }),
+            ]);
         });
-        await dc().start(ADAPTER_PORT);
-
-        await Promise.all([
-            dc().configurationSequence(),
-            dc().launch(stm32Config),
-            dc().waitForEvent("initialized").then(async() => {
-                const cachedRegistersData: RegistersResponse = (await dc().customRequest(CustomRequest.REGISTERS)).body;
-                Assert(cachedRegistersData.svdContent);
-                Assert.strictEqual(svdContent, cachedRegistersData.svdContent);
-            }),
-        ]);
-    });
-
+    }
     test("Returns SVD for configured device", () => {
         const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
         dbgConfigCopy.stopOnEntry = false;
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
-            dc().waitForEvent("initialized").then(async() => {
+            dc().waitForEvent("stopped").then(async() => {
                 const svdResponse: RegistersResponse = (await dc().customRequest(CustomRequest.REGISTERS)).body;
                 if (TestConfiguration.getConfiguration().expectPeriphals) {
                     Assert(svdResponse.svdContent !== undefined);

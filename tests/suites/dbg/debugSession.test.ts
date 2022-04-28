@@ -37,7 +37,7 @@ suite("New tests", () =>{
     setup(async function() {
         console.log("\n==========================================================" + this.currentTest!.title + "==========================================================\n");
         await vscode.debug.startDebugging(undefined, dbgConfig);
-        await TestUtils.wait(2000);
+        await TestUtils.wait(4000);
 
     });
 
