@@ -306,7 +306,7 @@
 					{
 						"type": "cspy",
 						"request": "launch",
-						"name": "Debug with C-SPY",
+						"name": "Template C-SPY Configuration",
 						"target": "arm",
 						"program": "${workspaceFolder}/Debug/Exe/ewproj.out",
 						"stopOnEntry": true,
