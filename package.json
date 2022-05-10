@@ -48,7 +48,7 @@
 		"async-mutex": "^0.3.2",
 		"await-notify": "1.0.1",
 		"bufferutil": "^4.0.6",
-		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#9d95da8b",
+		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#191e0140",
 		"thrift": "^0.12.0",
 		"utf-8-validate": "^5.0.9",
 		"uuid": "^8.3.2",
