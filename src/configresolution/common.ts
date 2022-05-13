@@ -17,6 +17,7 @@ export namespace ConfigResolutionCommon {
         target: string;
         stopOnEntry: boolean;
         projectName: string;
+        projectPath?: string;
         configuration: string;
         plugins: string[];
         macros: string[];
@@ -40,14 +41,9 @@ export namespace ConfigResolutionCommon {
         // Lowercase here is mostly for display purposes - the debug adapter resolves drivers case-insensitive anyway
         const driverName = driverFile.replace(new RegExp(`lib|.so|.dll|${parts.target}`, "ig"), "").toLowerCase();
 
-        // Express the program as a workspace-relative path if possible
-        let program = parts.program;
-        if (wsDir !== undefined) {
-            const wsRelativePath = Path.relative(wsDir, parts.program);
-            if (!wsRelativePath.startsWith("..") && !Path.isAbsolute(wsRelativePath)) {
-                program = Path.join("${workspaceFolder}", wsRelativePath);
-            }
-        }
+        // Express the program and project as a workspace-relative path if possible
+        const program = wsDir ? toWorkspaceRelativePath(parts.program, wsDir) : parts.program;
+        const project = parts.projectPath ? (wsDir ? toWorkspaceRelativePath(parts.program, wsDir) : parts.projectPath) : "${workspaceFolder}";
 
         // Assemble the configuration
         const config: vscode.DebugConfiguration & CSpyLaunchRequestArguments = {
@@ -59,7 +55,7 @@ export namespace ConfigResolutionCommon {
             driver: driverName,
             stopOnEntry: parts.stopOnEntry,
             workbenchPath: "${command:iar-settings.toolchain}",
-            projectPath: wsDir ?? "",
+            projectPath: project,
             projectConfiguration: parts.configuration,
             driverOptions: parts.driverOptions,
         };
@@ -85,6 +81,16 @@ export namespace ConfigResolutionCommon {
         }
 
         return config;
+    }
+
+    // Converts `path` to a path that is expressed as relative to the given workspace directory.
+    // If `path` is not in `wsDir`, returns `path` as-is.
+    function toWorkspaceRelativePath(path: string, wsDir: string) {
+        const wsRelativePath = Path.relative(wsDir, path);
+        if (!wsRelativePath.startsWith("..") && !Path.isAbsolute(wsRelativePath)) {
+            return Path.join("${workspaceFolder}", wsRelativePath);
+        }
+        return path;
     }
 
     // Gets the basename (the last portion) of a path. This function handles both back- and forward slashes,

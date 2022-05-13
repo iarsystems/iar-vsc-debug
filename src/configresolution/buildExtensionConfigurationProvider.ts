@@ -20,12 +20,11 @@ export namespace BuildExtensionConfigurationProvider {
         configName: string,
         target: string
     ): ConfigResolutionCommon.PartialConfig {
-        const projName = path.basename(projectPath, ".ewp");
-        return parseCspyCommandLine(cspyCommands, projName, configName, target);
+        return parseCspyCommandLine(cspyCommands, projectPath, configName, target);
     }
 
     // Parses c-spy arguments into a debug configuration. Corresponds to DlDebugConfiguration::ParseArguments
-    function parseCspyCommandLine(cspyCommands: string[], projName: string, configName: string, target: string): ConfigResolutionCommon.PartialConfig {
+    function parseCspyCommandLine(cspyCommands: string[], projPath: string, configName: string, target: string): ConfigResolutionCommon.PartialConfig {
         let program: string | undefined;
         let driver: string | undefined;
         let stopOnEntry = false;
@@ -87,7 +86,8 @@ export namespace BuildExtensionConfigurationProvider {
             driverPath: driver,
             target,
             stopOnEntry,
-            projectName: projName,
+            projectName: path.basename(projPath, ".ewp"),
+            projectPath: projPath,
             configuration: configName,
             plugins,
             macros,

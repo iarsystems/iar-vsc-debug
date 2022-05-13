@@ -50,7 +50,7 @@ export namespace XclConfigurationProvider {
         targetXcls.forEach(target => {
             const filePaths = target.split(".");
             if (filePaths[0] === undefined || filePaths[1] === undefined) return;
-            const config = convertXclToDebugConfiguration(projectFolder, filePaths[0], filePaths[1]);
+            const config = convertXclToDebugConfiguration(filePaths[0], filePaths[1], settingsDir);
             if (config) {
                 configs.push(config);
             }
@@ -61,49 +61,32 @@ export namespace XclConfigurationProvider {
 
     /**
      * Provides a debug configuration for a specific project and project configuration, if possible.
-     * @param workspaceFolder The current workspace folder, used to generate workspace-relative paths
      * @param project The path to a .ewp file
      * @param configuration The name of the project configuration
      */
     export function provideDebugConfigurationFor(project: string, configuration: string): ConfigResolutionCommon.PartialConfig {
         const projName = path.basename(project, ".ewp");
-        const projDir = path.dirname(project);
-        const xclBaseName = generateXclBasename(projName, configuration);
-        const genXclFile = path.join(projDir, FileNames.settingsCatalog, `${xclBaseName}${FileNames.genXcl}`);
-        const drvXclFile = path.join(projDir, FileNames.settingsCatalog, `${xclBaseName}${FileNames.drvXcl}`);
-        // Ensure that both the files exists on disk.
-        let errMsg = "Unknown error.";
-        if (fs.existsSync(genXclFile) && fs.existsSync(drvXclFile)) {
-            const config = convertXclToDebugConfiguration(projDir, projName, configuration);
-            if (config) {
-                return config;
-            }
-            errMsg = "Failed to generate launch configuration.";
-        } else {
-            errMsg = `${genXclFile} or ${drvXclFile} is missing.`;
-        }
-        throw new Error(errMsg);
+        const settingsDir = path.join(path.dirname(project), FileNames.settingsCatalog);
+
+        const config = convertXclToDebugConfiguration(projName, configuration, settingsDir);
+        config.projectPath = project;
+        return config;
     }
 
     /**
      * Reads the content from driver.xcl and general.xcl and attempts to generate a
      * valid launch configuration.
-     * @param ewpDir The folder in which the ewp-file is located.
-     * @param projName The name of the project
-     * @param configName the name of the configuration
-     * @returns undefined if fail or a valid launch configuration.
      */
-    function convertXclToDebugConfiguration(ewpDir: string, projName: string, configName: string): ConfigResolutionCommon.PartialConfig {
-        const baseName = generateXclBasename(projName, configName);
-        const genXclFile = path.join(ewpDir, FileNames.settingsCatalog, baseName + FileNames.genXcl);
-        const drvXclFile = path.join(ewpDir, FileNames.settingsCatalog, baseName + FileNames.drvXcl);
-
+    function convertXclToDebugConfiguration(projectName: string, configuration: string, settingsDir: string): ConfigResolutionCommon.PartialConfig {
+        const baseName = generateXclBasename(projectName, configuration);
+        const genXclFile = path.join(settingsDir, baseName + FileNames.genXcl);
+        const drvXclFile = path.join(settingsDir, baseName + FileNames.drvXcl);
         // We need both files to exist.
         if (!fs.existsSync(genXclFile) || !fs.existsSync(drvXclFile)) {
-            throw new Error("Missing xcl files");
+            throw new Error( `${genXclFile} or ${drvXclFile} is missing.`);
         }
 
-        return generateDebugConfiguration(projName, configName, readLinesFromXclFile(genXclFile), readLinesFromXclFile(drvXclFile));
+        return generateDebugConfiguration(projectName, configuration, readLinesFromXclFile(genXclFile), readLinesFromXclFile(drvXclFile));
     }
 
     /**
