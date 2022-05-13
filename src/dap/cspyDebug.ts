@@ -455,13 +455,15 @@ export class CSpyDebugSession extends LoggingDebugSession {
                         variablesReference: result.variablesReference,
                     };
                 } catch (e) {
-                    if (e instanceof Error || typeof(e) === "string") {
-                        logger.error(e.toString());
+                    // A hack to support the MS RTOS view. It stops if we return an error here, without checking for freertos.
+                    if (args.expression === "_tx_thread_created_ptr") {
+                        response.body = {
+                            result: "",
+                            variablesReference: 0,
+                        };
+                    } else {
+                        throw e;
                     }
-                    response.body = {
-                        result: "",
-                        variablesReference: 0,
-                    };
                 }
             });
         }
