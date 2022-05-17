@@ -202,17 +202,17 @@
 							"workbenchPath": {
 								"type": "string",
 								"description": "Path to the IAR Embedded Workbench installation to use (e.g. \"C:\\\\Program Files (x86)\\\\IAR Systems\\\\Embedded Workbench 8.3\").",
-								"default": "${command:iar-settings.toolchain} for an iar-build project or path to EW root."
+								"default": "${command:iar-config.toolchain} for an iar-build project or path to EW root."
 							},
 							"projectPath": {
 								"type": "string",
 								"description": "Path to a .ewp file, or a folder in which to place debug settings files.",
-								"default": "${command:iar-settings.project-file} for an iar-build project."
+								"default": "${command:iar-config.project-file} for an iar-build project."
 							},
 							"projectConfiguration": {
 								"type": "string",
 								"description": "Name of the project configuration to debug (e.g. Debug). Only applicable to .ewp projects",
-								"default": "${command:iar-settings.project-configuration} for an iar-build project. Remove this for other project types."
+								"default": "${command:iar-config.project-configuration} for an iar-build project. Remove this for other project types."
 							},
 							"driver": {
 								"type": "string",
@@ -310,9 +310,9 @@
 						"target": "arm",
 						"program": "${workspaceFolder}/Debug/Exe/ewproj.out",
 						"stopOnEntry": true,
-						"workbenchPath": "${command:iar-settings.toolchain} for an iar-build project or path to EW root.",
-						"projectPath": "${command:iar-settings.project-file} for an iar-build project.",
-						"projectConfiguration": "${command:iar-settings.project-configuration} for an iar-build project. Remove this for other project types",
+						"workbenchPath": "${command:iar-config.toolchain} for an iar-build project or path to EW root.",
+						"projectPath": "${command:iar-config.project-file} for an iar-build project or ${workspaceFolder} otherwise.",
+						"projectConfiguration": "${command:iar-config.project-configuration} for an iar-build project. Remove this for other project types.",
 						"driver": "sim2",
 						"driverOptions": [
 							"--endian=little",
@@ -331,11 +331,11 @@
 							"request": "launch",
 							"name": "${1:Debug with C-SPY}",
 							"target": "arm",
-							"program": "^\"\\${workspaceFolder}/\\${command:iar-settings.project-configuration}/Exe/${2:ewproj.out}\"",
+							"program": "^\"\\${workspaceFolder}/\\${command:iar-config.project-configuration}/Exe/${2:ewproj.out}\"",
 							"stopOnEntry": true,
-							"workbenchPath": "^\"\\${command:iar-settings.toolchain}\"",
-							"projectPath": "^\"\\${command:iar-settings.project-file}\"",
-							"projectConfiguration": "^\"\\${command:iar-settings.project-configuration}\"",
+							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
+							"projectPath": "^\"\\${command:iar-config.project-file}\"",
+							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
 							"driver": "sim2",
 							"driverOptions": [
 								"--endian=little",

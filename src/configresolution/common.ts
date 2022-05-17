@@ -43,7 +43,7 @@ export namespace ConfigResolutionCommon {
 
         // Express the program and project as a workspace-relative path if possible
         const program = wsDir ? toWorkspaceRelativePath(parts.program, wsDir) : parts.program;
-        const project = parts.projectPath ? (wsDir ? toWorkspaceRelativePath(parts.program, wsDir) : parts.projectPath) : "${workspaceFolder}";
+        const project = parts.projectPath ? (wsDir ? toWorkspaceRelativePath(parts.projectPath, wsDir) : parts.projectPath) : "${workspaceFolder}";
 
         // Assemble the configuration
         const config: vscode.DebugConfiguration & CSpyLaunchRequestArguments = {
@@ -54,7 +54,7 @@ export namespace ConfigResolutionCommon {
             program: program,
             driver: driverName,
             stopOnEntry: parts.stopOnEntry,
-            workbenchPath: "${command:iar-settings.toolchain}",
+            workbenchPath: "${command:iar-config.toolchain}",
             projectPath: project,
             projectConfiguration: parts.configuration,
             driverOptions: parts.driverOptions,
