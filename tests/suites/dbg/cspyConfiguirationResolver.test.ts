@@ -31,7 +31,7 @@ suite("Configuration resolution tests", () => {
     suiteSetup(() => {
         // Find a workbench to build with
         const installDirs = TestUtils.getEwPaths();
-        assert.ok(installDirs, "No workbenches found to use for debugging");
+        assert(installDirs[0], "No workbench found to use for debugging");
         // For now just use the first entry, and assume it points directly to a top-level ew directory
         workbench = installDirs[0];
     });

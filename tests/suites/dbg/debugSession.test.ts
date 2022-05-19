@@ -27,9 +27,9 @@ suite("New tests", () =>{
     suiteSetup(() => {
         // Find a workbench to build with
         const installDirs = TestUtils.getEwPaths();
-        Assert(installDirs, "No workbenches found to use for debugging");
         // For now just use the first entry, and assume it points directly to a top-level ew directory
         const workbench = installDirs[0];
+        Assert(workbench, "No workbench found to use for debugging");
 
         dbgConfig = TestUtils.doSetup(workbench);
     });
