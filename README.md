@@ -1,6 +1,6 @@
 # IAR C-SPY Debugger
 
-Use IAR System's C-SPY Debugger to debug embedded programs using Visual Studio Code, with support for a wide range of embedded devices and debug probes. This extension can be used with IAR Embedded Workbench (.ewp) projects, or with other build systems such as CMake. An IAR Embedded Workbench installation using IDE version 8 or newer is required to use this extension. See [Comapibility](#compatibility) table below for detailed information.
+Use IAR System's C-SPY Debugger to debug embedded programs using Visual Studio Code, with support for a wide range of embedded devices and debug probes. This extension can be used with IAR Embedded Workbench (.ewp) projects, or with other build systems such as CMake. An IAR Embedded Workbench installation using IDE version 8 or newer is required to use this extension. See [Compatibility](#compatibility) table below for detailed information.
 
 ![](https://github.com/IARSystems/iar-vsc-debug/blob/master/md-images/debug-session.png)
 
