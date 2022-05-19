@@ -1,6 +1,6 @@
 # IAR C-SPY Debugger
 
-Use IAR System's C-SPY Debugger to debug embedded programs using Visual Studio Code, with support for a wide range of embedded devices and debug probes. This extension can be used with IAR Embedded Workbench (.ewp) projects, or with other build systems such as CMake. An IAR Embedded Workbench installation for Arm or RISC-V is required to use this extension.
+Use IAR System's C-SPY Debugger to debug embedded programs using Visual Studio Code, with support for a wide range of embedded devices and debug probes. This extension can be used with IAR Embedded Workbench (.ewp) projects, or with other build systems such as CMake. An IAR Embedded Workbench installation using IDE version 8 or newer is required to use this extension. See [Comapibility](#compatibility) table below for detailed information.
 
 ![](https://github.com/IARSystems/iar-vsc-debug/blob/master/md-images/debug-session.png)
 
@@ -45,12 +45,6 @@ For more help, see [Debugging a stand-alone application](https://github.com/IARS
 [Click here](https://github.com/IARSystems/iar-vsc-debug/blob/master/docs/README.md) to view the full documentation.
 
 ## Compatibility
-This extension supports IAR Embedded Workbench for Arm and RISC-V.
-The table below helps you find the extension version supported by your IAR Embedded Workbench.
-The IAR shared components version can be found in IAR Embedded Workbench by going to `Help->About->Product Info...`
-or by looking at the version number printed when running `iarbuild`.
-
-## Compatibility
 This extension is compatible with selected IAR Embedded Workbench (EW) products using IDE version 8 or newer. The following table decsribes the level of support for your specific product:
 
 <details><summary>IAR EW - Compatibility table</summary>
@@ -58,7 +52,8 @@ This extension is compatible with selected IAR Embedded Workbench (EW) products 
 | IAR EW version  | Limitation
 |--------------|---------
 | ARM v9.30 or later <br>RH850 v3.10 or later<br> | None |
-| ARM v8.40-9.20.4| An initial debug session with EW is required prior to debugging in VSCode. |
+| RISC-V v3.10 or later | Terminal I/O is not supported |
+| ARM v8.40-9.20.4| An initial debug session with EW is required prior to debugging in VSCode |
 
 </details>
 
@@ -66,4 +61,4 @@ This extension is compatible with selected IAR Embedded Workbench (EW) products 
 Depending on which feedback you want to share with us, here are the preferred options:
 * If you have ideas on how to improve this extension or if you have found issues with it, see [CONTRIBUTING.md](https://github.com/IARSystems/iar-vsc-debug/blob/master/CONTRIBUTING.md) on how to proceed.
 
-* If you have issues with the underlying IAR Embedded Workbench or IAR Built Tools product, report this via the IAR Systems technical support channel at [IAR Technical Support](https://www.iar.com/knowledge/support/).
+* If you have issues with the underlying IAR Embedded Workbench or IAR Build Tools product, report this via the IAR Systems technical support channel at [IAR Technical Support](https://www.iar.com/knowledge/support/).
