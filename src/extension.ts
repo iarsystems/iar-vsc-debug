@@ -7,8 +7,7 @@ import * as vscode from "vscode";
 import { CSpyDebugSession } from "./dap/cspyDebug";
 import { DebugSessionTracker } from "./debugSessionTracker";
 import { BreakpointCommands } from "./breakpointCommands";
-import { CSpyConfigurationResolver } from "./configresolution/cspyConfigurationResolver";
-import { CSpyConfigurationsProvider } from "./configresolution/cspyConfigurationsProvider";
+import { DefaultCSpyConfigurationResolver, CSpyConfigurationsProvider, InitialCSpyConfigurationProvider } from "./configproviders/cspyConfigurationProviders";
 import { SettingsConstants } from "./settingsConstants";
 import { BreakpointType } from "./dap/breakpoints/cspyBreakpointManager";
 import { CustomRequest, RegistersResponse } from "./dap/customRequest";
@@ -26,9 +25,9 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", new CSpyConfigurationsProvider(), vscode.DebugConfigurationProviderTriggerKind.Initial));
+    context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", new InitialCSpyConfigurationProvider(), vscode.DebugConfigurationProviderTriggerKind.Initial));
     context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", new CSpyConfigurationsProvider(), vscode.DebugConfigurationProviderTriggerKind.Dynamic));
-    context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", new CSpyConfigurationResolver()));
+    context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", new DefaultCSpyConfigurationResolver()));
 
     sessionTracker = new DebugSessionTracker(context);
     BreakpointCommands.registerCommands(context, sessionTracker);

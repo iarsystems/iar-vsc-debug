@@ -4,8 +4,8 @@
 import { runTestsIn } from "iar-vsc-common/testutils/testRunner";
 import * as path from "path";
 import { exit } from "process";
-import { ConfigResolutionCommon } from "../src/configresolution/common";
-import { XclConfigurationProvider } from "../src/configresolution/xclConfigurationProvider";
+import { ConfigResolutionCommon } from "../src/configproviders/supplier/common";
+import { XclConfigurationSupplier } from "../src/configproviders/supplier/xclConfigurationSupplier";
 import { TestConfiguration } from "./suites/testConfiguration";
 
 function printHelp() {
@@ -33,12 +33,12 @@ async function main() {
     }
     const cspyArgs = cmdlineEnvs["cspybat-args"].split(/(?<!\\)\s+/g);
     const backendIdx = cspyArgs.indexOf("--backend");
-    const partialConfig = XclConfigurationProvider.generateDebugConfiguration(
+    const partialConfig = XclConfigurationSupplier.generateDebugConfiguration(
         "",
         "Debug",
         cspyArgs.slice(0, backendIdx),
         cspyArgs.slice(backendIdx+1));
-    const debugConfig = ConfigResolutionCommon.instantiateConfiguration(partialConfig);
+    const debugConfig = ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfig);
 
     if (debugConfig === undefined) {
         throw new Error("Unable to create launch config from cspybat cmdline. Check its validity.");

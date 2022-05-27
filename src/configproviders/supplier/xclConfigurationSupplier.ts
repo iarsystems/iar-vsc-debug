@@ -10,7 +10,7 @@ import { ConfigResolutionCommon } from "./common";
 /**
  * Provides automatic debug configurations from the .xcl files in a project folder
  */
-export namespace XclConfigurationProvider {
+export namespace XclConfigurationSupplier {
     namespace FileNames {
         // Catalog and file names
         export const drvXcl = ".driver.xcl";

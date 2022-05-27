@@ -32,7 +32,7 @@
 		"multi-root ready"
 	],
 	"engines": {
-		"vscode": "^1.46.0",
+		"vscode": "^1.64.0",
 		"node": "^14.4.0"
 	},
 	"categories": [
@@ -48,7 +48,7 @@
 		"async-mutex": "^0.3.2",
 		"await-notify": "1.0.1",
 		"bufferutil": "^4.0.6",
-		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#92340273",
+		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#790ee2c0",
 		"thrift": "^0.12.0",
 		"utf-8-validate": "^5.0.9",
 		"uuid": "^8.3.2",
@@ -61,7 +61,7 @@
 		"@types/node-int64": "^0.4.29",
 		"@types/thrift": "^0.10.9",
 		"@types/uuid": "^8.3.1",
-		"@types/vscode": "^1.46.0",
+		"@types/vscode": "1.64.0",
 		"@typescript-eslint/eslint-plugin": "^5.2.0",
 		"@typescript-eslint/parser": "^5.2.0",
 		"@vscode/debugadapter-testsupport": "^1.51.0",
@@ -89,7 +89,7 @@
 	"activationEvents": [
 		"onDebugResolve:cspy",
 		"onDebugDynamicConfigurations:cspy",
-		"onDebugInitialConfigurations:cspy",
+		"onDebugInitialConfigurations",
 		"onCommand:iar.useAutoBreakpoints",
 		"onCommand:iar.useHardwareBreakpoints",
 		"onCommand:iar.useSoftwareBreakpoints"
@@ -303,62 +303,6 @@
 					}
 				},
 				"initialConfigurations": [
-					{
-						"type": "cspy",
-						"request": "launch",
-						"name": "Template: Debug with C-SPY simulator",
-						"target": "arm",
-						"program": "${workspaceFolder}/Debug/Exe/ewproj.out",
-						"stopOnEntry": true,
-						"workbenchPath": "${command:iar-config.toolchain} for an iar-build project or path to EW root.",
-						"projectPath": "${command:iar-config.project-file} for an iar-build project or ${workspaceFolder} otherwise.",
-						"projectConfiguration": "${command:iar-config.project-configuration} for an iar-build project. Remove this for other project types.",
-						"driver": "sim2",
-						"driverOptions": [
-							"--endian=little",
-							"--cpu=<CPU_NAME>",
-							"--fpu=None",
-							"--semihosting"
-						]
-					},
-					{
-						"type": "cspy",
-						"request": "launch",
-						"name": "Template: Debug with C-SPY I-Jet",
-						"target": "arm",
-						"program": "${workspaceFolder}/Debug/Exe/ewproj.out",
-						"stopOnEntry": true,
-						"workbenchPath": "${command:iar-config.toolchain} for an iar-build project or path to EW root.",
-						"projectPath": "${command:iar-config.project-file} for an iar-build project or ${workspaceFolder} otherwise.",
-						"projectConfiguration": "${command:iar-config.project-configuration} for an iar-build project. Remove this for other project types.",
-						"driver": "jet",
-						"driverOptions": [
-							"--endian=little",
-							"--cpu=<CPU-NAME>",
-							"--fpu=<FPU-NAME>",
-							"-p",
-							"<EW-PATH>/arm/CONFIG/debugger/<PATH-TO-.ddf>",
-							"--device=<DEVICE-NAME>",
-							"--semihosting",
-							"--jet_standard_reset=4,0,0",
-							"--reset_style=\"0,-,0,Disabled (no reset)\"",
-							"--reset_style=\"1,-,0,Software\"",
-							"--reset_style=\"2,-,0,Hardware\"",
-							"--reset_style=\"3,-,0,Core\"",
-							"--reset_style=\"4,-,1,System\"",
-							"--reset_style=\"9,ConnectUnderReset,0,Connect during reset\"",
-							"--jet_power_from_probe=leave_on",
-							"--drv_interface=SWD",
-							"--jet_cpu_clock=180000000",
-							"--drv_catch_exceptions=0xff0"
-						],
-						"download": {
-							"flashLoader": "<EW-PATH>/arm/config/flashloader/<PATH-TO-.board>",
-							"deviceMacros": [
-								"<EW-PATH>/arm/CONFIG/debugger/<PATH-TO-.dmac>"
-							]
-						}
-					}
 				],
 				"configurationSnippets": [
 					{

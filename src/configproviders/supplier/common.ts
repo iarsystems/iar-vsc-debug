@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import * as vscode from "vscode";
 import * as Path from "path";
-import { CSpyLaunchRequestArguments } from "../dap/cspyDebug";
+import { CSpyLaunchRequestArguments } from "../../dap/cspyDebug";
 import { OsUtils } from "iar-vsc-common/osUtils";
 
 /**
@@ -12,7 +12,7 @@ import { OsUtils } from "iar-vsc-common/osUtils";
 export namespace ConfigResolutionCommon {
     /**
      * A partially resolved debug configuration corresponding *roughly* to a {@link CSpyLaunchRequestArguments}.
-     * To create a launch.json debug configuration matching it, call {@link instantiateConfiguration}.
+     * To create a launch.json debug configuration matching it, call {@link toLaunchJsonConfiguration}.
      */
     export interface PartialConfig {
         program: string;
@@ -36,7 +36,7 @@ export namespace ConfigResolutionCommon {
      * @param parts The partial configuration from some configuration provider
      * @param wsDir The workspace folder this configuration will be used in
      */
-    export function instantiateConfiguration(parts: PartialConfig, wsDir?: string): vscode.DebugConfiguration & CSpyLaunchRequestArguments {
+    export function toLaunchJsonConfiguration(parts: PartialConfig, wsDir?: string): vscode.DebugConfiguration & CSpyLaunchRequestArguments {
 
         // The driver is usually given as a path to libarmsim2.so or armsim2.dll so remove
         // directory part, the target name and any extensions
