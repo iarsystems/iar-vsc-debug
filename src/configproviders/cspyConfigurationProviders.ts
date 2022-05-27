@@ -29,29 +29,34 @@ export class CSpyConfigurationsProvider implements vscode.DebugConfigurationProv
 export class InitialCSpyConfigurationProvider implements vscode.DebugConfigurationProvider {
 
     async provideDebugConfigurations(folder: vscode.WorkspaceFolder | undefined, _?: vscode.CancellationToken): Promise<LaunchConfigurationSupplier.CspyLaunchJsonConfiguration[] | undefined> {
+        const options: Array<vscode.QuickPickItem & {launchConfig?: LaunchConfigurationSupplier.CspyLaunchJsonConfiguration}> = [];
+        let relevantTemplates = TEMPLATES;
+
         const supplierResult = await LaunchConfigurationSupplier.supplyAllLaunchConfigsFor(folder);
-        const templates = TEMPLATES["arm"] ?? [];
         if (typeof supplierResult === "number") {
             vscode.window.showErrorMessage(LaunchConfigurationSupplier.toErrorMessage(supplierResult));
         } else {
-            const options: Array<vscode.QuickPickItem & {launchConfig?: LaunchConfigurationSupplier.CspyLaunchJsonConfiguration}>
-                = supplierResult.map(launchConfig => {
-                    return { label: launchConfig.name, description: launchConfig.driver, launchConfig };
+            if (supplierResult.length > 0) {
+                options.push({ label: "Auto-generated", kind: vscode.QuickPickItemKind.Separator });
+                supplierResult.forEach(launchConfig => {
+                    options.push({ label: launchConfig.name, description: launchConfig.driver, launchConfig });
                 });
-            if (templates.length > 0) {
-                options.push({ label: "Templates", kind: vscode.QuickPickItemKind.Separator });
-                templates.forEach(template => options.push({ label: template.name, description: Workbench.getTargetDisplayName(template.target) + " template", launchConfig: template }));
             }
-            const choice = await vscode.window.showQuickPick(options, { title: "Select initial launch.json configuration" });
-            // TODO:
-            if (choice?.launchConfig) {
-                return [choice.launchConfig];
-            } else {
-                const fallbackChoice = supplierResult[0] ?? templates[0];
-                return fallbackChoice ? [fallbackChoice] : undefined;
-            }
+            relevantTemplates = TEMPLATES.filter(template => supplierResult.some(config => config.target === template.target));
         }
-        return templates[0] ? [templates[0]] : undefined;
+        if (relevantTemplates.length > 0) {
+            options.push({ label: "Templates", kind: vscode.QuickPickItemKind.Separator });
+            relevantTemplates.forEach(template => options.push({ label: template.name, description: Workbench.getTargetDisplayName(template.target) + " template", launchConfig: template }));
+        }
+
+        const choice = await vscode.window.showQuickPick(options, { title: "Select initial launch.json configuration" });
+        if (choice?.launchConfig) {
+            return [choice.launchConfig];
+        } else {
+            const fallbackChoice = options.find(option => option.launchConfig !== undefined);
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            return fallbackChoice ? [fallbackChoice.launchConfig!] : undefined;
+        }
     }
 }
 
@@ -81,64 +86,106 @@ export class DefaultCSpyConfigurationResolver implements vscode.DebugConfigurati
     }
 }
 
-const TEMPLATES: Record<string, LaunchConfigurationSupplier.CspyLaunchJsonConfiguration[]> = {
-    "arm": [
-        {
-            type: "cspy",
-            request: "launch",
-            name: "Template: Debug with C-SPY simulator",
-            target: "arm",
-            program: "${workspaceFolder}/Debug/Exe/ewproj.out",
-            stopOnEntry: true,
-            workbenchPath: "${command:iar-config.toolchain} for an iar-build project or path to EW root.",
-            projectPath: "${command:iar-config.project-file} for an iar-build project or ${workspaceFolder} otherwise.",
-            projectConfiguration: "${command:iar-config.project-configuration} for an iar-build project. Remove this for other project types.",
-            driver: "sim2",
-            driverOptions: [
-                "--endian=little",
-                "--cpu=<CPU_NAME>",
-                "--fpu=None",
-                "--semihosting"
+const TEMPLATES: LaunchConfigurationSupplier.CspyLaunchJsonConfiguration[] = [
+    {
+        type: "cspy",
+        request: "launch",
+        name: "Template: Debug with C-SPY simulator",
+        target: "arm",
+        program: "${workspaceFolder}/Debug/Exe/ewproj.out",
+        stopOnEntry: true,
+        workbenchPath: "${command:iar-config.toolchain} for an iar-build project or path to EW root.",
+        projectPath: "${command:iar-config.project-file} for an iar-build project or ${workspaceFolder} otherwise.",
+        projectConfiguration: "${command:iar-config.project-configuration} for an iar-build project. Remove this for other project types.",
+        driver: "sim2",
+        driverOptions: [
+            "--endian=little",
+            "--cpu=<CPU-NAME>",
+            "--fpu=None",
+            "--semihosting"
+        ]
+    },
+    {
+        type: "cspy",
+        request: "launch",
+        name: "Template: Debug with C-SPY I-Jet",
+        target: "arm",
+        program: "${workspaceFolder}/Debug/Exe/ewproj.out",
+        stopOnEntry: true,
+        workbenchPath: "${command:iar-config.toolchain} for an iar-build project or path to EW root.",
+        projectPath: "${command:iar-config.project-file} for an iar-build project or ${workspaceFolder} otherwise.",
+        projectConfiguration: "${command:iar-config.project-configuration} for an iar-build project. Remove this for other project types.",
+        driver: "jet",
+        driverOptions: [
+            "--endian=little",
+            "--cpu=<CPU-NAME>",
+            "--fpu=<FPU-NAME>",
+            "-p",
+            "<EW-PATH>/arm/CONFIG/debugger/<PATH-TO-.ddf>",
+            "--device=<DEVICE-NAME>",
+            "--semihosting",
+            "--jet_standard_reset=4,0,0",
+            "--reset_style=\"0,-,0,Disabled (no reset)\"",
+            "--reset_style=\"1,-,0,Software\"",
+            "--reset_style=\"2,-,0,Hardware\"",
+            "--reset_style=\"3,-,0,Core\"",
+            "--reset_style=\"4,-,1,System\"",
+            "--reset_style=\"9,ConnectUnderReset,0,Connect during reset\"",
+            "--jet_power_from_probe=leave_on",
+            "--drv_interface=SWD",
+            "--jet_cpu_clock=180000000",
+            "--drv_catch_exceptions=0xff0"
+        ],
+        download: {
+            flashLoader: "<EW-PATH>/arm/config/flashloader/<PATH-TO-.board>",
+            deviceMacros: [
+                "<EW-PATH>/arm/CONFIG/debugger/<PATH-TO-.dmac>"
             ]
-        },
-        {
-            type: "cspy",
-            request: "launch",
-            name: "Template: Debug with C-SPY I-Jet",
-            target: "arm",
-            program: "${workspaceFolder}/Debug/Exe/ewproj.out",
-            stopOnEntry: true,
-            workbenchPath: "${command:iar-config.toolchain} for an iar-build project or path to EW root.",
-            projectPath: "${command:iar-config.project-file} for an iar-build project or ${workspaceFolder} otherwise.",
-            projectConfiguration: "${command:iar-config.project-configuration} for an iar-build project. Remove this for other project types.",
-            driver: "jet",
-            driverOptions: [
-                "--endian=little",
-                "--cpu=<CPU-NAME>",
-                "--fpu=<FPU-NAME>",
-                "-p",
-                "<EW-PATH>/arm/CONFIG/debugger/<PATH-TO-.ddf>",
-                "--device=<DEVICE-NAME>",
-                "--semihosting",
-                "--jet_standard_reset=4,0,0",
-                "--reset_style=\"0,-,0,Disabled (no reset)\"",
-                "--reset_style=\"1,-,0,Software\"",
-                "--reset_style=\"2,-,0,Hardware\"",
-                "--reset_style=\"3,-,0,Core\"",
-                "--reset_style=\"4,-,1,System\"",
-                "--reset_style=\"9,ConnectUnderReset,0,Connect during reset\"",
-                "--jet_power_from_probe=leave_on",
-                "--drv_interface=SWD",
-                "--jet_cpu_clock=180000000",
-                "--drv_catch_exceptions=0xff0"
-            ],
-            download: {
-                flashLoader: "<EW-PATH>/arm/config/flashloader/<PATH-TO-.board>",
-                deviceMacros: [
-                    "<EW-PATH>/arm/CONFIG/debugger/<PATH-TO-.dmac>"
-                ]
-            }
         }
-
-    ]
-};
+    },
+    {
+        type: "cspy",
+        request: "launch",
+        name: "Template: Debug with C-SPY simulator",
+        target: "riscv",
+        program: "${workspaceFolder}/Debug/Exe/ewproj.out",
+        stopOnEntry: true,
+        workbenchPath: "${command:iar-config.toolchain} for an iar-build project or path to EW root.",
+        projectPath: "${command:iar-config.project-file} for an iar-build project or ${workspaceFolder} otherwise.",
+        projectConfiguration: "${command:iar-config.project-configuration} for an iar-build project. Remove this for other project types.",
+        driver: "sim",
+        driverOptions: [
+            "--core=RV32IMAFDCN_XANDESDSP_XANDESPERF_Zba_Zbb_Zbc_Zbs",
+            "-p",
+            "<EW-PATH>/riscv/config/debugger/ioriscv.ddf",
+            "-d",
+            "sim"
+        ]
+    },
+    {
+        type: "cspy",
+        request: "launch",
+        name: "Template: Debug with C-SPY I-Jet",
+        target: "riscv",
+        program: "${workspaceFolder}/Debug/Exe/ewproj.out",
+        stopOnEntry: true,
+        workbenchPath: "${command:iar-config.toolchain} for an iar-build project or path to EW root.",
+        projectPath: "${command:iar-config.project-file} for an iar-build project or ${workspaceFolder} otherwise.",
+        projectConfiguration: "${command:iar-config.project-configuration} for an iar-build project. Remove this for other project types.",
+        driver: "ijet",
+        driverOptions: [
+            "--core=RV32IMAFDCN_XANDESDSP_XANDESPERF_Zba_Zbb_Zbc_Zbs",
+            "-p",
+            "<EW-PATH>/riscv/config/debugger/ioriscv.ddf",
+            "--multicore_nr_of_cores=1",
+            "--jet_standard_reset=2,300,200",
+            "--reset_style=\"0,-,0,Disabled (no reset)",
+            "--reset_style=\"1,-,0,Software",
+            "--reset_style=\"2,-,1,Hardware",
+            "--reset_style=\"3,-,0,Core",
+            "--reset_style=\"4,-,0,System",
+            "--drv_catch_exceptions=0x70000000",
+            "--drv_system_bus_access"
+        ]
+    }
+];

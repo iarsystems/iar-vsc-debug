@@ -32,7 +32,7 @@ export interface PartialSessionConfiguration {
  * and fills in trivial configuration values.
  */
 export abstract class BaseConfigurationResolver implements ConfigurationResolver {
-    // TODO: consider changing this so the implementer has a chance to modify also the 'trivial' values before the config is returned.
+    private static readonly SUPPORTED_TARGETS = ["arm", "riscv"];
 
     async resolveLaunchArguments(launchArguments: CSpyLaunchRequestArguments): Promise<SessionConfiguration> {
         if (!Fs.existsSync(launchArguments.program)) {
@@ -41,8 +41,8 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
         if (launchArguments.projectPath && !Fs.existsSync(launchArguments.projectPath)) {
             return Promise.reject(new Error(`The path '${launchArguments.projectPath}' does not exist.`));
         }
-        if (!launchArguments.bypassTargetRestriction && launchArguments.target.toLowerCase() !== "arm") {
-            return Promise.reject(new Error(`Unsupported target '${launchArguments.target}'. Currently, only arm is supported.`));
+        if (!launchArguments.bypassTargetRestriction && !BaseConfigurationResolver.SUPPORTED_TARGETS.includes(launchArguments.target.toLowerCase())) {
+            return Promise.reject(new Error(`Unsupported target '${launchArguments.target}'. Currently, only ${BaseConfigurationResolver.SUPPORTED_TARGETS.join(", ")} are supported.`));
         }
 
         const partialValues = await this.resolveLaunchArgumentsPartial(launchArguments);

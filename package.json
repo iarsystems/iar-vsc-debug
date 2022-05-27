@@ -222,8 +222,8 @@
 									"sim",
 									"sim2",
 									"imperas",
-									"ocd",
 									"jet",
+									"ijet",
 									"jlink",
 									"gdbserv",
 									"cadi",
@@ -234,19 +234,19 @@
 									"tifet"
 								],
 								"enumDescriptions": [
-									"Simulator (32-bit) (RISCV)",
-									"Simulator (32-bit) (ARM)",
-									"Simulator (64-bit) (ARM)",
-									"Emulator (RH850)",
-									"I-jet (ARM/RISCV)",
-									"J-Link/J-Trace (ARM/RISCV)",
-									"GDB Server (ARM/RISCV)",
-									"CADI (ARM)",
-									"TI Stellaris (ARM)",
-									"PE micro (ARM)",
-									"ST-LINK (ARM)",
-									"TI XDS (ARM)",
-									"TI MSP-FET (ARM)"
+									"Simulator (32-bit) (RISC-V)",
+									"Simulator (32-bit) (Arm)",
+									"Simulator (64-bit) (Arm)",
+									"I-jet (Arm)",
+									"I-jet (RISC-V)",
+									"J-Link/J-Trace (Arm/RISC-V)",
+									"GDB Server (Arm/RISC-V)",
+									"CADI (Arm)",
+									"TI Stellaris (Arm)",
+									"PE micro (Arm)",
+									"ST-LINK (Arm)",
+									"TI XDS (Arm)",
+									"TI MSP-FET (Arm)"
 								]
 							},
 							"driverOptions": {
@@ -356,7 +356,7 @@
 						}
 					},
 					{
-						"label": "C-SPY: I-Jet launch configuration",
+						"label": "C-SPY: I-Jet launch configuration (Arm)",
 						"description": "A new configuration for debugging an .ewp project with an I-Jet probe.",
 						"body": {
 							"type": "cspy",
@@ -398,8 +398,8 @@
 						}
 					},
 					{
-						"label": "C-SPY: J-Link launch configuration",
-						"description": "A new configuration for debugging an .ewp project with an J-Link probe.",
+						"label": "C-SPY: J-Link launch configuration (Arm)",
+						"description": "A new configuration for debugging an .ewp project with a J-Link probe.",
 						"body": {
 							"type": "cspy",
 							"request": "launch",
@@ -436,7 +436,7 @@
 						}
 					},
 					{
-						"label": "C-SPY: TI MSP-FET launch configuration",
+						"label": "C-SPY: TI MSP-FET launch configuration (Arm)",
 						"description": "A new configuration for debugging an .ewp project with a TI MSP-FET probe.",
 						"body": {
 							"type": "cspy",
@@ -470,6 +470,59 @@
 									"^\"\\${command:iar-config.toolchain}/arm/CONFIG/debugger/${8:ST/STM32F4xx.dmac}\""
 								]
 							}
+						}
+					},
+					{
+						"label": "C-SPY: Simulator launch configuration (RISC-V)",
+						"description": "A new configuration for debugging an .ewp project with the simulator.",
+						"body": {
+							"type": "cspy",
+							"request": "launch",
+							"name": "${1:Debug with C-SPY Simulator}",
+							"target": "riscv",
+							"program": "${workspaceFolder}/Debug/Exe/${2:ewproj.out}",
+							"stopOnEntry": true,
+							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
+							"projectPath": "^\"\\${command:iar-config.project-file}\"",
+							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
+							"driver": "sim",
+							"driverOptions": [
+								"--core=${3:RV32IMAFDCN_XANDESDSP_XANDESPERF_Zba_Zbb_Zbc_Zbs}",
+								"-p",
+								"^\"\\${command:iar-config.toolchain}/riscv/config/debugger/${4:ioriscv.ddf}\"",
+								"-d",
+								"sim"
+							]
+						}
+					},
+					{
+						"label": "C-SPY: I-Jet launch configuration (RISC-V)",
+						"description": "A new configuration for debugging an .ewp project with an I-Jet probe.",
+						"body": {
+							"type": "cspy",
+							"request": "launch",
+							"name": "${1:Debug with C-SPY I-Jet}",
+							"target": "riscv",
+							"program": "${workspaceFolder}/Debug/Exe/${2:ewproj.out}",
+							"stopOnEntry": true,
+							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
+							"projectPath": "^\"\\${command:iar-config.project-file}\"",
+							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
+							"driver": "ijet",
+							"driverOptions": [
+								"--core=${3:RV32IMAFDCN_XANDESDSP_XANDESPERF_Zba_Zbb_Zbc_Zbs}",
+								"-p",
+								"^\"\\${command:iar-config.toolchain}/riscv/config/debugger/${4:ioriscv.ddf}\"",
+								"--multicore_nr_of_cores=1",
+								"--jet_standard_reset=2,300,200",
+								"--reset_style=\"0,-,0,Disabled (no reset)",
+								"--reset_style=\"1,-,0,Software",
+								"--reset_style=\"2,-,1,Hardware",
+								"--reset_style=\"3,-,0,Core",
+								"--reset_style=\"4,-,0,System",
+								"--drv_catch_exceptions=0x70000000",
+								"--drv_system_bus_access"
+							]
 						}
 					}
 				]
