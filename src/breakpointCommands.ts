@@ -2,10 +2,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import * as vscode from "vscode";
-import { CustomRequest } from "./dap/customRequest";
+import { BreakpointType } from "./dap/breakpoints/cspyBreakpointManager";
+import { BreakpointTypesResponse, CustomRequest } from "./dap/customRequest";
 import { DebugSessionTracker } from "./debugSessionTracker";
 import { SettingsConstants } from "./settingsConstants";
 
+/**
+ * Commands for setting breakpoint types (auto, hardware or software).
+ */
 export namespace BreakpointCommands {
     export function registerCommands(context: vscode.ExtensionContext, sessionTracker: DebugSessionTracker) {
 
@@ -42,5 +46,15 @@ export namespace BreakpointCommands {
         registerSessionLocalCommand("iar.useAutoBreakpointsActive", CustomRequest.USE_AUTO_BREAKPOINTS);
         registerSessionLocalCommand("iar.useHardwareBreakpointsActive", CustomRequest.USE_HARDWARE_BREAKPOINTS);
         registerSessionLocalCommand("iar.useSoftwareBreakpointsActive", CustomRequest.USE_SOFTWARE_BREAKPOINTS);
+
+        // Not all sessions can handle all types, depending in the driver. Thus, deactivate commands when they are not supported.
+        vscode.debug.onDidChangeActiveDebugSession(async(session) => {
+            if (session?.type === "cspy") {
+                const supportedTypes: BreakpointTypesResponse = await session.customRequest(CustomRequest.GET_BREAKPOINT_TYPES);
+                vscode.commands.executeCommand("setContext", "iar-debug.noAutoBreakpoints", !supportedTypes.includes(BreakpointType.AUTO));
+                vscode.commands.executeCommand("setContext", "iar-debug.noHardwareBreakpoints", !supportedTypes.includes(BreakpointType.HARDWARE));
+                vscode.commands.executeCommand("setContext", "iar-debug.noSoftwareBreakpoints", !supportedTypes.includes(BreakpointType.SOFTWARE));
+            }
+        });
     }
 }

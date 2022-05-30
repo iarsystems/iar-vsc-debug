@@ -136,19 +136,19 @@
 				"command": "iar.useAutoBreakpointsActive",
 				"category": "IAR Debug",
 				"title": "Set Breakpoint Type: Auto (Current Session Only)",
-				"enablement": "debugType == cspy"
+				"enablement": "debugType == cspy && !iar-debug.noAutoBreakpoints"
 			},
 			{
 				"command": "iar.useHardwareBreakpointsActive",
 				"category": "IAR Debug",
 				"title": "Set Breakpoint Type: Hardware (Current Session Only)",
-				"enablement": "debugType == cspy"
+				"enablement": "debugType == cspy && !iar-debug.noHardwareBreakpoints"
 			},
 			{
 				"command": "iar.useSoftwareBreakpointsActive",
 				"category": "IAR Debug",
 				"title": "Set Breakpoint Type: Software (Current Session Only)",
-				"enablement": "debugType == cspy"
+				"enablement": "debugType == cspy && !iar-debug.noSoftwareBreakpoints"
 			}
 		],
 		"breakpoints": [

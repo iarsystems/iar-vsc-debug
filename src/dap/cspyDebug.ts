@@ -26,7 +26,7 @@ import { Command, CommandRegistry } from "./commandRegistry";
 import { Utils } from "./utils";
 import { CspyDisassemblyManager } from "./cspyDisassemblyManager";
 import { CspyMemoryManager } from "./cspyMemoryManager";
-import { CustomRequest } from "./customRequest";
+import { BreakpointTypesResponse, CustomRequest } from "./customRequest";
 import { RegisterInformationGenerator } from "./registerInformationGenerator";
 import { FrontendHandler } from "./frontendHandler";
 import { FRONTEND_SERVICE } from "iar-vsc-common/thrift/bindings/frontend_types";
@@ -461,7 +461,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.sendResponse(response);
     }
 
-    // Currently not supported by VSCode
     protected override async disassembleRequest(response: DebugProtocol.DisassembleResponse, args: DebugProtocol.DisassembleArguments, _request?: DebugProtocol.Request) {
         await CSpyDebugSession.tryResponseWith(this.disassemblyManager, response, async disassemblyManager => {
             const instructions = await disassemblyManager.fetchDisassembly(args.memoryReference, args.instructionCount, args.offset, args.instructionOffset);
@@ -529,25 +528,21 @@ export class CSpyDebugSession extends LoggingDebugSession {
      */
     private setupBreakpointRequests(requestedInitialType: BreakpointType) {
         const bpTypeMessage = (type: BreakpointType) => `Now using ${type} breakpoints (only applies to new breakpoints)`;
-        // If the driver supports it, register console commands
-        if (this.breakpointManager?.supportsBreakpointTypes()) {
-            this.breakpointManager.setBreakpointType(requestedInitialType);
+        if (this.breakpointManager?.supportedBreakpointTypes().includes(requestedInitialType)) {
+            this.breakpointManager?.setBreakpointType(requestedInitialType);
             this.sendEvent(new OutputEvent(`Using '${requestedInitialType}' breakpoint type.\n`));
-
-            const makeConsoleCommand = (name: string, type: BreakpointType) => {
-                return new Command(name, () => {
-                    this.breakpointManager?.setBreakpointType(type);
-                    return Promise.resolve(bpTypeMessage(type));
-                });
-            };
-            this.consoleCommandRegistry.registerCommand(makeConsoleCommand("__breakpoints_set_type_auto", BreakpointType.AUTO));
-            this.consoleCommandRegistry.registerCommand(makeConsoleCommand("__breakpoints_set_type_hardware", BreakpointType.HARDWARE));
-            this.consoleCommandRegistry.registerCommand(makeConsoleCommand("__breakpoints_set_type_software", BreakpointType.SOFTWARE));
         }
+        // If the driver supports it, register console commands and custom requests
+        this.breakpointManager?.supportedBreakpointTypes().forEach(type => {
+            this.consoleCommandRegistry.registerCommand(new Command("__breakpoints_set_type_" + type, () => {
+                this.breakpointManager?.setBreakpointType(type);
+                return Promise.resolve(bpTypeMessage(type));
+            }));
+        });
         // Custom requests are always registered, but will give an error if made on a driver that doesn't support it.
         const makeCustomRequestCommand = (name: string, type: BreakpointType) => {
             return new Command(name, () => {
-                if (this.breakpointManager?.supportsBreakpointTypes()) {
+                if (this.breakpointManager?.supportedBreakpointTypes().includes(type)) {
                     this.breakpointManager?.setBreakpointType(type);
                     this.sendEvent(new OutputEvent(bpTypeMessage(type) + "\n"));
                     return Promise.resolve();
@@ -560,6 +555,10 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.USE_AUTO_BREAKPOINTS, BreakpointType.AUTO));
         this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.USE_HARDWARE_BREAKPOINTS, BreakpointType.HARDWARE));
         this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.USE_SOFTWARE_BREAKPOINTS, BreakpointType.SOFTWARE));
+
+        this.customRequestRegistry.registerCommand(new Command(CustomRequest.GET_BREAKPOINT_TYPES, (): Promise<BreakpointTypesResponse> => {
+            return Promise.resolve(this.breakpointManager?.supportedBreakpointTypes() ?? []);
+        }));
     }
 
     /**

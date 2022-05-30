@@ -5,6 +5,7 @@ import { IarOsUtils } from "iar-vsc-common/osUtils";
 import * as Path from "path";
 import { CodeBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory, StdCode2BreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
 import { logger } from "@vscode/debugadapter/lib/logger";
+import { BreakpointType } from "./cspyBreakpointManager";
 
 /**
  * Provides some driver-specific information.
@@ -33,17 +34,17 @@ abstract class SimulatorDriver implements CSpyDriver {
 
 // Simulator for riscv/rh850
 class SimDriver extends SimulatorDriver { }
-// Emulator for rh850
-class OcdDriver extends SimulatorDriver { }
 // Simulator for arm
 class Sim2Driver extends SimulatorDriver { }
 // 64-bit simulator for arm
 class ImperasDriver extends SimulatorDriver { }
 
-// Common properties for all hardware drivers
+// Common properties for most hardware drivers
 abstract class HardwareDriver implements CSpyDriver {
     getCodeBreakpointDescriptorFactory(): CodeBreakpointDescriptorFactory {
-        return new EmulCodeBreakpointDescriptorFactory();
+        return new EmulCodeBreakpointDescriptorFactory(
+            new Map([[BreakpointType.AUTO, 0], [BreakpointType.HARDWARE, 1], [BreakpointType.SOFTWARE, 2]])
+        );
     }
     isSimulator(): boolean {
         return false;
@@ -59,6 +60,17 @@ class PEMicroDriver extends HardwareDriver { }
 class STLinkDriver extends HardwareDriver { }
 class XDSDriver extends HardwareDriver { }
 class TIMSPFETDriver extends HardwareDriver { }
+// Emulator for rh850
+class OcdDriver implements CSpyDriver {
+    getCodeBreakpointDescriptorFactory(): CodeBreakpointDescriptorFactory {
+        return new EmulCodeBreakpointDescriptorFactory(
+            new Map([[BreakpointType.HARDWARE, 0], [BreakpointType.SOFTWARE, 1]])
+        );
+    }
+    isSimulator(): boolean {
+        return false;
+    }
+}
 // Used for unrecognized drivers.
 class UnknownDriver extends HardwareDriver { }
 
@@ -79,7 +91,6 @@ export namespace CSpyDriver {
 
         const driverMap: Array<{ name: string, driver: () => CSpyDriver }> = [
             { name: "sim", driver: () => new SimDriver() },
-            { name: "ocd", driver: () => new OcdDriver() },
             { name: "sim2", driver: () => new Sim2Driver() },
             { name: "imperas", driver: () => new ImperasDriver() },
             { name: "jet", driver: () => new IJetDriver() },
@@ -90,7 +101,8 @@ export namespace CSpyDriver {
             { name: "pemicro", driver: () => new PEMicroDriver() },
             { name: "stlink", driver: () => new STLinkDriver() },
             { name: "xds", driver: () => new XDSDriver() },
-            { name: "tifet", driver: () => new TIMSPFETDriver() }
+            { name: "tifet", driver: () => new TIMSPFETDriver() },
+            { name: "ocd", driver: () => new OcdDriver() },
         ];
         const result = driverMap.find(({ name, }) => {
             return basename.endsWith(name.toLowerCase());

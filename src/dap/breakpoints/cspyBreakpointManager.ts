@@ -13,7 +13,6 @@ import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { DescriptorWriter } from "./descriptors/descriptorWriter";
 import { CSpyDriver } from "./cspyDriver";
 import { CodeBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
-import { EmulCodeBreakpointType } from "./descriptors/emulCodeBreakpointDescriptor";
 import { logger } from "@vscode/debugadapter/lib/logger";
 
 
@@ -169,48 +168,21 @@ export class CSpyBreakpointManager implements Disposable {
     }
 
     /**
-     * Whether the current driver supports setting a {@link BreakpointType} (using the methods below)
+     * The supported {@link BreakpointType}s that can be set using the method below.
      */
-    supportsBreakpointTypes() {
-        return this.bpDescriptorFactory instanceof EmulCodeBreakpointDescriptorFactory;
+    supportedBreakpointTypes() {
+        return this.bpDescriptorFactory instanceof EmulCodeBreakpointDescriptorFactory ?
+            this.bpDescriptorFactory.supportedTypes : [];
     }
 
+    /**
+     * This is silently ignored if the type is not supported.
+     */
     setBreakpointType(type: BreakpointType) {
         if (this.bpDescriptorFactory instanceof EmulCodeBreakpointDescriptorFactory) {
-            let bpType: EmulCodeBreakpointType;
-            switch (type) {
-            case BreakpointType.AUTO:
-                bpType = EmulCodeBreakpointType.kDriverDefaultBreakpoint;
-                break;
-            case BreakpointType.HARDWARE:
-                bpType = EmulCodeBreakpointType.kDriverHardwareBreakpoint;
-                break;
-            case BreakpointType.SOFTWARE:
-                bpType = EmulCodeBreakpointType.kDriverSoftwareBreakpoint;
-                break;
-            default:
-                bpType = EmulCodeBreakpointType.kDriverDefaultBreakpoint;
-                break;
+            if (this.bpDescriptorFactory.supportedTypes.includes(type)) {
+                this.bpDescriptorFactory.type = type;
             }
-            this.bpDescriptorFactory.type = bpType;
-        }
-    }
-
-    getBreakpointType(): BreakpointType {
-        if (this.bpDescriptorFactory instanceof EmulCodeBreakpointDescriptorFactory) {
-            switch (this.bpDescriptorFactory.type) {
-            case EmulCodeBreakpointType.kDriverDefaultBreakpoint:
-                return BreakpointType.AUTO;
-            case EmulCodeBreakpointType.kDriverHardwareBreakpoint:
-                return BreakpointType.HARDWARE;
-            case EmulCodeBreakpointType.kDriverSoftwareBreakpoint:
-                return BreakpointType.SOFTWARE;
-            default:
-                return BreakpointType.AUTO;
-                break;
-            }
-        } else {
-            throw new Error("The driver does not support breakpoint types");
         }
     }
 
