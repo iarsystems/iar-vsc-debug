@@ -449,25 +449,13 @@ export class CSpyDebugSession extends LoggingDebugSession {
             }
         } else {
             await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
-                try {
-                    const result = await stackManager.evalExpression(args.frameId, args.expression);
-                    response.body = {
-                        result: result.value,
-                        type: result.type,
-                        memoryReference: result.memoryReference,
-                        variablesReference: result.variablesReference,
-                    };
-                } catch (e) {
-                    // A hack to support the MS RTOS view. It stops if we return an error here, without checking for freertos.
-                    if (args.expression === "_tx_thread_created_ptr") {
-                        response.body = {
-                            result: "",
-                            variablesReference: 0,
-                        };
-                    } else {
-                        throw e;
-                    }
-                }
+                const result = await stackManager.evalExpression(args.frameId, args.expression);
+                response.body = {
+                    result: result.value,
+                    type: result.type,
+                    memoryReference: result.memoryReference,
+                    variablesReference: result.variablesReference,
+                };
             });
         }
         this.sendResponse(response);
