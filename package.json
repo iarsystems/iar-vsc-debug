@@ -1,7 +1,7 @@
 {
 	"name": "iar-debug",
 	"displayName": "IAR C-SPY Debug",
-	"version": "0.1.0",
+	"version": "1.0.0",
 	"publisher": "iarsystems",
 	"icon": "images/logo.png",
 	"galleryBanner": {
