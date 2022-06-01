@@ -133,7 +133,10 @@ debugAdapterSuite("SVD generator tests", function(dc, dbgConfig)  {
         return undefined;
     }
 
-    test("Returns undefined SVD for unspecificed device", () => {
+    test("Returns undefined SVD for unspecificed device", function() {
+        if (dbgConfig().driver !== "sim2") {
+            this.skip();
+        }
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(genericConfig),
