@@ -17,7 +17,7 @@ import { logger } from "@vscode/debugadapter/lib/logger";
  */
 export interface PartialSessionConfiguration {
     attachToTarget: boolean,
-    driverName: string,
+    driverFile: string,
     processorName: string,
     type: string,
     options: string[],
@@ -68,7 +68,7 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
 
         const config: SessionConfiguration = new SessionConfiguration({
             attachToTarget: partialValues.attachToTarget,
-            driverName: partialValues.driverName,
+            driverName: partialValues.driverFile,
             processorName: partialValues.processorName,
             type: partialValues.type,
             executable: launchArguments.program,

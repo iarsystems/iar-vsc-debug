@@ -219,34 +219,32 @@
 								"description": "The driver to use.",
 								"default": "sim2",
 								"enum": [
-									"sim",
-									"sim2",
-									"imperas",
-									"jet",
-									"ijet",
-									"jlink",
-									"gdbserv",
-									"cadi",
-									"lmiftdi",
-									"pemicro",
-									"stlink",
-									"xds",
-									"tifet"
+									"Simulator",
+									"64-bit Simulator",
+									"I-jet",
+									"J-Link/J-Trace",
+									"GDB Server",
+									"CADI",
+									"TI Stellaris",
+									"PE micro",
+									"ST-LINK",
+									"TI XDS",
+									"TI MSP-FET",
+									"E1/E2/E20 Emulator"
 								],
 								"enumDescriptions": [
-									"Simulator (32-bit) (RISC-V)",
-									"Simulator (32-bit) (Arm)",
-									"Simulator (64-bit) (Arm)",
-									"I-jet (Arm)",
-									"I-jet (RISC-V)",
-									"J-Link/J-Trace (Arm/RISC-V)",
-									"GDB Server (Arm/RISC-V)",
-									"CADI (Arm)",
-									"TI Stellaris (Arm)",
-									"PE micro (Arm)",
-									"ST-LINK (Arm)",
-									"TI XDS (Arm)",
-									"TI MSP-FET (Arm)"
+									"Arm/RISC-V/RH850",
+									"Arm",
+									"Arm/RISC-V",
+									"Arm/RISC-V",
+									"Arm/RISC-V",
+									"Arm",
+									"Arm",
+									"Arm",
+									"Arm",
+									"Arm",
+									"Arm",
+									"RH850"
 								]
 							},
 							"driverOptions": {
@@ -318,7 +316,7 @@
 							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
 							"projectPath": "^\"\\${command:iar-config.project-file}\"",
 							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
-							"driver": "sim2",
+							"driver": "Simulator",
 							"driverOptions": [
 								"--endian=little",
 								"--cpu=${3:Cortex-M4}",
@@ -342,7 +340,7 @@
 							"program": "^\"\\${workspaceFolder}/Debug/Exe/${2:ewproj.out}\"",
 							"stopOnEntry": true,
 							"workbenchPath": "${3:workbenchPath}",
-							"driver": "sim2",
+							"driver": "Simulator",
 							"driverOptions": [
 								"--endian=little",
 								"--cpu=${4:Cortex-M4}",
@@ -356,7 +354,7 @@
 						}
 					},
 					{
-						"label": "C-SPY: I-Jet launch configuration (Arm)",
+						"label": "C-SPY Arm: I-Jet launch configuration",
 						"description": "A new configuration for debugging an .ewp project with an I-Jet probe.",
 						"body": {
 							"type": "cspy",
@@ -368,7 +366,7 @@
 							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
 							"projectPath": "^\"\\${command:iar-config.project-file}\"",
 							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
-							"driver": "jet",
+							"driver": "I-jet",
 							"driverOptions": [
 								"--endian=little",
 								"--cpu=${3:Cortex-M4}",
@@ -398,7 +396,7 @@
 						}
 					},
 					{
-						"label": "C-SPY: J-Link launch configuration (Arm)",
+						"label": "C-SPY Arm: J-Link launch configuration",
 						"description": "A new configuration for debugging an .ewp project with a J-Link probe.",
 						"body": {
 							"type": "cspy",
@@ -410,7 +408,7 @@
 							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
 							"projectPath": "^\"\\${command:iar-config.project-file}\"",
 							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
-							"driver": "link",
+							"driver": "J-Link",
 							"driverOptions": [
 								"--endian=little",
 								"--cpu=${3:Cortex-M4}",
@@ -436,7 +434,7 @@
 						}
 					},
 					{
-						"label": "C-SPY: TI MSP-FET launch configuration (Arm)",
+						"label": "C-SPY Arm: TI MSP-FET launch configuration",
 						"description": "A new configuration for debugging an .ewp project with a TI MSP-FET probe.",
 						"body": {
 							"type": "cspy",
@@ -448,7 +446,7 @@
 							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
 							"projectPath": "^\"\\${command:iar-config.project-file}\"",
 							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
-							"driver": "tifet",
+							"driver": "TI MSP-FET",
 							"driverOptions": [
 								"--endian=little",
 								"--cpu=${3:Cortex-M4}",
@@ -473,7 +471,7 @@
 						}
 					},
 					{
-						"label": "C-SPY: Simulator launch configuration (RISC-V)",
+						"label": "C-SPY RISC-V: Simulator launch configuration",
 						"description": "A new configuration for debugging an .ewp project with the simulator.",
 						"body": {
 							"type": "cspy",
@@ -485,7 +483,7 @@
 							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
 							"projectPath": "^\"\\${command:iar-config.project-file}\"",
 							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
-							"driver": "sim",
+							"driver": "Simulator",
 							"driverOptions": [
 								"--core=${3:RV32IMAFDCN_XANDESDSP_XANDESPERF_Zba_Zbb_Zbc_Zbs}",
 								"-p",
@@ -496,7 +494,7 @@
 						}
 					},
 					{
-						"label": "C-SPY: I-Jet launch configuration (RISC-V)",
+						"label": "C-SPY RISC-V: I-Jet launch configuration",
 						"description": "A new configuration for debugging an .ewp project with an I-Jet probe.",
 						"body": {
 							"type": "cspy",
@@ -508,7 +506,7 @@
 							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
 							"projectPath": "^\"\\${command:iar-config.project-file}\"",
 							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
-							"driver": "ijet",
+							"driver": "I-jet",
 							"driverOptions": [
 								"--core=${3:RV32IMAFDCN_XANDESDSP_XANDESPERF_Zba_Zbb_Zbc_Zbs}",
 								"-p",
@@ -526,7 +524,7 @@
 						}
 					},
 					{
-						"label": "C-SPY: Simulator launch configuration (RH850)",
+						"label": "C-SPY RH850: Simulator launch configuration",
 						"description": "A new configuration for debugging an .ewp project with the simulator.",
 						"body": {
 							"type": "cspy",
@@ -538,7 +536,7 @@
 							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
 							"projectPath": "^\"\\${command:iar-config.project-file}\"",
 							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
-							"driver": "sim",
+							"driver": "Simulator",
 							"driverOptions": [
 								"--core",
 								"${3:g3m}",
@@ -551,7 +549,7 @@
 						}
 					},
 					{
-						"label": "C-SPY: E1/E2/E20 Emulator launch configuration (RH850)",
+						"label": "C-SPY RH850: E1/E2/E20 Emulator launch configuration",
 						"description": "A new configuration for debugging an .ewp project on the emulator.",
 						"body": {
 							"type": "cspy",
@@ -563,7 +561,7 @@
 							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
 							"projectPath": "^\"\\${command:iar-config.project-file}\"",
 							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
-							"driver": "sim",
+							"driver": "E1/E2/E20 Emulator",
 							"driverOptions": [
 								"--core",
 								"${3:g3m}",

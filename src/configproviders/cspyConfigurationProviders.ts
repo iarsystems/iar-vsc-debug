@@ -3,6 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import { Workbench } from "iar-vsc-common/workbench";
 import * as vscode from "vscode";
+import { CSpyDriver } from "../dap/breakpoints/cspyDriver";
 import { CSpyConfigurationSupplier as LaunchConfigurationSupplier } from "./supplier/supplier";
 
 /**
@@ -97,7 +98,7 @@ const TEMPLATES: LaunchConfigurationSupplier.CspyLaunchJsonConfiguration[] = [
         workbenchPath: "${command:iar-config.toolchain} for an iar-build project or path to EW root.",
         projectPath: "${command:iar-config.project-file} for an iar-build project or ${workspaceFolder} otherwise.",
         projectConfiguration: "${command:iar-config.project-configuration} for an iar-build project. Remove this for other project types.",
-        driver: "sim2",
+        driver: CSpyDriver.DriverNames.SIMULATOR,
         driverOptions: [
             "--endian=little",
             "--cpu=<CPU-NAME>",
@@ -115,7 +116,7 @@ const TEMPLATES: LaunchConfigurationSupplier.CspyLaunchJsonConfiguration[] = [
         workbenchPath: "${command:iar-config.toolchain} for an iar-build project or path to EW root.",
         projectPath: "${command:iar-config.project-file} for an iar-build project or ${workspaceFolder} otherwise.",
         projectConfiguration: "${command:iar-config.project-configuration} for an iar-build project. Remove this for other project types.",
-        driver: "jet",
+        driver: CSpyDriver.DriverNames.IJET,
         driverOptions: [
             "--endian=little",
             "--cpu=<CPU-NAME>",
@@ -153,7 +154,7 @@ const TEMPLATES: LaunchConfigurationSupplier.CspyLaunchJsonConfiguration[] = [
         workbenchPath: "${command:iar-config.toolchain} for an iar-build project or path to EW root.",
         projectPath: "${command:iar-config.project-file} for an iar-build project or ${workspaceFolder} otherwise.",
         projectConfiguration: "${command:iar-config.project-configuration} for an iar-build project. Remove this for other project types.",
-        driver: "sim",
+        driver: CSpyDriver.DriverNames.SIMULATOR,
         driverOptions: [
             "--core=RV32IMAFDCN_XANDESDSP_XANDESPERF_Zba_Zbb_Zbc_Zbs",
             "-p",
@@ -172,7 +173,7 @@ const TEMPLATES: LaunchConfigurationSupplier.CspyLaunchJsonConfiguration[] = [
         workbenchPath: "${command:iar-config.toolchain} for an iar-build project or path to EW root.",
         projectPath: "${command:iar-config.project-file} for an iar-build project or ${workspaceFolder} otherwise.",
         projectConfiguration: "${command:iar-config.project-configuration} for an iar-build project. Remove this for other project types.",
-        driver: "ijet",
+        driver: CSpyDriver.DriverNames.IJET,
         driverOptions: [
             "--core=RV32IMAFDCN_XANDESDSP_XANDESPERF_Zba_Zbb_Zbc_Zbs",
             "-p",
@@ -197,7 +198,7 @@ const TEMPLATES: LaunchConfigurationSupplier.CspyLaunchJsonConfiguration[] = [
         workbenchPath: "${command:iar-config.toolchain} for an iar-build project or path to EW root.",
         projectPath: "${command:iar-config.project-file} for an iar-build project or ${workspaceFolder} otherwise.",
         projectConfiguration: "${command:iar-config.project-configuration} for an iar-build project. Remove this for other project types.",
-        driver: "sim",
+        driver: CSpyDriver.DriverNames.SIMULATOR,
         driverOptions: [
             "--core",
             "g3m",
@@ -218,7 +219,7 @@ const TEMPLATES: LaunchConfigurationSupplier.CspyLaunchJsonConfiguration[] = [
         workbenchPath: "${command:iar-config.toolchain} for an iar-build project or path to EW root.",
         projectPath: "${command:iar-config.project-file} for an iar-build project or ${workspaceFolder} otherwise.",
         projectConfiguration: "${command:iar-config.project-configuration} for an iar-build project. Remove this for other project types.",
-        driver: "ocd",
+        driver: CSpyDriver.DriverNames.OCD,
         driverOptions: [
             "--core",
             "g3m",

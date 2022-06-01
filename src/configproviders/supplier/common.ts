@@ -5,6 +5,7 @@ import * as vscode from "vscode";
 import * as Path from "path";
 import { CSpyLaunchRequestArguments } from "../../dap/cspyDebug";
 import { OsUtils } from "iar-vsc-common/osUtils";
+import { CSpyDriver } from "../../dap/breakpoints/cspyDriver";
 
 /**
  * Helpers for creating/resolving C-SPY debug configurations
@@ -41,15 +42,15 @@ export namespace ConfigResolutionCommon {
         // directory part, the target name and any extensions
         const driverFile = basename(parts.driverPath);
         // Lowercase here is mostly for display purposes - the debug adapter resolves drivers case-insensitive anyway
-        const driverName = driverFile.replace(new RegExp(`lib|.so|.dll|${parts.target}`, "ig"), "").toLowerCase();
+        const driverName = CSpyDriver.nameFromDriverFile(driverFile, parts.target);
 
         // Express the program and project as a workspace-relative path if possible
         const program = wsDir ? toWorkspaceRelativePath(parts.program, wsDir) : parts.program;
         const project = wsDir ? toWorkspaceRelativePath(parts.projectPath, wsDir) : parts.projectPath;
         const projectName = Path.basename(parts.projectPath, ".ewp");
 
-        // The rh850 driver saves some driver parameters in a settings file.
-        if (driverName === "ocd") {
+        // The rh850 emulator driver saves some driver parameters in a settings file.
+        if (driverName === CSpyDriver.DriverNames.OCD) {
             parts.driverOptions.push("--cspybat_inifile");
             parts.driverOptions.push(Path.join(Path.dirname(project), `settings/${projectName}.dnx`));
         }

@@ -20,10 +20,18 @@ export interface CSpyDriver {
      * Returns whether this driver is a simulator. This means e.g. that flash loading is not necessary.
      */
     isSimulator(): boolean;
+
+    /**
+     * The base names of the shared library file(s) to search for when loading the driver.
+     * This should be without any prefixes (e.g. 'lib' or 'arm') or extensions (e.g. '.so' or '.dll').
+     * If multiple names are specified, they are tested in the order given until a matching file is found.
+     */
+    readonly libraryBaseNames: string[];
 }
 
-// Common properties for all simulator drivers.
-abstract class SimulatorDriver implements CSpyDriver {
+class SimulatorDriver implements CSpyDriver {
+    constructor(public readonly libraryBaseNames: string[]) {}
+
     getCodeBreakpointDescriptorFactory(): CodeBreakpointDescriptorFactory {
         return new StdCode2BreakpointDescriptorFactory();
     }
@@ -32,54 +40,85 @@ abstract class SimulatorDriver implements CSpyDriver {
     }
 }
 
-// Simulator for riscv/rh850
-class SimDriver extends SimulatorDriver { }
-// Simulator for arm
-class Sim2Driver extends SimulatorDriver { }
-// 64-bit simulator for arm
-class ImperasDriver extends SimulatorDriver { }
-
-// Common properties for most hardware drivers
 abstract class HardwareDriver implements CSpyDriver {
+    constructor(public readonly libraryBaseNames: string[], private readonly breakpointTypes: Map<BreakpointType, number>) {}
+
     getCodeBreakpointDescriptorFactory(): CodeBreakpointDescriptorFactory {
         return new EmulCodeBreakpointDescriptorFactory(
-            new Map([[BreakpointType.AUTO, 0], [BreakpointType.HARDWARE, 1], [BreakpointType.SOFTWARE, 2]])
+            this.breakpointTypes
         );
     }
     isSimulator(): boolean {
         return false;
     }
 }
-
-class IJetDriver extends HardwareDriver { }
-class JLinkDriver extends HardwareDriver { }
-class GdbServerDriver extends HardwareDriver { }
-class CADIDriver extends HardwareDriver { }
-class StellarisDriver extends HardwareDriver { }
-class PEMicroDriver extends HardwareDriver { }
-class STLinkDriver extends HardwareDriver { }
-class XDSDriver extends HardwareDriver { }
-class TIMSPFETDriver extends HardwareDriver { }
+// Common properties for most hardware drivers
+class GenericHardwareDriver extends HardwareDriver {
+    constructor(libraryBaseNames: string[]) {
+        super(libraryBaseNames,
+            new Map([[BreakpointType.AUTO, 0], [BreakpointType.HARDWARE, 1], [BreakpointType.SOFTWARE, 2]]));
+    }
+}
 // Emulator for rh850
-class OcdDriver implements CSpyDriver {
-    getCodeBreakpointDescriptorFactory(): CodeBreakpointDescriptorFactory {
-        return new EmulCodeBreakpointDescriptorFactory(
+class OcdDriver extends HardwareDriver {
+    constructor(libraryBaseNames: string[]) {
+        super(libraryBaseNames,
             new Map([[BreakpointType.SOFTWARE, 0], [BreakpointType.HARDWARE, 1]])
         );
     }
-    isSimulator(): boolean {
-        return false;
-    }
 }
-// Used for unrecognized drivers.
-class UnknownDriver extends HardwareDriver { }
 
 export namespace CSpyDriver {
     /**
-     * Tries to deduce the driver from the name of a driver library file (e.g. armSIM2.dll)
+     * Driver display names.
+     * ! make sure these names match the "driver" enum in package.json
      */
-    export function fromDriverName(driverName: string, targetName?: string) {
-        let basename = Path.basename(driverName, IarOsUtils.libraryExtension());
+    export enum DriverNames {
+        SIMULATOR = "Simulator",
+        IMPERAS = "64-bit Simulator",
+        IJET = "I-jet",
+        JLINK = "J-Link/J-Trace",
+        GDBSERV = "GDB Server",
+        CADI = "CADI",
+        STELLARIS = "TI Stellaris",
+        PEMICRO = "PE micro",
+        STLINK = "ST-LINK",
+        XDS = "TI XDS",
+        TIFET = "TI MSP-FET",
+        OCD = "E1/E2/E20 Emulator",
+    }
+    const driverMap: Array<{ name: string, driver: CSpyDriver }> = [
+        { name: DriverNames.SIMULATOR, driver: new SimulatorDriver(["sim2", "sim"]) },
+        { name: DriverNames.IMPERAS, driver: new SimulatorDriver(["imperas"]) },
+        { name: DriverNames.IJET, driver: new GenericHardwareDriver(["ijet", "jet"]) },
+        { name: DriverNames.JLINK, driver: new GenericHardwareDriver(["jlink"]) },
+        { name: DriverNames.GDBSERV, driver: new GenericHardwareDriver(["gdbserv"]) },
+        { name: DriverNames.CADI, driver: new GenericHardwareDriver(["cadi"]) },
+        { name: DriverNames.STELLARIS, driver: new GenericHardwareDriver(["lmiftdi"]) },
+        { name: DriverNames.PEMICRO, driver: new GenericHardwareDriver(["pemicro"]) },
+        { name: DriverNames.STLINK, driver: new GenericHardwareDriver(["stlink"]) },
+        { name: DriverNames.XDS, driver: new GenericHardwareDriver(["xds"]) },
+        { name: DriverNames.TIFET, driver: new GenericHardwareDriver(["tifet"]) },
+        { name: DriverNames.OCD, driver: new OcdDriver(["ocd"]) },
+    ];
+    /**
+     * Returns a driver matching a driver display name (e.g. a name returned from {@link nameFromDriverFile}).
+     */
+    export function driverFromName(driverName: string): CSpyDriver {
+        const result = driverMap.find(({ name, }) => name === driverName);
+        if (!result) {
+            logger.error("Unable to recognize driver: " + driverName);
+            // For unknown drivers, we just guess at some properties and hope it works.
+            return new GenericHardwareDriver([driverName]);
+        }
+        return result.driver;
+    }
+
+    /**
+     * Gets a display name for a driver, given its library file (e.g. libarmsim2.so)
+     */
+    export function nameFromDriverFile(driverFile: string, targetName?: string): string {
+        let basename = Path.basename(driverFile, IarOsUtils.libraryExtension());
         basename = basename.toLowerCase();
 
         if (basename.startsWith(IarOsUtils.libraryPrefix().toLowerCase())) {
@@ -88,30 +127,8 @@ export namespace CSpyDriver {
         if (targetName && basename.startsWith(targetName.toLowerCase())) {
             basename = basename.substring(targetName.length);
         }
-
-        const driverMap: Array<{ name: string, driver: () => CSpyDriver }> = [
-            { name: "sim", driver: () => new SimDriver() },
-            { name: "sim2", driver: () => new Sim2Driver() },
-            { name: "imperas", driver: () => new ImperasDriver() },
-            { name: "jet", driver: () => new IJetDriver() },
-            { name: "jlink", driver: () => new JLinkDriver() },
-            { name: "gdbserv", driver: () => new GdbServerDriver() },
-            { name: "cadi", driver: () => new CADIDriver() },
-            { name: "lmiftdi", driver: () => new StellarisDriver() },
-            { name: "pemicro", driver: () => new PEMicroDriver() },
-            { name: "stlink", driver: () => new STLinkDriver() },
-            { name: "xds", driver: () => new XDSDriver() },
-            { name: "tifet", driver: () => new TIMSPFETDriver() },
-            { name: "ocd", driver: () => new OcdDriver() },
-        ];
-        const result = driverMap.find(({ name, }) => {
-            return basename.endsWith(name.toLowerCase());
-        });
-        if (!result) {
-            logger.error("Unable to recognize driver: " + driverName);
-            // For unknown drivers, we just guess at some properties and hope it works.
-            return new UnknownDriver();
-        }
-        return result.driver();
+        return driverMap.find(({ driver }) => {
+            return driver.libraryBaseNames.some(base => basename.endsWith(base));
+        })?.name ?? basename;
     }
 }

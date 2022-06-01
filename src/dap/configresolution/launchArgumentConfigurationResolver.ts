@@ -6,6 +6,7 @@
 import { CSpyLaunchRequestArguments } from "../cspyDebug";
 import { BaseConfigurationResolver, PartialSessionConfiguration } from "./baseConfigurationResolver";
 import { IarOsUtils } from "iar-vsc-common/osUtils";
+import { CSpyDriver } from "../breakpoints/cspyDriver";
 
 /**
  * Attempts to create a C-SPY configuration by looking at `.xcl`
@@ -22,9 +23,12 @@ export class LaunchArgumentConfigurationResolver extends BaseConfigurationResolv
         const plugins = args.plugins? args.plugins : [];
         const macros = args.macros? args.macros : [];
 
-        const driver = IarOsUtils.resolveTargetLibrary(args.workbenchPath, args.target, args.driver);
-        if (driver === undefined) {
-            throw new Error(`Could not find driver '${args.driver}' for '${args.workbenchPath}'.`);
+        const driver = CSpyDriver.driverFromName(args.driver);
+        const driverFile = driver.libraryBaseNames.
+            map(baseName => IarOsUtils.resolveTargetLibrary(args.workbenchPath, args.target, baseName)).
+            find(driverFile => driverFile !== undefined);
+        if (driverFile === undefined) {
+            throw new Error(`Could not find driver file(s) '${driver.libraryBaseNames.join(",")}' for '${args.workbenchPath}'.`);
         }
         const proc = IarOsUtils.resolveTargetLibrary(args.workbenchPath, args.target, "proc");
         if (proc === undefined) {
@@ -37,7 +41,7 @@ export class LaunchArgumentConfigurationResolver extends BaseConfigurationResolv
 
         const config: PartialSessionConfiguration = {
             attachToTarget: false,
-            driverName: driver,
+            driverFile,
             processorName: proc,
             type: "simulator",
             options: ["--plugin=" + batPlugin, "--backend"].concat(args.driverOptions? args.driverOptions : []),

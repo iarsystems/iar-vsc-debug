@@ -38,7 +38,7 @@ debugAdapterSuite("SVD generator tests", function(dc, dbgConfig)  {
             target: "arm",
             program: dbgConfig().program,
             workbenchPath: dbgConfig().workbenchPath,
-            driver: "sim2",
+            driver: "Simulator",
             trace: true,
             driverOptions: ["--endian=little", "--cpu=ARM7TDMI", "--fpu=None", "--semihosting"],
         };
@@ -46,7 +46,7 @@ debugAdapterSuite("SVD generator tests", function(dc, dbgConfig)  {
         stm32Svd = Path.join(workbench, "arm/config/debugger/ST/STM32F401.svd"),
         stm32Config = {
             ...genericConfig,
-            driver: "sim2",
+            driver: "Simulator",
             driverOptions: [
                 "--endian=little",
                 "--cpu=Cortex-M4",
@@ -134,7 +134,7 @@ debugAdapterSuite("SVD generator tests", function(dc, dbgConfig)  {
     }
 
     test("Returns undefined SVD for unspecificed device", function() {
-        if (dbgConfig().driver !== "sim2") {
+        if (dbgConfig().driver !== "Simulator") {
             this.skip();
         }
         return Promise.all([

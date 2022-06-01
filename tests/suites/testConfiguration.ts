@@ -82,7 +82,7 @@ export namespace TestConfiguration {
     export const ARMSIM2_CONFIG: TestConfiguration = {
         debugConfiguration: {
             target: "arm",
-            driver: "sim2",
+            driver: "Simulator",
             driverOptions: ["--endian=little", "--cpu=Cortex-M4", "--fpu=VFPv4_SP", "--semihosting"],
         },
         testProgram: { projectConfiguration: "Debug", variant: "doBuild" },
@@ -92,7 +92,7 @@ export namespace TestConfiguration {
     export const ARMIMPERAS_CONFIG: TestConfiguration = {
         debugConfiguration: {
             target: "arm",
-            driver: "imperas",
+            driver: "64-bit Simulator",
             driverOptions: ["--endian=little", "--cpu=Cortex-A53", "--abi=ilp32", "--fpu=None", "--semihosting"],
         },
         testProgram: { projectConfiguration: "Imperas", variant: "doBuild" },

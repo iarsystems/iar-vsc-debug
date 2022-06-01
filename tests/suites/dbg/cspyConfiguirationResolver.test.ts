@@ -60,7 +60,7 @@ suite("Configuration resolution tests", () => {
     test("Test partial resolver", async() => {
         await argRes.resolveLaunchArgumentsPartial(cspyArgs).then(
             (config)=>{
-                assert.deepStrictEqual(config["driverName"].toLowerCase(), getLibName("armjet").toLowerCase(), "Wrong driver lib");
+                assert.deepStrictEqual(config["driverFile"].toLowerCase(), getLibName("armjet").toLowerCase(), "Wrong driver lib");
                 assert.deepStrictEqual(config["processorName"].toLowerCase(), getLibName("armproc").toLowerCase(), "Wrong processor");
                 assert.deepStrictEqual(config["options"], ["--plugin=" + getLibName("armBat"), "--backend", "some", "options"], "Wrong driver lib");
             }, ()=>{

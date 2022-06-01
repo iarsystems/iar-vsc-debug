@@ -204,7 +204,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.sendEvent(new OutputEvent("Using C-SPY version: " + await this.cspyDebugger.service.getVersionString() + "\n"));
 
             await this.cspyDebugger.service.startSession(sessionConfig);
-            const driver = CSpyDriver.fromDriverName(args.driver);
+            const driver = CSpyDriver.driverFromName(args.driver);
 
             // do flashing & downloading
             if (args.download) {

@@ -113,7 +113,7 @@ suite("Configuration tests", () => {
         assert.deepStrictEqual(cspyConfig["name"], "BasicDebugging.Debug");
         assert.deepStrictEqual(cspyConfig["type"], "cspy");
         assert.deepStrictEqual(cspyConfig["projectConfiguration"], "Debug");
-        assert.deepStrictEqual(cspyConfig["driver"], "sim2");
+        assert.deepStrictEqual(cspyConfig["driver"], "Simulator");
         assert.deepStrictEqual(cspyConfig["target"], "arm");
     });
 
@@ -142,7 +142,7 @@ suite("Configuration tests", () => {
 
         assert.deepStrictEqual(configTest["name"], "MyProject.Test_123");
         assert.deepStrictEqual(configTest["program"], path.join("${workspaceFolder}", program));
-        assert.deepStrictEqual(configTest["driver"], "sim2");
+        assert.deepStrictEqual(configTest["driver"], "Simulator");
         assert.deepStrictEqual(configTest["target"], "arm");
         assert.deepStrictEqual(configTest["driverOptions"], driverOpts);
 
@@ -180,13 +180,13 @@ suite("Configuration tests", () => {
 
         const programOpt = ["/file", path.join(wsDir, program)];
         // Test that the driver and target can be extracted.
-        const opts = ["/runto", "main", "/driver", "arm/bin/libarmSIM2.so", "some", "other", "opts"];
+        const opts = ["/runto", "main", "/driver", "arm/bin/libriscvSIM.so", "some", "other", "opts"];
         let partialConfigTest = BuildExtensionConfigurationProvider.provideDebugConfigurationFor(opts.concat(programOpt), projectName, config, target);
         let configTest = ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfigTest, wsDir);
 
         assert.deepStrictEqual(configTest["name"], "MyProject.Test_123");
         assert.deepStrictEqual(configTest["program"], path.join("${workspaceFolder}", program));
-        assert.deepStrictEqual(configTest["driver"], "sim2");
+        assert.deepStrictEqual(configTest["driver"], "Simulator");
         assert.deepStrictEqual(configTest["target"], "arm");
         assert.deepStrictEqual(configTest["stopOnEntry"], true);
         assert.deepStrictEqual(configTest["driverOptions"], ["some", "other", "opts"]);
@@ -195,7 +195,7 @@ suite("Configuration tests", () => {
         const opts2 = ["/driver", "arm\\bin\\armjet.dll", "/ilink", "/args", "test"];
         partialConfigTest = BuildExtensionConfigurationProvider.provideDebugConfigurationFor(opts2.concat(programOpt), projectName, config, target);
         configTest = ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfigTest, wsDir);
-        assert.deepStrictEqual(configTest["driver"], "jet");
+        assert.deepStrictEqual(configTest["driver"], "I-jet");
         assert.deepStrictEqual(configTest["target"], "arm");
         assert.deepStrictEqual(configTest["stopOnEntry"], false);
         assert.deepStrictEqual(configTest["driverOptions"], []);
