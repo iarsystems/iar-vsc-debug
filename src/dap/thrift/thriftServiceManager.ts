@@ -166,7 +166,6 @@ export namespace ThriftServiceManager {
     }
 
     // reads stdout as a hacky way to wait until cspyserver has launched
-    // TODO: find a more robust way to detect when cspyserver is ready
     function waitUntilReady(process: ChildProcess): Promise<void> {
         return new Promise((resolve, reject) => {
             let output = "";

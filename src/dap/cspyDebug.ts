@@ -204,7 +204,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.sendEvent(new OutputEvent("Using C-SPY version: " + await this.cspyDebugger.service.getVersionString() + "\n"));
 
             await this.cspyDebugger.service.startSession(sessionConfig);
-            const driver = CSpyDriver.fromDriverName(args.driver ?? sessionConfig.driverName); // TODO: figure out how to best do this
+            const driver = CSpyDriver.fromDriverName(args.driver);
 
             // do flashing & downloading
             if (args.download) {
@@ -310,7 +310,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.expectedStoppingReason = "entry";
             await cspyDebugger.service.reset();
             cspyDebugger.service.runToULE("main", false);
-            // TODO: should we call 'go' here? Maybe the launch argument 'stopOnEntry' should be stored, so we have it here
         });
         this.sendResponse(response);
     }

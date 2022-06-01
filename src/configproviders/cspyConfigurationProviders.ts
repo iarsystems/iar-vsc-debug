@@ -90,7 +90,7 @@ const TEMPLATES: LaunchConfigurationSupplier.CspyLaunchJsonConfiguration[] = [
     {
         type: "cspy",
         request: "launch",
-        name: "Template: Debug with C-SPY simulator",
+        name: "Template: Debug with C-SPY Simulator",
         target: "arm",
         program: "${workspaceFolder}/Debug/Exe/ewproj.out",
         stopOnEntry: true,
@@ -146,7 +146,7 @@ const TEMPLATES: LaunchConfigurationSupplier.CspyLaunchJsonConfiguration[] = [
     {
         type: "cspy",
         request: "launch",
-        name: "Template: Debug with C-SPY simulator",
+        name: "Template: Debug with C-SPY Simulator",
         target: "riscv",
         program: "${workspaceFolder}/Debug/Exe/ewproj.out",
         stopOnEntry: true,
@@ -177,7 +177,6 @@ const TEMPLATES: LaunchConfigurationSupplier.CspyLaunchJsonConfiguration[] = [
             "--core=RV32IMAFDCN_XANDESDSP_XANDESPERF_Zba_Zbb_Zbc_Zbs",
             "-p",
             "<EW-PATH>/riscv/config/debugger/ioriscv.ddf",
-            "--multicore_nr_of_cores=1",
             "--jet_standard_reset=2,300,200",
             "--reset_style=\"0,-,0,Disabled (no reset)",
             "--reset_style=\"1,-,0,Software",
@@ -186,6 +185,53 @@ const TEMPLATES: LaunchConfigurationSupplier.CspyLaunchJsonConfiguration[] = [
             "--reset_style=\"4,-,0,System",
             "--drv_catch_exceptions=0x70000000",
             "--drv_system_bus_access"
+        ]
+    },
+    {
+        type: "cspy",
+        request: "launch",
+        name: "Template: Debug with C-SPY Simulator",
+        target: "rh850",
+        program: "${workspaceFolder}/Debug/Exe/ewproj.out",
+        stopOnEntry: true,
+        workbenchPath: "${command:iar-config.toolchain} for an iar-build project or path to EW root.",
+        projectPath: "${command:iar-config.project-file} for an iar-build project or ${workspaceFolder} otherwise.",
+        projectConfiguration: "${command:iar-config.project-configuration} for an iar-build project. Remove this for other project types.",
+        driver: "sim",
+        driverOptions: [
+            "--core",
+            "g3m",
+            "-p",
+            "<EW-PATH>/rh850/config/debugger/iorh850_g3m.ddf",
+            "--double=64",
+            "-d",
+            "sim",
+        ]
+    },
+    {
+        type: "cspy",
+        request: "launch",
+        name: "Template: Debug with C-SPY Emulator",
+        target: "rh850",
+        program: "${workspaceFolder}/Debug/Exe/ewproj.out",
+        stopOnEntry: true,
+        workbenchPath: "${command:iar-config.toolchain} for an iar-build project or path to EW root.",
+        projectPath: "${command:iar-config.project-file} for an iar-build project or ${workspaceFolder} otherwise.",
+        projectConfiguration: "${command:iar-config.project-configuration} for an iar-build project. Remove this for other project types.",
+        driver: "ocd",
+        driverOptions: [
+            "--core",
+            "g3m",
+            "-p",
+            "<EW-PATH>/rh850/config/debugger/iorh850_g3m.ddf",
+            "--double=64",
+            "-d",
+            "e1",
+            "--drv_verify_download",
+            "--LPD1_baud",
+            "0",
+            "--cspybat_inifile",
+            "${workspaceFolder}/settings/<PROJECT-NAME>.dnx"
         ]
     }
 ];

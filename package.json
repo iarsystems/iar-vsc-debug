@@ -524,6 +524,61 @@
 								"--drv_system_bus_access"
 							]
 						}
+					},
+					{
+						"label": "C-SPY: Simulator launch configuration (RH850)",
+						"description": "A new configuration for debugging an .ewp project with the simulator.",
+						"body": {
+							"type": "cspy",
+							"request": "launch",
+							"name": "${1:Debug with C-SPY Simulator}",
+							"target": "rh850",
+							"program": "${workspaceFolder}/Debug/Exe/${2:ewproj.out}",
+							"stopOnEntry": true,
+							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
+							"projectPath": "^\"\\${command:iar-config.project-file}\"",
+							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
+							"driver": "sim",
+							"driverOptions": [
+								"--core",
+								"${3:g3m}",
+								"-p",
+								"^\"\\${command:iar-config.toolchain}/rh850/config/debugger/${4:iorh850_g3m.ddf}\"",
+								"--double=64",
+								"-d",
+								"sim"
+							]
+						}
+					},
+					{
+						"label": "C-SPY: E1/E2/E20 Emulator launch configuration (RH850)",
+						"description": "A new configuration for debugging an .ewp project on the emulator.",
+						"body": {
+							"type": "cspy",
+							"request": "launch",
+							"name": "${1:Debug with C-SPY Emulator}",
+							"target": "rh850",
+							"program": "${workspaceFolder}/Debug/Exe/${2:ewproj.out}",
+							"stopOnEntry": true,
+							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
+							"projectPath": "^\"\\${command:iar-config.project-file}\"",
+							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
+							"driver": "sim",
+							"driverOptions": [
+								"--core",
+								"${3:g3m}",
+								"-p",
+								"^\"\\${command:iar-config.toolchain}/rh850/config/debugger/${4:iorh850_g3m.ddf}\"",
+								"--double=64",
+								"-d",
+								"sim",
+								"--drv_verify_download",
+								"--LPD1_baud",
+								"0",
+								"--cspybat_inifile",
+								"${workspaceFolder}/settings/${5:MyProjectName}.dnx"
+							]
+						}
 					}
 				]
 			}

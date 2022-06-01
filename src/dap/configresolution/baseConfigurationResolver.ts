@@ -32,7 +32,7 @@ export interface PartialSessionConfiguration {
  * and fills in trivial configuration values.
  */
 export abstract class BaseConfigurationResolver implements ConfigurationResolver {
-    private static readonly SUPPORTED_TARGETS = ["arm", "riscv"];
+    private static readonly SUPPORTED_TARGETS = ["arm", "riscv", "rh850"];
 
     async resolveLaunchArguments(launchArguments: CSpyLaunchRequestArguments): Promise<SessionConfiguration> {
         if (!Fs.existsSync(launchArguments.program)) {
@@ -81,7 +81,7 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
             projectName: projectName,
             setupMacros: partialValues.setupMacros,
             target: partialValues.target,
-            toolkitDir: Path.join(launchArguments.workbenchPath, partialValues.target), // TODO: this is probably not safe, find a better way to determine the path
+            toolkitDir: Path.join(launchArguments.workbenchPath, partialValues.target),
             stackSettings: new StackSettings({
                 fillEnabled: false,
                 displayLimit: 50,

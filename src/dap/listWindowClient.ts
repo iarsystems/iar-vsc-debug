@@ -149,7 +149,6 @@ export class ListWindowClient implements Disposable {
 
     // callback from list window backend
     notify(note: Note): Q.Promise<void> {
-        // TODO: should we handle thawing (and freezing)?
         switch (note.what) {
         case What.kRowUpdate:
             return this.backend.service.getRow(note.row).then(row => {

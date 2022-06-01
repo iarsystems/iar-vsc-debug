@@ -36,7 +36,6 @@ type InstalledInstructionBreakpoint = InstalledBreakpoint<DebugProtocol.Instruct
  * Sets, unsets and verifies C-SPY breakpoints.
  */
 export class CSpyBreakpointManager implements Disposable {
-    // TODO: cspyserver seems to automatically set breakpoints from the .ewp file (i.e. from the EW). We probably don't want that.
 
     /**
      * Creates and returns a new breakpoint manager
