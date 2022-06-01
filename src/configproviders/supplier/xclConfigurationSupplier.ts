@@ -51,9 +51,10 @@ export namespace XclConfigurationSupplier {
 
         const configs: ConfigResolutionCommon.PartialConfig[] = [];
         targetXcls.forEach(target => {
-            const filePaths = target.split(".");
-            if (filePaths[0] === undefined || filePaths[1] === undefined) return;
-            const config = convertXclToDebugConfiguration(filePaths[0], filePaths[1], settingsDir);
+            const [projectName, configuration] = target.split(".");
+            if (projectName === undefined || configuration === undefined) return;
+            const projectPath = path.join(projectFolder, projectName + ".ewp");
+            const config = convertXclToDebugConfiguration(projectPath, configuration, settingsDir);
             if (config) {
                 configs.push(config);
             }
@@ -68,10 +69,9 @@ export namespace XclConfigurationSupplier {
      * @param configuration The name of the project configuration
      */
     export function provideDebugConfigurationFor(project: string, configuration: string): ConfigResolutionCommon.PartialConfig {
-        const projName = path.basename(project, ".ewp");
         const settingsDir = path.join(path.dirname(project), FileNames.settingsCatalog);
 
-        const config = convertXclToDebugConfiguration(projName, configuration, settingsDir);
+        const config = convertXclToDebugConfiguration(project, configuration, settingsDir);
         config.projectPath = project;
         return config;
     }
@@ -80,8 +80,8 @@ export namespace XclConfigurationSupplier {
      * Reads the content from driver.xcl and general.xcl and attempts to generate a
      * valid launch configuration.
      */
-    function convertXclToDebugConfiguration(projectName: string, configuration: string, settingsDir: string): ConfigResolutionCommon.PartialConfig {
-        const baseName = generateXclBasename(projectName, configuration);
+    function convertXclToDebugConfiguration(projectPath: string, configuration: string, settingsDir: string): ConfigResolutionCommon.PartialConfig {
+        const baseName = generateXclBasename(path.basename(projectPath, ".ewp"), configuration);
         const genXclFile = path.join(settingsDir, baseName + FileNames.genXcl);
         const drvXclFile = path.join(settingsDir, baseName + FileNames.drvXcl);
         // We need both files to exist.
@@ -89,13 +89,13 @@ export namespace XclConfigurationSupplier {
             throw new Error( `${genXclFile} or ${drvXclFile} is missing.`);
         }
 
-        return generateDebugConfiguration(projectName, configuration, readLinesFromXclFile(genXclFile), readLinesFromXclFile(drvXclFile));
+        return generateDebugConfiguration(projectPath, configuration, readLinesFromXclFile(genXclFile), readLinesFromXclFile(drvXclFile));
     }
 
     /**
      * Generate a configuration based on a command line intended for cspybat.
      * May throw if the commands are not well-formed
-     * @param projectName The name of the project this configuration is for
+     * @param projectPath The path to the project this configuration is for
      * @param configuration The name of the project configuration this is for.
      * @param generalCommands The set of general commands, i.e., placed before --backend.
      * @param driverCommands The set of options for the driver, i.e., placed after --backend.
@@ -103,7 +103,7 @@ export namespace XclConfigurationSupplier {
      * @returns a valid launch configuration.
      */
     export function generateDebugConfiguration(
-        projectName: string,
+        projectPath: string,
         configuration: string,
         generalCommands: string[],
         driverCommands: string[]
@@ -174,8 +174,8 @@ export namespace XclConfigurationSupplier {
             program,
             driverPath: driver,
             target,
+            projectPath,
             stopOnEntry,
-            projectName,
             configuration,
             plugins,
             macros,

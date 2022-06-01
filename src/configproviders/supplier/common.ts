@@ -19,8 +19,7 @@ export namespace ConfigResolutionCommon {
         driverPath: string;
         target: string;
         stopOnEntry: boolean;
-        projectName: string;
-        projectPath?: string;
+        projectPath: string;
         configuration: string;
         plugins: string[];
         macros: string[];
@@ -38,7 +37,7 @@ export namespace ConfigResolutionCommon {
      */
     export function toLaunchJsonConfiguration(parts: PartialConfig, wsDir?: string): vscode.DebugConfiguration & CSpyLaunchRequestArguments {
 
-        // The driver is usually given as a path to libarmsim2.so or armsim2.dll so remove
+        // The driver is usually given as a path to a shared library file (e.g. libarmsim2.so), so remove the
         // directory part, the target name and any extensions
         const driverFile = basename(parts.driverPath);
         // Lowercase here is mostly for display purposes - the debug adapter resolves drivers case-insensitive anyway
@@ -46,13 +45,20 @@ export namespace ConfigResolutionCommon {
 
         // Express the program and project as a workspace-relative path if possible
         const program = wsDir ? toWorkspaceRelativePath(parts.program, wsDir) : parts.program;
-        const project = parts.projectPath ? (wsDir ? toWorkspaceRelativePath(parts.projectPath, wsDir) : parts.projectPath) : "${workspaceFolder}";
+        const project = wsDir ? toWorkspaceRelativePath(parts.projectPath, wsDir) : parts.projectPath;
+        const projectName = Path.basename(parts.projectPath, ".ewp");
+
+        // The rh850 driver saves some driver parameters in a settings file.
+        if (driverName === "ocd") {
+            parts.driverOptions.push("--cspybat_inifile");
+            parts.driverOptions.push(Path.join(Path.dirname(project), `settings/${projectName}.dnx`));
+        }
 
         // Assemble the configuration
         const config: vscode.DebugConfiguration & CSpyLaunchRequestArguments = {
             type: "cspy",
             request: "launch",
-            name: parts.projectName + "." + parts.configuration.replace(/ /g, "_"),
+            name: projectName + "." + parts.configuration.replace(/ /g, "_"),
             target: parts.target.toLowerCase(),
             program: program,
             driver: driverName,
