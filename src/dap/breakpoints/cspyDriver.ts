@@ -64,7 +64,7 @@ class TIMSPFETDriver extends HardwareDriver { }
 class OcdDriver implements CSpyDriver {
     getCodeBreakpointDescriptorFactory(): CodeBreakpointDescriptorFactory {
         return new EmulCodeBreakpointDescriptorFactory(
-            new Map([[BreakpointType.HARDWARE, 0], [BreakpointType.SOFTWARE, 1]])
+            new Map([[BreakpointType.SOFTWARE, 0], [BreakpointType.HARDWARE, 1]])
         );
     }
     isSimulator(): boolean {
