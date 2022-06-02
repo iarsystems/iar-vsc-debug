@@ -136,7 +136,8 @@ suite("Configuration tests", () => {
         } catch (_) {}
 
         // Test that the driver and target can be extracted.
-        const genOpt = ["skipMe", "arm/bin/libarmsim2.so", path.resolve(path.join(wsDir, program))];
+        const libfile = OsUtils.detectOsType() === OsUtils.OsType.Windows ? "arm\\bin/armsim2.dll" : "arm/bin/libarmsim2.so";
+        const genOpt = ["skipMe", libfile, path.resolve(path.join(wsDir, program))];
         let partialConfigTest = XclConfigurationSupplier.generateDebugConfiguration(projectName, config, genOpt, driverOpts);
         let configTest = ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfigTest, wsDir);
 
@@ -146,14 +147,16 @@ suite("Configuration tests", () => {
         assert.deepStrictEqual(configTest["target"], "arm");
         assert.deepStrictEqual(configTest["driverOptions"], driverOpts);
 
-        const genOpt2 = ["skipMe", "arm\\bin\\armjet.dll", path.join(wsDir, program)];
+        const libfile2 = OsUtils.detectOsType() === OsUtils.OsType.Windows ? "arm\\bin\\armjet.dll" : "arm/bin/libarmjet.so";
+        const genOpt2 = ["skipMe", libfile2, path.join(wsDir, program)];
         partialConfigTest = XclConfigurationSupplier.generateDebugConfiguration(projectName, config, genOpt2, driverOpts);
         configTest = ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfigTest, wsDir);
-        assert.deepStrictEqual(configTest["driver"], "jet");
+        assert.deepStrictEqual(configTest["driver"], "I-jet");
         assert.deepStrictEqual(configTest["target"], "arm");
 
         // Ensure that we can collect all listed plugins and macros
-        const genOpt3 = ["skipMe", "arm\\bin\\armijet.dll", path.resolve(wsDir, program), "--plugin=bat.dll", "--plugin=test1", "--macro=macro1", "--macro=macro2"];
+        const libfile3 = OsUtils.detectOsType() === OsUtils.OsType.Windows ? "arm\\bin\\armijet.dll" : "arm/bin/libarmijet.so";
+        const genOpt3 = ["skipMe", libfile3, path.resolve(wsDir, program), "--plugin=bat.dll", "--plugin=test1", "--macro=macro1", "--macro=macro2"];
         partialConfigTest = XclConfigurationSupplier.generateDebugConfiguration(projectName, config, genOpt3, driverOpts);
         configTest = ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfigTest, wsDir);
         assert.deepStrictEqual(configTest["macros"], ["macro1", "macro2"]);
@@ -170,7 +173,7 @@ suite("Configuration tests", () => {
         const projectName = "MyProject";
         const config = "Test 123";
         const program = path.join("output", "exe", "foo.out");
-        const target = "arm";
+        const target = "riscv";
 
         // Run with empty cli and we should throw an error
         try {
@@ -180,23 +183,25 @@ suite("Configuration tests", () => {
 
         const programOpt = ["/file", path.join(wsDir, program)];
         // Test that the driver and target can be extracted.
-        const opts = ["/runto", "main", "/driver", "arm/bin/libriscvSIM.so", "some", "other", "opts"];
+        const libfile = OsUtils.detectOsType() === OsUtils.OsType.Windows ? "arm\\bin\\riscvSIM.dll" : "arm/bin/libriscvSIM.so";
+        const opts = ["/runto", "main", "/driver", libfile, "some", "other", "opts"];
         let partialConfigTest = BuildExtensionConfigurationProvider.provideDebugConfigurationFor(opts.concat(programOpt), projectName, config, target);
         let configTest = ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfigTest, wsDir);
 
         assert.deepStrictEqual(configTest["name"], "MyProject.Test_123");
         assert.deepStrictEqual(configTest["program"], path.join("${workspaceFolder}", program));
         assert.deepStrictEqual(configTest["driver"], "Simulator");
-        assert.deepStrictEqual(configTest["target"], "arm");
+        assert.deepStrictEqual(configTest["target"], "riscv");
         assert.deepStrictEqual(configTest["stopOnEntry"], true);
         assert.deepStrictEqual(configTest["driverOptions"], ["some", "other", "opts"]);
 
         // include some unsupported args, make sure they are ignored
-        const opts2 = ["/driver", "arm\\bin\\armjet.dll", "/ilink", "/args", "test"];
+        const libfile2 = OsUtils.detectOsType() === OsUtils.OsType.Windows ? "arm\\bin\\riscvijet.dll" : "arm/bin/libriscvijet.so";
+        const opts2 = ["/driver", libfile2, "/ilink", "/args", "test"];
         partialConfigTest = BuildExtensionConfigurationProvider.provideDebugConfigurationFor(opts2.concat(programOpt), projectName, config, target);
         configTest = ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfigTest, wsDir);
         assert.deepStrictEqual(configTest["driver"], "I-jet");
-        assert.deepStrictEqual(configTest["target"], "arm");
+        assert.deepStrictEqual(configTest["target"], "riscv");
         assert.deepStrictEqual(configTest["stopOnEntry"], false);
         assert.deepStrictEqual(configTest["driverOptions"], []);
 
