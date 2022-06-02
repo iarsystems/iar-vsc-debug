@@ -212,14 +212,14 @@ const TEMPLATES: LaunchConfigurationSupplier.CspyLaunchJsonConfiguration[] = [
     {
         type: "cspy",
         request: "launch",
-        name: "Template: Debug with C-SPY Emulator",
+        name: "Template: Debug with C-SPY E1/E2/E20 Emulator",
         target: "rh850",
         program: "${workspaceFolder}/Debug/Exe/ewproj.out",
         stopOnEntry: true,
         workbenchPath: "${command:iar-config.toolchain} for an iar-build project or path to EW root.",
         projectPath: "${command:iar-config.project-file} for an iar-build project or ${workspaceFolder} otherwise.",
         projectConfiguration: "${command:iar-config.project-configuration} for an iar-build project. Remove this for other project types.",
-        driver: CSpyDriver.DriverNames.OCD,
+        driver: CSpyDriver.DriverNames.E1,
         driverOptions: [
             "--core",
             "g3m",

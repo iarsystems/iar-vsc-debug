@@ -85,7 +85,9 @@ export namespace CSpyDriver {
         STLINK = "ST-LINK",
         XDS = "TI XDS",
         TIFET = "TI MSP-FET",
-        OCD = "E1/E2/E20 Emulator",
+        E1 = "Renesas E1",
+        E2 = "Renesas E2",
+        E20 = "Renesas E20",
     }
     const driverMap: Array<{ name: string, driver: CSpyDriver }> = [
         { name: DriverNames.SIMULATOR, driver: new SimulatorDriver(["sim2", "sim"]) },
@@ -99,7 +101,9 @@ export namespace CSpyDriver {
         { name: DriverNames.STLINK, driver: new GenericHardwareDriver(["stlink"]) },
         { name: DriverNames.XDS, driver: new GenericHardwareDriver(["xds"]) },
         { name: DriverNames.TIFET, driver: new GenericHardwareDriver(["tifet"]) },
-        { name: DriverNames.OCD, driver: new OcdDriver(["ocd"]) },
+        { name: DriverNames.E1, driver: new OcdDriver(["ocd"]) },
+        { name: DriverNames.E2, driver: new OcdDriver(["ocd"]) },
+        { name: DriverNames.E20, driver: new OcdDriver(["ocd"]) },
     ];
     /**
      * Returns a driver matching a driver display name (e.g. a name returned from {@link nameFromDriverFile}).
