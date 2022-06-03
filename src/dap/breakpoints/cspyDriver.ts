@@ -1,8 +1,6 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-import { IarOsUtils } from "iar-vsc-common/osUtils";
-import * as Path from "path";
 import { CodeBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory, StdCode2BreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
 import { logger } from "@vscode/debugadapter/lib/logger";
 import { BreakpointType } from "./cspyBreakpointManager";
@@ -122,12 +120,8 @@ export namespace CSpyDriver {
      * Gets a display name for a driver, given its library file (e.g. libarmsim2.so)
      */
     export function nameFromDriverFile(driverFile: string, targetName?: string): string {
-        let basename = Path.basename(driverFile, IarOsUtils.libraryExtension());
-        basename = basename.toLowerCase();
+        let basename = driverFile.replace(new RegExp(`^lib|.so|.dll`, "ig"), "").toLowerCase();
 
-        if (basename.startsWith(IarOsUtils.libraryPrefix().toLowerCase())) {
-            basename = basename.substring(IarOsUtils.libraryPrefix().length);
-        }
         if (targetName && basename.startsWith(targetName.toLowerCase())) {
             basename = basename.substring(targetName.length);
         }
