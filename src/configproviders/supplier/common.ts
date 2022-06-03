@@ -49,8 +49,9 @@ export namespace ConfigResolutionCommon {
         const project = wsDir ? toWorkspaceRelativePath(parts.projectPath, wsDir) : parts.projectPath;
         const projectName = Path.basename(parts.projectPath, ".ewp");
 
-        // The rh850 emulator driver saves some driver parameters in a settings file.
-        if (driverName === CSpyDriver.DriverNames.OCD) {
+        // The rh850 emulator drivers save some driver parameters in a settings file.
+        const emulatorDrivers: string[] = [CSpyDriver.DriverNames.E1, CSpyDriver.DriverNames.E2, CSpyDriver.DriverNames.E20];
+        if (emulatorDrivers.includes(driverName) && parts.target === "rh850") {
             parts.driverOptions.push("--cspybat_inifile");
             parts.driverOptions.push(Path.join(Path.dirname(project), `settings/${projectName}.dnx`));
         }
