@@ -51,9 +51,9 @@ This extension is compatible with selected IAR Embedded Workbench (EW) products 
 
 | IAR EW version  | Limitation
 |--------------|---------
-| Arm v9.30 or later <br>RH850 v3.10 or later<br> | None |
+| Arm v9.30 or later | None |
 | RISC-V v3.10 or later | Terminal I/O is not supported |
-| Arm v8.40-9.20.4| An initial debug session with EW is required prior to debugging in VSCode |
+| Arm v8.40-9.20.4<br>RH850 v3.10 or later| An initial debug session with EW is required prior to debugging in VSCode |
 
 </details>
 
