@@ -35,7 +35,7 @@ If you have installed the [IAR Build](https://marketplace.visualstudio.com/items
 
 To change debugging parameters or set up VS Code to automatically build your project before starting a debug session, you can create a `launch.json` configuration.
 
-Click on **Show all automatic debug configurations** in the **Run and Debug** view, select **IAR C-SPY Debug** and click on the gear icon next to the configuration you want to customize. A `launch.json` file is created, or opened if one exists already.
+Click on **Show all automatic debug configurations** in the **Run and Debug** view, select **IAR C-SPY Debug** and click on the gear icon next to the configuration you want to customize. A `launch.json` file is created, or opened if one exists already. There are some basic templates for you to base your own debug configuration on. To access these, choose **Run>Add Configuration>{ } C-SPY Debug: Generic launch configuration**.
 
 See [The launch.json format](#launch-json-format) for a description of the format.
 
@@ -61,24 +61,27 @@ You can click on the cog wheel to the right of the setting name to reset the set
 
 <h2 id="RunMenu">Run menu</h2>
 
+![Run menu](images/VSCode_RunMenu_01.png)
+
 Some of the commands on the **Run** menu are also available as buttons on the Debug Bar.
 
-**Start Debugging**
+![Debug bar](images/VSCode_DebugBar_01.png)
 
-Starts a new debugging session using the configuration selected in the **Run and Debug** view, or an automatically generated
-configuration for the currently selected project in the **IAR Build** extension.
+**Start Debugging (F5)**, also available as a Debug Bar button.
+
+Executes from the current statement or instruction until a breakpoint or program exit is reached.
 
 **Run without Debugging**
 
-Running without debugging is not supported.
+Executes the application without using debug info.
 
-**Stop Debugging**
+**Stop Debugging (Shift+F5)**, also available as a Debug Bar button.
 
 Stops the application execution.
 
-**Restart Debugging**
+**Restart Debugging (Ctrl+Shift+F5)**, also available as a Debug Bar button.
 
-Restarts the application execution.
+Resets the target processor.
 
 **Open Configurations**
 
@@ -100,10 +103,6 @@ Executes the next statement or instruction, or function call, entering C or C++ 
 
 Executes from the current statement up to the statement after the call to the current function.
 
-**Continue (F5)**, also available as a Debug Bar button.
-
-Executes from the current statement or instruction until a breakpoint or program exit is reached.
-
 **Toggle Breakpoint**
 
 Toggles a breakpoint at the cursor in the **Editor** view.
@@ -124,11 +123,17 @@ Disables all defined breakpoints.
 
 Removes all defined breakpoints.
 
+**Install Additional Debuggers**
+
+Opens the Extensions Marketplace where you can find other debuggers to install.
+
 ## The Side Bar views
 
 When you debug your project, these views are available in the Side Bar.
 
 ### Variables view
+
+![Variables view](images/VSCode_VariablesView_01.png)
 
 These types of variables are can be inspected in the **Variables** view:
 
@@ -144,11 +149,15 @@ On the context menu are commands for setting or copying the value of the selecte
 
 ### Watch view
 
+![Watch view](images/VSCode_WatchView_01.png)
+
 Use this view to monitor the values of C-SPY expressions or variables. Tree structures of arrays, structs, and unions are expandable, which means that you can study each item of these. Every time execution stops, the values in the **Watch** view are recalculated.
 
 Use the context menu, or click the plus icon, to add an expression to this view. Use the context menu to remove all expressions from the view.
 
 ### Call Stack view
+
+![Call Stack view](images/VSCode_CallStackView_01.png)
 
 This view displays the C function call stack with the current function at the top. To inspect a function call, double-click it. The debugger now focuses on that call frame instead.
 
@@ -156,11 +165,17 @@ Use the context menu to copy the call stack, if you want to save it to a file fo
 
 ### Breakpoints view
 
+![Breakpoints view](images/VSCode_BreakpointsView_01.png)
+
 Use this view to add new breakpoints, or toggle breakpoints on and off. Hover over a breakpoint to see the details.
 
 For information on specifying which type of breakpoints to use, hardware or software breakpoints, see [Breakpoint types](#BreakpointTypes).
 
 #### Context menu
+
+Right-click in the **Breakpoints** view to open the context menu.
+
+![Breakpoints view context menu](images/VSCode_BreakpointsViewPopup_01.png)
 
 **Edit Condition**
 
@@ -210,8 +225,8 @@ For most debugger drivers, the IAR C-SPY Debugger lets you decide whether to use
 
 Press F1 or Ctrl+Shift+P and start typing `IAR` to find the **IAR Debug: Set Breakpoint Type:** commands.
 
-* **Set Breakpoint Type: Auto** - Instructs the driver to automatically select the breakpoint type to use for all new breakpoints, for this and future debug sessions.
-* **Set Breakpoint Type: Auto (Current Session Only)** - Instructs the driver to automatically select the breakpoint type for any new breakpoints set during this debug session.
+* **Set Breakpoint Type: Auto** - Makes all new breakpoints use software breakpoints, for this and future debug sessions. If this is not possible, a hardware breakpoint will be used.
+* **Set Breakpoint Type: Auto (Current Session Only)** - Makes any new breakpoints set during this debug session use software breakpoints. If this is not possible, a hardware breakpoint will be used.
 * **Set Breakpoint Type: Hardware** - Makes all new breakpoints use hardware breakpoints, for this and future debug sessions. If this is not possible, no breakpoint will be set.
 * **Set Breakpoint Type: Hardware (Current Session Only)** - Makes any new breakpoints set during this debug session use hardware breakpoints. If this is not possible, no breakpoint will be set.
 * **Set Breakpoint Type: Software** - Makes all new breakpoints use software breakpoints, for this and future debug sessions. If this is not possible, no breakpoint will be set.
@@ -236,50 +251,50 @@ There are two ways to do this:
 
 Visual Studio Code uses a file called `launch.json` to manage custom debug configurations. For detailed descriptions, see [Launch configurations](https://code.visualstudio.com/Docs/editor/debugging#_launch-configurations) and [Launch.json attributes](https://code.visualstudio.com/Docs/editor/debugging#_launchjson-attributes).
 
-The easiest way to generate a `launch.json` configuration is from an IAR Embedded Workbench project, see the description under [Debugging a stand-alone application](#debuggingstandaloneprogram), but you can also write one yourself. This example can get you started:
+The easiest way to generate a `launch.json` configuration is from an IAR Embedded Workbench project, see the description under [Debugging a stand-alone application](#debuggingstandaloneprogram), but you can also write one yourself. This stub can get you started:
 
 ```json
 {
-	"type": "cspy",
-	"request": "launch",
-	"name": "My I-JET Config",
-	"target": "arm",
-	"program": "${workspaceFolder}/Debug/Exe/BasicDebugging.out",
-	"driver": "I-jet",
-	"stopOnEntry": true,
-	"workbenchPath": "${command:iar-config.toolchain}",
-	"projectPath": "${workspaceFolder}",
-	"projectConfiguration": "Debug",
-	"trace": true,
-	"driverOptions": [
-		"--crun=disabled",
-		"--endian=little",
-		"--cpu=Cortex-M4",
-		"--fpu=VFPv4_SP",
-		"-p",
-		"${command:iar-config.toolchain}/arm/CONFIG/debugger/ST/STM32F429II.ddf",
-		"--semihosting",
-		"--device=STM32F429II",
-		"--multicore_nr_of_cores=1",
-		"--jet_standard_reset=9,0,0",
-		"--reset_style=\"0,-,0,Disabled (no reset)",
-		"--reset_style=\"1,-,0,Software",
-		"--reset_style=\"2,-,0,Hardware",
-		"--reset_style=\"3,-,0,Core",
-		"--reset_style=\"4,-,0,System",
-		"--reset_style=\"9,ConnectUnderReset,1,Connect during reset",
-		"--jet_power_from_probe=leave_on",
-		"--drv_interface=SWD",
-		"--jet_cpu_clock=180000000",
-		"--drv_catch_exceptions=0xff0"
-	],
-	"download": {
-		"flashLoader": "${command:iar-config.toolchain}/arm/config/flashloader/ST/FlashSTM32F427xI.board",
-		"deviceMacros": [
-			"${command:iar-config.toolchain}/arm/config/debugger/ST/STM32F4xx.dmac"
-		]
-	}
-}
+            "type": "cspy",
+            "request": "launch",
+            "name": "My I-jet Config",
+            "target": "arm",
+            "program": "${workspaceFolder}/Debug/Exe/BasicDebugging.out",
+            "driver": "I-jet",
+            "stopOnEntry": true,
+            "workbenchPath": "${command:iar-config.toolchain}",
+            "projectPath": "${workspaceFolder}",
+            "projectConfiguration": "Debug",
+            "trace": true,
+            "driverOptions": [
+                "--crun=disabled",
+                "--endian=little",
+                "--cpu=Cortex-M4",
+                "--fpu=VFPv4_SP",
+                "-p",
+                "${command:iar-config.toolchain}/arm/CONFIG/debugger/ST/STM32F429II.ddf",
+                "--semihosting",
+                "--device=STM32F429II",
+                "--multicore_nr_of_cores=1",
+                "--jet_standard_reset=9,0,0",
+                "--reset_style=\"0,-,0,Disabled (no reset)",
+                "--reset_style=\"1,-,0,Software",
+                "--reset_style=\"2,-,0,Hardware",
+                "--reset_style=\"3,-,0,Core",
+                "--reset_style=\"4,-,0,System",
+                "--reset_style=\"9,ConnectUnderReset,1,Connect during reset",
+                "--jet_power_from_probe=leave_on",
+                "--drv_interface=SWD",
+                "--jet_cpu_clock=180000000",
+                "--drv_catch_exceptions=0xff0"
+            ],
+            "download": {
+                "flashLoader": "${command:iar-config.toolchain}/arm/config/flashloader/ST/FlashSTM32F427xI.board",
+                "deviceMacros": [
+                    "${command:iar-config.toolchain}/arm/config/debugger/ST/STM32F4xx.dmac"
+                ]
+            }
+        }
 ```
 
 For information about each supported attribute, see the autocompletion and tooltips in the `launch.json` file.
