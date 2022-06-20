@@ -167,6 +167,19 @@ export class CSpyBreakpointManager implements Disposable {
     }
 
     /**
+     * Removes all breakpoints across all files.
+     */
+    async clearAllBreakpoints(): Promise<void> {
+        this.installedSourceBreakpoints.clear();
+        this.installedInstrunctionBreakpoints = [];
+        const breakpoints = await this.breakpointService.service.getBreakpoints();
+        await Promise.all(breakpoints.map(bp => {
+            return this.breakpointService.service.removeBreakpoint(bp.id);
+        }));
+        logger.verbose(`Cleared ${breakpoints.length} breakpoint(s)`);
+    }
+
+    /**
      * The supported {@link BreakpointType}s that can be set using the method below.
      */
     supportedBreakpointTypes() {

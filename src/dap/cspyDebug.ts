@@ -229,6 +229,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1,
                 driver);
+            // VSC-295 Remove any cross-session breakpoints loaded from the .dnx file
+            await this.breakpointManager.clearAllBreakpoints();
             this.setupBreakpointRequests(args.breakpointType ?? BreakpointType.AUTO);
             this.setupRegistersRequest();
 
