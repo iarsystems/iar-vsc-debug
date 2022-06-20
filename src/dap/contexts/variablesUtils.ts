@@ -102,6 +102,8 @@ export namespace VariablesUtils {
     }
     // Extracts the memory address from a pointer value
     function getAddressFromValue(value: string): string | undefined {
+        // VSC-294 In some cases, a trailing space may be added to a numeric value
+        value = value.trim();
         const hexRegex = "(0x[a-fA-F0-9']+)";
         {
             const match = value.match(new RegExp(`^${hexRegex}$`));
