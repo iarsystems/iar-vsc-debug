@@ -11,7 +11,7 @@ The bug report should include:
  "trace": true,
  ```
 
-  Some additional logs can be found in the **Output** panel in VS Code, by selecting `IAR C-SPY Debug` in the dropdown in the top left.
+Some additional logs can be found in the **Output** panel in VS Code, by selecting `IAR C-SPY Debug` in the dropdown in the top right.
 
 ## Feature requests
 To request a new feature, please first check if there is already a GitHub issue describing the feature you would like.
