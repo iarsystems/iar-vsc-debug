@@ -61,4 +61,7 @@ This extension is compatible with selected IAR Embedded Workbench (EW) products 
 Depending on which feedback you want to share with us, here are the preferred options:
 * If you have ideas on how to improve this extension or if you have found issues with it, see [CONTRIBUTING.md](https://github.com/IARSystems/iar-vsc-debug/blob/master/CONTRIBUTING.md) on how to proceed.
 
-* If you have issues with the underlying IAR Embedded Workbench or IAR Build Tools product, report this via the IAR Systems technical support channel at [IAR Technical Support](https://www.iar.com/knowledge/support/).
+* If you are unable to start a debug session in Visual Studio Code, verify that debugging in IAR Embedded Workbench works (to rule out any non-Visual Studio Code related issues).
+
+* If you have issues with the underlying IAR Embedded Workbench product, report this via the IAR Systems technical support channel at [IAR Technical Support](https://www.iar.com/knowledge/support/).
+
