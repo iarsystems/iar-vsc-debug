@@ -63,9 +63,6 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
         }
         const projectName: string = launchArguments.projectPath ? Path.basename(launchArguments.projectPath) : "GenericProject";
 
-        // we don't support multicore yet
-        partialValues.options = partialValues.options.filter(option => !option.match(/--multicore_nr_of_cores=\d+/));
-
         const config: SessionConfiguration = new SessionConfiguration({
             attachToTarget: partialValues.attachToTarget,
             driverName: partialValues.driverFile,

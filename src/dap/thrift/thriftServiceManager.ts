@@ -128,11 +128,12 @@ export namespace ThriftServiceManager {
     /**
      * Readies a service registry/manager and waits for it to finish starting before returning.
      * @param workbenchPath Path to the top-level folder of the workbench to use
+     * @param numCores The number of cores that the debug session will use
      */
-    export async function fromWorkbench(workbenchPath: string): Promise<ThriftServiceManager> {
+    export async function fromWorkbench(workbenchPath: string, numCores: number): Promise<ThriftServiceManager> {
         const registryPath = path.join(workbenchPath, "common/bin/CSpyServer2" + IarOsUtils.executableExtension());
         const tmpDir = getTmpDir();
-        const serviceRegistryProcess = spawn(registryPath, ["-standalone", "-sockets"],
+        const serviceRegistryProcess = spawn(registryPath, ["-standalone", "-sockets", "--multicore_nr_of_cores=" + numCores],
             { cwd: tmpDir });
         serviceRegistryProcess.stdout?.on("data", dat => {
             process.stdout.write(dat.toString());

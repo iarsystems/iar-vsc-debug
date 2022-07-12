@@ -106,7 +106,7 @@ export class ListWindowClient implements Disposable {
 
     /**
      * Sets the value of a cell
-     * @param reference The row in which to set the v alue
+     * @param reference The row in which to set the value
      * @param column The column in this row to set the value for
      * @param value The value to set
      * @returns The new value of the call (may differ from the value set)
@@ -137,6 +137,12 @@ export class ListWindowClient implements Disposable {
      */
     async clickContextMenu(command: number) {
         await this.backend.service.handleContextMenu(command);
+    }
+    /**
+     * Gets the context menu for clicking the given cell. Parsing the menu items is left to the caller.
+     */
+    async doubleClickRow(row: Int64, col: number): Promise<void> {
+        return await this.backend.service.doubleClick(row, col);
     }
 
     /**
@@ -300,6 +306,9 @@ namespace TreeInfoUtils {
      * How many parents does this row have?
      */
     export function getDepth(treeinfo: string): number {
+        if (treeinfo === "") {
+            return 0;
+        }
         return treeinfo.search(new RegExp(`[${TreeGraphItems.kLeaf}${TreeGraphItems.kPlus}\\${TreeGraphItems.kMinus}]`));
     }
 
