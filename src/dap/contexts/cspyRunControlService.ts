@@ -10,6 +10,7 @@ import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { CSpyCoresService } from "./cspyCoresService";
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { Disposable } from "../disposable";
+import { LibSupportHandler } from "../libSupportHandler";
 
 type StoppingReason = DebugProtocol.StoppedEvent["body"]["reason"];
 
@@ -18,9 +19,13 @@ type StoppingReason = DebugProtocol.StoppedEvent["body"]["reason"];
  */
 export class CSpyRunControlService implements Disposable {
 
-    static async instantiate(serviceManager: ThriftServiceManager, eventListener: DebugEventListenerHandler): Promise<CSpyRunControlService> {
+    static async instantiate(
+        serviceManager: ThriftServiceManager,
+        eventListener: DebugEventListenerHandler,
+        libSupportHandler: LibSupportHandler,
+    ): Promise<CSpyRunControlService> {
         const dbgr = await serviceManager.findService(DEBUGGER_SERVICE, Debugger);
-        return new CSpyRunControlService(dbgr, await dbgr.service.getNumberOfCores(), eventListener);
+        return new CSpyRunControlService(dbgr, await dbgr.service.getNumberOfCores(), eventListener, libSupportHandler);
     }
 
     private readonly coreStoppedCallbacks: Array<(core: number, reason: StoppingReason) => void> = [];
@@ -30,9 +35,18 @@ export class CSpyRunControlService implements Disposable {
         private readonly dbgr: ThriftClient<Debugger.Client>,
         private readonly nCores: number,
         eventListener: DebugEventListenerHandler,
+        libSupportHandler: LibSupportHandler,
     ) {
         eventListener.observeDebugEvents(DkNotifyConstant.kDkCoreStarted, this.updateCoreStatus.bind(this));
         eventListener.observeDebugEvents(DkNotifyConstant.kDkCoreStopped, this.updateCoreStatus.bind(this));
+        eventListener.observeDebugEvents(DkNotifyConstant.kDkReset, this.updateCoreStatus.bind(this));
+
+        libSupportHandler.observeExit(() => {
+            for (let i = 0; i < nCores; i++) {
+                this.expectedStoppingReason.set(i, "exit");
+            }
+        });
+
         for (let i = 0; i < nCores; i++) {
             this.expectedStoppingReason.set(i, "entry");
         }
@@ -110,6 +124,20 @@ export class CSpyRunControlService implements Disposable {
             this.expectedStoppingReason.set(core, "pause");
             await this.dbgr.service.stopCore(core);
         });
+    }
+
+    runToULE(core: number, ule: string) {
+        return CSpyCoresService.instance.performOnCore(core, async() => {
+            await this.dbgr.service.runToULE(ule, false);
+        });
+    }
+
+    async reset() {
+        for (let i = 0; i < this.nCores; i++) {
+            this.expectedStoppingReason.set(i, "entry");
+        }
+        await this.dbgr.service.reset();
+        // TODO: we should implement some startup behaviour here (e.g. run to main)
     }
 
     dispose() {

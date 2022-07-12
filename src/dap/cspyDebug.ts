@@ -195,8 +195,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
             });
             this.libSupportHandler.observeExit(code => {
                 this.sendEvent(new OutputEvent("Debugee terminated, exit code " + code + "\n"));
-                // TODO
-                // this.expectedStoppingReason = "exit";
             });
             this.libSupportHandler.observeInputRequest(() => {
                 this.sendEvent(new OutputEvent("Debugee requested terminal input:"));
@@ -229,7 +227,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             // only after loading modules can we initialize services using listwindows
             CSpyCoresService.initialize(this.serviceManager);
             this.stackManager = await CSpyContextManager.instantiate(this.serviceManager, this.registerInfoGenerator);
-            this.runControlService = await CSpyRunControlService.instantiate(this.serviceManager, this.cspyEventHandler);
+            this.runControlService = await CSpyRunControlService.instantiate(this.serviceManager, this.cspyEventHandler, this.libSupportHandler);
             this.memoryManager = await CspyMemoryManager.instantiate(this.serviceManager);
             this.disassemblyManager = await CspyDisassemblyManager.instantiate(this.serviceManager,
                 this.clientLinesStartAt1,
@@ -266,17 +264,11 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
         this.addCSpyEventHandlers();
 
-        // TODO move into run control?
+        // TODO: should this affect all cores or just the first one?
         if (args.stopOnEntry) {
-            // this.expectedStoppingReason = "entry";
-            // tell cspy to start the program
-            await this.cspyDebugger.service.runToULE("main", false);
+            await this.runControlService.runToULE(0, "main");
         } else {
-            // this.expectedStoppingReason = "breakpoint";
-            await this.cspyDebugger.service.go();
-        }
-        for (let i = 1; i < this.numCores; i++) {
-            this.sendEvent(new StoppedEvent("entry", i));
+            await this.runControlService.continue(0, true);
         }
     }
 
@@ -318,10 +310,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     protected override async restartRequest(response: DebugProtocol.RestartResponse, _args: DebugProtocol.RestartArguments) {
-        await CSpyDebugSession.tryResponseWith(this.cspyDebugger, response, async cspyDebugger => {
-            // this.expectedStoppingReason = "entry";
-            await cspyDebugger.service.reset();
-            await cspyDebugger.service.runToULE("main", false);
+        await CSpyDebugSession.tryResponseWith(this.runControlService, response, async runControl => {
+            await runControl.reset();
         });
         this.sendResponse(response);
     }
