@@ -31,7 +31,7 @@ export namespace BuildExtensionConfigurationProvider {
         let driver: string | undefined;
         let stopOnEntry = false;
         const plugins: string[] = [];
-        const macros: string[] = [];
+        const setupMacros: string[] = [];
         const deviceMacros: string[] = [];
         let flashLoader: string | undefined;
         const driverOptions: string[] = [];
@@ -52,7 +52,7 @@ export namespace BuildExtensionConfigurationProvider {
                     plugins.push(val);
                 }
             } else if ((val = consumeArg1("/setup", cspyCommands)) !== undefined) {
-                macros.push(val);
+                setupMacros.push(val);
             } else if ((val = consumeArg1("/devicesetup", cspyCommands)) !== undefined) {
                 deviceMacros.push(val);
             } else if ((val = consumeArg1("/flashboard", cspyCommands)) !== undefined) {
@@ -91,7 +91,7 @@ export namespace BuildExtensionConfigurationProvider {
             projectPath: projPath,
             configuration: configName,
             plugins,
-            macros,
+            setupMacros,
             deviceMacros,
             flashLoader,
             driverOptions,

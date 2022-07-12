@@ -62,6 +62,8 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     /** The driver options as a list of string*/
     driverOptions: string[];
     /** A list of macros to load*/
+    setupMacros?: string[];
+    /** @deprecated Legacy alias for setupMacros, see VSC-306 */
     macros?: string[];
     /** Download options (optional, e.g. for simulator) */
     download?: {

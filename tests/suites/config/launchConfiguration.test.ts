@@ -156,7 +156,7 @@ suite("Configuration tests", () => {
         const genOpt3 = ["skipMe", "arm\\bin\\armijet.dll", path.resolve(wsDir, program), "--plugin=bat.dll", "--plugin=test1", "--macro=macro1", "--macro=macro2"];
         partialConfigTest = XclConfigurationSupplier.generateDebugConfiguration(projectName, config, genOpt3, driverOpts);
         configTest = ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfigTest, wsDir);
-        assert.deepStrictEqual(configTest["macros"], ["macro1", "macro2"]);
+        assert.deepStrictEqual(configTest["setupMacros"], ["macro1", "macro2"]);
         assert.deepStrictEqual(configTest["plugins"], ["test1"]);
 
     });
@@ -205,7 +205,7 @@ suite("Configuration tests", () => {
             "/setup", "macro1", "/setup", "macro2", "/devicesetup", "devmacro1", "/flashboard", "flash.ddf"];
         partialConfigTest = BuildExtensionConfigurationProvider.provideDebugConfigurationFor(opts3.concat(programOpt), projectName, config, target);
         configTest = ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfigTest, wsDir);
-        assert.deepStrictEqual(configTest["macros"], ["macro1", "macro2"]);
+        assert.deepStrictEqual(configTest["setupMacros"], ["macro1", "macro2"]);
         assert.deepStrictEqual(configTest["plugins"], ["test1"]);
         assert.deepStrictEqual(configTest["download"]?.["deviceMacros"], ["devmacro1"]);
         assert.deepStrictEqual(configTest["download"]?.["flashLoader"], "flash.ddf");

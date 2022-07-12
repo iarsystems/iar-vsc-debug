@@ -52,7 +52,7 @@ suite("Configuration resolution tests", () => {
             projectConfiguration: "Debug",
             driver: "jet",
             driverOptions: ["some", "options"],
-            macros: []
+            setupMacros: []
         };
 
     });
