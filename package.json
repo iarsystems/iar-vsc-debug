@@ -217,7 +217,7 @@
 							"driver": {
 								"type": "string",
 								"description": "The driver to use.",
-								"default": "sim2",
+								"default": "Simulator",
 								"enum": [
 									"Simulator",
 									"64-bit Simulator",
