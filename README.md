@@ -45,7 +45,7 @@ For more help, see [Debugging a stand-alone application](https://github.com/IARS
 [Click here](https://github.com/IARSystems/iar-vsc-debug/blob/master/docs/README.md) to view the full documentation.
 
 ## Compatibility
-This extension is compatible with selected IAR Embedded Workbench (EW) products using IDE version 8 or newer. The following table decsribes the level of support for your specific product:
+This extension is compatible with selected IAR Embedded Workbench (EW) products using IDE version 9 or newer. The following table decsribes the level of support for your specific product:
 
 <details><summary>IAR EW - Compatibility table</summary>
 
@@ -53,7 +53,7 @@ This extension is compatible with selected IAR Embedded Workbench (EW) products 
 |--------------|---------
 | Arm v9.30 or later | None |
 | RISC-V v3.10 or later | Terminal I/O is not supported |
-| Arm v8.40-9.20.4<br>RH850 v3.10 or later| An initial debug session with EW is required prior to debugging in VSCode |
+| Arm v9.10-9.20.4<br>RH850 v3.10 or later| An initial debug session with EW is required prior to debugging in VSCode |
 
 </details>
 
