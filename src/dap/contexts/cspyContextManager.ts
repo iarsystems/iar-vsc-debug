@@ -6,7 +6,7 @@
 import { ContextRef, ContextType, ExprFormat } from "iar-vsc-common/thrift/bindings/shared_types";
 import * as ContextManager from "iar-vsc-common/thrift/bindings/ContextManager";
 import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
-import { StackFrame, Source, Scope, Handles, Variable } from "@vscode/debugadapter";
+import { StackFrame, Source, Scope, Handles, Variable, logger } from "@vscode/debugadapter";
 import { basename } from "path";
 import { CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE, DkNotifyConstant, ExprValue } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { Disposable } from "../disposable";
@@ -67,7 +67,8 @@ export class CSpyContextManager implements Disposable {
      */
     static async instantiate(serviceMgr: ThriftServiceManager, cspyEventListener: DebugEventListenerHandler, regInfoGen: RegisterInformationGenerator): Promise<CSpyContextManager> {
         const onProviderUnavailable = (reason: unknown) => {
-            throw reason;
+            logger.error("Failed to initialize variables provider: " + reason);
+            return undefined;
         };
         return new CSpyContextManager(
             await serviceMgr.findService(CONTEXT_MANAGER_SERVICE, ContextManager.Client),
