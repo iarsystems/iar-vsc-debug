@@ -8,6 +8,7 @@ import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
 import * as DebugEventListener from "iar-vsc-common/thrift/bindings/DebugEventListener";
 import * as LibSupportService2 from "iar-vsc-common/thrift/bindings/LibSupportService2";
 import * as Frontend from "iar-vsc-common/thrift/bindings/Frontend";
+import * as TimelineFrontend from "iar-vsc-common/thrift/bindings/TimelineFrontend";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant, SessionConfiguration } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
@@ -31,6 +32,8 @@ import { RegisterInformationGenerator } from "./registerInformationGenerator";
 import { FrontendHandler } from "./frontendHandler";
 import { FRONTEND_SERVICE } from "iar-vsc-common/thrift/bindings/frontend_types";
 import { Workbench, WorkbenchType } from "iar-vsc-common/workbench";
+import { TimelineFrontendHandler } from "./timelineFrontendHandler";
+import { TIMELINE_FRONTEND_SERVICE } from "iar-vsc-common/thrift/bindings/timeline_types";
 
 /**
  * This interface describes the cspy-debug specific launch attributes
@@ -199,6 +202,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
             const frontendHandler = new FrontendHandler();
             this.serviceManager.startService(FRONTEND_SERVICE, Frontend, frontendHandler);
+            const timelineFrontendHandler = new TimelineFrontendHandler();
+            this.serviceManager.startService(TIMELINE_FRONTEND_SERVICE, TimelineFrontend, timelineFrontendHandler);
 
             const sessionConfig: SessionConfiguration = await new LaunchArgumentConfigurationResolver().resolveLaunchArguments(args);
 
