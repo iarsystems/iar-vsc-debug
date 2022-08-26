@@ -77,6 +77,8 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     }
     /** A list of plugins to load */
     plugins?: string[];
+    /** A set of path mappings to use when resolving nonexistent source files */
+    sourceFileMap?: Record<string, string>;
     /** Hidden option. Allows starting sessions with any target (although it might not work) */
     bypassTargetRestriction?: boolean;
 }
@@ -200,7 +202,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             });
             this.serviceManager.startService(LIBSUPPORT_SERVICE, LibSupportService2, this.libSupportHandler);
 
-            const frontendHandler = new FrontendHandler({ send: this.sendEvent.bind(this)}, this.customRequestRegistry);
+            const frontendHandler = new FrontendHandler({ send: this.sendEvent.bind(this)}, args.sourceFileMap ?? {}, this.customRequestRegistry);
             this.serviceManager.startService(FRONTEND_SERVICE, Frontend, frontendHandler);
             const timelineFrontendHandler = new TimelineFrontendHandler();
             this.serviceManager.startService(TIMELINE_FRONTEND_SERVICE, TimelineFrontend, timelineFrontendHandler);

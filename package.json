@@ -300,6 +300,13 @@
 									"format": "uri"
 								},
 								"default": []
+							},
+							"sourceFileMap": {
+								"type": "object",
+								"description": "A set of path mappings to use when resolving nonexistent source files. If the source files have been moved after compiling, this can be used to locate them. Example: `{\"/original/path\": \"/new/path\"}`",
+								"default": {
+									"<source-path>": "<target-path>"
+								}
 							}
 						}
 					}

@@ -10,7 +10,7 @@ import { SourceLocation } from "iar-vsc-common/thrift/bindings/shared_types";
 import * as Q from "q";
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { CustomEvent, CustomRequest } from "./customRequest";
-import { Event } from "@vscode/debugadapter";
+import { Event, logger } from "@vscode/debugadapter";
 import { Command, CommandRegistry } from "./commandRegistry";
 
 interface EventSink {
@@ -37,10 +37,12 @@ export class FrontendHandler {
      * Creates a new handler for the frontend service. The caller is responsible for launching the service with this
      * handler.
      * @param eventSink Used to send DAP events to the frontend
+     * @param sourceFileMap A set of path mappings/translations to use to resolve nonexistent source files
      * @param requestRegistry The registry where this handler should register the DAP requests it can handle
      */
     constructor(
         private readonly eventSink: EventSink,
+        private readonly sourceFileMap: Record<string, string>,
         requestRegistry: CommandRegistry<unknown, unknown>
     ) {
         requestRegistry.registerCommand(new Command(CustomRequest.Names.MESSAGE_BOX_CLOSED, args => {
@@ -223,7 +225,18 @@ export class FrontendHandler {
         return Q.resolve();
     }
 
-    resolveAliasForFile(_fileName: string, suggestedFile: string): Q.Promise<string> {
+    resolveAliasForFile(fileName: string, suggestedFile: string): Q.Promise<string> {
+        for (const sourcePath in this.sourceFileMap) {
+            const rel = Path.relative(sourcePath, fileName);
+            if (!rel.startsWith("..") && !Path.isAbsolute(rel)) {
+                const targetPath = this.sourceFileMap[sourcePath];
+                if (targetPath !== undefined) {
+                    logger.verbose(`Resolving '${fileName}' to '${Path.join(targetPath, rel)}'`);
+                    return Q.resolve(Path.join(targetPath, rel));
+                }
+            }
+        }
+        logger.verbose(`Could not resolve source path '${fileName}'`);
         return Q.resolve(suggestedFile);
     }
 }
