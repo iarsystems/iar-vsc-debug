@@ -73,7 +73,7 @@ suite("Configuration resolution tests", () => {
         // Test when running using a directory as project directory.
         await argRes.resolveLaunchArguments(cspyArgs).then((config)=>{
             assert.deepStrictEqual(config["projectName"], path.basename(existantDir), "Wrong project name");
-            assert.deepStrictEqual(config["projectDir"], existantDir, "Wrong project directory");
+            assert.deepStrictEqual(config["projectDir"], path.join(existantDir, ".vscode"), "Wrong project directory");
             const plugins = config["plugins"];
             assert.deepStrictEqual(plugins[plugins.length - 1], getLibName("armLibSupportEclipse"), "LibSupportEclipse is missing");
         }, ()=>{
@@ -84,7 +84,7 @@ suite("Configuration resolution tests", () => {
         cspyArgs["projectPath"] = existantFile;
         await argRes.resolveLaunchArguments(cspyArgs).then((config)=>{
             assert.deepStrictEqual(config["projectName"], path.basename(existantFile), "Wrong project name");
-            assert.deepStrictEqual(config["projectDir"], path.parse(existantFile).dir, "Wrong project directory");
+            assert.deepStrictEqual(config["projectDir"], path.join(path.parse(existantFile).dir, ".vscode"), "Wrong project directory");
         }, ()=>{
             assert.fail("Failed to resolve arguments");
         });

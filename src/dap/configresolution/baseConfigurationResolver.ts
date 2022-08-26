@@ -61,7 +61,7 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
             // which the file is located.
             projectDir = Path.parse(projectDir).dir;
         }
-        const projectName: string = launchArguments.projectPath ? Path.basename(launchArguments.projectPath) : "GenericProject";
+        const projectName: string = launchArguments.projectPath ? Path.basename(launchArguments.projectPath) : Path.parse(launchArguments.program).name;
 
         // we don't support multicore yet
         partialValues.options = partialValues.options.filter(option => !option.match(/--multicore_nr_of_cores=\d+/));
@@ -77,7 +77,8 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
             enableCRun: false,
             options: partialValues.options,
             plugins: partialValues.plugins,
-            projectDir: projectDir ?? Path.dirname(launchArguments.program),
+            // VSC-298 Specify .vscode as project dir to avoid sharing settings folder with Embedded Workbench
+            projectDir: Path.join(projectDir ?? Path.dirname(launchArguments.program), ".vscode"),
             projectName: projectName,
             setupMacros: partialValues.setupMacros,
             target: partialValues.target,
