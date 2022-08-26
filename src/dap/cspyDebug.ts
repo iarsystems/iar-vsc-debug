@@ -27,7 +27,7 @@ import { Command, CommandRegistry } from "./commandRegistry";
 import { Utils } from "./utils";
 import { CspyDisassemblyManager } from "./cspyDisassemblyManager";
 import { CspyMemoryManager } from "./cspyMemoryManager";
-import { BreakpointTypesResponse, CustomRequest } from "./customRequest";
+import { CustomRequest } from "./customRequest";
 import { RegisterInformationGenerator } from "./registerInformationGenerator";
 import { FrontendHandler } from "./frontendHandler";
 import { FRONTEND_SERVICE } from "iar-vsc-common/thrift/bindings/frontend_types";
@@ -200,7 +200,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             });
             this.serviceManager.startService(LIBSUPPORT_SERVICE, LibSupportService2, this.libSupportHandler);
 
-            const frontendHandler = new FrontendHandler();
+            const frontendHandler = new FrontendHandler({ send: this.sendEvent.bind(this)}, this.customRequestRegistry);
             this.serviceManager.startService(FRONTEND_SERVICE, Frontend, frontendHandler);
             const timelineFrontendHandler = new TimelineFrontendHandler();
             this.serviceManager.startService(TIMELINE_FRONTEND_SERVICE, TimelineFrontend, timelineFrontendHandler);
@@ -560,11 +560,11 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 }
             });
         };
-        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.USE_AUTO_BREAKPOINTS, BreakpointType.AUTO));
-        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.USE_HARDWARE_BREAKPOINTS, BreakpointType.HARDWARE));
-        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.USE_SOFTWARE_BREAKPOINTS, BreakpointType.SOFTWARE));
+        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.Names.USE_AUTO_BREAKPOINTS, BreakpointType.AUTO));
+        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.Names.USE_HARDWARE_BREAKPOINTS, BreakpointType.HARDWARE));
+        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.Names.USE_SOFTWARE_BREAKPOINTS, BreakpointType.SOFTWARE));
 
-        this.customRequestRegistry.registerCommand(new Command(CustomRequest.GET_BREAKPOINT_TYPES, (): Promise<BreakpointTypesResponse> => {
+        this.customRequestRegistry.registerCommand(new Command(CustomRequest.Names.GET_BREAKPOINT_TYPES, (): Promise<CustomRequest.BreakpointTypesResponse> => {
             return Promise.resolve(this.breakpointManager?.supportedBreakpointTypes() ?? []);
         }));
     }
@@ -573,7 +573,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
      * Sets up a custom request that returns the peripheral registers for the current device as an SVD string.
      */
     private setupRegistersRequest() {
-        this.customRequestRegistry.registerCommand(new Command(CustomRequest.REGISTERS, async() => {
+        this.customRequestRegistry.registerCommand(new Command(CustomRequest.Names.REGISTERS, async() => {
             if (this.registerInfoGenerator) {
                 return { svdContent: await this.registerInfoGenerator.getSvdXml() };
             }

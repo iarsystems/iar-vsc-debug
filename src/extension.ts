@@ -10,8 +10,9 @@ import { BreakpointCommands } from "./breakpointCommands";
 import { DefaultCSpyConfigurationResolver, CSpyConfigurationsProvider, InitialCSpyConfigurationProvider } from "./configproviders/cspyConfigurationProviders";
 import { SettingsConstants } from "./settingsConstants";
 import { BreakpointType } from "./dap/breakpoints/cspyBreakpointManager";
-import { CustomRequest, RegistersResponse } from "./dap/customRequest";
+import { CustomRequest } from "./dap/customRequest";
 import { logger } from "iar-vsc-common/logger";
+import { DialogService } from "./dialogService";
 
 let sessionTracker: DebugSessionTracker | undefined;
 
@@ -53,7 +54,7 @@ export function activate(context: vscode.ExtensionContext) {
                 return;
             }
             const activation = ext.activate();
-            const response: RegistersResponse = await session.customRequest(CustomRequest.REGISTERS);
+            const response: CustomRequest.RegistersResponse = await session.customRequest(CustomRequest.Names.REGISTERS);
             await activation;
             if (response.svdContent) {
                 ext.exports.setSvdSource({ source: "inline", content: response.svdContent });
@@ -62,8 +63,10 @@ export function activate(context: vscode.ExtensionContext) {
             }
         }
     });
+    DialogService.initialize(context);
 }
 
 export function deactivate() {
     logger.debug("Deactivating extension");
+    DialogService.dispose();
 }
