@@ -64,7 +64,10 @@ class DialogServiceInstance implements vscode.Disposable {
                 options = [this.OPTION_YES, this.OPTION_NO, this.OPTION_CANCEL];
                 break;
             }
-            options = options.map(opt => { return { title: opt, isCloseAffordance: false } });
+            options = options.map(opt => {
+                return { title: opt, isCloseAffordance: false };
+            });
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             options[options.length - 1]!.isCloseAffordance = true;
             let result: vscode.MessageItem | undefined = undefined;
             switch (body.icon) {
