@@ -23,7 +23,7 @@ export namespace ConfigResolutionCommon {
         projectPath: string;
         configuration: string;
         plugins: string[];
-        macros: string[];
+        setupMacros: string[];
         deviceMacros: string[];
         flashLoader: string | undefined;
         driverOptions: string[];
@@ -71,8 +71,8 @@ export namespace ConfigResolutionCommon {
             driverOptions: parts.driverOptions,
         };
 
-        if (parts.macros.length > 0) {
-            config.macros = parts.macros;
+        if (parts.setupMacros.length > 0) {
+            config.setupMacros = parts.setupMacros;
         }
 
         if (parts.deviceMacros.length > 0 || parts.flashLoader !== undefined) {

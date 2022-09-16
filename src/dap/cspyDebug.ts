@@ -3,11 +3,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { ThriftServiceManager } from "./thrift/thriftServiceManager";
-import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, TerminatedEvent, InvalidatedEvent, Event, DebugSession } from "@vscode/debugadapter";
+import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, TerminatedEvent, InvalidatedEvent, Event } from "@vscode/debugadapter";
 import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
 import * as DebugEventListener from "iar-vsc-common/thrift/bindings/DebugEventListener";
 import * as LibSupportService2 from "iar-vsc-common/thrift/bindings/LibSupportService2";
 import * as Frontend from "iar-vsc-common/thrift/bindings/Frontend";
+import * as TimelineFrontend from "iar-vsc-common/thrift/bindings/TimelineFrontend";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, SessionConfiguration } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
@@ -26,11 +27,13 @@ import { Command, CommandRegistry } from "./commandRegistry";
 import { Utils } from "./utils";
 import { CspyDisassemblyManager } from "./cspyDisassemblyManager";
 import { CspyMemoryManager } from "./cspyMemoryManager";
-import { BreakpointTypesResponse, CustomRequest } from "./customRequest";
+import { CustomRequest } from "./customRequest";
 import { RegisterInformationGenerator } from "./registerInformationGenerator";
 import { FrontendHandler } from "./frontendHandler";
 import { FRONTEND_SERVICE } from "iar-vsc-common/thrift/bindings/frontend_types";
 import { Workbench, WorkbenchType } from "iar-vsc-common/workbench";
+import { TimelineFrontendHandler } from "./timelineFrontendHandler";
+import { TIMELINE_FRONTEND_SERVICE } from "iar-vsc-common/thrift/bindings/timeline_types";
 import { CSpyCoresService } from "./contexts/cspyCoresService";
 import { CSpyRunControlService } from "./contexts/cspyRunControlService";
 
@@ -64,6 +67,8 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     /** The driver options as a list of string*/
     driverOptions: string[];
     /** A list of macros to load*/
+    setupMacros?: string[];
+    /** @deprecated Legacy alias for setupMacros, see VSC-306 */
     macros?: string[];
     /** Download options (optional, e.g. for simulator) */
     download?: {
@@ -74,6 +79,8 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     }
     /** A list of plugins to load */
     plugins?: string[];
+    /** A set of path mappings to use when resolving nonexistent source files */
+    sourceFileMap?: Record<string, string>;
     /** Hidden option. Allows starting sessions with any target (although it might not work) */
     bypassTargetRestriction?: boolean;
 }
@@ -201,8 +208,10 @@ export class CSpyDebugSession extends LoggingDebugSession {
             });
             this.serviceManager.startService(LIBSUPPORT_SERVICE, LibSupportService2, this.libSupportHandler);
 
-            const frontendHandler = new FrontendHandler();
+            const frontendHandler = new FrontendHandler({ send: this.sendEvent.bind(this)}, args.sourceFileMap ?? {}, this.customRequestRegistry);
             this.serviceManager.startService(FRONTEND_SERVICE, Frontend, frontendHandler);
+            const timelineFrontendHandler = new TimelineFrontendHandler();
+            this.serviceManager.startService(TIMELINE_FRONTEND_SERVICE, TimelineFrontend, timelineFrontendHandler);
 
             const sessionConfig: SessionConfiguration = await new LaunchArgumentConfigurationResolver().resolveLaunchArguments(args);
 
@@ -548,11 +557,11 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 }
             });
         };
-        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.USE_AUTO_BREAKPOINTS, BreakpointType.AUTO));
-        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.USE_HARDWARE_BREAKPOINTS, BreakpointType.HARDWARE));
-        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.USE_SOFTWARE_BREAKPOINTS, BreakpointType.SOFTWARE));
+        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.Names.USE_AUTO_BREAKPOINTS, BreakpointType.AUTO));
+        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.Names.USE_HARDWARE_BREAKPOINTS, BreakpointType.HARDWARE));
+        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.Names.USE_SOFTWARE_BREAKPOINTS, BreakpointType.SOFTWARE));
 
-        this.customRequestRegistry.registerCommand(new Command(CustomRequest.GET_BREAKPOINT_TYPES, (): Promise<BreakpointTypesResponse> => {
+        this.customRequestRegistry.registerCommand(new Command(CustomRequest.Names.GET_BREAKPOINT_TYPES, (): Promise<CustomRequest.BreakpointTypesResponse> => {
             return Promise.resolve(this.breakpointManager?.supportedBreakpointTypes() ?? []);
         }));
     }
@@ -561,7 +570,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
      * Sets up a custom request that returns the peripheral registers for the current device as an SVD string.
      */
     private setupRegistersRequest() {
-        this.customRequestRegistry.registerCommand(new Command(CustomRequest.REGISTERS, async() => {
+        this.customRequestRegistry.registerCommand(new Command(CustomRequest.Names.REGISTERS, async() => {
             if (this.registerInfoGenerator) {
                 return { svdContent: await this.registerInfoGenerator.getSvdXml() };
             }
@@ -605,5 +614,3 @@ export class CSpyDebugSession extends LoggingDebugSession {
         }
     }
 }
-
-DebugSession.run(CSpyDebugSession);

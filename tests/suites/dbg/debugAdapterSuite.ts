@@ -56,13 +56,13 @@ export function debugAdapterSuite(title: string, runner: DebugAdapterSuiteRunner
             fibonacciFile = Path.join(dbgConfig.projectPath!, "Fibonacci.c");
             utilsFile = Path.join(dbgConfig.projectPath!, "Utilities.c");
 
-            const theDebugger = Path.join(__dirname, "../../../src/dap/cspyDebug.js");
+            const theDebugger = Path.join(__dirname, "../../../src/dap/debugAdapter.js");
             if (!Fs.existsSync(theDebugger)) {
                 Assert.fail("No debugger is available.");
             }
 
             // For some reason DebugClient isnt able to start the adapter itself, so start it manually as a tcp server
-            debugAdapter = spawn("node", [Path.join(__dirname, "../../../src/dap/cspyDebug.js"), `--server=${ADAPTER_PORT}`]);
+            debugAdapter = spawn("node", [Path.join(__dirname, "../../../src/dap/debugAdapter.js"), `--server=${ADAPTER_PORT}`]);
             debugAdapter.stdout?.on("data", dat => {
                 console.log("OUT: " + dat.toString().replace(/^\s+|\s+$/g, ""));
             });

@@ -1,7 +1,7 @@
 {
 	"name": "iar-debug",
 	"displayName": "IAR C-SPY Debug",
-	"version": "1.10.3",
+	"version": "1.10.5",
 	"publisher": "iarsystems",
 	"icon": "images/logo.png",
 	"galleryBanner": {
@@ -217,7 +217,7 @@
 							"driver": {
 								"type": "string",
 								"description": "The driver to use.",
-								"default": "sim2",
+								"default": "Simulator",
 								"enum": [
 									"Simulator",
 									"64-bit Simulator",
@@ -300,6 +300,13 @@
 									"format": "uri"
 								},
 								"default": []
+							},
+							"sourceFileMap": {
+								"type": "object",
+								"description": "A set of path mappings to use when resolving nonexistent source files. If the source files have been moved after compiling, this can be used to locate them. Example: `{\"/original/path\": \"/new/path\"}`",
+								"default": {
+									"<source-path>": "<target-path>"
+								}
 							}
 						}
 					}

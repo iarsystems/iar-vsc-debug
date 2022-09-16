@@ -114,7 +114,7 @@ export namespace XclConfigurationSupplier {
         let target: string | undefined;
         let stopOnEntry = true;
         const plugins: string[] = [];
-        const macros: string[] = [];
+        const setupMacros: string[] = [];
         const deviceMacros: string[] = [];
         let flashLoader: string | undefined;
         const driverOptions: string[] = [];
@@ -144,7 +144,7 @@ export namespace XclConfigurationSupplier {
                 if (pluginMatch && pluginMatch[1]) {
                     plugins.push(stripQuotes(pluginMatch[1]));
                 } else if (macroMatch && macroMatch[1]) {
-                    macros.push(stripQuotes(macroMatch[1])); // not tested
+                    setupMacros.push(stripQuotes(macroMatch[1])); // not tested
                 } else if (deviceMacroMatch && deviceMacroMatch[1]) {
                     deviceMacros.push(stripQuotes(deviceMacroMatch[1]));
                 } else if (flashLoaderMatch && flashLoaderMatch[1]) {
@@ -178,7 +178,7 @@ export namespace XclConfigurationSupplier {
             stopOnEntry,
             configuration,
             plugins,
-            macros,
+            setupMacros,
             deviceMacros,
             flashLoader,
             driverOptions,

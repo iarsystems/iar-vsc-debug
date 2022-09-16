@@ -45,7 +45,7 @@ For more help, see [Debugging a stand-alone application](https://github.com/IARS
 [Click here](https://github.com/IARSystems/iar-vsc-debug/blob/master/docs/README.md) to view the full documentation.
 
 ## Compatibility
-This extension is compatible with selected IAR Embedded Workbench (EW) products using IDE version 8 or newer. The following table decsribes the level of support for your specific product:
+This extension is compatible with selected IAR Embedded Workbench (EW) products using IDE version 9 or newer. The following table decsribes the level of support for your specific product:
 
 <details><summary>IAR EW - Compatibility table</summary>
 
@@ -53,7 +53,8 @@ This extension is compatible with selected IAR Embedded Workbench (EW) products 
 |--------------|---------
 | Arm v9.30 or later | None |
 | RISC-V v3.10 or later | Terminal I/O is not supported |
-| Arm v8.40-9.20.4<br>RH850 v3.10 or later| An initial debug session with EW is required prior to debugging in VSCode |
+| Arm v8.50-9.20.4<br>RH850 v3.10 or later| An initial debug session with EW is required prior to debugging in VSCode |
+| Arm v8.40-8.50 | The variables view is not supported |
 
 </details>
 
@@ -61,4 +62,7 @@ This extension is compatible with selected IAR Embedded Workbench (EW) products 
 Depending on which feedback you want to share with us, here are the preferred options:
 * If you have ideas on how to improve this extension or if you have found issues with it, see [CONTRIBUTING.md](https://github.com/IARSystems/iar-vsc-debug/blob/master/CONTRIBUTING.md) on how to proceed.
 
-* If you have issues with the underlying IAR Embedded Workbench or IAR Build Tools product, report this via the IAR Systems technical support channel at [IAR Technical Support](https://www.iar.com/knowledge/support/).
+* If you are unable to start a debug session in Visual Studio Code, verify that debugging in IAR Embedded Workbench works (to rule out any non-Visual Studio Code related issues).
+
+* If you have issues with the underlying IAR Embedded Workbench product, report this via the IAR Systems technical support channel at [IAR Technical Support](https://www.iar.com/knowledge/support/).
+

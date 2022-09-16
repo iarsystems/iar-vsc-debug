@@ -8,7 +8,7 @@ import * as Fs from "fs";
 import { CSpyLaunchRequestArguments } from "../../../src/dap/cspyDebug";
 import { TestUtils } from "../testUtils";
 import { JSDOM } from "jsdom";
-import { CustomRequest, RegistersResponse } from "../../../src/dap/customRequest";
+import { CustomRequest } from "../../../src/dap/customRequest";
 import { tmpdir } from "os";
 import { ADAPTER_PORT, debugAdapterSuite } from "./debugAdapterSuite";
 import { TestConfiguration } from "../testConfiguration";
@@ -141,7 +141,7 @@ debugAdapterSuite("SVD generator tests", function(dc, dbgConfig)  {
             dc().configurationSequence(),
             dc().launch(genericConfig),
             dc().waitForEvent("stopped").then(async() => {
-                const cspyData: RegistersResponse = (await dc().customRequest(CustomRequest.REGISTERS)).body;
+                const cspyData: CustomRequest.RegistersResponse = (await dc().customRequest(CustomRequest.Names.REGISTERS)).body;
                 Assert.strictEqual(cspyData.svdContent, undefined);
             }),
         ]);
@@ -157,13 +157,13 @@ debugAdapterSuite("SVD generator tests", function(dc, dbgConfig)  {
                 dc().configurationSequence(),
                 dc().launch(stm32Config),
                 dc().waitForEvent("initialized").then(async() => {
-                    const cspyData: RegistersResponse = (await dc().customRequest(CustomRequest.REGISTERS)).body;
+                    const cspyData: CustomRequest.RegistersResponse = (await dc().customRequest(CustomRequest.Names.REGISTERS)).body;
                     Assert(cspyData.svdContent);
                     svdContent = cspyData.svdContent;
                     assertCspyMatchesSvdFile(new JSDOM(cspyData.svdContent).window.document, stm32Svd);
 
                     // This should fetch from in-memory cache
-                    const cspyData2: RegistersResponse = (await dc().customRequest(CustomRequest.REGISTERS)).body;
+                    const cspyData2: CustomRequest.RegistersResponse = (await dc().customRequest(CustomRequest.Names.REGISTERS)).body;
                     Assert.deepStrictEqual(cspyData, cspyData2);
                 }),
             ]);
@@ -178,7 +178,7 @@ debugAdapterSuite("SVD generator tests", function(dc, dbgConfig)  {
                 dc().configurationSequence(),
                 dc().launch(stm32Config),
                 dc().waitForEvent("stopped").then(async() => {
-                    const cachedRegistersData: RegistersResponse = (await dc().customRequest(CustomRequest.REGISTERS)).body;
+                    const cachedRegistersData: CustomRequest.RegistersResponse = (await dc().customRequest(CustomRequest.Names.REGISTERS)).body;
                     Assert(cachedRegistersData.svdContent);
                     Assert.strictEqual(svdContent, cachedRegistersData.svdContent);
                 }),
@@ -192,7 +192,7 @@ debugAdapterSuite("SVD generator tests", function(dc, dbgConfig)  {
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
             dc().waitForEvent("stopped").then(async() => {
-                const svdResponse: RegistersResponse = (await dc().customRequest(CustomRequest.REGISTERS)).body;
+                const svdResponse: CustomRequest.RegistersResponse = (await dc().customRequest(CustomRequest.Names.REGISTERS)).body;
                 if (TestConfiguration.getConfiguration().expectPeriphals) {
                     Assert(svdResponse.svdContent !== undefined);
                     Assert(svdResponse.svdContent.length > 0);

@@ -6,6 +6,7 @@ import * as Path from "path";
 import { OsUtils } from "iar-vsc-common/osUtils";
 import { debugAdapterSuite } from "./debugAdapterSuite";
 import { TestUtils } from "../testUtils";
+import { mkdirSync, renameSync } from "fs";
 
 namespace Utils {
     // Given an ewp file and a source file in the same directory, returns
@@ -230,5 +231,31 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
                 Assert.strictEqual(buf.value, "<array>\"hello\"");
             }),
         ]);
+    });
+
+    test("Resolves missing source files", async function() {
+        const srcFileDestination = Path.join(Path.dirname(fibonacciFile()), "temp", Path.basename(fibonacciFile()));
+        try {
+            mkdirSync(Path.dirname(srcFileDestination), { recursive: true });
+            const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
+            renameSync(fibonacciFile(), srcFileDestination);
+            dbgConfigCopy.sourceFileMap = {};
+            dbgConfigCopy.sourceFileMap[Path.dirname(fibonacciFile())] = Path.dirname(srcFileDestination);
+            await Promise.all([
+                dc().configurationSequence(),
+                dc().launch(dbgConfigCopy),
+                // Wait until the client is ready to accept input
+                dc().waitForEvent("stopped").then(async() => {
+                    const res = await dc().stackTraceRequest({threadId: 0});
+
+                    Assert(res.body.stackFrames[0]?.source?.path);
+                    Assert(OsUtils.pathsEqual(res.body.stackFrames[0].source.path, srcFileDestination), res.body.stackFrames[0].source.path + " did not match " + srcFileDestination);
+                }),
+            ]);
+        } catch (e) {
+            renameSync(srcFileDestination, fibonacciFile());
+            throw e;
+        }
+        renameSync(srcFileDestination, fibonacciFile());
     });
 });

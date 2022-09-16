@@ -20,8 +20,9 @@ export class LaunchArgumentConfigurationResolver extends BaseConfigurationResolv
             return Promise.reject(new Error("No driver lib specified"));
         }
 
-        const plugins = args.plugins? args.plugins : [];
-        const macros = args.macros? args.macros : [];
+        const plugins = args.plugins ?? [];
+        // eslint-disable-next-line deprecation/deprecation
+        const macros = args.setupMacros ?? args.macros ?? [];
 
         const driver = CSpyDriver.driverFromName(args.driver);
         const driverFile = driver.libraryBaseNames.
