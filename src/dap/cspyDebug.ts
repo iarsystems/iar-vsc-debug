@@ -383,10 +383,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     protected override async stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments) {
         await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
-            const frames = await stackManager.fetchStackFrames(args.threadId);
+            const frames = await stackManager.fetchStackFrames(args.threadId, args.startFrame ?? 0, args.levels);
             response.body = {
                 stackFrames: frames,
-                totalFrames: frames.length,
             };
         });
         this.sendResponse(response);

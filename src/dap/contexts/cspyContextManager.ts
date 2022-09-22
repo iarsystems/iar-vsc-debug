@@ -96,11 +96,14 @@ export class CSpyContextManager implements Disposable {
     }
 
     /**
-     * Fetches all available stack frames for the given core.
+     * Fetches stack frames for the given core.
+     * @param core The core for which to fetch stack frames
+     * @param startFrame The (0-indexed) index of the first frame to return
+     * @param numFrames The number of frames to return (returns all if undefined)
      */
-    async fetchStackFrames(core: number): Promise<StackFrame[]> {
+    async fetchStackFrames(core: number, startFrame: number, numFrames?: number): Promise<StackFrame[]> {
         const context = new ContextRef({ core: core, level: 0, task: 0, type: ContextType.Target });
-        const contextInfos = await this.contextManager.service.getStack(context, 0, -1);
+        const contextInfos = await this.contextManager.service.getStack(context, startFrame, numFrames !== undefined ? startFrame + numFrames : -1);
 
         // this assumes the contexts we get from getStack are sorted by frame level and in ascending order
         return contextInfos.map(contextInfo => {
@@ -259,7 +262,6 @@ export class CSpyContextManager implements Disposable {
             this.staticsProvider?.notifyUpdateImminent();
             this.registersProvider?.notifyUpdateImminent();
 
-            context.type = ContextType.CurrentInspection;
             await this.contextManager.service.setInspectionContext(context);
             return task();
         });
