@@ -5,13 +5,14 @@
 
 import * as Thrift from "thrift";
 import * as Path from "path";
-import { MsgIcon, MsgKind, MsgResult } from "iar-vsc-common/thrift/bindings/frontend_types";
+import * as Frontend from "iar-vsc-common/thrift/bindings/frontend_types";
 import { SourceLocation } from "iar-vsc-common/thrift/bindings/shared_types";
 import * as Q from "q";
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { CustomEvent, CustomRequest } from "./customRequest";
 import { Event, logger } from "@vscode/debugadapter";
 import { Command, CommandRegistry } from "./commandRegistry";
+import {Utils} from "./utils";
 
 interface EventSink {
     send(event: DebugProtocol.Event): void;
@@ -27,7 +28,7 @@ interface EventSink {
 export class FrontendHandler {
     private nextId = 0;
 
-    private readonly openMessageBoxes: Map<number, (result: MsgResult) => void> = new Map();
+    private readonly openMessageBoxes: Map<number, (result: Frontend.MsgResult) => void> = new Map();
     private readonly openOpenDialogs: Map<number, (paths: string[]) => void> = new Map();
     private readonly openSaveDialogs: Map<number, (paths: string[]) => void> = new Map();
     private readonly openElementSelectionDialogs: Map<number, (choice: number) => void> = new Map();
@@ -87,7 +88,7 @@ export class FrontendHandler {
         }));
     }
 
-    messageBox(msg: string, caption: string, icon: MsgIcon, kind: MsgKind, _dontAskMgrKey: string): Q.Promise<MsgResult> {
+    messageBox(msg: string, caption: string, icon: Frontend.MsgIcon, kind: Frontend.MsgKind, _dontAskMgrKey: string): Q.Promise<Frontend.MsgResult> {
         const id = this.nextId++;
         return Q.Promise((resolve, _) => {
             this.openMessageBoxes.set(id, resolve);
@@ -102,13 +103,13 @@ export class FrontendHandler {
         });
     }
 
-    messageBoxAsync(msg: string, caption: string, icon: MsgIcon, _dontAskMgrKey: string): Q.Promise<void> {
+    messageBoxAsync(msg: string, caption: string, icon: Frontend.MsgIcon, _dontAskMgrKey: string): Q.Promise<void> {
         const id = this.nextId++;
         const body: CustomEvent.MessageBoxCreatedData = {
             id,
             title: caption || "C-SPY Debugger",
             message: msg,
-            kind: MsgKind.kMsgOk,
+            kind: Frontend.MsgKind.kMsgOk,
             icon,
         };
         this.eventSink.send(new Event(CustomEvent.Names.MESSAGE_BOX_CREATED, body));
@@ -159,6 +160,23 @@ export class FrontendHandler {
             };
             this.eventSink.send(new Event(CustomEvent.Names.SAVE_DIALOG_CREATED, body));
         });
+    }
+
+    openIHostFileDialog(title: string, type: Frontend.FileDialogType, returnType: Frontend.FileDialogReturnType, filters: Frontend.FileDialogFilter[], options: Frontend.FileDialogOptions[], startdir: string, defaultName: string): Q.Promise<string[]> {
+        // Redirect directory queries to the directory dialog.
+        if (returnType === Frontend.FileDialogReturnType.kDirectory) {
+            return this.openDirectoryDialog(title, options.includes(Frontend.FileDialogOptions.kPathMustExist), startdir);
+        }
+
+        // Generate the windows style filter.
+        const windowsFilter = Utils.createFilterString(filters);
+
+        if (type === Frontend.FileDialogType.kOpen) {
+            const allowMultipleFiles = returnType === Frontend.FileDialogReturnType.kExistingFiles;
+            return this.openFileDialog(title, startdir, windowsFilter, allowMultipleFiles, options.includes(Frontend.FileDialogOptions.kFileMustExist));
+        }
+
+        return this.openSaveDialog(title, defaultName, "", startdir, windowsFilter);
     }
 
     createProgressBar(msg: string, caption: string, _minvalue: Thrift.Int64, _maxvalue: Thrift.Int64, canCancel: boolean, _indeterminate: boolean): Q.Promise<number> {
@@ -238,5 +256,13 @@ export class FrontendHandler {
         }
         logger.verbose(`Could not resolve source path '${fileName}'`);
         return Q.resolve(suggestedFile);
+    }
+
+    showFileProperties(_filePath: string): Q.Promise<void> {
+        return Q.resolve();
+    }
+
+    openFileExplorer(_filePath: string): Q.Promise<void> {
+        return Q.resolve();
     }
 }
