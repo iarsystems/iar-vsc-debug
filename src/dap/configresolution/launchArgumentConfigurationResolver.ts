@@ -35,17 +35,13 @@ export class LaunchArgumentConfigurationResolver extends BaseConfigurationResolv
         if (proc === undefined) {
             throw new Error(`Could not find library 'proc' for '${args.workbenchPath}'.`);
         }
-        const batPlugin = IarOsUtils.resolveTargetLibrary(args.workbenchPath, args.target, "Bat");
-        if (batPlugin === undefined) {
-            throw new Error(`Could not find plugin 'Bat' for '${args.workbenchPath}'.`);
-        }
 
         const config: PartialSessionConfiguration = {
             attachToTarget: false,
             driverFile,
             processorName: proc,
             type: "simulator",
-            options: ["--plugin=" + batPlugin, "--backend"].concat(args.driverOptions? args.driverOptions : []),
+            options: ["--backend"].concat(args.driverOptions? args.driverOptions : []),
             plugins: plugins,
             setupMacros: macros,
             target: args.target
