@@ -62,6 +62,8 @@ export class CSpyCoresService {
     performOnCore<T>(core: number, task: () => Promise<T>): Promise<T> {
         if (this.coresWindow) {
             return this.mutex.runExclusive(async() => {
+                await this.setActionsAffectAllCores(false);
+                // TODO: cache state to avoid doing this every time
                 await this.coresWindow?.doubleClickRow(new Int64(core), 0);
                 return task();
             });
@@ -69,6 +71,36 @@ export class CSpyCoresService {
             // We don't have a core window when we're single-core, but there's no need for mutual exclusion if the
             // active core cannot be changed.
             return task();
+        }
+    }
+
+    /**
+     * Runs a task with the debugger instructed to perform step and other run control actions on *all* cores, not just
+     * the active one. Note that this only affects debugger actions that do not take an explicit context or core (e.g.
+     * the step/stepOut/stepIn actions). Other actions, such as goCore, are not affected.
+     * @param task The task to perform
+     * @returns The return value of the task
+     */
+    performOnAllCores<T>(task: () => Promise<T>): Promise<T> {
+        if (this.coresWindow) {
+            return this.mutex.runExclusive(async() => {
+                await this.setActionsAffectAllCores(true);
+                return task();
+            });
+        } else {
+            return task();
+        }
+    }
+    private async setActionsAffectAllCores(actionsAffectAllCores: boolean) {
+        // TODO: cache state to avoid doing this every time
+        if (this.coresWindow) {
+            const contextmenu = await this.coresWindow?.getContextMenu(new Int64(0), 0);
+            const targetText = actionsAffectAllCores ? "affect all" : "affect current";
+            const targetItem = contextmenu?.find(item => item.text.includes(targetText));
+            if (!targetItem) {
+                throw new Error("Could not find context menu item for setting multicore run/step behaviour");
+            }
+            await this.coresWindow?.clickContextMenu(targetItem.command);
         }
     }
 

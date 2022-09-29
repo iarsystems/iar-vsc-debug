@@ -180,7 +180,6 @@ export class FrontendHandler {
     }
 
     closeProgressBar(id: number): Q.Promise<void> {
-        console.log("closePB");
         const body: CustomEvent.ProgressBarClosedData = { id };
         this.eventSink.send(new Event(CustomEvent.Names.PROGRESS_BAR_CLOSED, body));
         return Q.resolve();

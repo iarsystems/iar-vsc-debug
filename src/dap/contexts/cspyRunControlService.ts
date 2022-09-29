@@ -29,6 +29,10 @@ export class CSpyRunControlService implements Disposable {
     }
 
     private readonly coreStoppedCallbacks: Array<(core: number, reason: StoppingReason) => void> = [];
+    // For each running core, keeps the reason why the core would stop in the future. This depends on what action caused
+    // the core to start (i.e. if we called stopCore on it, we expect it to stop with reason "pause"). When a core
+    // stops (i.e. we receive a kDkCoreStopped), the reason stored here is sent to the DAP client (VS Code displays it
+    // in the stack view).
     private readonly expectedStoppingReason: Map<number, StoppingReason> = new Map();
 
     private constructor(
@@ -37,7 +41,6 @@ export class CSpyRunControlService implements Disposable {
         eventListener: DebugEventListenerHandler,
         libSupportHandler: LibSupportHandler,
     ) {
-        eventListener.observeDebugEvents(DkNotifyConstant.kDkCoreStarted, this.updateCoreStatus.bind(this));
         eventListener.observeDebugEvents(DkNotifyConstant.kDkCoreStopped, this.updateCoreStatus.bind(this));
         eventListener.observeDebugEvents(DkNotifyConstant.kDkReset, this.updateCoreStatus.bind(this));
 
@@ -63,9 +66,8 @@ export class CSpyRunControlService implements Disposable {
     /**
      * See https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Next
      */
-    next(core: number, granularity: DebugProtocol.NextArguments["granularity"]) {
-        return CSpyCoresService.instance.performOnCore(core, async() => {
-            this.expectedStoppingReason.set(core, "step");
+    next(core: number | undefined, granularity: DebugProtocol.NextArguments["granularity"]) {
+        return this.performOnOneOrAllCores(core, "step", async() => {
             if (granularity === "instruction") {
                 await this.dbgr.service.instructionStepOver();
             } else {
@@ -77,9 +79,8 @@ export class CSpyRunControlService implements Disposable {
     /**
      * See https://microsoft.github.io/debug-adapter-protocol/specification#Requests_StepIn
      */
-    stepIn(core: number, granularity: DebugProtocol.StepInArguments["granularity"]) {
-        return CSpyCoresService.instance.performOnCore(core, async() => {
-            this.expectedStoppingReason.set(core, "step");
+    stepIn(core: number | undefined, granularity: DebugProtocol.StepInArguments["granularity"]) {
+        return this.performOnOneOrAllCores(core, "step", async() => {
             if (granularity === "instruction") {
                 await this.dbgr.service.instructionStep();
             } else {
@@ -91,9 +92,8 @@ export class CSpyRunControlService implements Disposable {
     /**
      * See https://microsoft.github.io/debug-adapter-protocol/specification#Requests_StepOut
      */
-    stepOut(core: number) {
-        return CSpyCoresService.instance.performOnCore(core, async() => {
-            this.expectedStoppingReason.set(core, "step");
+    stepOut(core: number | undefined) {
+        return this.performOnOneOrAllCores(core, "step", async() => {
             await this.dbgr.service.stepOut();
         });
     }
@@ -101,20 +101,20 @@ export class CSpyRunControlService implements Disposable {
     /**
      * See https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Continue
      */
-    continue(core: number, singleThread: boolean) {
-        return CSpyCoresService.instance.performOnCore(core, async() => {
-            if (singleThread) {
-                this.expectedStoppingReason.set(core, "breakpoint");
+    continue(core: number | undefined) {
+        if (core !== undefined) {
+            this.expectedStoppingReason.set(core, "breakpoint");
+            return CSpyCoresService.instance.performOnCore(core, async() => {
                 await this.dbgr.service.goCore(core);
-            } else {
-                for (let core = 0; core < this.nCores; core++) {
-                    if (!this.expectedStoppingReason.has(core)) {
-                        this.expectedStoppingReason.set(core, "breakpoint");
-                    }
-                }
-                await this.dbgr.service.multiGo(-1);
+            });
+        } else {
+            for (let i = 0; i < this.nCores; i++) {
+                this.expectedStoppingReason.set(i, "breakpoint");
             }
-        });
+            return CSpyCoresService.instance.performOnAllCores(async() => {
+                await this.dbgr.service.multiGo(-1);
+            });
+        }
     }
     /**
      * See https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Pause
@@ -126,36 +126,51 @@ export class CSpyRunControlService implements Disposable {
         });
     }
 
-    runToULE(core: number, ule: string) {
-        return CSpyCoresService.instance.performOnCore(core, async() => {
+    runToULE(core: number | undefined, ule: string) {
+        return this.performOnOneOrAllCores(core, "entry", async() => {
             await this.dbgr.service.runToULE(ule, false);
         });
     }
 
     async reset() {
-        for (let i = 0; i < this.nCores; i++) {
-            this.expectedStoppingReason.set(i, "entry");
-        }
         await this.dbgr.service.reset();
-        // TODO: we should implement some startup behaviour here (e.g. run to main)
+        await this.runToULE(undefined, "main");
     }
 
     dispose() {
         this.dbgr.close();
     }
 
+    /**
+     * If core is defined, runs the task in the context if the core. Otherwise, runs the task for all cores.
+     * Also sets the expected stopping reason for all affected cores.
+     */
+    private performOnOneOrAllCores<T>(core: number | undefined, expectedStoppingReason: string, task: () => Promise<T>) {
+        if (core !== undefined) {
+            this.expectedStoppingReason.set(core, expectedStoppingReason);
+            return CSpyCoresService.instance.performOnCore(core, task);
+        } else {
+            for (let i = 0; i < this.nCores; i++) {
+                this.expectedStoppingReason.set(i, expectedStoppingReason);
+            }
+            return CSpyCoresService.instance.performOnAllCores(task);
+        }
+    }
+
     private async updateCoreStatus() {
         const nCores = await this.dbgr.service.getNumberOfCores();
-        for (let i = 0; i < nCores; i++) {
+        const coreIds = Array.from({length: nCores}, (_, i) => i);
+        return Promise.all(coreIds.map(async i => {
             const isStopped = (await this.dbgr.service.getCoreState(i)) !== DkCoreStatusConstants.kDkCoreStateRunning;
             if (isStopped) {
                 const expectedStoppingReason = this.expectedStoppingReason.get(i);
                 const wasStopped = expectedStoppingReason === undefined;
+                // Only if the core wasn't stopped last time we checked do we take any action.
                 if (!wasStopped) {
                     this.expectedStoppingReason.delete(i);
                     this.coreStoppedCallbacks.forEach(cb => cb(i, expectedStoppingReason));
                 }
             }
-        }
+        }));
     }
 }

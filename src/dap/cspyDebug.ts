@@ -234,7 +234,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
             this.registerInfoGenerator = new RegisterInformationGenerator(args.driverOptions, await this.serviceManager.findService(DEBUGGER_SERVICE, Debugger));
             // only after loading modules can we initialize services using listwindows
-            CSpyCoresService.initialize(this.serviceManager);
+            await CSpyCoresService.initialize(this.serviceManager);
             this.stackManager = await CSpyContextManager.instantiate(this.serviceManager, this.registerInfoGenerator);
             this.runControlService = await CSpyRunControlService.instantiate(this.serviceManager, this.cspyEventHandler, this.libSupportHandler);
             this.memoryManager = await CspyMemoryManager.instantiate(this.serviceManager);
@@ -273,11 +273,10 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
         this.addCSpyEventHandlers();
 
-        // TODO: should this affect all cores or just the first one?
         if (args.stopOnEntry) {
-            await this.runControlService.runToULE(0, "main");
+            await this.runControlService.runToULE(undefined, "main");
         } else {
-            await this.runControlService.continue(0, true);
+            await this.runControlService.continue(undefined);
         }
     }
 
@@ -313,7 +312,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
     protected override async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments) {
         await CSpyDebugSession.tryResponseWith(this.runControlService, response, async(runControl) => {
-            await runControl.continue(args.threadId, args.singleThread ?? false);
+            await runControl.continue(args.singleThread ? args.threadId : undefined);
         });
         this.sendResponse(response);
     }
@@ -327,22 +326,21 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     protected override async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments) {
         await CSpyDebugSession.tryResponseWith(this.runControlService, response, async(runControl) => {
-            await runControl.next(args.threadId, args.granularity);
-            // TODO: what about args.singleThread?
+            await runControl.next(args.singleThread ? args.threadId : undefined, args.granularity);
         });
         this.sendResponse(response);
     }
 
     protected override async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments) {
         await CSpyDebugSession.tryResponseWith(this.runControlService, response, async(runControl) => {
-            await runControl.stepIn(args.threadId, args.granularity);
+            await runControl.stepIn(args.singleThread ? args.threadId : undefined, args.granularity);
         });
         this.sendResponse(response);
     }
 
     protected override async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments) {
         await CSpyDebugSession.tryResponseWith(this.runControlService, response, runControl => {
-            return runControl.stepOut(args.threadId);
+            return runControl.stepOut(args.singleThread ? args.threadId : undefined);
         });
         this.sendResponse(response);
     }
