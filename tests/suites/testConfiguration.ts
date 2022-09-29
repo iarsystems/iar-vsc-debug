@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import { CSpyLaunchRequestArguments } from "../../src/dap/cspyDebug";
+import * as Path from "path";
 
 /**
  * Global parameters for a test run. These can be configured e.g. from the command line
@@ -14,20 +15,26 @@ export interface TestConfiguration {
     debugConfiguration: Omit<CSpyLaunchRequestArguments, "workbenchPath" | "program" | "projectPath" | "projectConfiguration" | "stopOnEntry">,
     /**
      * The 'dbg' suite uses a specific test program to run debugging tests (see TestProjects/GettingStarted/).
-     * The program needs to be built to match the {@link debugConfiguration} (e.g. for the same device).
+     * The program needs to be built to match the {@link debugConfiguration} (e.g. for the correct device).
      *
      * This parameter specifices how to get the binary for the test program, and can take the following variants:
-     * doBuild - Build 'TestProjects/GettingStarted/BasicDebugging.ewp' with the given configuration (e.g. "Debug"), and use the built binary.
+     * doBuild - Build the given project with the given configuration (e.g. "Debug"), and use the built binary.
      * preBuilt - Don't build anything, instead use the given binary. This means you must have built the test program yourself (useful when testing with t2).
      */
     testProgram: {
         variant: "doBuild",
-        projectConfiguration: string
+        project: string,
+        projectConfiguration: string,
     } | {
         variant: "preBuilt",
         binaryPath: string,
         sourceDir: string, // Directory where the source files were when you compiled the program (i.e. where the debug info will point)
     };
+    /**
+     * To run multicore (SMP) tests, set this to a value larger than 1. Note that the test program must be built with
+     * multicore support (e.g. with a cstartup file that sets up the runtime environment for each  core).
+     */
+    multicoreNrOfCores?: number,
     /**
      * Whether to expect (and test for) the debugger to provide peripheral register.
      */
@@ -75,7 +82,7 @@ export namespace TestConfiguration {
         if (envParams) {
             return JSON.parse(envParams);
         }
-        return ARMSIM2_CONFIG;
+        return ARMIMPERAS_CONFIG;
     }
 
     /// Standard test configurations below
@@ -83,9 +90,22 @@ export namespace TestConfiguration {
         debugConfiguration: {
             target: "arm",
             driver: "Simulator",
-            driverOptions: ["--endian=little", "--cpu=Cortex-M4", "--fpu=VFPv4_SP", "--semihosting"],
+            driverOptions: [
+                "--endian=little",
+                "--cpu=Cortex-A9",
+                "--fpu=VFPv3Neon",
+                "--device=Zynq 7020",
+                "--semihosting",
+                "-p",
+                "$TOOLKIT_DIR$/CONFIG/debugger/Xilinx/Zynq 7020.ddf",
+            ],
         },
-        testProgram: { projectConfiguration: "Debug", variant: "doBuild" },
+        testProgram: {
+            project: Path.join(__dirname, "../../../tests/TestProjects/GettingStarted/sim2.ewp"),
+            projectConfiguration: "Debug",
+            variant: "doBuild",
+        },
+        multicoreNrOfCores: 2,
         expectPeriphals: true,
         hasFPU: true,
     };
@@ -95,7 +115,11 @@ export namespace TestConfiguration {
             driver: "64-bit Simulator",
             driverOptions: ["--endian=little", "--cpu=Cortex-A53", "--abi=ilp32", "--fpu=None", "--semihosting"],
         },
-        testProgram: { projectConfiguration: "Imperas", variant: "doBuild" },
+        testProgram: {
+            project: Path.join(__dirname, "../../../tests/TestProjects/GettingStarted/Imperas.ewp"),
+            projectConfiguration: "Imperas",
+            variant: "doBuild",
+        },
         expectPeriphals: false,
         hasFPU: true,
     };

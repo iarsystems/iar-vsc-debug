@@ -92,6 +92,7 @@ export function debugAdapterSuite(title: string, runner: DebugAdapterSuiteRunner
             await dc.start(ADAPTER_PORT);
         });
         teardown(function() {
+            this.timeout(10000);
             // Stop the debug adapter.
             // A real timeout here will cause the entire suite to abort so we implement our own timeout
             // with Mocha.Runnable.emit(), which doesn't cause an abort but still reports an error.
@@ -101,7 +102,7 @@ export function debugAdapterSuite(title: string, runner: DebugAdapterSuiteRunner
                 dc!.stop().then(() => {
                     done = true; return TestUtils.wait(1500);
                 }),
-                TestUtils.wait(19000).then(() => {
+                TestUtils.wait(8000).then(() => {
                     if (!done) {
                         this.test?.emit("error", new Error("Timed out waiting for adapter to exit"));
                     }

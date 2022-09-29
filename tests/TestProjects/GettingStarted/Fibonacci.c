@@ -59,3 +59,22 @@ int32_t main(void)
   scanf("%11s", &buf);
   return 0;
 }
+
+// multicore stuff used by the zynq 7020 cstartup file
+#ifdef ZYNQ7020
+#pragma section = ".semaphore"
+volatile int global_semaphore = 0x1000;
+#pragma swi_number=0x42
+__swi __arm int getcoreid();
+#include <intrinsics.h>
+__arm void getcoreid_imp(unsigned number, unsigned *reg)
+{
+
+  {
+    reg[0] = __MRC( 15, 0, 0, 0, 5) & 0x3;
+  }
+}
+void INT_Handler()
+{
+}
+#endif

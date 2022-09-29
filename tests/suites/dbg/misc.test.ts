@@ -8,23 +8,6 @@ import { debugAdapterSuite } from "./debugAdapterSuite";
 import { TestUtils } from "../testUtils";
 import { mkdirSync, renameSync } from "fs";
 
-namespace Utils {
-    // Given an ewp file and a source file in the same directory, returns
-    // the path to the source file
-    export function sourceFilePath(projDir: string, sourceName: string) {
-        const sourcePath = Path.join(projDir, sourceName);
-        return sourcePath;
-    }
-
-    // Given a path, returns a regex matching the path with either backward- or forward slashes
-    export function pathRegex(path: string) {
-        // Accept back- OR forward slashes
-        path = path.replace(/[/\\]/g, "[/\\\\]");
-        return new RegExp(`^${path}$`);
-    }
-
-}
-
 /**
  * Tests directly against the debug adapter, using the DAP.
  * Here, we check that the adapter implements the protocol correctly, and that it communicates with cspyserver correctly.
@@ -50,11 +33,10 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
     });
 
     test("Stops on entry", () => {
-        const expectedPath = Utils.pathRegex(fibonacciFile());
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfig()),
-            dc().assertStoppedLocation("entry", { line: 43, column: 1, path: expectedPath})
+            TestUtils.assertStoppedLocation(dc(), "entry", 43, fibonacciFile(), /main/),
         ]);
     });
 
@@ -65,49 +47,59 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
             // The name of the frame is *usually* __exit_0, but it varies between devices
-            TestUtils.assertStoppedLocation(dc(), "exit", 0, undefined, /__exit_0|__iar_get_ttio_0/)
+            TestUtils.assertStoppedLocation(dc(), "exit", 0, undefined, /__exit_0|__iar_get_ttio_0/),
         ]);
     });
 
     test("Shows stdout", () => {
-        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnEntry = false;
         return Promise.all([
             dc().configurationSequence(),
-            dc().launch(dbgConfigCopy),
-            dc().assertOutput("stdout", "\n" + FIBS.join("\n"), 5000)
+            dc().launch(dbgConfig()),
+            dc().waitForEvent("stopped").then(async() => {
+                await Promise.all([
+                    dc().assertOutput("stdout", "\n" + FIBS.join("\n"), 5000),
+                    dc().continueRequest({threadId: 0, singleThread: true})
+                ]);
+            }),
         ]);
     });
 
-    test("Provides stack frames", async() => {
-        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnEntry = false;
-        await dc().hitBreakpoint(
-            dbgConfigCopy,
-            { line: 60, path: utilsFile() });
-        const res = await dc().stackTraceRequest({threadId: 0});
-        Assert.strictEqual(res.body.stackFrames.length, 4);
+    test("Provides stack frames", () => {
+        return Promise.all([
+            dc().launch(dbgConfig()),
+            dc().waitForEvent("stopped").then(async() => {
+                await dc().setBreakpointsRequest(
+                    { source: { path: utilsFile() },
+                        breakpoints: [{line: 60}] });
+                await Promise.all([
+                    dc().continueRequest({threadId: 0, singleThread: true}),
+                    dc().waitForEvent("stopped"),
+                ]);
+                const res = await dc().stackTraceRequest({threadId: 0});
+                Assert.strictEqual(res.body.stackFrames.length, 4);
 
-        Assert(res.body.stackFrames[0]?.source?.path);
-        Assert(OsUtils.pathsEqual(res.body.stackFrames[0]?.source?.path, utilsFile()), res.body.stackFrames[0]?.source?.path + " did not match " + utilsFile);
-        Assert.strictEqual(res.body.stackFrames[0].name, "PutFib");
-        Assert.strictEqual(res.body.stackFrames[0].line, 60);
-        Assert(res.body.stackFrames[0]?.instructionPointerReference?.match(/0x[\da-fA-F]{16}/));
+                Assert(res.body.stackFrames[0]?.source?.path);
+                Assert(OsUtils.pathsEqual(res.body.stackFrames[0]?.source?.path, utilsFile()), res.body.stackFrames[0]?.source?.path + " did not match " + utilsFile);
+                Assert.strictEqual(res.body.stackFrames[0].name, "PutFib");
+                Assert.strictEqual(res.body.stackFrames[0].line, 60);
+                Assert(res.body.stackFrames[0]?.instructionPointerReference?.match(/0x[\da-fA-F]{16}/));
 
-        Assert(res.body.stackFrames[1]?.source?.path);
-        Assert(OsUtils.pathsEqual(res.body.stackFrames[1]?.source?.path, fibonacciFile()), res.body.stackFrames[1]?.source?.path + " did not match " + fibonacciFile);
-        Assert.strictEqual(res.body.stackFrames[1].name, "DoForegroundProcess");
-        Assert.strictEqual(res.body.stackFrames[1].line, 38);
-        Assert(res.body.stackFrames[1]?.instructionPointerReference?.match(/0x[\da-fA-F]{16}/));
+                Assert(res.body.stackFrames[1]?.source?.path);
+                Assert(OsUtils.pathsEqual(res.body.stackFrames[1]?.source?.path, fibonacciFile()), res.body.stackFrames[1]?.source?.path + " did not match " + fibonacciFile);
+                Assert.strictEqual(res.body.stackFrames[1].name, "DoForegroundProcess");
+                Assert.strictEqual(res.body.stackFrames[1].line, 38);
+                Assert(res.body.stackFrames[1]?.instructionPointerReference?.match(/0x[\da-fA-F]{16}/));
 
-        Assert(res.body.stackFrames[2]?.source?.path);
-        Assert(OsUtils.pathsEqual(res.body.stackFrames[2]?.source?.path, fibonacciFile()), res.body.stackFrames[2]?.source?.path + " did not match " + fibonacciFile);
-        Assert.strictEqual(res.body.stackFrames[2].name, "main");
-        Assert.strictEqual(res.body.stackFrames[2].line, 51);
-        Assert(res.body.stackFrames[2]?.instructionPointerReference?.match(/0x[\da-fA-F]{16}/));
+                Assert(res.body.stackFrames[2]?.source?.path);
+                Assert(OsUtils.pathsEqual(res.body.stackFrames[2]?.source?.path, fibonacciFile()), res.body.stackFrames[2]?.source?.path + " did not match " + fibonacciFile);
+                Assert.strictEqual(res.body.stackFrames[2].name, "main");
+                Assert.strictEqual(res.body.stackFrames[2].line, 51);
+                Assert(res.body.stackFrames[2]?.instructionPointerReference?.match(/0x[\da-fA-F]{16}/));
 
-        Assert.strictEqual(res.body.stackFrames[3]?.source, undefined);
-        Assert(res.body.stackFrames[3]?.instructionPointerReference?.match(/0x[\da-fA-F]{16}/));
+                Assert.strictEqual(res.body.stackFrames[3]?.source, undefined);
+                Assert(res.body.stackFrames[3]?.instructionPointerReference?.match(/0x[\da-fA-F]{16}/));
+            }),
+        ]);
     });
 
 
@@ -138,7 +130,7 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
                 Assert.strictEqual(arrContents.length, 10);
                 for (let i = 0; i < 10; i++) {
                     Assert.strictEqual(arrContents[i]!.name, `[${i}]`);
-                    Assert.strictEqual(arrContents[i]!.value, "0");
+                    Assert.strictEqual(arrContents[i]!.value, "0", `Wrong value for Fib[${i}]`);
                     Assert.match(arrContents[i]!.type!, /uint32_t @ 0x/);
                     // check that evaluateName property is correct
                     const evalResult = (await dc().evaluateRequest({expression: arrContents[i]!.evaluateName!})).body;
@@ -174,13 +166,15 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
 
     test("Supports read and write memory", () => {
         /// This test assumes ints are at least 4 bytes and that memory is little-endian, which may not be true in all cases
-        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnEntry = false;
         return Promise.all([
             dc().configurationSequence(),
-            dc().launch(dbgConfigCopy),
+            dc().launch(dbgConfig()),
             dc().waitForEvent("stopped").then(async() => {
-                const stack = await dc().stackTraceRequest({ threadId: 1});
+                await Promise.all([
+                    dc().continueRequest({threadId: 0}),
+                    dc().waitForEvent("stopped"),
+                ]);
+                const stack = await dc().stackTraceRequest({ threadId: 0});
                 const scopes = await dc().scopesRequest({frameId: stack.body.stackFrames[0]!.id});
                 const staticsScope = scopes.body.scopes[1]!;
 
@@ -209,16 +203,15 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
     });
 
     test("Supports terminal input", () => {
-        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnEntry = false;
         return Promise.all([
             dc().configurationSequence(),
-            dc().launch(dbgConfigCopy),
+            dc().launch(dbgConfig()),
             // Wait until the client is ready to accept input
             dc().waitForEvent("stopped").then(async() => {
+                await dc().continueRequest({threadId: 0, singleThread: true});
                 // Sending input to the program is automatically handled in the test setup function at the top of the file.
                 // Here we just have to verify that the variables are set according to the input.
-                const stack = await dc().stackTraceRequest({ threadId: 1});
+                const stack = await dc().stackTraceRequest({ threadId: 0});
                 const scopes = await dc().scopesRequest({frameId: stack.body.stackFrames[0]!.id});
                 const staticsScope = scopes.body.scopes[1]!;
 
