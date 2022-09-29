@@ -36,6 +36,7 @@ debugAdapterSuite("SVD generator tests", function(dc, dbgConfig)  {
             workbenchPath: dbgConfig().workbenchPath,
             driver: "Simulator",
             trace: true,
+            stopOnEntry: true,
             driverOptions: ["--endian=little", "--cpu=Cortex-A9", "--fpu=None", "--semihosting"],
         };
 
@@ -56,10 +57,9 @@ debugAdapterSuite("SVD generator tests", function(dc, dbgConfig)  {
     });
 
     test("Returns SVD for configured device", () => {
-        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
         return Promise.all([
             dc().configurationSequence(),
-            dc().launch(dbgConfigCopy),
+            dc().launch(dbgConfig()),
             dc().waitForEvent("stopped").then(async() => {
                 const svdResponse: CustomRequest.RegistersResponse = (await dc().customRequest(CustomRequest.Names.REGISTERS)).body;
                 if (TestConfiguration.getConfiguration().expectPeriphals) {
@@ -75,6 +75,9 @@ debugAdapterSuite("SVD generator tests", function(dc, dbgConfig)  {
 });
 
 suite("Specific device SVD Tests", () => {
+    setup(function() {
+        console.log("\n==========================================================" + this.currentTest!.title + "==========================================================\n");
+    });
     test("STM32F401CB", async function() {
         if (JSON.stringify(TestConfiguration.getConfiguration()) !== JSON.stringify(TestConfiguration.ARMSIM2_CONFIG)) {
             this.skip();

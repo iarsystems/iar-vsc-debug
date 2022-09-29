@@ -70,7 +70,7 @@ export namespace TestUtils {
     }
 
     export function assertCurrentLineIs(session: vscode.DebugSession, _path: string, line: number, column: number) {
-        return session.customRequest("stackTrace").then((response)=>{
+        return session.customRequest("stackTrace", { threadId: 0 }).then((response)=>{
             console.log("Checking stack");
             if (response.stackFrames) {
                 const currentStack = response.stackFrames[0];
