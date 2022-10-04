@@ -49,8 +49,10 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     target: string;
     /** An absolute path to the "program" to debug. */
     program: string;
-    /** Automatically stop target after launch. If not specified, target does not stop. */
+    /** @deprected use stopOnSymbol instead! Automatically stop target after launch. If not specified, target does not stop. */
     stopOnEntry?: boolean;
+    /** A symbol for the debugger to run to when starting the debug session. Specify true to stop immediately after launch. Specify false to avoid stopping at all. */
+    stopOnSymbol?: string | boolean;
     /** The type of breakpoint to use by default. This isn't normally provided directly in the launch.json (it's not declared in package.json).
     * Instead it is provided from the user's selection in the UI. */
     breakpointType?: BreakpointType;
@@ -271,20 +273,41 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
         this.sendResponse(response);
 
-        this.addCSpyEventHandlers();
-
-        if (args.stopOnEntry) {
-            await this.runControlService.runToULE(undefined, "main");
-        } else {
-            await this.runControlService.continue(undefined);
-        }
-    }
-
-    // TODO refactor/remove me
-    private addCSpyEventHandlers() {
         this.runControlService?.onCoreStopped((core, reason) => {
             this.sendEvent(new StoppedEvent(reason, core));
         });
+
+        let doStop: boolean;
+        let stopSymbol: string | undefined = undefined;
+        if (typeof(args.stopOnSymbol) === "string") {
+            doStop = true;
+            stopSymbol = args.stopOnSymbol;
+        } else if (args.stopOnSymbol === false) {
+            doStop = false;
+        } else if (args.stopOnSymbol === true) {
+            doStop = true;
+        } else if (args.stopOnEntry) {
+            doStop = true;
+            stopSymbol = "main";
+        } else {
+            doStop = false;
+        }
+        if (doStop) {
+            if (stopSymbol) {
+                await this.runControlService.runToULE(undefined, stopSymbol);
+            } else {
+                // Use the initial entry state. Since no coreStopped event will be emitted, we must notify the client
+                // here that all cores are stopped.
+                const eventBody: DebugProtocol.StoppedEvent["body"] = {
+                    reason: "entry",
+                    threadId: 0,
+                    allThreadsStopped: true,
+                };
+                this.sendEvent(new Event("stopped", eventBody));
+            }
+        } else {
+            await this.runControlService.continue(undefined);
+        }
     }
 
     protected override async terminateRequest(response: DebugProtocol.TerminateResponse, _args: DebugProtocol.TerminateArguments) {

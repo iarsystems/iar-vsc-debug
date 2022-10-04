@@ -12,7 +12,7 @@ export interface TestConfiguration {
     /**
      * For all tests that need to start a debug session, this is the base configuration to use.
      */
-    debugConfiguration: Omit<CSpyLaunchRequestArguments, "workbenchPath" | "program" | "projectPath" | "projectConfiguration" | "stopOnEntry">,
+    debugConfiguration: Omit<CSpyLaunchRequestArguments, "workbenchPath" | "program" | "projectPath" | "projectConfiguration">,
     /**
      * The 'dbg' suite uses a specific test program to run debugging tests (see TestProjects/GettingStarted/).
      * The program needs to be built to match the {@link debugConfiguration} (e.g. for the correct device).
@@ -97,7 +97,7 @@ export namespace TestConfiguration {
                 "--device=Zynq 7020",
                 "--semihosting",
                 "-p",
-                "$TOOLKIT_DIR$/CONFIG/debugger/Xilinx/Zynq 7020.ddf",
+                "$TOOLKIT_DIR$/config/debugger/Xilinx/Zynq 7020.ddf",
             ],
         },
         testProgram: {

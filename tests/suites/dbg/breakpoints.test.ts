@@ -77,8 +77,6 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
     });
 
     test("Hits instruction breakpoint", () => {
-        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnEntry = false;
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfig()),

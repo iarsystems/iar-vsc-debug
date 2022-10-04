@@ -19,7 +19,7 @@ export namespace ConfigResolutionCommon {
         program: string;
         driverPath: string;
         target: string;
-        stopOnEntry: boolean;
+        stopOnSymbol: string | boolean;
         projectPath: string;
         configuration: string;
         plugins: string[];
@@ -64,7 +64,7 @@ export namespace ConfigResolutionCommon {
             target: parts.target.toLowerCase(),
             program: program,
             driver: driverName,
-            stopOnEntry: parts.stopOnEntry,
+            stopOnSymbol: parts.stopOnSymbol,
             workbenchPath: "${command:iar-config.toolchain}",
             projectPath: project,
             projectConfiguration: parts.configuration,

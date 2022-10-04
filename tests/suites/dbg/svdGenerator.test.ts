@@ -36,7 +36,7 @@ debugAdapterSuite("SVD generator tests", function(dc, dbgConfig)  {
             workbenchPath: dbgConfig().workbenchPath,
             driver: "Simulator",
             trace: true,
-            stopOnEntry: true,
+            stopOnSymbol: "main",
             driverOptions: ["--endian=little", "--cpu=Cortex-A9", "--fpu=None", "--semihosting"],
         };
 
@@ -110,7 +110,7 @@ suite("Specific device SVD Tests", () => {
                 "--semihosting",
                 "--multicore_nr_of_cores=1",
                 "-p",
-                "$TOOLKIT_DIR$/CONFIG/debugger/ST/STM32F401CB.ddf",
+                "$TOOLKIT_DIR$/config/debugger/ST/STM32F401CB.ddf",
             ],
         };
 

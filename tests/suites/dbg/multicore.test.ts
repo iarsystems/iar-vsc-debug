@@ -32,6 +32,23 @@ debugAdapterSuite("Test multicore debugging", function(dc, dbgConfig, fibonacciF
         };
     });
 
+    test("Stops on entry", () => {
+        const configCopy: CSpyLaunchRequestArguments = JSON.parse(JSON.stringify(config));
+        configCopy.stopOnSymbol = true;
+        return Promise.all([
+            dc().configurationSequence(),
+            dc().launch(configCopy),
+            dc().waitForEvent("stopped").then(async(ev) => {
+                Assert.strictEqual(ev.body?.reason, "entry");
+                Assert.strictEqual(ev.body?.allThreadsStopped, true);
+                for (let core = 0; core < nCores; core++) {
+                    const stack = await dc().stackTraceRequest({threadId: core});
+                    Assert.strictEqual(stack.body.stackFrames[0]?.source?.name, "cstartup.s");
+                }
+            }),
+        ]);
+    });
+
     test("Lists all cores", () => {
         return Promise.all([
             dc().configurationSequence(),

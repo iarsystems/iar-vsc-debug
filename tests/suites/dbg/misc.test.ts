@@ -32,7 +32,7 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
         Assert(response.body?.supportsSetVariable);
     });
 
-    test("Stops on entry", () => {
+    test("Stops on main", () => {
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfig()),
@@ -40,9 +40,34 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
         ]);
     });
 
+    test("Stops on arbitrary symbol", () => {
+        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
+        dbgConfigCopy.stopOnSymbol = "GetFib";
+        return Promise.all([
+            dc().configurationSequence(),
+            dc().launch(dbgConfigCopy),
+            TestUtils.assertStoppedLocation(dc(), "entry", 38, utilsFile(), /GetFib/),
+        ]);
+    });
+
+    test("Stops on entry", () => {
+        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
+        dbgConfigCopy.stopOnSymbol = true;
+        return Promise.all([
+            dc().configurationSequence(),
+            dc().launch(dbgConfigCopy),
+            dc().waitForEvent("stopped").then(async ev => {
+                Assert.strictEqual(ev.body?.reason, "entry");
+                const stack = await dc().stackTraceRequest({threadId: 0});
+                const topStackSource = stack.body.stackFrames[0]?.source?.name;
+                Assert(topStackSource === undefined || topStackSource.endsWith(".s"), `Top stack was '${topStackSource}'`);
+            }),
+        ]);
+    });
+
     test("Stops on end", () => {
         const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnEntry = false;
+        dbgConfigCopy.stopOnSymbol = false;
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
@@ -217,7 +242,7 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
 
                 const vars = await dc().variablesRequest({ variablesReference: staticsScope.variablesReference });
                 const int = vars.body.variables.find(variable => variable.name.startsWith("scan_to_me"));
-                Assert(int);
+                Assert(int, "Found variables: " + vars.body.variables.map(v => v.name).join(", "));
                 Assert.strictEqual(int.value, "1'234");
                 const buf = vars.body.variables.find(variable => variable.name.startsWith("buf"));
                 Assert(buf);

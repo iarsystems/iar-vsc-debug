@@ -44,7 +44,7 @@ suite("Configuration resolution tests", () => {
         cspyArgs = {
             target: "arm",
             program: existantFile,
-            stopOnEntry: true,
+            stopOnSymbol: "main",
             breakpointType: BreakpointType.AUTO,
             trace: true,
             workbenchPath: workbench,

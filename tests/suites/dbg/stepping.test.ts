@@ -70,8 +70,6 @@ debugAdapterSuite("Stepping", (dc, dbgConfig, fibonacciFile, utilsFile) => {
     });
 
     test("Variables change when stepping", () => {
-        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnEntry = false;
         return Promise.all([
             dc().launch(dbgConfig()),
             dc().waitForEvent("stopped").then(async() => {
@@ -100,8 +98,6 @@ debugAdapterSuite("Stepping", (dc, dbgConfig, fibonacciFile, utilsFile) => {
     });
 
     test("Supports restarting", () => {
-        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnEntry = false;
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfig()),

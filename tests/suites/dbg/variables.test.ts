@@ -10,7 +10,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
 
     test("Shows variable values", () => {
         const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnEntry = false;
+        dbgConfigCopy.stopOnSymbol = false;
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
@@ -83,7 +83,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
     });
     test("Supports deeply nested variables", () => {
         const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnEntry = false;
+        dbgConfigCopy.stopOnSymbol = false;
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
@@ -161,7 +161,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
     });
     test("Supports cyclic variables", () => {
         const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnEntry = false;
+        dbgConfigCopy.stopOnSymbol = false;
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
@@ -309,8 +309,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
     // rather than the address of the pointer itself.
     test("Pointer memoryReference uses value", () => {
         const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnEntry = false;
-        dbgConfigCopy.trace = true;
+        dbgConfigCopy.stopOnSymbol = false;
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),

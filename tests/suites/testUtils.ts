@@ -49,7 +49,7 @@ export namespace TestUtils {
             request: "launch",
             name: "C-SPY Debugging Tests",
             ...parameters.debugConfiguration,
-            stopOnEntry: true,
+            stopOnSymbol: "main",
             projectPath: projectDir,
             projectConfiguration: configuration,
             program: program,
