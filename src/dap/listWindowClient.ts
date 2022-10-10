@@ -64,7 +64,8 @@ export class ListWindowClient implements Disposable {
      */
     async getTopLevelRows(): Promise<ListWindowRowReference[]> {
         const rows = await this.getRows();
-        const topLevelRows = rows.filter(row => TreeInfoUtils.getDepth(row.treeinfo) === 0);
+        const topLevelRows = rows.filter(row => TreeInfoUtils.getDepth(row.treeinfo) === 0).
+            filter(row => row.cells.length > 0);
         return topLevelRows.map(row => this.createRowReference(row, []));
     }
 
