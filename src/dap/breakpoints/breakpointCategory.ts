@@ -8,5 +8,6 @@
  */
 export enum BreakpointCategory {
     EMUL_CODE = "EMUL_CODE",
-    STD_CODE2 = "STD_CODE2"
+    STD_CODE2 = "STD_CODE2",
+    HW_CODE   = "HW_CODE"
 }

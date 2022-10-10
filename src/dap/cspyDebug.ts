@@ -165,7 +165,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.configurationDone.notify();
     }
 
-    // TODO: report progress using a frontend service and the Progress(Start|Update|End) DAP events
     protected override async launchRequest(response: DebugProtocol.LaunchResponse, args: CSpyLaunchRequestArguments) {
         logger.init(e => this.sendEvent(e), undefined, true);
         logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop);
@@ -213,7 +212,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.sendEvent(new OutputEvent("Using C-SPY version: " + await this.cspyDebugger.service.getVersionString() + "\n"));
 
             await this.cspyDebugger.service.startSession(sessionConfig);
-            const driver = CSpyDriver.driverFromName(args.driver);
+            const driver = CSpyDriver.driverFromName(args.driver, args.target);
 
             // do flashing & downloading
             if (args.download) {

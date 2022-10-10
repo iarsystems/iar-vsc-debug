@@ -10,9 +10,10 @@ import { BreakpointType } from "./cspyBreakpointManager";
  */
 export interface CSpyDriver {
     /**
-     * Gets a factory for creating code bp descriptors for this driver.
+     * Provides a breakpoint factory for each code breakpoint type supported by the driver.
+     * If a driver supports more than one type, the user is able to select from them using e.g. console commands.
      */
-    getCodeBreakpointDescriptorFactory(): CodeBreakpointDescriptorFactory;
+    readonly codeBreakpointFactories: ReadonlyMap<BreakpointType, CodeBreakpointDescriptorFactory>;
 
     /**
      * Returns whether this driver is a simulator. This means e.g. that flash loading is not necessary.
@@ -27,8 +28,13 @@ export interface CSpyDriver {
     readonly libraryBaseNames: string[];
 }
 
+// Common properties for most simulator drivers
 class SimulatorDriver implements CSpyDriver {
-    constructor(public readonly libraryBaseNames: string[]) {}
+    readonly codeBreakpointFactories: ReadonlyMap<BreakpointType, CodeBreakpointDescriptorFactory>;
+
+    constructor(public readonly libraryBaseNames: string[]) {
+        this.codeBreakpointFactories = new Map([[BreakpointType.AUTO, new StdCode2BreakpointDescriptorFactory()]]);
+    }
 
     getCodeBreakpointDescriptorFactory(): CodeBreakpointDescriptorFactory {
         return new StdCode2BreakpointDescriptorFactory();
@@ -38,31 +44,50 @@ class SimulatorDriver implements CSpyDriver {
     }
 }
 
-abstract class HardwareDriver implements CSpyDriver {
-    constructor(public readonly libraryBaseNames: string[], private readonly breakpointTypes: Map<BreakpointType, number>) {}
+// Common properties for most hardware drivers
+class GenericHardwareDriver implements CSpyDriver {
+    readonly codeBreakpointFactories: ReadonlyMap<BreakpointType, CodeBreakpointDescriptorFactory>;
 
-    getCodeBreakpointDescriptorFactory(): CodeBreakpointDescriptorFactory {
-        return new EmulCodeBreakpointDescriptorFactory(
-            this.breakpointTypes
-        );
+    constructor(public readonly libraryBaseNames: string[]) {
+        this.codeBreakpointFactories = new Map([
+            [BreakpointType.AUTO, new EmulCodeBreakpointDescriptorFactory(0)],
+            [BreakpointType.HARDWARE, new EmulCodeBreakpointDescriptorFactory(1)],
+            [BreakpointType.SOFTWARE, new EmulCodeBreakpointDescriptorFactory(2)],
+        ]);
     }
+
     isSimulator(): boolean {
         return false;
     }
 }
-// Common properties for most hardware drivers
-class GenericHardwareDriver extends HardwareDriver {
-    constructor(libraryBaseNames: string[]) {
-        super(libraryBaseNames,
-            new Map([[BreakpointType.AUTO, 0], [BreakpointType.HARDWARE, 1], [BreakpointType.SOFTWARE, 2]]));
+// Emulator for rh850. Doesn't support 'auto' breakpoints.
+class Rh850OcdDriver implements CSpyDriver {
+    readonly codeBreakpointFactories: ReadonlyMap<BreakpointType, CodeBreakpointDescriptorFactory>;
+
+    constructor(public readonly libraryBaseNames: string[]) {
+        this.codeBreakpointFactories = new Map([
+            [BreakpointType.SOFTWARE, new EmulCodeBreakpointDescriptorFactory(0)],
+            [BreakpointType.HARDWARE, new EmulCodeBreakpointDescriptorFactory(1)],
+        ]);
+    }
+
+    isSimulator(): boolean {
+        return false;
     }
 }
-// Emulator for rh850
-class OcdDriver extends HardwareDriver {
-    constructor(libraryBaseNames: string[]) {
-        super(libraryBaseNames,
-            new Map([[BreakpointType.SOFTWARE, 0], [BreakpointType.HARDWARE, 1]])
-        );
+// Emulator for rl78.
+class Rl78OcdDriver implements CSpyDriver {
+    readonly codeBreakpointFactories: ReadonlyMap<BreakpointType, CodeBreakpointDescriptorFactory>;
+
+    constructor(public readonly libraryBaseNames: string[]) {
+        this.codeBreakpointFactories = new Map([
+            [BreakpointType.SOFTWARE, new EmulCodeBreakpointDescriptorFactory(0)],
+            [BreakpointType.HARDWARE, new EmulCodeBreakpointDescriptorFactory(1)],
+        ]);
+    }
+
+    isSimulator(): boolean {
+        return false;
     }
 }
 
@@ -87,7 +112,7 @@ export namespace CSpyDriver {
         E2 = "Renesas E2",
         E20 = "Renesas E20",
     }
-    const driverMap: Array<{ name: string, driver: CSpyDriver }> = [
+    const driverMap: Array<{ name: string, target?: string, driver: CSpyDriver }> = [
         { name: DriverNames.SIMULATOR, driver: new SimulatorDriver(["sim", "sim2"]) },
         { name: DriverNames.IMPERAS, driver: new SimulatorDriver(["imperas"]) },
         { name: DriverNames.IJET, driver: new GenericHardwareDriver(["ijet", "jet"]) },
@@ -99,15 +124,20 @@ export namespace CSpyDriver {
         { name: DriverNames.STLINK, driver: new GenericHardwareDriver(["stlink", "stlink2"]) },
         { name: DriverNames.XDS, driver: new GenericHardwareDriver(["xds", "xds2"]) },
         { name: DriverNames.TIFET, driver: new GenericHardwareDriver(["tifet"]) },
-        { name: DriverNames.E1, driver: new OcdDriver(["ocd"]) },
-        { name: DriverNames.E2, driver: new OcdDriver(["ocd"]) },
-        { name: DriverNames.E20, driver: new OcdDriver(["ocd"]) },
+        { name: DriverNames.E1,  target: "rh850", driver: new Rh850OcdDriver(["ocd"]) },
+        { name: DriverNames.E2,  target: "rh850", driver: new Rh850OcdDriver(["ocd"]) },
+        { name: DriverNames.E20, target: "rh850", driver: new Rh850OcdDriver(["ocd"]) },
+        { name: DriverNames.E1,  target: "rl78", driver: new Rl78OcdDriver(["ocd"]) },
+        { name: DriverNames.E2,  target: "rl78", driver: new Rl78OcdDriver(["ocd"]) },
+        { name: DriverNames.E20, target: "rl78", driver: new Rl78OcdDriver(["ocd"]) },
     ];
     /**
-     * Returns a driver matching a driver display name (e.g. a name returned from {@link nameFromDriverFile}).
+     * Returns a driver from a driver display name (e.g. a name returned from {@link nameFromDriverFile}).
+     * Some driver names are shared by several targets, but the actual drivers behave differently, so the target
+     * is needed to select the correct driver.
      */
-    export function driverFromName(driverName: string): CSpyDriver {
-        const result = driverMap.find(({ name, }) => name === driverName);
+    export function driverFromName(driverName: string, targetId: string): CSpyDriver {
+        const result = driverMap.find(({ name, target }) => name === driverName && (target === undefined || target === targetId) );
         if (!result) {
             logger.error("Unable to recognize driver: " + driverName);
             // For unknown drivers, we just guess at some properties and hope it works.

@@ -12,13 +12,14 @@ import { BREAKPOINTS_SERVICE } from "iar-vsc-common/thrift/bindings/breakpoints_
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { DescriptorWriter } from "./descriptors/descriptorWriter";
 import { CSpyDriver } from "./cspyDriver";
-import { CodeBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
+import { CodeBreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
 import { logger } from "@vscode/debugadapter/lib/logger";
+import { DescriptorReader } from "./descriptors/descriptorReader";
+import { LocOnlyDescriptor } from "./descriptors/locOnlyDescriptor";
 
 
 /**
- * Different types of breakpoints, only applicable to some drivers.
- * In practice these map to EmulCodeBreakpointType, but we want to hide that relation.
+ * Different types of breakpoints, not all drivers support all breakpoint types.
  */
 export enum BreakpointType {
     AUTO = "auto", HARDWARE = "hardware", SOFTWARE = "software"
@@ -62,13 +63,19 @@ export class CSpyBreakpointManager implements Disposable {
     private installedInstrunctionBreakpoints: Array<InstalledInstructionBreakpoint> = [];
 
     // Holds driver-specific bp creation logic
-    private readonly bpDescriptorFactory: CodeBreakpointDescriptorFactory;
+    private activeBpDescriptorFactory: CodeBreakpointDescriptorFactory;
 
     private constructor(private readonly breakpointService: ThriftClient<Breakpoints.Client>,
                 private readonly clientLinesStartAt1: boolean,
                 private readonly clientColumnsStartAt1: boolean,
-                driver: CSpyDriver) {
-        this.bpDescriptorFactory = driver.getCodeBreakpointDescriptorFactory();
+                private readonly driver: CSpyDriver) {
+        const defaultBpFactory = driver.codeBreakpointFactories.get(BreakpointType.AUTO) ??
+            driver.codeBreakpointFactories.get(BreakpointType.HARDWARE) ??
+            driver.codeBreakpointFactories.get(BreakpointType.SOFTWARE);
+        if (defaultBpFactory === undefined) {
+            throw new Error("The driver does not support any breakpoint types.");
+        }
+        this.activeBpDescriptorFactory = defaultBpFactory;
     }
 
     /**
@@ -101,7 +108,8 @@ export class CSpyBreakpointManager implements Disposable {
         dapBps.forEach(dapBp => {
             const installedBp = installedBreakpoints.find(bp => CSpyBreakpointManager.sourceBpsEqual(bp.dapBp, dapBp));
             if (installedBp !== undefined && installedBp.cspyBp.valid) {
-                const descriptor = this.bpDescriptorFactory.createFromString(installedBp.cspyBp.descriptor);
+                const reader = new DescriptorReader(installedBp.cspyBp.descriptor);
+                const descriptor = new LocOnlyDescriptor(reader);
                 const [, actualLine, actualCol] = this.parseSourceUle(descriptor.ule);
                 results.push({
                     verified: true,
@@ -183,18 +191,18 @@ export class CSpyBreakpointManager implements Disposable {
      * The supported {@link BreakpointType}s that can be set using the method below.
      */
     supportedBreakpointTypes() {
-        return this.bpDescriptorFactory instanceof EmulCodeBreakpointDescriptorFactory ?
-            this.bpDescriptorFactory.supportedTypes : [];
+        return Array.from(this.driver.codeBreakpointFactories.keys());
     }
 
     /**
      * This is silently ignored if the type is not supported.
      */
     setBreakpointType(type: BreakpointType) {
-        if (this.bpDescriptorFactory instanceof EmulCodeBreakpointDescriptorFactory) {
-            if (this.bpDescriptorFactory.supportedTypes.includes(type)) {
-                this.bpDescriptorFactory.type = type;
-            }
+        const bpFactory = this.driver.codeBreakpointFactories.get(type);
+        if (bpFactory) {
+            this.activeBpDescriptorFactory = bpFactory;
+        } else {
+            logger.error(`Tried to set BP type ${type}, but it is not supported by the driver.`);
         }
     }
 
@@ -225,7 +233,7 @@ export class CSpyBreakpointManager implements Disposable {
 
         const newBps = wantedBreakpoints.filter(wantedBp => !installedBreakpoints.some(installedBp => bpsEqual(installedBp.dapBp, wantedBp)));
         for (const dapBp of newBps) {
-            const descriptor = this.bpDescriptorFactory.createOnUle(toUle(dapBp));
+            const descriptor = this.activeBpDescriptorFactory.createOnUle(toUle(dapBp));
 
             const writer = new DescriptorWriter();
             descriptor.serialize(writer);

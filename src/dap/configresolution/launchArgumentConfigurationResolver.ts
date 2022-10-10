@@ -24,7 +24,7 @@ export class LaunchArgumentConfigurationResolver extends BaseConfigurationResolv
         // eslint-disable-next-line deprecation/deprecation
         const macros = args.setupMacros ?? args.macros ?? [];
 
-        const driver = CSpyDriver.driverFromName(args.driver);
+        const driver = CSpyDriver.driverFromName(args.driver, args.target);
         const driverFile = driver.libraryBaseNames.
             map(baseName => IarOsUtils.resolveTargetLibrary(args.workbenchPath, args.target, baseName)).
             find(driverFile => driverFile !== undefined);
