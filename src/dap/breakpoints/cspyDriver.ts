@@ -61,7 +61,7 @@ class GenericHardwareDriver implements CSpyDriver {
     }
 }
 // Emulator for rh850. Doesn't support 'auto' breakpoints.
-class Rh850OcdDriver implements CSpyDriver {
+class Rh850EmuDriver implements CSpyDriver {
     readonly codeBreakpointFactories: ReadonlyMap<BreakpointType, CodeBreakpointDescriptorFactory>;
 
     constructor(public readonly libraryBaseNames: string[]) {
@@ -76,7 +76,7 @@ class Rh850OcdDriver implements CSpyDriver {
     }
 }
 // Emulator for rl78.
-class Rl78OcdDriver implements CSpyDriver {
+class Rl78EmuDriver implements CSpyDriver {
     readonly codeBreakpointFactories: ReadonlyMap<BreakpointType, CodeBreakpointDescriptorFactory>;
 
     constructor(public readonly libraryBaseNames: string[]) {
@@ -111,33 +111,55 @@ export namespace CSpyDriver {
         E1 = "Renesas E1",
         E2 = "Renesas E2",
         E20 = "Renesas E20",
+        E2LITE = "Renesas E2 Lite / E2 On-board",
+        EZCUBE = "EZ-CUBE",
+        EZCUBE2 = "EZ-CUBE2",
+        IECUBE = "IECUBE",
+        TK = "TK",
     }
-    const driverMap: Array<{ name: string, target?: string, driver: CSpyDriver }> = [
+
+    /**
+     * Maps driver display names to {@link CSpyDriver} instances, and driver file names ("base names") to driver display
+     * names. Optionally, an entry may specify a target and/or driver argument, meaning that the mapping entry is only
+     * valid for that target and when that driver argument is present.
+     *
+     * This mapping should be injective both ways, e.g.:
+     * * Each driver name should only appear once
+     * * If a driver base name appears more than once (e.g. ocd), each instance should be qualified with a target and/or driver option to differentiate it from other instances
+     */
+    const driverMap: Array<{ name: string, driver: CSpyDriver, target?: string, driverArgument?: string }> = [
         { name: DriverNames.SIMULATOR, driver: new SimulatorDriver(["sim", "sim2"]) },
-        { name: DriverNames.IMPERAS, driver: new SimulatorDriver(["imperas"]) },
-        { name: DriverNames.IJET, driver: new GenericHardwareDriver(["ijet", "jet"]) },
-        { name: DriverNames.JLINK, driver: new GenericHardwareDriver(["jlink", "jlink2"]) },
-        { name: DriverNames.GDBSERV, driver: new GenericHardwareDriver(["gdbserv"]) },
-        { name: DriverNames.CADI, driver: new GenericHardwareDriver(["cadi"]) },
+        { name: DriverNames.IMPERAS,   driver: new SimulatorDriver(["imperas"]) },
+        { name: DriverNames.IJET,      driver: new GenericHardwareDriver(["ijet", "jet"]) },
+        { name: DriverNames.JLINK,     driver: new GenericHardwareDriver(["jlink", "jlink2"]) },
+        { name: DriverNames.GDBSERV,   driver: new GenericHardwareDriver(["gdbserv"]) },
+        { name: DriverNames.CADI,      driver: new GenericHardwareDriver(["cadi"]) },
         { name: DriverNames.STELLARIS, driver: new GenericHardwareDriver(["lmiftdi"]) },
-        { name: DriverNames.PEMICRO, driver: new GenericHardwareDriver(["pemicro"]) },
-        { name: DriverNames.STLINK, driver: new GenericHardwareDriver(["stlink", "stlink2"]) },
-        { name: DriverNames.XDS, driver: new GenericHardwareDriver(["xds", "xds2"]) },
-        { name: DriverNames.TIFET, driver: new GenericHardwareDriver(["tifet"]) },
-        { name: DriverNames.E1,  target: "rh850", driver: new Rh850OcdDriver(["ocd"]) },
-        { name: DriverNames.E2,  target: "rh850", driver: new Rh850OcdDriver(["ocd"]) },
-        { name: DriverNames.E20, target: "rh850", driver: new Rh850OcdDriver(["ocd"]) },
-        { name: DriverNames.E1,  target: "rl78", driver: new Rl78OcdDriver(["ocd"]) },
-        { name: DriverNames.E2,  target: "rl78", driver: new Rl78OcdDriver(["ocd"]) },
-        { name: DriverNames.E20, target: "rl78", driver: new Rl78OcdDriver(["ocd"]) },
+        { name: DriverNames.PEMICRO,   driver: new GenericHardwareDriver(["pemicro"]) },
+        { name: DriverNames.STLINK,    driver: new GenericHardwareDriver(["stlink", "stlink2"]) },
+        { name: DriverNames.XDS,       driver: new GenericHardwareDriver(["xds", "xds2"]) },
+        { name: DriverNames.TIFET,     driver: new GenericHardwareDriver(["tifet"]) },
+        { name: DriverNames.E1,        driver: new Rh850EmuDriver(["ocd"]), target: "rh850", driverArgument: "e1" },
+        { name: DriverNames.E2,        driver: new Rh850EmuDriver(["ocd"]), target: "rh850", driverArgument: "e2" },
+        { name: DriverNames.E20,       driver: new Rh850EmuDriver(["ocd"]), target: "rh850", driverArgument: "e20" },
+        { name: DriverNames.E1,        driver: new Rl78EmuDriver(["ocd"]), target: "rl78", driverArgument: "e1" },
+        { name: DriverNames.E2,        driver: new Rl78EmuDriver(["ocd"]), target: "rl78", driverArgument: "e2" },
+        { name: DriverNames.E20,       driver: new Rl78EmuDriver(["ocd"]), target: "rl78", driverArgument: "e20" },
+        { name: DriverNames.E2LITE,    driver: new Rl78EmuDriver(["ocd"]), driverArgument: "e2lite" },
+        { name: DriverNames.EZCUBE,    driver: new Rl78EmuDriver(["ocd"]), driverArgument: "ezcube" },
+        { name: DriverNames.EZCUBE2,   driver: new Rl78EmuDriver(["ocd"]), driverArgument: "ezcube2" },
+        { name: DriverNames.TK,        driver: new Rl78EmuDriver(["ocd"]), driverArgument: "tk" },
+        { name: DriverNames.IECUBE,    driver: new Rl78EmuDriver(["iecube"]),  },
     ];
     /**
-     * Returns a driver from a driver display name (e.g. a name returned from {@link nameFromDriverFile}).
+     * Returns a driver from a driver display name (e.g. a name returned from {@link getDriverName}).
      * Some driver names are shared by several targets, but the actual drivers behave differently, so the target
      * is needed to select the correct driver.
      */
-    export function driverFromName(driverName: string, targetId: string): CSpyDriver {
-        const result = driverMap.find(({ name, target }) => name === driverName && (target === undefined || target === targetId) );
+    export function driverFromName(driverName: string, targetName: string, driverArgs: string[]): CSpyDriver {
+        const result = driverMap.find(({ name, target, driverArgument }) => name === driverName &&
+            (target === undefined || target === targetName) &&
+            (driverArgument === undefined || driverArgs.includes(driverArgument)));
         if (!result) {
             logger.error("Unable to recognize driver: " + driverName);
             // For unknown drivers, we just guess at some properties and hope it works.
@@ -147,16 +169,20 @@ export namespace CSpyDriver {
     }
 
     /**
-     * Gets a display name for a driver, given its library file (e.g. libarmsim2.so)
+     * Gets a display name for a driver, given its library file (e.g. libarmsim2.so), target and driver arguments.
+     * Some driver files have multiple user-facing names (e.g. E1/E2/E20) depending on the target and driver
+     * arguments.
      */
-    export function nameFromDriverFile(driverFile: string, targetName?: string): string {
+    export function getDriverName(driverFile: string, targetName: string, driverArgs: string[]): string {
         let basename = driverFile.replace(new RegExp(`^lib|.so|.dll`, "ig"), "").toLowerCase();
 
         if (targetName && basename.startsWith(targetName.toLowerCase())) {
             basename = basename.substring(targetName.length);
         }
-        return driverMap.find(({ driver }) => {
-            return driver.libraryBaseNames.some(base => basename.endsWith(base));
+        return driverMap.find(({ driver, target, driverArgument }) => {
+            return driver.libraryBaseNames.some(base => basename.endsWith(base)) &&
+                (target === undefined || target === targetName) &&
+                (driverArgument === undefined || driverArgs.includes(driverArgument));
         })?.name ?? basename;
     }
 }

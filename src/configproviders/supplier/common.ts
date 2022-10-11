@@ -42,7 +42,7 @@ export namespace ConfigResolutionCommon {
         // directory part, the target name and any extensions
         const driverFile = basename(parts.driverPath);
         // Lowercase here is mostly for display purposes - the debug adapter resolves drivers case-insensitive anyway
-        const driverName = CSpyDriver.nameFromDriverFile(driverFile, parts.target);
+        const driverName = CSpyDriver.getDriverName(driverFile, parts.target, parts.driverOptions);
 
         // Express the program and project as a workspace-relative path if possible
         const program = wsDir ? toWorkspaceRelativePath(parts.program, wsDir) : parts.program;
