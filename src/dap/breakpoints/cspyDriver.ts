@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-import { CodeBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory, StdCode2BreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
+import { CodeBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory, HwCodeBreakpointDescriptorFactory, StdCode2BreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
 import { logger } from "@vscode/debugadapter/lib/logger";
 import { BreakpointType } from "./cspyBreakpointManager";
 
@@ -81,8 +81,8 @@ class Rl78EmuDriver implements CSpyDriver {
 
     constructor(public readonly libraryBaseNames: string[]) {
         this.codeBreakpointFactories = new Map([
-            [BreakpointType.SOFTWARE, new EmulCodeBreakpointDescriptorFactory(0)],
-            [BreakpointType.HARDWARE, new EmulCodeBreakpointDescriptorFactory(1)],
+            [BreakpointType.SOFTWARE, new StdCode2BreakpointDescriptorFactory()],
+            [BreakpointType.HARDWARE, new HwCodeBreakpointDescriptorFactory()],
         ]);
     }
 
