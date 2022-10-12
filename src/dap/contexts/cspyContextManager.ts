@@ -165,7 +165,9 @@ export class CSpyContextManager implements Disposable {
         if (reference instanceof ScopeReference) {
             const varProvider = reference.provider;
             if (!varProvider) {
-                throw new Error("Backend is not available for this scope.");
+                // EWARM 8.4 uses the wrong thrift transport for some windows. This is the only reasonable reason why
+                // we would be able to start a session, but not connect to one of the variable windows.
+                throw new Error("Not supported in EWARM v8.40");
             }
             const vars = await varProvider.getVariables();
             return vars.map(v => this.replaceVariableReference(varProvider, v, reference.context));
