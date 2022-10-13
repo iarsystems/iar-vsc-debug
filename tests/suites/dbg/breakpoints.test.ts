@@ -97,4 +97,39 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
         ]);
     });
 
+    test("Hits conditional breakpoint", () => {
+        return Promise.all([
+            dc().launch(dbgConfig()),
+            dc().waitForEvent("stopped").then(async() => {
+                await dc().setBreakpointsRequest(
+                    { source: { path: fibonacciFile() },
+                        breakpoints: [{line: 51, condition: "callCount == 5"}] });
+                await Promise.all([
+                    dc().continueRequest({threadId: 0, singleThread: true}),
+                    dc().assertStoppedLocation("breakpoint", { path: fibonacciFile(), line: 51}).then(async() => {
+                        const callCount = await dc().evaluateRequest({ expression: "callCount" });
+                        Assert.strictEqual(callCount.body.result, "5");
+                    }),
+                ]);
+            }),
+        ]);
+    });
+    test("Hits hit-conditional breakpoint", () => {
+        return Promise.all([
+            dc().launch(dbgConfig()),
+            dc().waitForEvent("stopped").then(async() => {
+                await dc().setBreakpointsRequest(
+                    { source: { path: fibonacciFile() },
+                        breakpoints: [{line: 51, hitCondition: "3"}] });
+                await Promise.all([
+                    dc().continueRequest({threadId: 0, singleThread: true}),
+                    dc().assertStoppedLocation("breakpoint", { path: fibonacciFile(), line: 51}).then(async() => {
+                        const callCount = await dc().evaluateRequest({ expression: "callCount" });
+                        Assert.strictEqual(callCount.body.result, "3");
+                    }),
+                ]);
+            }),
+        ]);
+    });
+
 });
