@@ -7,8 +7,8 @@ import { Variable, Handles } from "@vscode/debugadapter";
 import { ThriftServiceManager } from "../thrift/thriftServiceManager";
 import { ListWindowClient, ListWindowRowReference } from "../listWindowClient";
 import { Disposable } from "../disposable";
-import { DebugProtocol } from "@vscode/debugprotocol";
 import { VariablesUtils } from "./variablesUtils";
+import { DebugProtocol } from "@vscode/debugprotocol";
 
 /**
  * Provides a list of (expandable) variables. Just like in DAP, expandable variables
@@ -18,12 +18,12 @@ export interface VariablesProvider {
     /**
      * Gets all variables from this provider.
      */
-    getVariables(): Promise<Variable[]>;
+    getVariables(): Promise<DebugProtocol.Variable[]>;
     /**
      * Gets all subvariables from a Variable previously returned by this provider.
      * @param variableReference The variableReference field of the {@link Variable} to get subvariables for
      */
-    getSubvariables(variableReference: number): Promise<Variable[]>;
+    getSubvariables(variableReference: number): Promise<DebugProtocol.Variable[]>;
     /**
      * Sets a new value for a variable.
      * @param name The name of a variable previously returned by this provider
@@ -80,7 +80,7 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
     async getVariables(): Promise<Variable[]> {
         await this.backendUpdate;
         const topLevelRows = await this.windowClient.getTopLevelRows();
-        return topLevelRows.map(row => this.createVariableFromRow(row));
+        return topLevelRows.map(row => this.createVariableFromRow(row, true));
     }
 
     /**
@@ -132,7 +132,7 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
         await this.windowClient.dispose();
     }
 
-    private createVariableFromRow(row: ListWindowRowReference): DebugProtocol.Variable {
+    private createVariableFromRow(row: ListWindowRowReference, isGloballyAvailable = false): DebugProtocol.Variable {
         const name = row.values[this.varNameColumn];
         const value = row.values[this.varValueColumn];
         if (name === undefined || value === undefined) {
@@ -141,7 +141,7 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
         const location = row.values[this.varLocationColumn];
         const address = location ? this.locationToAddress(location) : undefined;
         const type = row.values[this.varTypeColumn];
-        return VariablesUtils.createVariable(name, value, type, row.hasChildren ? this.variableReferences.create(row) : 0, address);
+        return VariablesUtils.createVariable(name, value, type, row.hasChildren ? this.variableReferences.create(row) : 0, address, isGloballyAvailable);
     }
 
     // converts the contents of a list window cell to a dap memory reference, if possible

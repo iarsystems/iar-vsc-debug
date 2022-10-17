@@ -7,7 +7,11 @@
  * Lists all breakpoint categories (that we need to know about)
  */
 export enum BreakpointCategory {
+    // Code breakpoints
     EMUL_CODE = "EMUL_CODE",
     STD_CODE2 = "STD_CODE2",
-    HW_CODE   = "HW_CODE"
+    HW_CODE   = "HW_CODE",
+    // Data breakpoints
+    STD_DATA2 = "STD_DATA2",
+    EMUL_DATA = "EMUL_DATA",
 }

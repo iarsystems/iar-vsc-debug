@@ -158,7 +158,7 @@ export class CSpyContextManager implements Disposable {
      * Fetches all variables from a handle. The handle may either refer to a scope (so we return all variables in that scope),
      * or to an expandable variable (so we return all sub-variables for that variable).
      */
-    async fetchVariables(handle: number): Promise<Variable[]> {
+    async fetchVariables(handle: number): Promise<DebugProtocol.Variable[]> {
         const reference = this.scopeAndVariableHandles.get(handle);
         await this.setInspectionContext(reference.context);
 
@@ -273,7 +273,7 @@ export class CSpyContextManager implements Disposable {
     // into one that we can send to the DAP client, and that won't conflict with other
     // references created by this class (e.g. for scopes). The new reference points to a
     // {@link VariableReference} that lets us later access the original value.
-    private replaceVariableReference(source: VariablesProvider, variable: Variable, context: ContextRef): Variable {
+    private replaceVariableReference(source: VariablesProvider, variable: Variable, context: ContextRef): DebugProtocol.Variable {
         if (variable.variablesReference > 0) {
             variable.variablesReference = this.scopeAndVariableHandles.create(new VariableReference(source, context, variable.variablesReference));
             return variable;

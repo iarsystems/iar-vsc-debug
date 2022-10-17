@@ -1,43 +1,42 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+import { AccessType } from "./accessType";
 import { DescriptorReader } from "./descriptorReader";
 import { DescriptorWriter } from "./descriptorWriter";
 import { LocEtcDescriptor } from "./locEtcDescriptor";
 
 /**
- * Breakpoint descriptor for EMUL_CODE breakpoints, used e.g. by i-jet and j-link.
- * The same as STD_CODE2, but adds an additional type property.
+ * Breakpoint descriptor for data breakpoints (e.g. STD_DATA2).
  */
-export class EmulCodeBreakpointDescriptor extends LocEtcDescriptor {
+export class DataLocEtcDescriptor extends LocEtcDescriptor {
     /**
-     * The type specifies e.g. if this is a hardware or software breakpoint.
-     * The exact values used and their meanings is driver-dependent.
+     * The access type to break on (e.g. read/write/readWrite)
      */
-    public type: number;
+    private readonly access: AccessType;
 
     /**
      * Typescript doesn't support multiple constructors, so we have to fuse them together like this.
      * constructor(reader: DescriptorReader)
      *  Constructs a new descriptor by deserializing from the given reader.
-     * constructor([categoryId: string, ule: string, type: number])
-     *  Creates a new descriptor from scratch using the given category id, ule and type. Other attributes
+     * constructor([categoryId: string, ule: string, access: AccessType])
+     *  Creates a new descriptor from scratch using the given category id, ule and access type. Other attributes
      *  will be given their default values.
      */
-    constructor(arg: DescriptorReader | [string, string, number]) {
+    constructor(arg: DescriptorReader | [string, string, AccessType]) {
         if (arg instanceof DescriptorReader) {
             const reader = arg;
             super(reader);
-            this.type = reader.readInteger();
+            this.access = reader.readInteger();
         } else {
-            const [categoryId, ule, type] = arg;
+            const [categoryId, ule, access] = arg;
             super([categoryId, ule]);
-            this.type = type;
+            this.access = access;
         }
     }
 
     override serialize(writer: DescriptorWriter) {
         super.serialize(writer);
-        writer.writeInteger(this.type);
+        writer.writeInteger(this.access);
     }
 }

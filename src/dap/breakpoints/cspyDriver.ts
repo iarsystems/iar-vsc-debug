@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-import { CodeBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory, HwCodeBreakpointDescriptorFactory, StdCode2BreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
+import { CodeBreakpointDescriptorFactory, DataBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory, EmulDataBreakpointDescriptorFactory, HwCodeBreakpointDescriptorFactory, StdCode2BreakpointDescriptorFactory, StdData2BreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
 import { logger } from "@vscode/debugadapter/lib/logger";
 import { BreakpointType } from "./cspyBreakpointManager";
 
@@ -14,6 +14,7 @@ export interface CSpyDriver {
      * If a driver supports more than one type, the user is able to select from them using e.g. console commands.
      */
     readonly codeBreakpointFactories: ReadonlyMap<BreakpointType, CodeBreakpointDescriptorFactory>;
+    readonly dataBreakpointFactory?: DataBreakpointDescriptorFactory;
 
     /**
      * Returns whether this driver is a simulator. This means e.g. that flash loading is not necessary.
@@ -31,14 +32,13 @@ export interface CSpyDriver {
 // Common properties for most simulator drivers
 class SimulatorDriver implements CSpyDriver {
     readonly codeBreakpointFactories: ReadonlyMap<BreakpointType, CodeBreakpointDescriptorFactory>;
+    readonly dataBreakpointFactory: DataBreakpointDescriptorFactory;
 
     constructor(public readonly libraryBaseNames: string[]) {
         this.codeBreakpointFactories = new Map([[BreakpointType.AUTO, new StdCode2BreakpointDescriptorFactory()]]);
+        this.dataBreakpointFactory = new StdData2BreakpointDescriptorFactory();
     }
 
-    getCodeBreakpointDescriptorFactory(): CodeBreakpointDescriptorFactory {
-        return new StdCode2BreakpointDescriptorFactory();
-    }
     isSimulator() {
         return true;
     }
@@ -47,6 +47,7 @@ class SimulatorDriver implements CSpyDriver {
 // Common properties for most hardware drivers
 class GenericHardwareDriver implements CSpyDriver {
     readonly codeBreakpointFactories: ReadonlyMap<BreakpointType, CodeBreakpointDescriptorFactory>;
+    readonly dataBreakpointFactory?: DataBreakpointDescriptorFactory = new EmulDataBreakpointDescriptorFactory();
 
     constructor(public readonly libraryBaseNames: string[]) {
         this.codeBreakpointFactories = new Map([
@@ -60,9 +61,14 @@ class GenericHardwareDriver implements CSpyDriver {
         return false;
     }
 }
+// Arm CADI driver, doesn't support data breakpoints
+class CadiDriver extends GenericHardwareDriver {
+    override readonly dataBreakpointFactory = undefined;
+}
 // Emulator for rh850. Doesn't support 'auto' breakpoints.
 class Rh850EmuDriver implements CSpyDriver {
     readonly codeBreakpointFactories: ReadonlyMap<BreakpointType, CodeBreakpointDescriptorFactory>;
+    readonly dataBreakpointFactory = new StdData2BreakpointDescriptorFactory();
 
     constructor(public readonly libraryBaseNames: string[]) {
         this.codeBreakpointFactories = new Map([
@@ -78,6 +84,7 @@ class Rh850EmuDriver implements CSpyDriver {
 // Emulator for rl78.
 class Rl78EmuDriver implements CSpyDriver {
     readonly codeBreakpointFactories: ReadonlyMap<BreakpointType, CodeBreakpointDescriptorFactory>;
+    readonly dataBreakpointFactory = undefined;
 
     constructor(public readonly libraryBaseNames: string[]) {
         this.codeBreakpointFactories = new Map([
@@ -133,7 +140,7 @@ export namespace CSpyDriver {
         { name: DriverNames.IJET,      driver: new GenericHardwareDriver(["ijet", "jet"]) },
         { name: DriverNames.JLINK,     driver: new GenericHardwareDriver(["jlink", "jlink2"]) },
         { name: DriverNames.GDBSERV,   driver: new GenericHardwareDriver(["gdbserv"]) },
-        { name: DriverNames.CADI,      driver: new GenericHardwareDriver(["cadi"]) },
+        { name: DriverNames.CADI,      driver: new CadiDriver(["cadi"]) },
         { name: DriverNames.STELLARIS, driver: new GenericHardwareDriver(["lmiftdi"]) },
         { name: DriverNames.PEMICRO,   driver: new GenericHardwareDriver(["pemicro"]) },
         { name: DriverNames.STLINK,    driver: new GenericHardwareDriver(["stlink", "stlink2"]) },

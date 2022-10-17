@@ -132,4 +132,65 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
         ]);
     });
 
+    test("Hits data breakpoints", () => {
+        return Promise.all([
+            dc().launch(dbgConfig()),
+            dc().waitForEvent("stopped").then(async() => {
+                const stack = await dc().stackTraceRequest({ threadId: 0});
+                const scopes = await dc().scopesRequest({frameId: stack.body.stackFrames[0]!.id});
+                const statics = (await dc().variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
+
+                {
+                    const callCount = statics.find(variable => variable.name.startsWith("callCount"));
+                    Assert(callCount);
+
+                    const breakInfo = await dc().dataBreakpointInfoRequest({name: callCount.name, variablesReference: scopes.body.scopes[1]!.variablesReference});
+                    Assert.strictEqual(breakInfo.body.dataId, "callCount");
+
+                    await dc().setDataBreakpointsRequest(
+                        {breakpoints: [{dataId: breakInfo.body.dataId, accessType: "write" }] });
+                    await Promise.all([
+                        dc().continueRequest({threadId: 0, singleThread: true}),
+                        dc().assertStoppedLocation("breakpoint", { path: fibonacciFile(), line: 47}),
+                    ]);
+                    await Promise.all([
+                        dc().continueRequest({threadId: 0, singleThread: true}),
+                        dc().assertStoppedLocation("breakpoint", { path: fibonacciFile(), line: 29}),
+                    ]);
+
+                    await dc().setDataBreakpointsRequest(
+                        {breakpoints: [{dataId: breakInfo.body.dataId, accessType: "read" }] });
+                    await Promise.all([
+                        dc().continueRequest({threadId: 0, singleThread: true}),
+                        dc().assertStoppedLocation("breakpoint", { path: fibonacciFile(), line: 37}),
+                    ]);
+
+                    await dc().setDataBreakpointsRequest(
+                        {breakpoints: [{dataId: breakInfo.body.dataId, accessType: "readWrite" }] });
+                    await Promise.all([
+                        dc().continueRequest({threadId: 0, singleThread: true}),
+                        dc().assertStoppedLocation("breakpoint", { path: fibonacciFile(), line: 49}),
+                    ]);
+                }
+
+                {
+                    const referencesSelf = statics.find(variable => variable.name.startsWith("references_self"));
+                    Assert(referencesSelf);
+                    const subVars = (await dc().variablesRequest({variablesReference: referencesSelf.variablesReference})).body.variables;
+                    const a = subVars.find(variable => variable.name === "a");
+                    Assert(a);
+
+                    const breakInfo = await dc().dataBreakpointInfoRequest({name: a.name, variablesReference: referencesSelf.variablesReference});
+                    Assert(breakInfo.body.dataId);
+
+                    await dc().setDataBreakpointsRequest(
+                        {breakpoints: [{dataId: breakInfo.body.dataId, accessType: "write" }] });
+                    await Promise.all([
+                        dc().continueRequest({threadId: 0, singleThread: true}),
+                        dc().assertStoppedLocation("breakpoint", { path: fibonacciFile(), line: 57}),
+                    ]);
+                }
+            }),
+        ]);
+    });
 });

@@ -151,6 +151,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         response.body.supportsWriteMemoryRequest = true;
         response.body.supportsConditionalBreakpoints = true;
         response.body.supportsHitConditionalBreakpoints = true;
+        response.body.supportsDataBreakpoints = true;
 
         this.clientLinesStartAt1 = args.linesStartAt1 || false;
         this.clientColumnsStartAt1 = args.columnsStartAt1 || false;
@@ -367,13 +368,45 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
     protected override async setInstructionBreakpointsRequest(response: DebugProtocol.SetInstructionBreakpointsResponse, args: DebugProtocol.SetInstructionBreakpointsArguments) {
         await CSpyDebugSession.tryResponseWith(this.breakpointManager, response, async breakpointManager => {
-            const bps = await breakpointManager.setInstructionBreakpointsFor(args.breakpoints);
+            const bps = await breakpointManager.setInstructionBreakpoints(args.breakpoints);
             response.body = {
                 breakpoints: bps,
             };
         });
         this.sendResponse(response);
     }
+    protected override async setDataBreakpointsRequest(response: DebugProtocol.SetDataBreakpointsResponse, args: DebugProtocol.SetDataBreakpointsArguments) {
+        await CSpyDebugSession.tryResponseWith(this.breakpointManager, response, async breakpointManager => {
+            const bps = await breakpointManager.setDataBreakpoints(args.breakpoints);
+            response.body = {
+                breakpoints: bps,
+            };
+        });
+        this.sendResponse(response);
+    }
+    protected override async dataBreakpointInfoRequest(response: DebugProtocol.DataBreakpointInfoResponse, args: DebugProtocol.DataBreakpointInfoArguments) {
+        await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
+            if (args.variablesReference === undefined) {
+                throw new Error("Cannot find variable without a scope");
+            }
+            const vars = await stackManager.fetchVariables(args.variablesReference);
+            const variable = vars.find(v => v.name === args.name);
+            if (!variable) {
+                throw new Error("No such variable found");
+            }
+            const accessTypes = this.breakpointManager?.supportedDataBreakpointAccessTypes();
+            if (accessTypes !== undefined && accessTypes.length > 0) {
+                response.body = {
+                    dataId: variable.evaluateName ?? null,
+                    description: variable.name,
+                    accessTypes,
+                    canPersist: true,
+                };
+            }
+        });
+        this.sendResponse(response);
+    }
+
 
     protected override threadsRequest(response: DebugProtocol.ThreadsResponse): void {
         // doesn't support RTOS or multicore for now, so just return a default 'thread'
