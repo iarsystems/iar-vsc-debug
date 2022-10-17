@@ -102,7 +102,12 @@ export class CSpyBreakpointManager implements Disposable {
             (dapBp => { // Constructs descriptor for a breakpoint
                 const dbgrLine = this.convertClientLineToDebugger(dapBp.line);
                 const dbgrCol = dapBp.column ? this.convertClientColumnToDebugger(dapBp.column) : 1;
-                return this.activeCodeBpDescriptorFactory.createOnUle(`{${source.path}}.${dbgrLine}.${dbgrCol}`);
+                const ule = `{${source.path}}.${dbgrLine}.${dbgrCol}`;
+                if (dapBp.logMessage) {
+                    return this.driver.logBreakpointFactory.createOnUle(ule, dapBp.logMessage.trim());
+                } else {
+                    return this.activeCodeBpDescriptorFactory.createOnUle(ule);
+                }
             }),
         );
         this.installedSourceBreakpoints.set(source.path, installedBreakpoints);

@@ -193,4 +193,22 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
             }),
         ]);
     });
+
+    test("Supports log breakpoints", () => {
+        return Promise.all([
+            dc().launch(dbgConfig()),
+            dc().waitForEvent("stopped").then(async() => {
+                const logMessage = "häj%% %n%c\"'42\\ಠ⌣ಠ";
+
+                await dc().setBreakpointsRequest(
+                    { source: { path: utilsFile() },
+                        breakpoints: [{line: 26, logMessage: logMessage + "\n"}] });
+
+                await Promise.all([
+                    dc().assertOutput("console", "[Utilities.c:26.3] #0 " + logMessage, 5000),
+                    dc().continueRequest({threadId: 0, singleThread: true}),
+                ]);
+            }),
+        ]);
+    });
 });

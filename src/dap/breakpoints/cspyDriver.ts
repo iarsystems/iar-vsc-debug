@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-import { CodeBreakpointDescriptorFactory, DataBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory, EmulDataBreakpointDescriptorFactory, HwCodeBreakpointDescriptorFactory, StdCode2BreakpointDescriptorFactory, StdData2BreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
+import { CodeBreakpointDescriptorFactory, DataBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory, EmulDataBreakpointDescriptorFactory, HwCodeBreakpointDescriptorFactory, LogBreakpointDescriptorFactory, StdCode2BreakpointDescriptorFactory, StdData2BreakpointDescriptorFactory, StdLog2BreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
 import { logger } from "@vscode/debugadapter/lib/logger";
 import { BreakpointType } from "./cspyBreakpointManager";
 
@@ -15,6 +15,7 @@ export interface CSpyDriver {
      */
     readonly codeBreakpointFactories: ReadonlyMap<BreakpointType, CodeBreakpointDescriptorFactory>;
     readonly dataBreakpointFactory?: DataBreakpointDescriptorFactory;
+    readonly logBreakpointFactory: LogBreakpointDescriptorFactory;
 
     /**
      * Returns whether this driver is a simulator. This means e.g. that flash loading is not necessary.
@@ -32,11 +33,11 @@ export interface CSpyDriver {
 // Common properties for most simulator drivers
 class SimulatorDriver implements CSpyDriver {
     readonly codeBreakpointFactories: ReadonlyMap<BreakpointType, CodeBreakpointDescriptorFactory>;
-    readonly dataBreakpointFactory: DataBreakpointDescriptorFactory;
+    readonly dataBreakpointFactory = new StdData2BreakpointDescriptorFactory();
+    readonly logBreakpointFactory = new StdLog2BreakpointDescriptorFactory();
 
     constructor(public readonly libraryBaseNames: string[]) {
         this.codeBreakpointFactories = new Map([[BreakpointType.AUTO, new StdCode2BreakpointDescriptorFactory()]]);
-        this.dataBreakpointFactory = new StdData2BreakpointDescriptorFactory();
     }
 
     isSimulator() {
@@ -48,6 +49,7 @@ class SimulatorDriver implements CSpyDriver {
 class GenericHardwareDriver implements CSpyDriver {
     readonly codeBreakpointFactories: ReadonlyMap<BreakpointType, CodeBreakpointDescriptorFactory>;
     readonly dataBreakpointFactory?: DataBreakpointDescriptorFactory = new EmulDataBreakpointDescriptorFactory();
+    readonly logBreakpointFactory = new StdLog2BreakpointDescriptorFactory();
 
     constructor(public readonly libraryBaseNames: string[]) {
         this.codeBreakpointFactories = new Map([
@@ -69,6 +71,7 @@ class CadiDriver extends GenericHardwareDriver {
 class Rh850EmuDriver implements CSpyDriver {
     readonly codeBreakpointFactories: ReadonlyMap<BreakpointType, CodeBreakpointDescriptorFactory>;
     readonly dataBreakpointFactory = new StdData2BreakpointDescriptorFactory();
+    readonly logBreakpointFactory = new StdLog2BreakpointDescriptorFactory();
 
     constructor(public readonly libraryBaseNames: string[]) {
         this.codeBreakpointFactories = new Map([
@@ -85,6 +88,7 @@ class Rh850EmuDriver implements CSpyDriver {
 class Rl78EmuDriver implements CSpyDriver {
     readonly codeBreakpointFactories: ReadonlyMap<BreakpointType, CodeBreakpointDescriptorFactory>;
     readonly dataBreakpointFactory = undefined;
+    readonly logBreakpointFactory = new StdLog2BreakpointDescriptorFactory();
 
     constructor(public readonly libraryBaseNames: string[]) {
         this.codeBreakpointFactories = new Map([

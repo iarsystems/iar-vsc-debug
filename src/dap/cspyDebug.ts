@@ -152,6 +152,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         response.body.supportsConditionalBreakpoints = true;
         response.body.supportsHitConditionalBreakpoints = true;
         response.body.supportsDataBreakpoints = true;
+        response.body.supportsLogPoints = true;
 
         this.clientLinesStartAt1 = args.linesStartAt1 || false;
         this.clientColumnsStartAt1 = args.columnsStartAt1 || false;

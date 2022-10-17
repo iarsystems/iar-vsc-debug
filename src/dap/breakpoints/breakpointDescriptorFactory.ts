@@ -8,15 +8,16 @@ import { EmulCodeBreakpointDescriptor } from "./descriptors/emulCodeBreakpointDe
 import { LocEtcDescriptor } from "./descriptors/locEtcDescriptor";
 import { LocOnlyDescriptor } from "./descriptors/locOnlyDescriptor";
 import { EmulDataBreakpointDescriptor } from "./descriptors/emulDataBreakpointDescriptor";
+import { LogDescriptor } from "./descriptors/logDescriptor";
 
 /**
  * Creates code breakpoint descriptors. Does not registers them in the cspy backend.
  */
-export abstract class CodeBreakpointDescriptorFactory {
+export interface CodeBreakpointDescriptorFactory {
     /**
      * Creates a new code breakpoint descriptor pointing to the given ule
      */
-    abstract createOnUle(ule: string): LocOnlyDescriptor;
+    createOnUle(ule: string): LocOnlyDescriptor;
 }
 
 /**
@@ -39,33 +40,45 @@ export abstract class DataBreakpointDescriptorFactory {
     }
 }
 
-export class EmulCodeBreakpointDescriptorFactory extends CodeBreakpointDescriptorFactory {
+export interface LogBreakpointDescriptorFactory {
+    /**
+     * Creates a new log breakpoint descriptor pointing to the given ule.
+     */
+    createOnUle(ule: string, message: string): LocOnlyDescriptor;
+}
+
+
+// ---- implementations below ----
+
+// Code Breakpoints
+
+export class EmulCodeBreakpointDescriptorFactory implements CodeBreakpointDescriptorFactory {
     /**
      * Creates a new descriptor factory
      * @param type The breakpoint type to write for created breakpoint descriptors (signaling e.g. HW/SW breakpoints). This number must be recognized by the driver.
      */
-    constructor(private readonly type: number) {
-        super();
-    }
+    constructor(private readonly type: number) {}
 
-    override createOnUle(ule: string): LocEtcDescriptor {
+    createOnUle(ule: string): LocEtcDescriptor {
         return new EmulCodeBreakpointDescriptor([BreakpointCategory.EMUL_CODE, ule, this.type]);
     }
 }
 
-export class StdCode2BreakpointDescriptorFactory extends CodeBreakpointDescriptorFactory {
+export class StdCode2BreakpointDescriptorFactory implements CodeBreakpointDescriptorFactory {
 
-    override createOnUle(ule: string): LocEtcDescriptor {
+    createOnUle(ule: string): LocEtcDescriptor {
         return new LocEtcDescriptor([BreakpointCategory.STD_CODE2, ule]);
     }
 }
 
-export class HwCodeBreakpointDescriptorFactory extends CodeBreakpointDescriptorFactory {
+export class HwCodeBreakpointDescriptorFactory implements CodeBreakpointDescriptorFactory {
 
-    override createOnUle(ule: string): LocOnlyDescriptor {
+    createOnUle(ule: string): LocOnlyDescriptor {
         return new LocOnlyDescriptor([BreakpointCategory.HW_CODE, ule]);
     }
 }
+
+// Data Breakpoints
 
 export class StdData2BreakpointDescriptorFactory extends DataBreakpointDescriptorFactory {
 
@@ -79,4 +92,14 @@ export class EmulDataBreakpointDescriptorFactory extends DataBreakpointDescripto
     override createOnUle(ule: string, access: AccessType): LocOnlyDescriptor {
         return new EmulDataBreakpointDescriptor([BreakpointCategory.EMUL_DATA, ule, access]);
     }
+}
+
+// Log Breakpoints
+
+export class StdLog2BreakpointDescriptorFactory implements LogBreakpointDescriptorFactory {
+
+    createOnUle(ule: string, message: string): LocOnlyDescriptor {
+        return new LogDescriptor([BreakpointCategory.STD_LOG2, ule, message]);
+    }
+
 }
