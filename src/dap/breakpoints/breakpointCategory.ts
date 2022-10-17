@@ -4,7 +4,7 @@
 
 
 /**
- * Lists all breakpoint categories (that we need to know about)
+ * Lists all C-SPY breakpoint categories (that we need to know about)
  */
 export enum BreakpointCategory {
     // Code breakpoints
