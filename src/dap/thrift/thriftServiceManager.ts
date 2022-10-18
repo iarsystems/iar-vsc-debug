@@ -141,6 +141,7 @@ export namespace ThriftServiceManager {
             logger.error(dat);
         });
         serviceRegistryProcess.on("exit", code => {
+            console.log("CSpyServer exited: " + code);
             logger.verbose("CSpyServer exited: " + code);
         });
 
