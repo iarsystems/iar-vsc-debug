@@ -24,7 +24,7 @@ export class LaunchArgumentConfigurationResolver extends BaseConfigurationResolv
         // eslint-disable-next-line deprecation/deprecation
         const macros = args.setupMacros ?? args.macros ?? [];
 
-        const driver = CSpyDriver.driverFromName(args.driver);
+        const driver = CSpyDriver.driverFromName(args.driver, args.target, args.driverOptions);
         const driverFile = driver.libraryBaseNames.
             map(baseName => IarOsUtils.resolveTargetLibrary(args.workbenchPath, args.target, baseName)).
             find(driverFile => driverFile !== undefined);
@@ -35,17 +35,13 @@ export class LaunchArgumentConfigurationResolver extends BaseConfigurationResolv
         if (proc === undefined) {
             throw new Error(`Could not find library 'proc' for '${args.workbenchPath}'.`);
         }
-        const batPlugin = IarOsUtils.resolveTargetLibrary(args.workbenchPath, args.target, "Bat");
-        if (batPlugin === undefined) {
-            throw new Error(`Could not find plugin 'Bat' for '${args.workbenchPath}'.`);
-        }
 
         const config: PartialSessionConfiguration = {
             attachToTarget: false,
             driverFile,
             processorName: proc,
             type: "simulator",
-            options: ["--plugin=" + batPlugin, "--backend"].concat(args.driverOptions? args.driverOptions : []),
+            options: (args.driverOptions? args.driverOptions : []),
             plugins: plugins,
             setupMacros: macros,
             target: args.target

@@ -1,75 +1,105 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+import { AccessType } from "./descriptors/accessType";
 import { BreakpointCategory } from "./breakpointCategory";
-import { BreakpointType } from "./cspyBreakpointManager";
-import { DescriptorReader } from "./descriptors/descriptorReader";
+import { DataLocEtcDescriptor } from "./descriptors/dataLocEtcDescriptor";
 import { EmulCodeBreakpointDescriptor } from "./descriptors/emulCodeBreakpointDescriptor";
 import { LocEtcDescriptor } from "./descriptors/locEtcDescriptor";
+import { LocOnlyDescriptor } from "./descriptors/locOnlyDescriptor";
+import { EmulDataBreakpointDescriptor } from "./descriptors/emulDataBreakpointDescriptor";
+import { LogDescriptor } from "./descriptors/logDescriptor";
 
 /**
  * Creates code breakpoint descriptors. Does not registers them in the cspy backend.
- * This class only handles the portions of breakpoint creation that are driver-specific.
  */
-export abstract class CodeBreakpointDescriptorFactory {
+export interface CodeBreakpointDescriptorFactory {
     /**
      * Creates a new code breakpoint descriptor pointing to the given ule
      */
-    abstract createOnUle(ule: string): LocEtcDescriptor;
-
-    /**
-     * Parses a string descriptor (e.g. returned from cspy) into a descriptor object.
-     * For now we use the same implementation for all code bp categories.
-     */
-    createFromString(descriptorStr: string): LocEtcDescriptor {
-        const reader = new DescriptorReader(descriptorStr);
-        return new LocEtcDescriptor(reader);
-    }
-
+    createOnUle(ule: string): LocOnlyDescriptor;
 }
 
-export class EmulCodeBreakpointDescriptorFactory extends CodeBreakpointDescriptorFactory {
-    private _type = BreakpointType.AUTO;
+/**
+ * Creates data breakpoint descriptors. Does not registers them in the cspy backend.
+ */
+export abstract class DataBreakpointDescriptorFactory {
+    /**
+     * Creates a new data breakpoint descriptor pointing to the given ule.
+     * The caller is responsible for verifying that the wanted access type is supported see {@link getSupportedAccessTypes}.
+     */
+    abstract createOnUle(ule: string, access: AccessType): LocOnlyDescriptor;
 
+    /**
+     * Gets all access types supported by this driver.
+     */
+    getSupportedAccessTypes(): AccessType[] {
+        // All drivers seem to support all access types, so set this as the default. If we later add one that doesn't,
+        // simply override this.
+        return [AccessType.Read, AccessType.Write, AccessType.ReadWrite];
+    }
+}
+
+export interface LogBreakpointDescriptorFactory {
+    /**
+     * Creates a new log breakpoint descriptor pointing to the given ule.
+     */
+    createOnUle(ule: string, message: string): LocOnlyDescriptor;
+}
+
+
+// ---- implementations below ----
+
+// Code Breakpoints
+
+export class EmulCodeBreakpointDescriptorFactory implements CodeBreakpointDescriptorFactory {
     /**
      * Creates a new descriptor factory
-     * @param types Maps the {@link BreakpointType}s supported by this driver to their integer representation in the descriptor
+     * @param type The breakpoint type to write for created breakpoint descriptors (signaling e.g. HW/SW breakpoints). This number must be recognized by the driver.
      */
-    constructor(private readonly types: Map<BreakpointType, number>) {
-        super();
-        if (types.size === 0) {
-            throw new Error("Must support at least one breakpoint type");
-        }
-        this._type = types.keys().next().value;
-    }
+    constructor(private readonly type: number) {}
 
-    override createOnUle(ule: string): LocEtcDescriptor {
-        const typeInt = this.types.get(this._type);
-        if (typeInt === undefined) {
-            throw new Error("Could not translate breakpoint type. This should never happen!");
-        }
-        return new EmulCodeBreakpointDescriptor([BreakpointCategory.EMUL_CODE, ule, typeInt]);
-    }
-
-    get supportedTypes(): BreakpointType[] {
-        return Array.from(this.types.keys());
-    }
-
-    get type(): BreakpointType {
-        return this._type;
-    }
-
-    set type(value: BreakpointType) {
-        if (!this.types.has(value)) {
-            throw new Error("Trying to set unsupported breakpoint type: " + value);
-        }
-        this._type = value;
+    createOnUle(ule: string): LocEtcDescriptor {
+        return new EmulCodeBreakpointDescriptor([BreakpointCategory.EMUL_CODE, ule, this.type]);
     }
 }
 
-export class StdCode2BreakpointDescriptorFactory extends CodeBreakpointDescriptorFactory {
+export class StdCode2BreakpointDescriptorFactory implements CodeBreakpointDescriptorFactory {
 
-    override createOnUle(ule: string): LocEtcDescriptor {
+    createOnUle(ule: string): LocEtcDescriptor {
         return new LocEtcDescriptor([BreakpointCategory.STD_CODE2, ule]);
     }
+}
+
+export class HwCodeBreakpointDescriptorFactory implements CodeBreakpointDescriptorFactory {
+
+    createOnUle(ule: string): LocOnlyDescriptor {
+        return new LocOnlyDescriptor([BreakpointCategory.HW_CODE, ule]);
+    }
+}
+
+// Data Breakpoints
+
+export class StdData2BreakpointDescriptorFactory extends DataBreakpointDescriptorFactory {
+
+    override createOnUle(ule: string, access: AccessType): LocOnlyDescriptor {
+        return new DataLocEtcDescriptor([BreakpointCategory.STD_DATA2, ule, access]);
+    }
+}
+
+export class EmulDataBreakpointDescriptorFactory extends DataBreakpointDescriptorFactory {
+
+    override createOnUle(ule: string, access: AccessType): LocOnlyDescriptor {
+        return new EmulDataBreakpointDescriptor([BreakpointCategory.EMUL_DATA, ule, access]);
+    }
+}
+
+// Log Breakpoints
+
+export class StdLog2BreakpointDescriptorFactory implements LogBreakpointDescriptorFactory {
+
+    createOnUle(ule: string, message: string): LocOnlyDescriptor {
+        return new LogDescriptor([BreakpointCategory.STD_LOG2, ule, message]);
+    }
+
 }

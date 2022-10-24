@@ -7,13 +7,8 @@ import { DescriptorConstants } from "./descriptorReader";
 /**
  * Based on the eclipse DescriptorReader class.
  * Serializes breakpoint attributes into a string.
- * MAY NOT WORK IN ALL CASES, I have cut some corners since right now this is only really used to write ULEs and categories
  */
 export class DescriptorWriter {
-    private static readonly ESCAPED_CHARS = [
-        "%", "\x07", "\b", "\f", "\n", "\r", "\t", "\v", "\""
-    ];
-
     private output = "";
 
     constructor() {
@@ -30,9 +25,24 @@ export class DescriptorWriter {
     }
 
     writeString(str: string) {
-        if (DescriptorWriter.ESCAPED_CHARS.some(char => str.includes(char))) {
-            throw new Error("The string has one or more characters requiring escaping, but the descriptor writer does not support this: " + str);
-        }
+
+        // The percent sign is used as escape
+        str = str.replace(/%/g, "%%");
+
+        // Double quotes and other special characters
+        str = str.replace("\x07", "%a");// "\a", bell
+        str = str.replace("\b", "%b");
+        str = str.replace("\f", "%f");
+        str = str.replace("\n", "%n");
+        str = str.replace("\r", "%r");
+        str = str.replace("\t", "%t");
+        str = str.replace("\u000b", "%v");// "\v", vertical tab
+        str = str.replace("\"", "%\"");
+
+        // A percent at the end produces an extra space. This is to avoid
+        // "escaping" the closing quote of the string as a special char.
+        if (str.charAt(str.length - 1) === "%")
+            str += " ";
 
         this.output += DescriptorConstants.SEPARATOR_CHAR;
         this.output += DescriptorConstants.STRING_DELIMITER;

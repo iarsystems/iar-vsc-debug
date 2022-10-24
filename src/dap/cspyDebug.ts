@@ -153,6 +153,10 @@ export class CSpyDebugSession extends LoggingDebugSession {
         response.body.supportsReadMemoryRequest = true;
         response.body.supportsWriteMemoryRequest = true;
         response.body.supportsSingleThreadExecutionRequests = true;
+        response.body.supportsConditionalBreakpoints = true;
+        response.body.supportsHitConditionalBreakpoints = true;
+        response.body.supportsDataBreakpoints = true;
+        response.body.supportsLogPoints = true;
 
         this.clientLinesStartAt1 = args.linesStartAt1 || false;
         this.clientColumnsStartAt1 = args.columnsStartAt1 || false;
@@ -169,7 +173,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.configurationDone.notify();
     }
 
-    // TODO: report progress using a frontend service and the Progress(Start|Update|End) DAP events
     protected override async launchRequest(response: DebugProtocol.LaunchResponse, args: CSpyLaunchRequestArguments) {
         logger.init(e => this.sendEvent(e), undefined, true);
         logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop);
@@ -221,7 +224,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.sendEvent(new OutputEvent("Using C-SPY version: " + await this.cspyDebugger.service.getVersionString() + "\n"));
 
             await this.cspyDebugger.service.startSession(sessionConfig);
-            const driver = CSpyDriver.driverFromName(args.driver);
+            const driver = CSpyDriver.driverFromName(args.driver, args.target, args.driverOptions);
 
             // do flashing & downloading
             if (args.download) {
@@ -248,8 +251,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1,
                 driver);
-            // VSC-295 Remove any cross-session breakpoints loaded from the .dnx file
-            await this.breakpointManager.clearAllBreakpoints();
             this.setupBreakpointRequests(args.breakpointType ?? BreakpointType.AUTO);
             this.setupRegistersRequest();
 
@@ -379,13 +380,45 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
     protected override async setInstructionBreakpointsRequest(response: DebugProtocol.SetInstructionBreakpointsResponse, args: DebugProtocol.SetInstructionBreakpointsArguments) {
         await CSpyDebugSession.tryResponseWith(this.breakpointManager, response, async breakpointManager => {
-            const bps = await breakpointManager.setInstructionBreakpointsFor(args.breakpoints);
+            const bps = await breakpointManager.setInstructionBreakpoints(args.breakpoints);
             response.body = {
                 breakpoints: bps,
             };
         });
         this.sendResponse(response);
     }
+    protected override async setDataBreakpointsRequest(response: DebugProtocol.SetDataBreakpointsResponse, args: DebugProtocol.SetDataBreakpointsArguments) {
+        await CSpyDebugSession.tryResponseWith(this.breakpointManager, response, async breakpointManager => {
+            const bps = await breakpointManager.setDataBreakpoints(args.breakpoints);
+            response.body = {
+                breakpoints: bps,
+            };
+        });
+        this.sendResponse(response);
+    }
+    protected override async dataBreakpointInfoRequest(response: DebugProtocol.DataBreakpointInfoResponse, args: DebugProtocol.DataBreakpointInfoArguments) {
+        await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
+            if (args.variablesReference === undefined) {
+                throw new Error("Cannot find variable without a scope");
+            }
+            const vars = await stackManager.fetchVariables(args.variablesReference);
+            const variable = vars.find(v => v.name === args.name);
+            if (!variable) {
+                throw new Error("No such variable found");
+            }
+            const accessTypes = this.breakpointManager?.supportedDataBreakpointAccessTypes();
+            if (accessTypes !== undefined && accessTypes.length > 0) {
+                response.body = {
+                    dataId: variable.evaluateName ?? null,
+                    description: variable.name,
+                    accessTypes,
+                    canPersist: true,
+                };
+            }
+        });
+        this.sendResponse(response);
+    }
+
 
     protected override async threadsRequest(response: DebugProtocol.ThreadsResponse) {
         await CSpyDebugSession.tryResponseWith(this.cspyDebugger, response, async dbgr => {

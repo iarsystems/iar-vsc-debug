@@ -5,7 +5,6 @@ import { DebugProtocol } from "@vscode/debugprotocol";
 import { BasicExprType, ExprValue } from "iar-vsc-common/thrift/bindings/cspy_types";
 
 export namespace VariablesUtils {
-
     /**
      * Creates a new DAP variable. This method standardises some of the derived properties (such as memoryReference and evaluateName).
      * @param name The variable name
@@ -13,19 +12,28 @@ export namespace VariablesUtils {
      * @param type The type of the variable if available
      * @param variablesReference A reference that can be used to fetch the variable's children (or 0 if it has no children)
      * @param address The address of the variable if available
+     * @param isGloballyAvailable Whether the variable is a top-level variable in its inspection context, i.e. is not a
+     *     child of e.g. a struct or pointer. This lets us use the variable's name as evaluateName, instead of a pointer expression.
      * @returns A DAP variable
      */
-    export function createVariable(name: string, value: string, type: string | undefined, variablesReference: number, address: string | undefined): DebugProtocol.Variable {
-        // remove any 'const' or 'volatile'
-        let evalType = type?.
-            replace(/\s+const\s+/g, " ").
-            replace(/\s+volatile\s+/g, " ");
+    export function createVariable(name: string, value: string, type: string | undefined, variablesReference: number, address: string | undefined, isGloballyAvailable: boolean): DebugProtocol.Variable {
         let evaluateName: string | undefined;
-        if (evalType?.match(/\[\d+\]/)) {
-            evalType = evalType.replace(/\[\d+\]/g, "");
-            evaluateName = address ? `(${evalType}*)(${address})` : undefined;
+        if (isGloballyAvailable) {
+            // Some variables have display names that don't match the actual variable names (e.g. statics which have the module name at the end).
+            // Make sure to use the actual variable name as evaluateName
+            evaluateName = name.replace(/\s.*/, "");
         } else {
-            evaluateName = address && evalType ? `*(${evalType}*)(${address})` : undefined;
+            // Generate a pointer expression for this variable, e.g. (MyType*)0xDEADBEEF
+            // remove any 'const' or 'volatile'
+            let evalType = type?.
+                replace(/\s+const\s+/g, " ").
+                replace(/\s+volatile\s+/g, " ");
+            if (evalType?.match(/\[\d+\]/)) {
+                evalType = evalType.replace(/\[\d+\]/g, "");
+                evaluateName = address ? `(${evalType}*)(${address})` : undefined;
+            } else {
+                evaluateName = address && evalType ? `*(${evalType}*)(${address})` : undefined;
+            }
         }
         return createVariableInternal(name, value, type, variablesReference, address, evaluateName);
     }

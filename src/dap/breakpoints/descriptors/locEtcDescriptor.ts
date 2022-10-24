@@ -14,8 +14,8 @@ export class LocEtcDescriptor extends LocOnlyDescriptor {
     private readonly isThreadSpecific: boolean;
     private readonly threadId: number;
     private readonly stopWhenTrue: boolean;
-    private readonly condition: string;
-    private readonly skipCount: number;
+    public condition: string;
+    public skipCount: number;
     private readonly action: string;
 
     /**

@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
+import { FileDialogFilter } from "iar-vsc-common/thrift/bindings/frontend_types";
 
 export namespace Utils {
     /**
@@ -18,5 +19,18 @@ export namespace Utils {
                 throw new Error(`Failed to load macro '${macro}'`);
             }
         }
+    }
+
+    /**
+     * Convert a list of FileDialogFilters to windows style filters.
+     * @param filters
+     */
+    export function createFilterString(filters: FileDialogFilter[]): string {
+        let filterString = "";
+        for (const filter of filters) {
+            const extensions = filter.filtering.join(";");
+            filterString += filter.displayName + " (" + extensions + ")|" + extensions + "|";
+        }
+        return filterString + "|";
     }
 }

@@ -42,16 +42,25 @@ export namespace ConfigResolutionCommon {
         // directory part, the target name and any extensions
         const driverFile = basename(parts.driverPath);
         // Lowercase here is mostly for display purposes - the debug adapter resolves drivers case-insensitive anyway
-        const driverName = CSpyDriver.nameFromDriverFile(driverFile, parts.target);
+        const driverName = CSpyDriver.getDriverName(driverFile, parts.target, parts.driverOptions);
 
         // Express the program and project as a workspace-relative path if possible
         const program = wsDir ? toWorkspaceRelativePath(parts.program, wsDir) : parts.program;
         const project = wsDir ? toWorkspaceRelativePath(parts.projectPath, wsDir) : parts.projectPath;
         const projectName = Path.basename(parts.projectPath, ".ewp");
 
-        // The rh850 emulator drivers save some driver parameters in a settings file.
-        const emulatorDrivers: string[] = [CSpyDriver.DriverNames.E1, CSpyDriver.DriverNames.E2, CSpyDriver.DriverNames.E20];
-        if (emulatorDrivers.includes(driverName) && parts.target === "rh850") {
+        // The rh850 and rl78 emulator drivers save some driver parameters in a settings file.
+        const emulatorDrivers: string[] = [
+            CSpyDriver.DriverNames.E1,
+            CSpyDriver.DriverNames.E2,
+            CSpyDriver.DriverNames.E20,
+            CSpyDriver.DriverNames.E2LITE,
+            CSpyDriver.DriverNames.EZCUBE,
+            CSpyDriver.DriverNames.EZCUBE2,
+            CSpyDriver.DriverNames.IECUBE,
+            CSpyDriver.DriverNames.TK,
+        ];
+        if (emulatorDrivers.includes(driverName) && ["rh850", "rl78"].includes(parts.target)) {
             parts.driverOptions.push("--cspybat_inifile");
             parts.driverOptions.push(Path.join(Path.dirname(project), `settings/${projectName}.dnx`));
         }
