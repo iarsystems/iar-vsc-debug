@@ -41,7 +41,7 @@ export class LaunchArgumentConfigurationResolver extends BaseConfigurationResolv
             driverFile,
             processorName: proc,
             type: "simulator",
-            options: ["--backend"].concat(args.driverOptions? args.driverOptions : []),
+            options: (args.driverOptions? args.driverOptions : []),
             plugins: plugins,
             setupMacros: macros,
             target: args.target
