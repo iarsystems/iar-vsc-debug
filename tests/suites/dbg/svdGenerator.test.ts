@@ -1,7 +1,6 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-import * as vscode from "vscode";
 import * as Assert from "assert";
 import * as Path from "path";
 import * as Fs from "fs";
@@ -18,7 +17,6 @@ import { spawn } from "child_process";
 
 // NOTE: These tests should be run with a release-flavored EW, otherwise they can take a lot of time
 debugAdapterSuite("SVD generator tests", function(dc, dbgConfig)  {
-    let genericConfig: vscode.DebugConfiguration & CSpyLaunchRequestArguments;
 
     suiteSetup(() => {
         // Find a workbench to build with
@@ -26,34 +24,6 @@ debugAdapterSuite("SVD generator tests", function(dc, dbgConfig)  {
         // For now just use the first entry, and assume it points directly to a top-level ew directory
         const workbench = installDirs[0];
         Assert(workbench, "No workbench found to use for debugging");
-
-        genericConfig = {
-            type: "cspy",
-            name: "SVD test",
-            request: "launch",
-            target: "arm",
-            program: dbgConfig().program,
-            workbenchPath: dbgConfig().workbenchPath,
-            driver: "Simulator",
-            trace: true,
-            stopOnSymbol: "main",
-            driverOptions: ["--endian=little", "--cpu=Cortex-A9", "--fpu=None", "--semihosting"],
-        };
-
-    });
-
-    test("Returns undefined SVD for unspecificed device", function() {
-        if (dbgConfig().driver !== "Simulator" || dbgConfig().target !== "arm") {
-            this.skip();
-        }
-        return Promise.all([
-            dc().configurationSequence(),
-            dc().launch(genericConfig),
-            dc().waitForEvent("stopped").then(async() => {
-                const cspyData: CustomRequest.RegistersResponse = (await dc().customRequest(CustomRequest.Names.REGISTERS)).body;
-                Assert.strictEqual(cspyData.svdContent, undefined);
-            }),
-        ]);
     });
 
     test("Returns SVD for configured device", () => {
