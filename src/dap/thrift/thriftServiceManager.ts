@@ -35,7 +35,7 @@ export class ThriftServiceManager implements Disposable {
      * @param registryLocationPath The location of the service registry to use.
      */
     constructor(private readonly cspyProcess: ChildProcess, private readonly registryLocation: ServiceLocation) {
-        cspyProcess.once("exit", () => this.cspyserverHasExited = true);
+        cspyProcess.on("exit", () => this.cspyserverHasExited = true);
     }
 
     /**
