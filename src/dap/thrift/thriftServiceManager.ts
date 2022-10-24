@@ -27,12 +27,15 @@ export class ThriftServiceManager implements Disposable {
     private static readonly CSPYSERVER_EXIT_TIMEOUT = 15000;
     private readonly activeServers: Server[] = [];
 
+    private cspyserverHasExited = false;
+
     /**
      * Create a new service manager from the given service registry.
      * @param cspyProcess The CSpyServer process serving the service registry.
      * @param registryLocationPath The location of the service registry to use.
      */
     constructor(private readonly cspyProcess: ChildProcess, private readonly registryLocation: ServiceLocation) {
+        cspyProcess.on("exit", () => this.cspyserverHasExited = true);
     }
 
     /**
