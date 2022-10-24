@@ -634,7 +634,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     private async endSession() {
         await this.stackManager?.dispose();
         this.runControlService?.dispose();
-        CSpyCoresService.dispose();
+        await CSpyCoresService.dispose();
         this.breakpointManager?.dispose();
         this.disassemblyManager?.dispose();
         this.memoryManager?.dispose();
