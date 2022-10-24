@@ -62,7 +62,7 @@ suite("Configuration resolution tests", () => {
             (config)=>{
                 assert.deepStrictEqual(config["driverFile"].toLowerCase(), getLibName("armjet").toLowerCase(), "Wrong driver lib");
                 assert.deepStrictEqual(config["processorName"].toLowerCase(), getLibName("armproc").toLowerCase(), "Wrong processor");
-                assert.deepStrictEqual(config["options"], ["--backend", "some", "options"], "Wrong driver args");
+                assert.deepStrictEqual(config["options"], ["some", "options"], "Wrong driver args");
             }, ()=>{
                 assert.fail("Failed to resolve arguments");
             }
