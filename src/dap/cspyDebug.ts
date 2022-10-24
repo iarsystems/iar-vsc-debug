@@ -633,11 +633,16 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     private async endSession() {
         await this.stackManager?.dispose();
+        this.stackManager = undefined;
         this.runControlService?.dispose();
+        this.runControlService = undefined;
         await CSpyCoresService.dispose();
         this.breakpointManager?.dispose();
+        this.breakpointManager = undefined;
         this.disassemblyManager?.dispose();
+        this.disassemblyManager = undefined;
         this.memoryManager?.dispose();
+        this.memoryManager = undefined;
         // Will disconnect this DAP debugger client
         this.cspyDebugger?.close();
         // VSC-3 This will take care of orderly shutting down CSpyServer
