@@ -82,7 +82,7 @@ export namespace TestConfiguration {
         if (envParams) {
             return JSON.parse(envParams);
         }
-        return ARMIMPERAS_CONFIG;
+        return ARMSIM2_CONFIG;
     }
 
     /// Standard test configurations below

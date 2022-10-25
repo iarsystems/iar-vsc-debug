@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { ThriftServiceManager } from "./thrift/thriftServiceManager";
-import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, TerminatedEvent, InvalidatedEvent, Event } from "@vscode/debugadapter";
+import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, TerminatedEvent, InvalidatedEvent, Event, ExitedEvent } from "@vscode/debugadapter";
 import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
 import * as DebugEventListener from "iar-vsc-common/thrift/bindings/DebugEventListener";
 import * as LibSupportService2 from "iar-vsc-common/thrift/bindings/LibSupportService2";
@@ -207,6 +207,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             });
             this.libSupportHandler.observeExit(code => {
                 this.sendEvent(new OutputEvent("Debugee terminated, exit code " + code + "\n"));
+                this.sendEvent(new ExitedEvent(code));
             });
             this.libSupportHandler.observeInputRequest(() => {
                 this.sendEvent(new OutputEvent("Debugee requested terminal input:"));

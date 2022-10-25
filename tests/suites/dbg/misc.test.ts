@@ -233,7 +233,10 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
             dc().launch(dbgConfig()),
             // Wait until the client is ready to accept input
             dc().waitForEvent("stopped").then(async() => {
-                await dc().continueRequest({threadId: 0, singleThread: true});
+                await Promise.all([
+                    dc().continueRequest({threadId: 0, singleThread: true}),
+                    dc().waitForEvent("stopped"),
+                ]);
                 // Sending input to the program is automatically handled in the test setup function at the top of the file.
                 // Here we just have to verify that the variables are set according to the input.
                 const stack = await dc().stackTraceRequest({ threadId: 0});

@@ -46,6 +46,7 @@ suite("New tests", () =>{
 
     teardown(async()=>{
         await vscode.debug.stopDebugging(activeSession);
+        await TestUtils.wait(2000);
     });
 
     test("Test launch", async()=>{

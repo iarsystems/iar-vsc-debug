@@ -35,7 +35,7 @@ export class ThriftServiceManager implements Disposable {
      * @param registryLocationPath The location of the service registry to use.
      */
     constructor(private readonly cspyProcess: ChildProcess, private readonly registryLocation: ServiceLocation) {
-        cspyProcess.on("exit", () => this.cspyserverHasExited = true);
+        cspyProcess.once("exit", () => this.cspyserverHasExited = true);
     }
 
     /**
@@ -44,6 +44,17 @@ export class ThriftServiceManager implements Disposable {
      * considered invalid, and may not be used again.
      */
     async dispose() {
+        if (this.cspyserverHasExited) return Promise.resolve();
+        const exitPromise = new Promise<void>(resolve => {
+            this.cspyProcess.once("exit", resolve);
+            setTimeout(() => {
+                if (this.cspyProcess.exitCode === null && !this.cspyserverHasExited) {
+                    console.log("Killing cspyserver with pid " + this.cspyProcess.pid);
+                    this.cspyProcess.kill();
+                    resolve();
+                }
+            }, ThriftServiceManager.CSPYSERVER_EXIT_TIMEOUT);
+        });
         // Since we're using cspyserver, we close the process from the debugger service
         // VSC-3 CSpyServer will stop the C-Spy session before exiting
         const dgbr = await this.findService(DEBUGGER_SERVICE, Debugger);
@@ -51,15 +62,7 @@ export class ThriftServiceManager implements Disposable {
         dgbr.close();
         this.activeServers.forEach(server => server.close());
         // Wait for cspyserver process to exit
-        if (this.cspyProcess.connected) {
-            await new Promise((resolve, reject) => {
-                this.cspyProcess.on("exit", resolve);
-                setTimeout(() => {
-                    reject(new Error("CSpyServer exit timed out"));
-                    this.cspyProcess.kill();
-                }, ThriftServiceManager.CSPYSERVER_EXIT_TIMEOUT);
-            });
-        }
+        await exitPromise;
     }
 
     /**
