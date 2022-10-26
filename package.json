@@ -242,10 +242,16 @@
 									"EZ-CUBE",
 									"EZ-CUBE2",
 									"IECUBE",
-									"TK"
+									"TK",
+									"Atmel-ICE",
+									"AVR ONE!",
+									"JTAGICE3",
+									"JTAGICE mkII",
+									"Dragon",
+									"Power Debugger"
 								],
 								"enumDescriptions": [
-									"Arm/RISC-V/RH850/RL78",
+									"Arm/RISC-V/RH850/RL78/AVR",
 									"Arm",
 									"Arm/RISC-V",
 									"Arm",
@@ -263,7 +269,13 @@
 									"RL78",
 									"RL78",
 									"RL78",
-									"RL78"
+									"RL78",
+									"AVR",
+									"AVR",
+									"AVR",
+									"AVR",
+									"AVR",
+									"AVR"
 								]
 							},
 							"driverOptions": {

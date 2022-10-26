@@ -101,6 +101,20 @@ class Rl78EmuDriver implements CSpyDriver {
         return false;
     }
 }
+// atmel ice, avr one!, dragon, jtagice mkII, jtagice3, power debugger,
+class AvrEmuDriver implements CSpyDriver {
+    readonly codeBreakpointFactories: ReadonlyMap<BreakpointType, CodeBreakpointDescriptorFactory>;
+    readonly dataBreakpointFactory = new StdData2BreakpointDescriptorFactory();
+    readonly logBreakpointFactory = new StdLog2BreakpointDescriptorFactory();
+
+    constructor(public readonly libraryBaseNames: string[]) {
+        this.codeBreakpointFactories = new Map([[BreakpointType.AUTO, new StdCode2BreakpointDescriptorFactory()]]);
+    }
+
+    isSimulator(): boolean {
+        return false;
+    }
+}
 
 export namespace CSpyDriver {
     /**
@@ -127,6 +141,12 @@ export namespace CSpyDriver {
         EZCUBE2 = "EZ-CUBE2",
         IECUBE = "IECUBE",
         TK = "TK",
+        ATMELICE = "Atmel-ICE",
+        AVRONE = "AVR ONE!",
+        JTAGEICE3 = "JTAGICE3",
+        JTAGICEMK2 = "JTAGICE mkII",
+        DRAGON = "Dragon",
+        POWERDEBUGGER = "Power Debugger"
     }
 
     /**
@@ -139,28 +159,34 @@ export namespace CSpyDriver {
      * * If a driver base name appears more than once (e.g. ocd), each instance should be qualified with a target and/or driver option to differentiate it from other instances
      */
     const driverMap: Array<{ name: string, driver: CSpyDriver, target?: string, driverArgument?: string }> = [
-        { name: DriverNames.SIMULATOR, driver: new SimulatorDriver(["sim", "sim2"]) },
-        { name: DriverNames.IMPERAS,   driver: new SimulatorDriver(["imperas"]) },
-        { name: DriverNames.IJET,      driver: new GenericHardwareDriver(["ijet", "jet"]) },
-        { name: DriverNames.JLINK,     driver: new GenericHardwareDriver(["jlink", "jlink2"]) },
-        { name: DriverNames.GDBSERV,   driver: new GenericHardwareDriver(["gdbserv"]) },
-        { name: DriverNames.CADI,      driver: new CadiDriver(["cadi"]) },
-        { name: DriverNames.STELLARIS, driver: new GenericHardwareDriver(["lmiftdi"]) },
-        { name: DriverNames.PEMICRO,   driver: new GenericHardwareDriver(["pemicro"]) },
-        { name: DriverNames.STLINK,    driver: new GenericHardwareDriver(["stlink", "stlink2"]) },
-        { name: DriverNames.XDS,       driver: new GenericHardwareDriver(["xds", "xds2"]) },
-        { name: DriverNames.TIFET,     driver: new GenericHardwareDriver(["tifet"]) },
-        { name: DriverNames.E1,        driver: new Rh850EmuDriver(["ocd"]), target: "rh850", driverArgument: "e1" },
-        { name: DriverNames.E2,        driver: new Rh850EmuDriver(["ocd"]), target: "rh850", driverArgument: "e2" },
-        { name: DriverNames.E20,       driver: new Rh850EmuDriver(["ocd"]), target: "rh850", driverArgument: "e20" },
-        { name: DriverNames.E1,        driver: new Rl78EmuDriver(["ocd"]), target: "rl78", driverArgument: "e1" },
-        { name: DriverNames.E2,        driver: new Rl78EmuDriver(["ocd"]), target: "rl78", driverArgument: "e2" },
-        { name: DriverNames.E20,       driver: new Rl78EmuDriver(["ocd"]), target: "rl78", driverArgument: "e20" },
-        { name: DriverNames.E2LITE,    driver: new Rl78EmuDriver(["ocd"]), driverArgument: "e2lite" },
-        { name: DriverNames.EZCUBE,    driver: new Rl78EmuDriver(["ocd"]), driverArgument: "ezcube" },
-        { name: DriverNames.EZCUBE2,   driver: new Rl78EmuDriver(["ocd"]), driverArgument: "ezcube2" },
-        { name: DriverNames.TK,        driver: new Rl78EmuDriver(["ocd"]), driverArgument: "tk" },
-        { name: DriverNames.IECUBE,    driver: new Rl78EmuDriver(["iecube"]),  },
+        { name: DriverNames.SIMULATOR,     driver: new SimulatorDriver(["sim", "sim2"]) },
+        { name: DriverNames.IMPERAS,       driver: new SimulatorDriver(["imperas"]) },
+        { name: DriverNames.IJET,          driver: new GenericHardwareDriver(["ijet", "jet"]) },
+        { name: DriverNames.JLINK,         driver: new GenericHardwareDriver(["jlink", "jlink2"]) },
+        { name: DriverNames.GDBSERV,       driver: new GenericHardwareDriver(["gdbserv"]) },
+        { name: DriverNames.CADI,          driver: new CadiDriver(["cadi"]) },
+        { name: DriverNames.STELLARIS,     driver: new GenericHardwareDriver(["lmiftdi"]) },
+        { name: DriverNames.PEMICRO,       driver: new GenericHardwareDriver(["pemicro"]) },
+        { name: DriverNames.STLINK,        driver: new GenericHardwareDriver(["stlink", "stlink2"]) },
+        { name: DriverNames.XDS,           driver: new GenericHardwareDriver(["xds", "xds2"]) },
+        { name: DriverNames.TIFET,         driver: new GenericHardwareDriver(["tifet"]) },
+        { name: DriverNames.E1,            driver: new Rh850EmuDriver(["ocd"]), target: "rh850", driverArgument: "e1" },
+        { name: DriverNames.E2,            driver: new Rh850EmuDriver(["ocd"]), target: "rh850", driverArgument: "e2" },
+        { name: DriverNames.E20,           driver: new Rh850EmuDriver(["ocd"]), target: "rh850", driverArgument: "e20" },
+        { name: DriverNames.E1,            driver: new Rl78EmuDriver(["ocd"]), target: "rl78", driverArgument: "e1" },
+        { name: DriverNames.E2,            driver: new Rl78EmuDriver(["ocd"]), target: "rl78", driverArgument: "e2" },
+        { name: DriverNames.E20,           driver: new Rl78EmuDriver(["ocd"]), target: "rl78", driverArgument: "e20" },
+        { name: DriverNames.E2LITE,        driver: new Rl78EmuDriver(["ocd"]), driverArgument: "e2lite" },
+        { name: DriverNames.EZCUBE,        driver: new Rl78EmuDriver(["ocd"]), driverArgument: "ezcube" },
+        { name: DriverNames.EZCUBE2,       driver: new Rl78EmuDriver(["ocd"]), driverArgument: "ezcube2" },
+        { name: DriverNames.TK,            driver: new Rl78EmuDriver(["ocd"]), driverArgument: "tk" },
+        { name: DriverNames.IECUBE,        driver: new Rl78EmuDriver(["iecube"]) },
+        { name: DriverNames.POWERDEBUGGER, driver: new AvrEmuDriver(["atmelice"]), driverArgument: "--drv_power_debugger"},
+        { name: DriverNames.ATMELICE,      driver: new AvrEmuDriver(["atmelice"]) },
+        { name: DriverNames.AVRONE,        driver: new AvrEmuDriver(["one"]) },
+        { name: DriverNames.DRAGON,        driver: new AvrEmuDriver(["jtagice-mkii"]), driverArgument: "--drv_dragon" },
+        { name: DriverNames.JTAGICEMK2,    driver: new AvrEmuDriver(["jtagice-mkii"]), },
+        { name: DriverNames.JTAGEICE3,     driver: new AvrEmuDriver(["jtagice3"]), },
     ];
     /**
      * Returns a driver from a driver display name (e.g. a name returned from {@link getDriverName}).

@@ -32,7 +32,7 @@ export interface PartialSessionConfiguration {
  * and fills in trivial configuration values.
  */
 export abstract class BaseConfigurationResolver implements ConfigurationResolver {
-    private static readonly SUPPORTED_TARGETS = ["arm", "riscv", "rh850", "rl78"];
+    private static readonly SUPPORTED_TARGETS = ["arm", "riscv", "rh850", "rl78", "avr"];
 
     async resolveLaunchArguments(launchArguments: CSpyLaunchRequestArguments): Promise<SessionConfiguration> {
         if (!Fs.existsSync(launchArguments.program)) {
