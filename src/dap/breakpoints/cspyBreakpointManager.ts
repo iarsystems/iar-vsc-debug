@@ -123,13 +123,19 @@ export class CSpyBreakpointManager implements Disposable {
                     source,
                 };
             } else {
-                const reader = new DescriptorReader(result.descriptor);
-                const descriptor = new LocOnlyDescriptor(reader);
-                const [, actualLine, actualCol] = this.parseSourceUle(descriptor.ule);
+                let actualLine = dapBp.line;
+                let actualCol = dapBp.column;
+                try {
+                    const reader = new DescriptorReader(result.descriptor);
+                    const descriptor = new LocOnlyDescriptor(reader);
+                    [, actualLine, actualCol] = this.parseSourceUle(descriptor.ule);
+                    actualLine = this.convertDebuggerLineToClient(actualLine);
+                    actualCol = this.convertDebuggerColumnToClient(actualCol);
+                } catch (_) {}
                 return {
                     verified: result.valid,
-                    line: this.convertDebuggerLineToClient(actualLine),
-                    column: this.convertDebuggerColumnToClient(actualCol),
+                    line: actualLine,
+                    column: actualCol,
                     message: result.description,
                     source,
                 };
