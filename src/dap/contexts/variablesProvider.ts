@@ -146,10 +146,12 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
 
     // converts the contents of a list window cell to a dap memory reference, if possible
     private locationToAddress(cellText: string): string | undefined {
-        // should only return if it's a memory address (and not e.g. a register)
-        if (cellText.match(/0x[a-fA-F0-9']/)) {
-            // remove ' from number, makes for easier parsing
-            return cellText;
+        // should only return if it's a memory address (and not e.g. a register).
+        // for some targets, the zone name is prefixed to the address, i.e. "<zone>:<address>".
+        const match = cellText.match(/(?:\w+:)?(0x[a-fA-F0-9']+)/);
+        console.log(cellText, match);
+        if (match && match[1]) {
+            return match[1];
         }
         return undefined;
     }
