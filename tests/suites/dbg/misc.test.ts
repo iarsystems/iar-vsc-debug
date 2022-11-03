@@ -209,9 +209,19 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
                 Assert(callCount?.memoryReference);
 
                 // Read the variable value from memory --- should be 10
-                const response = await dc().customRequest("readMemory", { memoryReference: callCount.memoryReference, count: 4 });
-                const data = Buffer.from(response.body?.data, "base64");
-                Assert.deepStrictEqual(data, Buffer.from([10, 0, 0, 0]));
+                {
+                    const response = await dc().customRequest("readMemory", { memoryReference: callCount.memoryReference, count: 4 });
+                    const data = Buffer.from(response.body?.data, "base64");
+                    Assert.deepStrictEqual(data, Buffer.from([10, 0, 0, 0]));
+                }
+
+                // Make sure the adapter can parse decimal addresses
+                {
+                    const decimalMemoryReference = BigInt(callCount.memoryReference).toString(10);
+                    const response = await dc().customRequest("readMemory", { memoryReference: decimalMemoryReference, count: 4 });
+                    const data = Buffer.from(response.body?.data, "base64");
+                    Assert.deepStrictEqual(data, Buffer.from([10, 0, 0, 0]));
+                }
 
                 // Write a new value to the variable memory --- 0x010011ff
                 await dc().customRequest("writeMemory", { memoryReference: callCount.memoryReference, data: Buffer.from([0xff, 0x11, 0x00, 0x01]).toString("base64")});

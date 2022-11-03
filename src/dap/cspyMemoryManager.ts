@@ -27,14 +27,18 @@ export class CspyMemoryManager implements Disposable {
 
     // Returns the base64-encoded data, the actual address read from, and the number of bytes read
     async readMemory(address: string, offset: number, count: number): Promise<{ data: string, addr: Int64, count: number }> {
-        const addr = add(new Int64(address), offset);
+        // Use BigInt to parse the address since it handles non-hex strings, e.g. decimal numbers (Int64 can only parse hex strings)
+        const parsedAddress = BigInt(address);
+        const addr = add(new Int64(parsedAddress.toString(16)), offset);
         const data = await this.memory.service.readMemory(new Location({ zone: new Zone({id: -1}), address: addr }), 1, 8, count);
         // The thrift compiler gives incorrect types here; the data is returned as a Buffer, not a string
         return { data: (data as unknown as Buffer).toString("base64"), addr, count: data.length };
     }
 
     async writeMemory(address: string, offset: number, data: string): Promise<number> {
-        const addr = add(new Int64(address), offset);
+        // Use BigInt to parse the address since it handles non-hex strings, e.g. decimal numbers (Int64 can only parse hex strings)
+        const parsedAddress = BigInt(address);
+        const addr = add(new Int64(parsedAddress.toString(16)), offset);
         const buf = Buffer.from(data, "base64");
         await this.memory.service.writeMemory(new Location({ zone: new Zone({id: -1}), address: addr}), 1, 8, buf.length, buf as unknown as string);
         return buf.length;
