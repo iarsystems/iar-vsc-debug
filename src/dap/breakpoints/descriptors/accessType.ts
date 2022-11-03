@@ -6,8 +6,7 @@
  * Access types avaiable to data breakpoints. These seem to be universal to all drivers.
  */
 export enum AccessType {
-    FetchInstruction,
+    ReadWrite = 0,
     Read,
     Write,
-    ReadWrite
 }
