@@ -118,7 +118,8 @@ class DialogServiceInstance implements vscode.Disposable {
             vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: body.title, cancellable: body.canCancel }, (progress, _token) => {
                 return new Promise<void>((resolve, _) => {
                     progress.report({ message: body.initialMessage });
-                    this.progressBars.set(body.id, { close: resolve, progress: progress, value: 0 });
+                    this.progressBars.set(body.id,
+                        { close: resolve, progress: progress, lastValue: body.minValue, valueRange: body.valueRange });
                 });
             });
             break;
@@ -137,7 +138,8 @@ class DialogServiceInstance implements vscode.Disposable {
                     bar.progress.report({ message: body.message });
                 }
                 if (body.value) {
-                    bar.progress.report({ increment: body.value - bar.value });
+                    const increment = (body.value - bar.lastValue) / bar.valueRange;
+                    bar.progress.report({ increment });
                 }
             }
             break;
@@ -198,5 +200,6 @@ class DialogServiceInstance implements vscode.Disposable {
 interface ProgressBar {
     close: () => void;
     progress: vscode.Progress<{ message?: string; increment?: number }>;
-    value: number;
+    lastValue: number;
+    valueRange: number;
 }

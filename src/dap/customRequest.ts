@@ -166,10 +166,21 @@ export namespace CustomEvent {
         title: string;
         initialMessage: string;
         canCancel: boolean;
+        /** The progress value representing 0% progress */
+        minValue: number;
+        /**
+         * The size of the range of possible progress values. The progress values for this bar are expected to be
+         * in the range [minvalue, minValue + valueRange], representing [0, 100] percent progress.
+         */
+        valueRange: number;
     }
     export interface ProgressBarUpdatedData {
         id: number;
         message?: string;
+        /**
+         * The current progress value. Used together with the minValue and valueRange the bar was created with to
+         * calculate a progress percentage.
+         */
         value?: number;
     }
     export interface ProgressBarClosedData {
