@@ -179,8 +179,9 @@ export class FrontendHandler {
         return this.openSaveDialog(title, defaultName, "", startdir, windowsFilter);
     }
 
-    createProgressBar(msg: string, caption: string, _minvalue: Thrift.Int64, _maxvalue: Thrift.Int64, canCancel: boolean, _indeterminate: boolean): Q.Promise<number> {
-        const body: CustomEvent.ProgressBarCreatedData = { id: this.nextId, title: caption, initialMessage: msg, canCancel };
+    createProgressBar(msg: string, caption: string, minvalue: Thrift.Int64, maxvalue: Thrift.Int64, canCancel: boolean, _indeterminate: boolean): Q.Promise<number> {
+        const body: CustomEvent.ProgressBarCreatedData = { id: this.nextId, title: caption, initialMessage: msg, canCancel,
+            minValue: minvalue.toNumber(), valueRange: (maxvalue.toNumber() - minvalue.toNumber()) };
         this.eventSink.send(new Event(CustomEvent.Names.PROGRESS_BAR_CREATED, body));
         return Q.resolve(this.nextId++);
     }
