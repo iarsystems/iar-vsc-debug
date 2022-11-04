@@ -47,7 +47,7 @@ export namespace BuildExtensionConfigurationProvider {
             } else if ((val = consumeArg1("/driver", cspyCommands)) !== undefined) {
                 driver = val;
             } else if ((val = consumeArg1("/plugin", cspyCommands)) !== undefined) {
-                if (!/libsupport.(dll|so)$/.test(val)) { // remove other libsupport plugins
+                if (!/libsupport(eclipse)?\.(dll|so)$/i.test(val)) { // remove other libsupport plugins
                     plugins.push(val);
                 }
             } else if ((val = consumeArg1("/setup", cspyCommands)) !== undefined) {
