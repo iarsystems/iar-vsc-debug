@@ -8,7 +8,7 @@ import * as SourceLookup from "iar-vsc-common/thrift/bindings/SourceLookup";
 import { DISASSEMBLY_SERVICE } from "iar-vsc-common/thrift/bindings/disassembly_types";
 import { ContextRef, ContextType, Location, Zone } from "iar-vsc-common/thrift/bindings/shared_types";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
-import { ThriftServiceManager } from "./thrift/thriftServiceManager";
+import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
 import { SOURCE_LOOKUP_SERVICE } from "iar-vsc-common/thrift/bindings/sourcelookup_types";
 import { Source } from "@vscode/debugadapter";
 import { Disposable } from "./disposable";

@@ -4,7 +4,7 @@
 
 
 import { Variable, Handles } from "@vscode/debugadapter";
-import { ThriftServiceManager } from "../thrift/thriftServiceManager";
+import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
 import { ListWindowClient, ListWindowRowReference } from "../listWindowClient";
 import { Disposable } from "../disposable";
 import { VariablesUtils } from "./variablesUtils";

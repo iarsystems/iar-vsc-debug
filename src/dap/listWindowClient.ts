@@ -6,7 +6,7 @@ import { MenuItem, Note, Row, What } from "iar-vsc-common/thrift/bindings/listwi
 import * as ListWindowBackend from "iar-vsc-common/thrift/bindings/ListWindowBackend";
 import * as ListWindowFrontend from "iar-vsc-common/thrift/bindings/ListWindowFrontend";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
-import { ThriftServiceManager } from "./thrift/thriftServiceManager";
+import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
 import { Int64 } from "thrift";
 import { Disposable } from "./disposable";
 import { logger } from "@vscode/debugadapter/lib/logger";

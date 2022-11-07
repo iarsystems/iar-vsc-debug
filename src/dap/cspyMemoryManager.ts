@@ -6,7 +6,7 @@ import * as Memory from "iar-vsc-common/thrift/bindings/CSpyMemory";
 import { MEMORY_SERVICE } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { Location, Zone } from "iar-vsc-common/thrift/bindings/shared_types";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
-import { ThriftServiceManager } from "./thrift/thriftServiceManager";
+import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
 import { Disposable } from "./disposable";
 
 /**

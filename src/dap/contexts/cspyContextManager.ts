@@ -10,7 +10,7 @@ import { StackFrame, Source, Scope, Handles, Variable, logger } from "@vscode/de
 import { basename } from "path";
 import { CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE, ExprValue } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { Disposable } from "../disposable";
-import { ThriftServiceManager } from "../thrift/thriftServiceManager";
+import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { WindowNames } from "../listWindowConstants";
 import { ListWindowVariablesProvider, VariablesProvider } from "./variablesProvider";

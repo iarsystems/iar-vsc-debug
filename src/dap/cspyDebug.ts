@@ -2,7 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import { DebugProtocol } from "@vscode/debugprotocol";
-import { ThriftServiceManager } from "./thrift/thriftServiceManager";
+import { CSpyServerServiceManager } from "./thrift/cspyServerServiceManager";
+import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
 import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, TerminatedEvent, InvalidatedEvent, Event, ExitedEvent } from "@vscode/debugadapter";
 import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
 import * as DebugEventListener from "iar-vsc-common/thrift/bindings/DebugEventListener";
@@ -192,7 +193,11 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 this.numCores = Number(match[1]);
             }
             // initialize all the services we need
-            this.serviceManager = await ThriftServiceManager.fromWorkbench(workbench.path, this.numCores);
+            this.serviceManager = await CSpyServerServiceManager.fromWorkbench(workbench.path);
+            this.serviceManager.addCrashHandler(code => {
+                this.sendEvent(new OutputEvent(`The debugger backend crashed (code ${code}).`));
+                this.sendEvent(new TerminatedEvent());
+            });
 
             await this.serviceManager.startService(DEBUGEVENT_SERVICE, DebugEventListener, this.cspyEventHandler);
             this.cspyEventHandler.observeLogEvents(event => {

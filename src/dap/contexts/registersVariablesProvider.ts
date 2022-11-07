@@ -4,7 +4,7 @@
 import { Handles, Variable } from "@vscode/debugadapter";
 import { Disposable } from "../disposable";
 import { ListWindowVariablesProvider, VariablesProvider } from "./variablesProvider";
-import { ThriftServiceManager } from "../thrift/thriftServiceManager";
+import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
 import { ListWindowClient } from "../listWindowClient";
 import Int64 = require("node-int64");
 import { Mutex } from "async-mutex";
