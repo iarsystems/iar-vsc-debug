@@ -28,11 +28,15 @@ interface EventSink {
 export class FrontendHandler {
     private nextId = 0;
 
+    // Stores promise resolution functions for open UI elements
     private readonly openMessageBoxes: Map<number, (result: Frontend.MsgResult) => void> = new Map();
     private readonly openOpenDialogs: Map<number, (paths: string[]) => void> = new Map();
     private readonly openSaveDialogs: Map<number, (paths: string[]) => void> = new Map();
     private readonly openElementSelectionDialogs: Map<number, (choice: number) => void> = new Map();
     private readonly openMultiElementSelectionDialogs: Map<number, (choices: number[]) => void> = new Map();
+
+    // Stores whether the progress bar with a given id has been canceled
+    private readonly openProgressBars: Map<number, boolean> = new Map();
 
     /**
      * Creates a new handler for the frontend service. The caller is responsible for launching the service with this
@@ -66,6 +70,13 @@ export class FrontendHandler {
             if (CustomRequest.isSaveDialogClosedArgs(args)) {
                 this.openSaveDialogs.get(args.id)?.(args.path ? [args.path] : []);
                 this.openSaveDialogs.delete(args.id);
+                return Promise.resolve();
+            }
+            return Promise.reject(new Error("Invalid arguments"));
+        }));
+        requestRegistry.registerCommand(new Command(CustomRequest.Names.PROGRESS_BAR_CANCELED, args => {
+            if (CustomRequest.isProgressBarCanceledArgs(args)) {
+                this.openProgressBars.set(args.id, true);
                 return Promise.resolve();
             }
             return Promise.reject(new Error("Invalid arguments"));
@@ -180,28 +191,30 @@ export class FrontendHandler {
     }
 
     createProgressBar(msg: string, caption: string, minvalue: Thrift.Int64, maxvalue: Thrift.Int64, canCancel: boolean, _indeterminate: boolean): Q.Promise<number> {
-        const body: CustomEvent.ProgressBarCreatedData = { id: this.nextId, title: caption, initialMessage: msg, canCancel,
+        const id = this.nextId++;
+        const body: CustomEvent.ProgressBarCreatedData = { id, title: caption, initialMessage: msg, canCancel,
             minValue: minvalue.toNumber(), valueRange: (maxvalue.toNumber() - minvalue.toNumber()) };
+        this.openProgressBars.set(id, false);
         this.eventSink.send(new Event(CustomEvent.Names.PROGRESS_BAR_CREATED, body));
-        return Q.resolve(this.nextId++);
+        return Q.resolve(id);
     }
 
     updateProgressBarValue(id: number, value: Thrift.Int64): Q.Promise<boolean> {
         const body: CustomEvent.ProgressBarUpdatedData = { id, value: value.toNumber() };
         this.eventSink.send(new Event(CustomEvent.Names.PROGRESS_BAR_UPDATED, body));
-        return Q.resolve(false);
+        return Q.resolve(this.openProgressBars.get(id) ?? false);
     }
 
     updateProgressBarMessage(id: number, message: string): Q.Promise<boolean> {
         const body: CustomEvent.ProgressBarUpdatedData = { id, message };
         this.eventSink.send(new Event(CustomEvent.Names.PROGRESS_BAR_UPDATED, body));
-        return Q.resolve(false);
+        return Q.resolve(this.openProgressBars.get(id) ?? false);
     }
 
     closeProgressBar(id: number): Q.Promise<void> {
-        console.log("closePB");
         const body: CustomEvent.ProgressBarClosedData = { id };
         this.eventSink.send(new Event(CustomEvent.Names.PROGRESS_BAR_CLOSED, body));
+        this.openProgressBars.delete(id);
         return Q.resolve();
     }
 

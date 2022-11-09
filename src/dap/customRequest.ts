@@ -27,6 +27,7 @@ export namespace CustomRequest {
         MESSAGE_BOX_CLOSED       = "messageBoxClosed",
         OPEN_DIALOG_CLOSED       = "openDialogClosed",
         SAVE_DIALOG_CLOSED       = "saveDialogClosed",
+        PROGRESS_BAR_CANCELED    = "progressBarCanceled",
         ELEMENT_SELECTED         = "elementSelected",
         MULTIELEMENT_SELECTED    = "multiElementSelected",
     }
@@ -81,6 +82,19 @@ export namespace CustomRequest {
     export function isSaveDialogClosedArgs(obj: unknown): obj is SaveDialogClosedArgs {
         if (typeof(obj) === "object") {
             const args = obj as SaveDialogClosedArgs;
+            return args.id !== undefined;
+        }
+        return false;
+    }
+    /**
+     * Request arguments/parameters for a {@link CustomRequest.PROGRESS_BAR_CANCELED} request.
+     */
+    export interface ProgressBarCanceledArgs {
+        id: number;
+    }
+    export function isProgressBarCanceledArgs(obj: unknown): obj is ProgressBarCanceledArgs {
+        if (typeof(obj) === "object") {
+            const args = obj as ProgressBarCanceledArgs;
             return args.id !== undefined;
         }
         return false;
