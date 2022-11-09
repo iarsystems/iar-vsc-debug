@@ -193,7 +193,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 this.numCores = Number(match[1]);
             }
             // initialize all the services we need
-            this.serviceManager = await CSpyServerServiceManager.fromWorkbench(workbench.path);
+            this.serviceManager = await CSpyServerServiceManager.fromWorkbench(workbench.path, this.numCores);
             this.serviceManager.addCrashHandler(code => {
                 this.sendEvent(new OutputEvent(`The debugger backend crashed (code ${code}).`));
                 this.sendEvent(new TerminatedEvent());

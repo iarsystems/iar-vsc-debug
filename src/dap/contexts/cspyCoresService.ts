@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
-import { ThriftServiceManager } from "../thrift/thriftServiceManager";
+import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
 import { DEBUGGER_SERVICE } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { Mutex } from "async-mutex";
 import Int64 = require("node-int64");

@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { DebugEventListenerHandler } from "../debugEventListenerHandler";
-import { ThriftServiceManager } from "../thrift/thriftServiceManager";
+import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
 import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
 import { DEBUGGER_SERVICE, DkCoreStatusConstants, DkNotifyConstant } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
