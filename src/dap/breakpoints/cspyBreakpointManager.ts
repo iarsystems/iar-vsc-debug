@@ -210,7 +210,7 @@ export class CSpyBreakpointManager implements Disposable {
             } else {
                 return {
                     verified: result.valid,
-                    instructionReference: result.ule,
+                    instructionReference: result.ule || dapBp.dataId,
                     message: result.description,
                 };
             }
