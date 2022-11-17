@@ -174,12 +174,20 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.configurationDone.notify();
     }
 
+    /**
+     * This is responsible for setting up the entire session. This includes:
+     * - Launching CSpyServer.
+     * - Setting up our own thrift services (e.g. list window frontends and a debug event listener).
+     * - Telling CSpyServer to load macros, flash and start the session.
+     * - Connecting to necessary CSpyServer services (for breakpoints, context management and more).
+     * - Setting up our DAP extension requests (see {@link CustomRequest}).
+     */
     protected override async launchRequest(response: DebugProtocol.LaunchResponse, args: CSpyLaunchRequestArguments) {
         logger.init(e => this.sendEvent(e), undefined, true);
         logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop);
 
         try {
-            // validate the workbench before trying to use it
+            // -- Launch CSpyServer --
             const workbench = Workbench.create(args.workbenchPath);
             if (workbench === undefined) {
                 throw new Error(`'${args.workbenchPath}' does not point to a valid IAR Embedded Workbench installation.`);
@@ -192,7 +200,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
             if (match && match[1]) {
                 this.numCores = Number(match[1]);
             }
-            // initialize all the services we need
+
+            // -- Launch all our thrift services so that they are available to CSpyServer --
             this.serviceManager = await CSpyServerServiceManager.fromWorkbench(workbench.path, this.numCores);
             this.serviceManager.addCrashHandler(code => {
                 this.sendEvent(new OutputEvent(`The debugger backend crashed (code ${code}).`));
@@ -224,15 +233,14 @@ export class CSpyDebugSession extends LoggingDebugSession {
             const timelineFrontendHandler = new TimelineFrontendHandler();
             this.serviceManager.startService(TIMELINE_FRONTEND_SERVICE, TimelineFrontend, timelineFrontendHandler);
 
+            // -- Start the CSpyServer session (incl. loading macros & flashing) --
             const sessionConfig: SessionConfiguration = await new LaunchArgumentConfigurationResolver().resolveLaunchArguments(args);
-
             this.cspyDebugger = await this.serviceManager.findService(DEBUGGER_SERVICE, Debugger);
             this.sendEvent(new OutputEvent("Using C-SPY version: " + await this.cspyDebugger.service.getVersionString() + "\n"));
 
             await this.cspyDebugger.service.startSession(sessionConfig);
             const driver = CSpyDriver.driverFromName(args.driver, args.target, args.driverOptions);
 
-            // do flashing & downloading
             if (args.download) {
                 await Utils.loadMacros(this.cspyDebugger.service, args.download.deviceMacros ?? []);
                 if (args.download.flashLoader) {
@@ -241,25 +249,35 @@ export class CSpyDebugSession extends LoggingDebugSession {
             }
             await Utils.loadMacros(this.cspyDebugger.service, sessionConfig.setupMacros ?? []);
             await this.cspyDebugger.service.loadModule(args.program);
-            this.sendEvent(new OutputEvent("Session started\n"));
 
+            // -- Connect to CSpyServer services --
+            // note that some services (most listwindows) are launched by loadModule, so we need to do this afterwards
             this.registerInfoGenerator = new RegisterInformationGenerator(args.driverOptions, await this.serviceManager.findService(DEBUGGER_SERVICE, Debugger));
-            // only after loading modules can we initialize services using listwindows
             await CSpyCoresService.initialize(this.serviceManager);
             this.stackManager = await CSpyContextManager.instantiate(this.serviceManager, this.registerInfoGenerator);
             this.runControlService = await CSpyRunControlService.instantiate(this.serviceManager, this.cspyEventHandler, this.libSupportHandler);
+            this.runControlService?.onCoreStopped((core, reason) => {
+                this.sendEvent(new StoppedEvent(reason, core));
+            });
             this.memoryManager = await CspyMemoryManager.instantiate(this.serviceManager);
             this.disassemblyManager = await CspyDisassemblyManager.instantiate(this.serviceManager,
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1);
-            // initialize all breakpoint stuff
+
+            const driver = CSpyDriver.driverFromName(args.driver, args.target, args.driverOptions);
             this.breakpointManager = await CSpyBreakpointManager.instantiate(this.serviceManager,
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1,
                 driver);
-            this.setupBreakpointRequests(args.breakpointType ?? BreakpointType.AUTO);
-            this.setupRegistersRequest();
 
+            // --- Set up custom DAP requests ---
+            this.setupBreakpointRequests(args.breakpointType ?? BreakpointType.AUTO);
+            this.customRequestRegistry.registerCommand(new Command(CustomRequest.Names.REGISTERS, async() => {
+                if (this.registerInfoGenerator) {
+                    return { svdContent: await this.registerInfoGenerator.getSvdXml() };
+                }
+                return { svdContent: undefined };
+            }));
         } catch (e) {
             response.success = false;
             if (typeof e === "string" || e instanceof Error) {
@@ -273,17 +291,14 @@ export class CSpyDebugSession extends LoggingDebugSession {
             return;
         }
 
-        // we are ready to receive configuration requests (e.g. breakpoints)
+        // Setup is done. Tell the client we are ready to receive configuration requests (e.g. breakpoints).
         this.sendEvent(new InitializedEvent());
-        // wait until configuration is done
         await this.configurationDone.wait(1000);
 
+        this.sendEvent(new OutputEvent("Session started\n"));
         this.sendResponse(response);
 
-        this.runControlService?.onCoreStopped((core, reason) => {
-            this.sendEvent(new StoppedEvent(reason, core));
-        });
-
+        // Perform any initial run-to action if needed
         let doStop: boolean;
         let stopSymbol: string | undefined = undefined;
         if (typeof(args.stopOnSymbol) === "string") {
@@ -622,18 +637,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
         this.customRequestRegistry.registerCommand(new Command(CustomRequest.Names.GET_BREAKPOINT_TYPES, (): Promise<CustomRequest.BreakpointTypesResponse> => {
             return Promise.resolve(this.breakpointManager?.supportedBreakpointTypes() ?? []);
-        }));
-    }
-
-    /**
-     * Sets up a custom request that returns the peripheral registers for the current device as an SVD string.
-     */
-    private setupRegistersRequest() {
-        this.customRequestRegistry.registerCommand(new Command(CustomRequest.Names.REGISTERS, async() => {
-            if (this.registerInfoGenerator) {
-                return { svdContent: await this.registerInfoGenerator.getSvdXml() };
-            }
-            return { svdContent: undefined };
         }));
     }
 
