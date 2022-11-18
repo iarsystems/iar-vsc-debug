@@ -1,0 +1,7 @@
+Backup*
+Debug/**
+Debug2/**
+Release/**
+STM/**
+.vscode/**
+settings/
