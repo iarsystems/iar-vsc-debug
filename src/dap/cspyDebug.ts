@@ -24,7 +24,7 @@ import { LibSupportHandler } from "./libSupportHandler";
 // @ts-ignore
 import { Subject } from "await-notify";
 import { CSpyDriver } from "./breakpoints/cspyDriver";
-import { Command, CommandRegistry } from "./commandRegistry";
+import { CommandCallback, CommandRegistry } from "./commandRegistry";
 import { Utils } from "./utils";
 import { CspyDisassemblyManager } from "./cspyDisassemblyManager";
 import { CspyMemoryManager } from "./cspyMemoryManager";
@@ -251,7 +251,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             await this.cspyDebugger.service.loadModule(args.program);
 
             // -- Connect to CSpyServer services --
-            // note that some services (most listwindows) are launched by loadModule, so we need to do this afterwards
+            // note that some services (most listwindows) are launched by loadModule, so we *have* to do this afterwards
             this.registerInfoGenerator = new RegisterInformationGenerator(args.driverOptions, await this.serviceManager.findService(DEBUGGER_SERVICE, Debugger));
             await CSpyCoresService.initialize(this.serviceManager);
             this.stackManager = await CSpyContextManager.instantiate(this.serviceManager, this.registerInfoGenerator);
@@ -272,12 +272,12 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
             // --- Set up custom DAP requests ---
             this.setupBreakpointRequests(args.breakpointType ?? BreakpointType.AUTO);
-            this.customRequestRegistry.registerCommand(new Command(CustomRequest.Names.REGISTERS, async() => {
+            this.customRequestRegistry.registerCommand(CustomRequest.Names.REGISTERS, async(): Promise<CustomRequest.RegistersResponse> => {
                 if (this.registerInfoGenerator) {
                     return { svdContent: await this.registerInfoGenerator.getSvdXml() };
                 }
                 return { svdContent: undefined };
-            }));
+            });
         } catch (e) {
             response.success = false;
             if (typeof e === "string" || e instanceof Error) {
@@ -613,14 +613,14 @@ export class CSpyDebugSession extends LoggingDebugSession {
         }
         // If the driver supports it, register console commands and custom requests
         this.breakpointManager?.supportedBreakpointTypes().forEach(type => {
-            this.consoleCommandRegistry.registerCommand(new Command("__breakpoints_set_type_" + type, () => {
+            this.consoleCommandRegistry.registerCommand("__breakpoints_set_type_" + type, () => {
                 this.breakpointManager?.setBreakpointType(type);
                 return Promise.resolve(bpTypeMessage(type));
-            }));
+            });
         });
         // Custom requests are always registered, but will give an error if made on a driver that doesn't support it.
-        const makeCustomRequestCommand = (name: string, type: BreakpointType) => {
-            return new Command(name, () => {
+        const makeCustomRequestCommand = (name: string, type: BreakpointType): [string, CommandCallback<unknown, unknown>] => {
+            return [name, () => {
                 if (this.breakpointManager?.supportedBreakpointTypes().includes(type)) {
                     this.breakpointManager?.setBreakpointType(type);
                     this.sendEvent(new OutputEvent(bpTypeMessage(type) + "\n"));
@@ -629,15 +629,14 @@ export class CSpyDebugSession extends LoggingDebugSession {
                     this.sendEvent(new OutputEvent("Cannot set breakpoint type (not supported by driver)"));
                     return Promise.reject(new Error());
                 }
-            });
+            }];
         };
-        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.Names.USE_AUTO_BREAKPOINTS, BreakpointType.AUTO));
-        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.Names.USE_HARDWARE_BREAKPOINTS, BreakpointType.HARDWARE));
-        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.Names.USE_SOFTWARE_BREAKPOINTS, BreakpointType.SOFTWARE));
+        this.customRequestRegistry.registerCommand(...makeCustomRequestCommand(CustomRequest.Names.USE_AUTO_BREAKPOINTS, BreakpointType.AUTO));
+        this.customRequestRegistry.registerCommand(...makeCustomRequestCommand(CustomRequest.Names.USE_HARDWARE_BREAKPOINTS, BreakpointType.HARDWARE));
+        this.customRequestRegistry.registerCommand(...makeCustomRequestCommand(CustomRequest.Names.USE_SOFTWARE_BREAKPOINTS, BreakpointType.SOFTWARE));
 
-        this.customRequestRegistry.registerCommand(new Command(CustomRequest.Names.GET_BREAKPOINT_TYPES, (): Promise<CustomRequest.BreakpointTypesResponse> => {
-            return Promise.resolve(this.breakpointManager?.supportedBreakpointTypes() ?? []);
-        }));
+        this.customRequestRegistry.registerCommand(CustomRequest.Names.GET_BREAKPOINT_TYPES,
+            (): CustomRequest.BreakpointTypesResponse => this.breakpointManager?.supportedBreakpointTypes() ?? []);
     }
 
     private async endSession() {

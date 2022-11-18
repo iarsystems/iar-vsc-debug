@@ -11,7 +11,7 @@ import * as Q from "q";
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { CustomEvent, CustomRequest } from "./customRequest";
 import { Event, logger } from "@vscode/debugadapter";
-import { Command, CommandRegistry } from "./commandRegistry";
+import { CommandRegistry } from "./commandRegistry";
 import {Utils} from "./utils";
 
 interface EventSink {
@@ -46,46 +46,31 @@ export class FrontendHandler {
         private readonly sourceFileMap: Record<string, string>,
         requestRegistry: CommandRegistry<unknown, unknown>
     ) {
-        requestRegistry.registerCommand(new Command(CustomRequest.Names.MESSAGE_BOX_CLOSED, args => {
-            if (CustomRequest.isMessageBoxClosedArgs(args)) {
+        requestRegistry.registerCommandWithTypeCheck(CustomRequest.Names.MESSAGE_BOX_CLOSED, CustomRequest.isMessageBoxClosedArgs,
+            args => {
                 this.openMessageBoxes.get(args.id)?.(args.result);
                 this.openMessageBoxes.delete(args.id);
-                return Promise.resolve();
-            }
-            return Promise.reject(new Error("Invalid arguments"));
-        }));
-        requestRegistry.registerCommand(new Command(CustomRequest.Names.OPEN_DIALOG_CLOSED, args => {
-            if (CustomRequest.isOpenDialogClosedArgs(args)) {
+            });
+        requestRegistry.registerCommandWithTypeCheck(CustomRequest.Names.OPEN_DIALOG_CLOSED, CustomRequest.isOpenDialogClosedArgs,
+            args => {
                 this.openOpenDialogs.get(args.id)?.(args.paths);
                 this.openOpenDialogs.delete(args.id);
-                return Promise.resolve();
-            }
-            return Promise.reject(new Error("Invalid arguments"));
-        }));
-        requestRegistry.registerCommand(new Command(CustomRequest.Names.SAVE_DIALOG_CLOSED, args => {
-            if (CustomRequest.isSaveDialogClosedArgs(args)) {
+            });
+        requestRegistry.registerCommandWithTypeCheck(CustomRequest.Names.SAVE_DIALOG_CLOSED, CustomRequest.isSaveDialogClosedArgs,
+            args => {
                 this.openSaveDialogs.get(args.id)?.(args.path ? [args.path] : []);
                 this.openSaveDialogs.delete(args.id);
-                return Promise.resolve();
-            }
-            return Promise.reject(new Error("Invalid arguments"));
-        }));
-        requestRegistry.registerCommand(new Command(CustomRequest.Names.ELEMENT_SELECTED, args => {
-            if (CustomRequest.isElementSelectedArgs(args)) {
+            });
+        requestRegistry.registerCommandWithTypeCheck(CustomRequest.Names.ELEMENT_SELECTED, CustomRequest.isElementSelectedArgs,
+            args => {
                 this.openElementSelectionDialogs.get(args.id)?.(args.selectedIndex);
                 this.openElementSelectionDialogs.delete(args.id);
-                return Promise.resolve();
-            }
-            return Promise.reject(new Error("Invalid arguments"));
-        }));
-        requestRegistry.registerCommand(new Command(CustomRequest.Names.MULTIELEMENT_SELECTED, args => {
-            if (CustomRequest.isMessageBoxClosedArgs(args)) {
-                this.openMessageBoxes.get(args.id)?.(args.result);
-                this.openMessageBoxes.delete(args.id);
-                return Promise.resolve();
-            }
-            return Promise.reject(new Error("Invalid arguments"));
-        }));
+            });
+        requestRegistry.registerCommandWithTypeCheck(CustomRequest.Names.MULTIELEMENT_SELECTED, CustomRequest.isMultiElementSelectedArgs,
+            args => {
+                this.openMultiElementSelectionDialogs.get(args.id)?.(args.selectedIndices);
+                this.openMultiElementSelectionDialogs.delete(args.id);
+            });
     }
 
     messageBox(msg: string, caption: string, icon: Frontend.MsgIcon, kind: Frontend.MsgKind, _dontAskMgrKey: string): Q.Promise<Frontend.MsgResult> {
