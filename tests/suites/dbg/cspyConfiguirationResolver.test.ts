@@ -7,7 +7,7 @@ import * as assert from "assert";
 import * as path from "path";
 import { OsUtils } from "iar-vsc-common/osUtils";
 import { TestUtils } from "../testUtils";
-import { BreakpointType } from "../../../src/dap/breakpoints/cspyBreakpointManager";
+import { BreakpointType } from "../../../src/dap/breakpoints/cspyBreakpointService";
 
 suite("Configuration resolution tests", () => {
 

@@ -8,15 +8,10 @@ import * as Path from "path";
 import * as Frontend from "iar-vsc-common/thrift/bindings/frontend_types";
 import { SourceLocation } from "iar-vsc-common/thrift/bindings/shared_types";
 import * as Q from "q";
-import { DebugProtocol } from "@vscode/debugprotocol";
 import { CustomEvent, CustomRequest } from "./customRequest";
 import { Event, logger } from "@vscode/debugadapter";
 import { CommandRegistry } from "./commandRegistry";
-import {Utils} from "./utils";
-
-interface EventSink {
-    send(event: DebugProtocol.Event): void;
-}
+import {DapEventSink, Utils} from "./utils";
 
 /**
  * A (handler for a) thrift service that provides various types dialogs to C-SPY. These may be used e.g. to display
@@ -42,7 +37,7 @@ export class FrontendHandler {
      * @param requestRegistry The registry where this handler should register the DAP requests it can handle
      */
     constructor(
-        private readonly eventSink: EventSink,
+        private readonly eventSink: DapEventSink,
         private readonly sourceFileMap: Record<string, string>,
         requestRegistry: CommandRegistry<unknown, unknown>
     ) {
@@ -84,7 +79,7 @@ export class FrontendHandler {
                 kind,
                 icon,
             };
-            this.eventSink.send(new Event(CustomEvent.Names.MESSAGE_BOX_CREATED, body));
+            this.eventSink.sendEvent(new Event(CustomEvent.Names.MESSAGE_BOX_CREATED, body));
         });
     }
 
@@ -97,7 +92,7 @@ export class FrontendHandler {
             kind: Frontend.MsgKind.kMsgOk,
             icon,
         };
-        this.eventSink.send(new Event(CustomEvent.Names.MESSAGE_BOX_CREATED, body));
+        this.eventSink.sendEvent(new Event(CustomEvent.Names.MESSAGE_BOX_CREATED, body));
         return Q.resolve();
     }
 
@@ -113,7 +108,7 @@ export class FrontendHandler {
                 filter,
                 allowMultiple,
             };
-            this.eventSink.send(new Event(CustomEvent.Names.OPEN_DIALOG_CREATED, body));
+            this.eventSink.sendEvent(new Event(CustomEvent.Names.OPEN_DIALOG_CREATED, body));
         });
     }
 
@@ -129,7 +124,7 @@ export class FrontendHandler {
                 filter: "",
                 allowMultiple: false,
             };
-            this.eventSink.send(new Event(CustomEvent.Names.OPEN_DIALOG_CREATED, body));
+            this.eventSink.sendEvent(new Event(CustomEvent.Names.OPEN_DIALOG_CREATED, body));
         });
     }
 
@@ -143,7 +138,7 @@ export class FrontendHandler {
                 startPath: Path.join(startDir, fileName),
                 filter,
             };
-            this.eventSink.send(new Event(CustomEvent.Names.SAVE_DIALOG_CREATED, body));
+            this.eventSink.sendEvent(new Event(CustomEvent.Names.SAVE_DIALOG_CREATED, body));
         });
     }
 
@@ -167,25 +162,25 @@ export class FrontendHandler {
     createProgressBar(msg: string, caption: string, minvalue: Thrift.Int64, maxvalue: Thrift.Int64, canCancel: boolean, _indeterminate: boolean): Q.Promise<number> {
         const body: CustomEvent.ProgressBarCreatedData = { id: this.nextId, title: caption, initialMessage: msg, canCancel,
             minValue: minvalue.toNumber(), valueRange: (maxvalue.toNumber() - minvalue.toNumber()) };
-        this.eventSink.send(new Event(CustomEvent.Names.PROGRESS_BAR_CREATED, body));
+        this.eventSink.sendEvent(new Event(CustomEvent.Names.PROGRESS_BAR_CREATED, body));
         return Q.resolve(this.nextId++);
     }
 
     updateProgressBarValue(id: number, value: Thrift.Int64): Q.Promise<boolean> {
         const body: CustomEvent.ProgressBarUpdatedData = { id, value: value.toNumber() };
-        this.eventSink.send(new Event(CustomEvent.Names.PROGRESS_BAR_UPDATED, body));
+        this.eventSink.sendEvent(new Event(CustomEvent.Names.PROGRESS_BAR_UPDATED, body));
         return Q.resolve(false);
     }
 
     updateProgressBarMessage(id: number, message: string): Q.Promise<boolean> {
         const body: CustomEvent.ProgressBarUpdatedData = { id, message };
-        this.eventSink.send(new Event(CustomEvent.Names.PROGRESS_BAR_UPDATED, body));
+        this.eventSink.sendEvent(new Event(CustomEvent.Names.PROGRESS_BAR_UPDATED, body));
         return Q.resolve(false);
     }
 
     closeProgressBar(id: number): Q.Promise<void> {
         const body: CustomEvent.ProgressBarClosedData = { id };
-        this.eventSink.send(new Event(CustomEvent.Names.PROGRESS_BAR_CLOSED, body));
+        this.eventSink.sendEvent(new Event(CustomEvent.Names.PROGRESS_BAR_CLOSED, body));
         return Q.resolve();
     }
 
@@ -204,7 +199,7 @@ export class FrontendHandler {
                 message,
                 elements,
             };
-            this.eventSink.send(new Event(CustomEvent.Names.ELEMENT_SELECT_CREATED, body));
+            this.eventSink.sendEvent(new Event(CustomEvent.Names.ELEMENT_SELECT_CREATED, body));
         });
     }
 
@@ -218,13 +213,13 @@ export class FrontendHandler {
                 message,
                 elements,
             };
-            this.eventSink.send(new Event(CustomEvent.Names.MULTIELEMENT_SELECT_CREATED, body));
+            this.eventSink.sendEvent(new Event(CustomEvent.Names.MULTIELEMENT_SELECT_CREATED, body));
         });
     }
 
     editSourceLocation(loc: SourceLocation): Q.Promise<void> {
         const body: CustomEvent.FileOpenedData = { path: loc.filename, line: loc.line, col: loc.col };
-        this.eventSink.send(new Event(CustomEvent.Names.FILE_OPENED, body));
+        this.eventSink.sendEvent(new Event(CustomEvent.Names.FILE_OPENED, body));
         return Q.resolve();
     }
 

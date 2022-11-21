@@ -103,9 +103,7 @@ export class CSpyRunControlService implements Disposable {
     continue(core: number | undefined) {
         if (core !== undefined) {
             this.expectedStoppingReason.set(core, "breakpoint");
-            return CSpyCoresService.instance.performOnCore(core, async() => {
-                await this.dbgr.service.goCore(core);
-            });
+            return this.dbgr.service.goCore(core);
         } else {
             for (let i = 0; i < this.nCores; i++) {
                 this.expectedStoppingReason.set(i, "breakpoint");

@@ -6,10 +6,8 @@
 import * as vscode from "vscode";
 import { CSpyDebugSession } from "./dap/cspyDebug";
 import { DebugSessionTracker } from "./debugSessionTracker";
-import { BreakpointCommands } from "./breakpointCommands";
+import { BreakpointTypesFrontend } from "./breakpointTypesFrontend";
 import { DefaultCSpyConfigurationResolver, CSpyConfigurationsProvider, InitialCSpyConfigurationProvider } from "./configproviders/cspyConfigurationProviders";
-import { SettingsConstants } from "./settingsConstants";
-import { BreakpointType } from "./dap/breakpoints/cspyBreakpointManager";
 import { CustomRequest } from "./dap/customRequest";
 import { logger } from "iar-vsc-common/logger";
 import { DialogService } from "./dialogService";
@@ -31,20 +29,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", new DefaultCSpyConfigurationResolver()));
 
     sessionTracker = new DebugSessionTracker(context);
-    BreakpointCommands.registerCommands(context, sessionTracker);
-    context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", {
-        resolveDebugConfiguration(_, config) {
-            // Pass along the user's selection of breakpoint type to the adapter
-            // Allow overriding the user setting from launch.json, even if we don't advertise that possibility anywhere
-            if (!config["breakpointType"]) {
-                const bpType = vscode.workspace.getConfiguration(SettingsConstants.MAIN_SECTION).get(SettingsConstants.BREAKPOINT_TYPE);
-                const actualType = bpType === SettingsConstants.BreakpointTypeValues.HARDWARE ? BreakpointType.HARDWARE :
-                    bpType === SettingsConstants.BreakpointTypeValues.SOFTWARE ? BreakpointType.SOFTWARE : BreakpointType.AUTO;
-                config["breakpointType"] = actualType;
-            }
-            return config;
-        }
-    }));
+    BreakpointTypesFrontend.initialize(context, sessionTracker);
 
     // Generate and locate an svd for the session, so that the register view is populated
     vscode.debug.onDidStartDebugSession(async(session) => {

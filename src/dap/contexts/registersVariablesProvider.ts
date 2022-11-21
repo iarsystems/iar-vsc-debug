@@ -9,7 +9,7 @@ import { ListWindowClient } from "../listWindowClient";
 import Int64 = require("node-int64");
 import { Mutex } from "async-mutex";
 import { WindowNames } from "../listWindowConstants";
-import { RegisterInformationGenerator } from "../registerInformationGenerator";
+import { RegisterInformationService } from "../registerInformationService";
 import { logger } from "@vscode/debugadapter/lib/logger";
 
 interface RegisterReference {
@@ -31,7 +31,7 @@ export class RegistersVariablesProvider implements VariablesProvider, Disposable
     private availableGroups: Array<GroupReference> | undefined = undefined;
     private readonly readLock = new Mutex();
 
-    static async instantiate(serviceMgr: ThriftServiceManager, registerInfoGen: RegisterInformationGenerator): Promise<RegistersVariablesProvider> {
+    static async instantiate(serviceMgr: ThriftServiceManager, registerInfoGen: RegisterInformationService): Promise<RegistersVariablesProvider> {
         const windowClient = await ListWindowClient.instantiate(serviceMgr, WindowNames.REGISTERS, 0);
         const listWindowProvider = new ListWindowVariablesProvider(windowClient, 0, 1, 2, -1);
         return new RegistersVariablesProvider(listWindowProvider, windowClient, registerInfoGen);
@@ -40,7 +40,7 @@ export class RegistersVariablesProvider implements VariablesProvider, Disposable
     private constructor(
         private readonly varProvider: ListWindowVariablesProvider,
         private readonly windowClient: ListWindowClient,
-        private readonly registerInfoGenerator: RegisterInformationGenerator) { }
+        private readonly registerInfoGenerator: RegisterInformationService) { }
 
     async getVariables(): Promise<Variable[]> {
         if (this.availableGroups === undefined) {

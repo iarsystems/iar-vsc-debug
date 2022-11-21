@@ -17,7 +17,7 @@ import { ListWindowVariablesProvider, VariablesProvider } from "./variablesProvi
 import { VariablesUtils } from "./variablesUtils";
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { RegistersVariablesProvider } from "./registersVariablesProvider";
-import { RegisterInformationGenerator } from "../registerInformationGenerator";
+import { RegisterInformationService } from "../registerInformationService";
 import { CSpyCoresService } from "./cspyCoresService";
 
 /**
@@ -60,17 +60,17 @@ class EvalExpressionReference {
  * Takes care of managing stack contexts, and allows to perform operations
  * on/in a context (e.g. fetching or setting variables, evaluating expressions)
  */
-export class CSpyContextManager implements Disposable {
+export class CSpyContextService implements Disposable {
 
     /**
      * Creates a new context manager using services from the given service manager.
      */
-    static async instantiate(serviceMgr: ThriftServiceManager, regInfoGen: RegisterInformationGenerator): Promise<CSpyContextManager> {
+    static async instantiate(serviceMgr: ThriftServiceManager, regInfoGen: RegisterInformationService): Promise<CSpyContextService> {
         const onProviderUnavailable = (reason: unknown) => {
             logger.error("Failed to initialize variables provider: " + reason);
             return undefined;
         };
-        return new CSpyContextManager(
+        return new CSpyContextService(
             await serviceMgr.findService(CONTEXT_MANAGER_SERVICE, ContextManager.Client),
             await serviceMgr.findService(DEBUGGER_SERVICE, Debugger.Client),
             await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.LOCALS, 0, 1, 3, 2).catch(onProviderUnavailable),

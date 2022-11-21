@@ -71,6 +71,7 @@ suite("Specific device SVD Tests", () => {
             driver: "Simulator",
             target: "arm",
             workbenchPath: workbench,
+            stopOnSymbol: true,
             program,
             driverOptions: [
                 "--endian=little",
