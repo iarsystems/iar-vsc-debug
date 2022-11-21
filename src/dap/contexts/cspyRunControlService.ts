@@ -102,8 +102,10 @@ export class CSpyRunControlService implements Disposable {
      */
     continue(core: number | undefined) {
         if (core !== undefined) {
-            this.expectedStoppingReason.set(core, "breakpoint");
-            return this.dbgr.service.goCore(core);
+            return CSpyCoresService.instance.performOnCore(core, async() => {
+                this.expectedStoppingReason.set(core, "breakpoint");
+                await this.dbgr.service.goCore(core);
+            });
         } else {
             for (let i = 0; i < this.nCores; i++) {
                 this.expectedStoppingReason.set(i, "breakpoint");
@@ -116,10 +118,9 @@ export class CSpyRunControlService implements Disposable {
     /**
      * See https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Pause
      */
-    pause(core: number) {
-        return CSpyCoresService.instance.performOnCore(core, async() => {
-            this.expectedStoppingReason.set(core, "pause");
-            await this.dbgr.service.stopCore(core);
+    pause(core: number | undefined) {
+        return this.performOnOneOrAllCores(core, "pause", async() => {
+            await this.dbgr.service.stop();
         });
     }
 

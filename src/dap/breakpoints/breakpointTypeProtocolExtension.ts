@@ -9,6 +9,11 @@ import { DapEventSink } from "../utils";
 import { BreakpointType } from "./cspyBreakpointService";
 import { CSpyDriver } from "./cspyDriver";
 
+/**
+ * Provides some DAP extensions for setting breakpoint types (e.g. hardware, software or auto), since this is not supported
+ * in standard DAP. This class registers three custom DAP requests and three console commands, one for each breakpoint
+ * type.
+ */
 export class BreakpointTypeProtocolExtension {
     private breakpointType = BreakpointType.AUTO;
 

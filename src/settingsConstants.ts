@@ -17,4 +17,6 @@ export namespace SettingsConstants {
 		HARDWARE = "Hardware",
 		SOFTWARE = "Software",
 	}
+
+	export const LOCKSTEP_MODE_ENABLED = "enableMulticoreLockstepMode";
 }

@@ -110,10 +110,26 @@
 						"Use hardware breakpoints.",
 						"Use software breakpoints."
 					]
+				},
+				"iar-debug.enableMulticoreLockstepMode": {
+					"default": true,
+					"description": "When enabled, run/step/stop actions in a multicore session affect all cores, instead of just the focused one.",
+					"type": "boolean"
 				}
 			}
 		},
-		"menus": {},
+		"menus": {
+			"debug/toolBar": [
+				{
+					"command": "iar.enableMulticoreLockstepMode",
+					"when": "debugType == cspy && iar-debug.sessionIsMulticore"
+				},
+				{
+					"command": "iar.disableMulticoreLockstepMode",
+					"when": "debugType == cspy && iar-debug.sessionIsMulticore"
+				}
+			]
+		},
 		"commands": [
 			{
 				"command": "iar.useAutoBreakpoints",
@@ -147,6 +163,26 @@
 				"category": "IAR Debug",
 				"title": "Set Breakpoint Type: Software (Current Session Only)",
 				"enablement": "debugType == cspy && !iar-debug.noSoftwareBreakpoints"
+			},
+			{
+				"command": "iar.enableMulticoreLockstepMode",
+				"category": "IAR Debug",
+				"title": "Set Run/Step/Stop affects all cores",
+				"enablement": "debugType == cspy && iar-debug.sessionIsMulticore && !iar-debug.lockstepEnabled",
+				"icon": {
+					"dark": "images/icons/DgCoresLockstepOn_dark.svg",
+					"light": "images/icons/DgCoresLockstepOn_light.svg"
+				}
+			},
+			{
+				"command": "iar.disableMulticoreLockstepMode",
+				"category": "IAR Debug",
+				"title": "Set Run/Step/Stop affects current core only",
+				"enablement": "debugType == cspy && iar-debug.sessionIsMulticore && iar-debug.lockstepEnabled",
+				"icon": {
+					"dark": "images/icons/DgCoresLockstepOff_dark.svg",
+					"light": "images/icons/DgCoresLockstepOff_light.svg"
+				}
 			}
 		],
 		"breakpoints": [

@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { MsgIcon, MsgKind, MsgResult } from "iar-vsc-common/thrift/bindings/frontend_types";
-import { BreakpointType } from "./breakpoints/cspyBreakpointManager";
+import { BreakpointType } from "./breakpoints/cspyBreakpointService";
 
 /**
  * Custom requests can be sent from a DAP client to the DAP server. Basically, these are C-SPY specific extensions to
@@ -14,11 +14,12 @@ export namespace CustomRequest {
      * Holds the names of all supported custom requests (i.e. the string values used to perform the requests).
      */
     export enum Names {
-        USE_AUTO_BREAKPOINTS     = "useAutoBreakpoints",
-        USE_HARDWARE_BREAKPOINTS = "useHardwareBreakpoints",
-        USE_SOFTWARE_BREAKPOINTS = "useSoftwareBreakpoints",
-        REGISTERS                = "registers",
-        GET_BREAKPOINT_TYPES     = "getBreakpointTypes",
+        USE_AUTO_BREAKPOINTS      = "useAutoBreakpoints",
+        USE_HARDWARE_BREAKPOINTS  = "useHardwareBreakpoints",
+        USE_SOFTWARE_BREAKPOINTS  = "useSoftwareBreakpoints",
+        REGISTERS                 = "registers",
+        GET_BREAKPOINT_TYPES      = "getBreakpointTypes",
+        SET_LOCKSTEP_MODE_ENABLED = "setLockstepMode",
 
         /// Frontend service requests, used by {@link FrontendHandler}. Even though these are DAP "requests", they are
         /// actually responses to a previous DAP event that created a dialog (see below). The adapter sends an event telling
@@ -42,6 +43,16 @@ export namespace CustomRequest {
      * Response data to a {@link CustomRequest.GET_BREAKPOINT_TYPES} request.
      */
     export type BreakpointTypesResponse = BreakpointType[];
+
+    /**
+     * Request arguments/parameters for a {@link CustomRequest.SET_LOCKSTEP_MODE_ENABLED} request.
+     */
+    export interface SetLockstepModeEnabledArgs {
+        enabled: boolean;
+    }
+    export function isSetLockstepModeArgs(obj: unknown): obj is SetLockstepModeEnabledArgs {
+        return typeof(obj) === "object" && typeof((obj as SetLockstepModeEnabledArgs).enabled) === "boolean";
+    }
 
     /**
      * Request arguments/parameters for a {@link CustomRequest.MESSAGE_BOX_CLOSED} request.

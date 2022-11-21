@@ -37,6 +37,7 @@ import { TimelineFrontendHandler } from "./timelineFrontendHandler";
 import { TIMELINE_FRONTEND_SERVICE } from "iar-vsc-common/thrift/bindings/timeline_types";
 import { CSpyCoresService } from "./contexts/cspyCoresService";
 import { CSpyRunControlService } from "./contexts/cspyRunControlService";
+import { MulticoreProtocolExtension } from "./multicoreProtocolExtension";
 import { BreakpointTypeProtocolExtension } from "./breakpoints/breakpointTypeProtocolExtension";
 
 /**
@@ -58,6 +59,9 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     /** The type of breakpoint to use by default. This is a hidden option; it isn't normally provided directly in the
     * launch.json (it's not declared in package.json). Instead, it is provided from the user's selection in the UI. */
     breakpointType?: BreakpointType;
+    /** For multicore sessions, whether to enable lockstep mode (i.e. whether run/step should affect all cores, or
+    * just the selected one). Hidden option, see above. */
+    multicoreLockstepModeEnabled?: boolean;
     /** Enable logging the Debug Adapter Protocol */
     trace?: boolean;
     /** Path to the Embedded Workbench installation to use */
@@ -111,6 +115,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
         // Helpers for some of our DAP extensions
         breakpointTypeExtension: BreakpointTypeProtocolExtension;
+        multicoreExtension?: MulticoreProtocolExtension;
     } = undefined;
 
     private readonly cspyEventHandler = new DebugEventListenerHandler();
@@ -238,20 +243,19 @@ export class CSpyDebugSession extends LoggingDebugSession {
             const frontendHandler = new FrontendHandler(this, args.sourceFileMap ?? {}, this.customRequestRegistry);
             serviceManager.startService(FRONTEND_SERVICE, Frontend, frontendHandler);
             const timelineFrontendHandler = new TimelineFrontendHandler();
-            this.serviceManager.startService(TIMELINE_FRONTEND_SERVICE, TimelineFrontend, timelineFrontendHandler);
+            serviceManager.startService(TIMELINE_FRONTEND_SERVICE, TimelineFrontend, timelineFrontendHandler);
 
             // -- Start the CSpyServer session (incl. loading macros & flashing) --
             const sessionConfig: SessionConfiguration = await new LaunchArgumentConfigurationResolver().resolveLaunchArguments(args);
             const cspyDebugger = await serviceManager.findService(DEBUGGER_SERVICE, Debugger);
             this.sendEvent(new OutputEvent("Using C-SPY version: " + await cspyDebugger.service.getVersionString() + "\n"));
 
-            await this.cspyDebugger.service.startSession(sessionConfig);
-            const driver = CSpyDriver.driverFromName(args.driver, args.target, args.driverOptions);
+            await cspyDebugger.service.startSession(sessionConfig);
 
             if (args.download) {
                 await Utils.loadMacros(cspyDebugger.service, args.download.deviceMacros ?? []);
                 if (args.download.flashLoader) {
-                    await this.cspyDebugger.service.flashModule(args.download.flashLoader, sessionConfig.executable, [], []);
+                    await cspyDebugger.service.flashModule(args.download.flashLoader, sessionConfig.executable, [], []);
                 }
             }
             await Utils.loadMacros(cspyDebugger.service, sessionConfig.setupMacros ?? []);
@@ -284,6 +288,11 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 return { svdContent: await registerInfoGenerator.getSvdXml() };
             });
 
+            let multicoreExtension: MulticoreProtocolExtension | undefined = undefined;
+            if (this.numCores > 1) {
+                multicoreExtension = new MulticoreProtocolExtension(args.multicoreLockstepModeEnabled ?? true, this.customRequestRegistry);
+            }
+
             // -- Store everything needed to be able to handle requests --
             this.services = {
                 serviceManager,
@@ -294,6 +303,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 breakpointService: breakpointManager,
                 disassemblyService: disassemblyManager,
                 memoryService: memoryManager,
+                multicoreExtension,
                 breakpointTypeExtension,
             };
 
@@ -370,12 +380,17 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     protected override async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments) {
         await this.tryWithServices(response, async services => {
-            await services.runControlService.pause(args.threadId);
+            // The DAP pause request doesn't support singleThread yet, so we pretend it does for the purpose of being
+            // able to control the lockstep mode (see MulticoreProtocolExtension).
+            const newArgs: typeof args & { singleThread?: boolean } = args;
+            services.multicoreExtension?.massageExecutionRequest(newArgs, response);
+            await services.runControlService.pause(newArgs.singleThread ? newArgs.threadId : undefined);
         });
         this.sendResponse(response);
     }
     protected override async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments) {
         await this.tryWithServices(response, async(services) => {
+            services.multicoreExtension?.massageExecutionRequest(args, response);
             await services.runControlService.continue(args.singleThread ? args.threadId : undefined);
         });
         this.sendResponse(response);
@@ -390,6 +405,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     protected override async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments) {
         await this.tryWithServices(response, async(services) => {
+            services.multicoreExtension?.massageExecutionRequest(args, response);
             await services.runControlService.next(args.singleThread ? args.threadId : undefined, args.granularity);
         });
         this.sendResponse(response);
@@ -397,6 +413,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     protected override async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments) {
         await this.tryWithServices(response, async(services) => {
+            services.multicoreExtension?.massageExecutionRequest(args, response);
             await services.runControlService.stepIn(args.singleThread ? args.threadId : undefined, args.granularity);
         });
         this.sendResponse(response);
@@ -404,6 +421,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     protected override async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments) {
         await this.tryWithServices(response, services => {
+            services.multicoreExtension?.massageExecutionRequest(args, response);
             return services.runControlService.stepOut(args.singleThread ? args.threadId : undefined);
         });
         this.sendResponse(response);

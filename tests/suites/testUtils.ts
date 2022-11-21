@@ -54,6 +54,7 @@ export namespace TestUtils {
             projectConfiguration: configuration,
             program: program,
             workbenchPath: workbenchPath,
+            multicoreLockstepModeEnabled: true,
         };
     }
 

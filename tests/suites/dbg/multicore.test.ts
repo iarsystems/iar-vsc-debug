@@ -5,6 +5,7 @@ import { DebugProtocol } from "@vscode/debugprotocol";
 import * as Assert from "assert";
 import { OsUtils } from "iar-vsc-common/osUtils";
 import { CSpyLaunchRequestArguments } from "../../../src/dap/cspyDebug";
+import { CustomRequest } from "../../../src/dap/customRequest";
 import { TestConfiguration } from "../testConfiguration";
 import { TestUtils } from "../testUtils";
 import { debugAdapterSuite } from "./debugAdapterSuite";
@@ -233,6 +234,43 @@ debugAdapterSuite("Test multicore debugging", function(dc, dbgConfig, fibonacciF
                     }),
                     await dc().continueRequest({threadId: 1, singleThread: true}),
                 ]);
+            }),
+        ]);
+    });
+
+    test("Support setting lockstep mode", () => {
+        return Promise.all([
+            dc().configurationSequence(),
+            dc().launch(config),
+            dc().waitForEvent("stopped").then(async() => {
+                const core0Location = (await dc().stackTraceRequest({threadId: 0})).body.stackFrames[0]!;
+                await dc().setBreakpointsRequest({source: { path: fibonacciFile() }, breakpoints: [{line: 49}] });
+
+                await dc().customRequest(CustomRequest.Names.SET_LOCKSTEP_MODE_ENABLED, { enabled: false });
+                await Promise.all([
+                    dc().waitForEvent("stopped").then(async(ev: Partial<DebugProtocol.StoppedEvent>) => {
+                        Assert.strictEqual(ev.body!.threadId, 1);
+                        Assert.strictEqual(ev.body!.reason, "breakpoint");
+                        await TestUtils.assertLocationIs(dc(), core0Location.line, core0Location.source?.path, new RegExp(`^${core0Location.name}$`), 0);
+                        await TestUtils.assertLocationIs(dc(), 49, fibonacciFile(), /main/, 1);
+                    }),
+                    dc().continueRequest({threadId: 1}),
+                ]);
+
+                await dc().setBreakpointsRequest({source: { path: fibonacciFile() }, breakpoints: [] });
+                await dc().customRequest(CustomRequest.Names.SET_LOCKSTEP_MODE_ENABLED, { enabled: true });
+                const previousLines = await Promise.all([
+                    (await dc().stackTraceRequest({threadId: 0})).body.stackFrames[0]!,
+                    (await dc().stackTraceRequest({threadId: 1})).body.stackFrames[0]!,
+                ]);
+                await dc().continueRequest({ threadId: 0 });
+                await dc().waitForEvent("stopped").then((ev: Partial<DebugProtocol.StoppedEvent>) => {
+                    Assert.strictEqual(ev.body!.reason, "exit");
+                });
+                for (let i = 0; i < 2; i++) {
+                    const stack = await dc().stackTraceRequest({threadId: i});
+                    Assert.notStrictEqual(stack.body.stackFrames[0]?.line, previousLines[i]);
+                }
             }),
         ]);
     });
