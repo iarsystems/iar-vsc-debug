@@ -160,7 +160,6 @@ export class CSpyRunControlService implements Disposable {
         const coreIds = Array.from({length: nCores}, (_, i) => i);
         return Promise.all(coreIds.map(async i => {
             const isStopped = (await this.dbgr.service.getCoreState(i)) !== DkCoreStatusConstants.kDkCoreStateRunning;
-            console.log(`(${i}): ${isStopped}`);
             if (isStopped) {
                 const expectedStoppingReason = this.expectedStoppingReason.get(i);
                 const wasStopped = expectedStoppingReason === undefined;

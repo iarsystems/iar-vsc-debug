@@ -641,7 +641,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     private async endSession() {
-        console.log("Closing down debug adapter");
         if (this.services) {
             await this.services.contextService.dispose();
             this.services.runControlService.dispose();
@@ -655,7 +654,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
             await this.services.serviceManager.dispose();
             this.services = undefined;
         }
-        console.log("Adapter closed");
     }
 
     /**
