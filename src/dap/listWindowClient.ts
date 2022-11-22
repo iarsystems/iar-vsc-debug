@@ -124,7 +124,7 @@ export class ListWindowClient implements Disposable {
             this.onChangeOnce(() => {
                 resolve();
             });
-            setTimeout(() => resolve(), 200);
+            setTimeout(() => resolve(), 500);
         });
         const updatedRow = await this.backend.service.getRow(new Int64(rowIndex));
         this.rows[rowIndex] = updatedRow;
