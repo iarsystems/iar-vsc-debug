@@ -48,8 +48,8 @@ export namespace MulticoreLockstepModeFrontend {
         // focused on a single-core session.
         context.subscriptions.push(vscode.debug.onDidChangeActiveDebugSession(async(session) => {
             if (session?.type === "cspy") {
-                const response: DebugProtocol.ThreadsResponse = await session.customRequest("threads");
-                vscode.commands.executeCommand("setContext", "iar-debug.sessionIsMulticore", response.body.threads.length > 1);
+                const response: DebugProtocol.ThreadsResponse["body"] = await session.customRequest("threads");
+                vscode.commands.executeCommand("setContext", "iar-debug.sessionIsMulticore", response.threads.length > 1);
             }
         }));
 
