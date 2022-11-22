@@ -197,7 +197,7 @@ suite("Configuration tests", () => {
         configTest = ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfigTest, wsDir);
         assert.deepStrictEqual(configTest["driver"], "I-jet");
         assert.deepStrictEqual(configTest["target"], "arm");
-        assert.deepStrictEqual(configTest["stopOnSymbol"], true)
+        assert.deepStrictEqual(configTest["stopOnSymbol"], true);
         assert.deepStrictEqual(configTest["driverOptions"], []);
 
         // Ensure that we can collect all listed plugins and macros
