@@ -118,6 +118,14 @@ export class ListWindowClient implements Disposable {
             throw new Error("Cannot find row in the window matching: " + reference.values[this.idColumn]);
         }
         await this.backend.service.setValue(new Int64(rowIndex), column, value);
+
+        // Some windows (e.g. registers) don't update immediately after calling setValue, so we wait for it it push and update first
+        await new Promise<void>(resolve => {
+            this.onChangeOnce(() => {
+                resolve();
+            });
+            setTimeout(() => resolve(), 200);
+        });
         const updatedRow = await this.backend.service.getRow(new Int64(rowIndex));
         this.rows[rowIndex] = updatedRow;
         const updatedValue = updatedRow.cells[column];
