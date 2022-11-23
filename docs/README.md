@@ -145,7 +145,17 @@ These types of variables are can be inspected in the **Variables** view:
 
 Clicking the **View Binary Data** button opens the **Memory** view, where you can inspect the variable as binary data in memory. See [Memory view](#MemoryView).
 
-On the context menu are commands for setting or copying the value of the selected variable. Depending on the type of variable, there can also be commands for copying the variable as an expression or adding it to the **Watch** view.
+On the context menu are commands for setting or copying the value of the selected variable.
+
+![Variables view context menu](images/VSCode_VariablesViewContextMenu_01.png)
+
+Depending on the type of variable, there can also be commands for copying the variable as an expression or adding it to the **Watch** view. For *static* variables, the command:
+
+* **Break on Value Read** sets a data breakpoint that triggers when a value is read from that location,
+
+* **Break on Value Change** sets a data breakpoint that triggers when a value is written to that location
+
+* **Break on Value Access** sets a data breakpoint that triggers when a value is either read or written from that location.
 
 ### Watch view
 
@@ -179,7 +189,15 @@ Right-click in the **Breakpoints** view to open the context menu.
 
 **Edit Condition**
 
-Brings up an input field where you can edit the selected breakpoint. Also available as a pen icon next to the name of the breakpoint.
+Brings up an input field where you can edit the selected breakpoint. Choose between:
+
+* **Expression** : Specify an expression. The breakpoint triggers when the expression evaluates to true.
+
+* **Hit Count** : Specify the number of times that the breakpoint condition must be fulfilled before the breakpoint triggers for the first time.
+
+* **Log Message** : Specify a message to be sent to the log when the breakpoint triggers.
+
+This command is also available as a pen icon next to the name of the breakpoint.
 
 **Remove Breakpoint**
 
@@ -260,9 +278,9 @@ The easiest way to generate a `launch.json` configuration is from an IAR Embedde
             "name": "My I-jet Config",
             "target": "arm",
             "program": "${workspaceFolder}/Debug/Exe/BasicDebugging.out",
-            "driver": "I-jet",
-            "stopOnEntry": true,
-            "workbenchPath": "${command:iar-config.toolchain}",
+            "driver": "jet",
+            "stopOnSymbol": "main",
+            "workbenchPath": "${command:iar-settings.toolchain}",
             "projectPath": "${workspaceFolder}",
             "projectConfiguration": "Debug",
             "trace": true,
@@ -272,7 +290,7 @@ The easiest way to generate a `launch.json` configuration is from an IAR Embedde
                 "--cpu=Cortex-M4",
                 "--fpu=VFPv4_SP",
                 "-p",
-                "${command:iar-config.toolchain}/arm/CONFIG/debugger/ST/STM32F429II.ddf",
+                "${command:iar-settings.toolchain}/arm/CONFIG/debugger/ST/STM32F429II.ddf",
                 "--semihosting",
                 "--device=STM32F429II",
                 "--multicore_nr_of_cores=1",
@@ -289,9 +307,9 @@ The easiest way to generate a `launch.json` configuration is from an IAR Embedde
                 "--drv_catch_exceptions=0xff0"
             ],
             "download": {
-                "flashLoader": "${command:iar-config.toolchain}/arm/config/flashloader/ST/FlashSTM32F427xI.board",
+                "flashLoader": "${command:iar-settings.toolchain}/arm/config/flashloader/ST/FlashSTM32F427xI.board",
                 "deviceMacros": [
-                    "${command:iar-config.toolchain}/arm/config/debugger/ST/STM32F4xx.dmac"
+                    "${command:iar-settings.toolchain}/arm/config/debugger/ST/STM32F4xx.dmac"
                 ]
             }
         }
