@@ -8,15 +8,10 @@ import * as Path from "path";
 import * as Frontend from "iar-vsc-common/thrift/bindings/frontend_types";
 import { SourceLocation } from "iar-vsc-common/thrift/bindings/shared_types";
 import * as Q from "q";
-import { DebugProtocol } from "@vscode/debugprotocol";
 import { CustomEvent, CustomRequest } from "./customRequest";
 import { Event, logger } from "@vscode/debugadapter";
-import { Command, CommandRegistry } from "./commandRegistry";
-import {Utils} from "./utils";
-
-interface EventSink {
-    send(event: DebugProtocol.Event): void;
-}
+import { CommandRegistry } from "./commandRegistry";
+import {DapEventSink, Utils} from "./utils";
 
 /**
  * A (handler for a) thrift service that provides various types dialogs to C-SPY. These may be used e.g. to display
@@ -46,57 +41,39 @@ export class FrontendHandler {
      * @param requestRegistry The registry where this handler should register the DAP requests it can handle
      */
     constructor(
-        private readonly eventSink: EventSink,
+        private readonly eventSink: DapEventSink,
         private readonly sourceFileMap: Record<string, string>,
         requestRegistry: CommandRegistry<unknown, unknown>
     ) {
-        requestRegistry.registerCommand(new Command(CustomRequest.Names.MESSAGE_BOX_CLOSED, args => {
-            if (CustomRequest.isMessageBoxClosedArgs(args)) {
+        requestRegistry.registerCommandWithTypeCheck(CustomRequest.Names.MESSAGE_BOX_CLOSED, CustomRequest.isMessageBoxClosedArgs,
+            args => {
                 this.openMessageBoxes.get(args.id)?.(args.result);
                 this.openMessageBoxes.delete(args.id);
-                return Promise.resolve();
-            }
-            return Promise.reject(new Error("Invalid arguments"));
-        }));
-        requestRegistry.registerCommand(new Command(CustomRequest.Names.OPEN_DIALOG_CLOSED, args => {
-            if (CustomRequest.isOpenDialogClosedArgs(args)) {
+            });
+        requestRegistry.registerCommandWithTypeCheck(CustomRequest.Names.OPEN_DIALOG_CLOSED, CustomRequest.isOpenDialogClosedArgs,
+            args => {
                 this.openOpenDialogs.get(args.id)?.(args.paths);
                 this.openOpenDialogs.delete(args.id);
-                return Promise.resolve();
-            }
-            return Promise.reject(new Error("Invalid arguments"));
-        }));
-        requestRegistry.registerCommand(new Command(CustomRequest.Names.SAVE_DIALOG_CLOSED, args => {
-            if (CustomRequest.isSaveDialogClosedArgs(args)) {
+            });
+        requestRegistry.registerCommandWithTypeCheck(CustomRequest.Names.SAVE_DIALOG_CLOSED, CustomRequest.isSaveDialogClosedArgs,
+            args => {
                 this.openSaveDialogs.get(args.id)?.(args.path ? [args.path] : []);
                 this.openSaveDialogs.delete(args.id);
-                return Promise.resolve();
-            }
-            return Promise.reject(new Error("Invalid arguments"));
-        }));
-        requestRegistry.registerCommand(new Command(CustomRequest.Names.PROGRESS_BAR_CANCELED, args => {
-            if (CustomRequest.isProgressBarCanceledArgs(args)) {
+            });
+        requestRegistry.registerCommandWithTypeCheck(CustomRequest.Names.PROGRESS_BAR_CANCELED, CustomRequest.isProgressBarCanceledArgs,
+            args => {
                 this.openProgressBars.set(args.id, true);
-                return Promise.resolve();
-            }
-            return Promise.reject(new Error("Invalid arguments"));
-        }));
-        requestRegistry.registerCommand(new Command(CustomRequest.Names.ELEMENT_SELECTED, args => {
-            if (CustomRequest.isElementSelectedArgs(args)) {
+            });
+        requestRegistry.registerCommandWithTypeCheck(CustomRequest.Names.ELEMENT_SELECTED, CustomRequest.isElementSelectedArgs,
+            args => {
                 this.openElementSelectionDialogs.get(args.id)?.(args.selectedIndex);
                 this.openElementSelectionDialogs.delete(args.id);
-                return Promise.resolve();
-            }
-            return Promise.reject(new Error("Invalid arguments"));
-        }));
-        requestRegistry.registerCommand(new Command(CustomRequest.Names.MULTIELEMENT_SELECTED, args => {
-            if (CustomRequest.isMessageBoxClosedArgs(args)) {
-                this.openMessageBoxes.get(args.id)?.(args.result);
-                this.openMessageBoxes.delete(args.id);
-                return Promise.resolve();
-            }
-            return Promise.reject(new Error("Invalid arguments"));
-        }));
+            });
+        requestRegistry.registerCommandWithTypeCheck(CustomRequest.Names.MULTIELEMENT_SELECTED, CustomRequest.isMultiElementSelectedArgs,
+            args => {
+                this.openMultiElementSelectionDialogs.get(args.id)?.(args.selectedIndices);
+                this.openMultiElementSelectionDialogs.delete(args.id);
+            });
     }
 
     messageBox(msg: string, caption: string, icon: Frontend.MsgIcon, kind: Frontend.MsgKind, _dontAskMgrKey: string): Q.Promise<Frontend.MsgResult> {
@@ -110,7 +87,7 @@ export class FrontendHandler {
                 kind,
                 icon,
             };
-            this.eventSink.send(new Event(CustomEvent.Names.MESSAGE_BOX_CREATED, body));
+            this.eventSink.sendEvent(new Event(CustomEvent.Names.MESSAGE_BOX_CREATED, body));
         });
     }
 
@@ -123,7 +100,7 @@ export class FrontendHandler {
             kind: Frontend.MsgKind.kMsgOk,
             icon,
         };
-        this.eventSink.send(new Event(CustomEvent.Names.MESSAGE_BOX_CREATED, body));
+        this.eventSink.sendEvent(new Event(CustomEvent.Names.MESSAGE_BOX_CREATED, body));
         return Q.resolve();
     }
 
@@ -139,7 +116,7 @@ export class FrontendHandler {
                 filter,
                 allowMultiple,
             };
-            this.eventSink.send(new Event(CustomEvent.Names.OPEN_DIALOG_CREATED, body));
+            this.eventSink.sendEvent(new Event(CustomEvent.Names.OPEN_DIALOG_CREATED, body));
         });
     }
 
@@ -155,7 +132,7 @@ export class FrontendHandler {
                 filter: "",
                 allowMultiple: false,
             };
-            this.eventSink.send(new Event(CustomEvent.Names.OPEN_DIALOG_CREATED, body));
+            this.eventSink.sendEvent(new Event(CustomEvent.Names.OPEN_DIALOG_CREATED, body));
         });
     }
 
@@ -169,7 +146,7 @@ export class FrontendHandler {
                 startPath: Path.join(startDir, fileName),
                 filter,
             };
-            this.eventSink.send(new Event(CustomEvent.Names.SAVE_DIALOG_CREATED, body));
+            this.eventSink.sendEvent(new Event(CustomEvent.Names.SAVE_DIALOG_CREATED, body));
         });
     }
 
@@ -195,25 +172,25 @@ export class FrontendHandler {
         const body: CustomEvent.ProgressBarCreatedData = { id, title: caption, initialMessage: msg, canCancel,
             minValue: minvalue.toNumber(), valueRange: (maxvalue.toNumber() - minvalue.toNumber()) };
         this.openProgressBars.set(id, false);
-        this.eventSink.send(new Event(CustomEvent.Names.PROGRESS_BAR_CREATED, body));
+        this.eventSink.sendEvent(new Event(CustomEvent.Names.PROGRESS_BAR_CREATED, body));
         return Q.resolve(id);
     }
 
     updateProgressBarValue(id: number, value: Thrift.Int64): Q.Promise<boolean> {
         const body: CustomEvent.ProgressBarUpdatedData = { id, value: value.toNumber() };
-        this.eventSink.send(new Event(CustomEvent.Names.PROGRESS_BAR_UPDATED, body));
+        this.eventSink.sendEvent(new Event(CustomEvent.Names.PROGRESS_BAR_UPDATED, body));
         return Q.resolve(this.openProgressBars.get(id) ?? false);
     }
 
     updateProgressBarMessage(id: number, message: string): Q.Promise<boolean> {
         const body: CustomEvent.ProgressBarUpdatedData = { id, message };
-        this.eventSink.send(new Event(CustomEvent.Names.PROGRESS_BAR_UPDATED, body));
+        this.eventSink.sendEvent(new Event(CustomEvent.Names.PROGRESS_BAR_UPDATED, body));
         return Q.resolve(this.openProgressBars.get(id) ?? false);
     }
 
     closeProgressBar(id: number): Q.Promise<void> {
         const body: CustomEvent.ProgressBarClosedData = { id };
-        this.eventSink.send(new Event(CustomEvent.Names.PROGRESS_BAR_CLOSED, body));
+        this.eventSink.sendEvent(new Event(CustomEvent.Names.PROGRESS_BAR_CLOSED, body));
         this.openProgressBars.delete(id);
         return Q.resolve();
     }
@@ -233,7 +210,7 @@ export class FrontendHandler {
                 message,
                 elements,
             };
-            this.eventSink.send(new Event(CustomEvent.Names.ELEMENT_SELECT_CREATED, body));
+            this.eventSink.sendEvent(new Event(CustomEvent.Names.ELEMENT_SELECT_CREATED, body));
         });
     }
 
@@ -247,13 +224,13 @@ export class FrontendHandler {
                 message,
                 elements,
             };
-            this.eventSink.send(new Event(CustomEvent.Names.MULTIELEMENT_SELECT_CREATED, body));
+            this.eventSink.sendEvent(new Event(CustomEvent.Names.MULTIELEMENT_SELECT_CREATED, body));
         });
     }
 
     editSourceLocation(loc: SourceLocation): Q.Promise<void> {
         const body: CustomEvent.FileOpenedData = { path: loc.filename, line: loc.line, col: loc.col };
-        this.eventSink.send(new Event(CustomEvent.Names.FILE_OPENED, body));
+        this.eventSink.sendEvent(new Event(CustomEvent.Names.FILE_OPENED, body));
         return Q.resolve();
     }
 

@@ -16,9 +16,12 @@ export namespace CSpyServerServiceManager {
      * Starts CSpyServer using the given workbench, and returns a {@link ThriftServiceManager} which can be used to
      * communicate with the CSpyServer process.
      */
-    export function fromWorkbench(workbenchPath: string): Promise<ThriftServiceManager> {
+    export function fromWorkbench(workbenchPath: string, numCores: number): Promise<ThriftServiceManager> {
         const cspyServerPath = Path.join(workbenchPath, "common/bin/CSpyServer2" + IarOsUtils.executableExtension());
         const args = ["-standalone", "-sockets"];
+        if (numCores > 1) {
+            args.push(`--multicore_nr_of_cores=${numCores}`);
+        }
         const processMonitor: ProcessMonitor = {
             stdout: data => logger.verbose(data),
             stderr: data => logger.error(data),

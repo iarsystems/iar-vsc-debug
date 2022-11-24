@@ -7,7 +7,7 @@ import * as Assert from "assert";
 import Q = thrift.Q;
 import * as Disassembly from "iar-vsc-common/thrift/bindings/Disassembly";
 import * as SourceLookup from "iar-vsc-common/thrift/bindings/SourceLookup";
-import { CspyDisassemblyManager } from "../../../src/dap/cspyDisassemblyManager";
+import { CspyDisassemblyService } from "../../../src/dap/cspyDisassemblyService";
 import { ContextRef, Location, SourceLocation, SourceRange } from "iar-vsc-common/thrift/bindings/shared_types";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { DisassembledLocation } from "iar-vsc-common/thrift/bindings/disassembly_types";
@@ -23,7 +23,7 @@ import { DebugProtocol } from "@vscode/debugprotocol";
  * so that it works on any device.
  */
 suite("Disassembly with mock service", () =>{
-    let disasm: CspyDisassemblyManager;
+    let disasm: CspyDisassemblyService;
     let instruction = `0x${"f".repeat(16)}: 0x${"f".repeat(16)}: BL main`;
     let sourceRange: SourceRange | undefined;
 
@@ -57,7 +57,7 @@ suite("Disassembly with mock service", () =>{
         // @ts-ignore
         const sourceClient = new ThriftClient<SourceLookup.Client>(new EventEmitter(), mockSourceClient);
 
-        disasm = new CspyDisassemblyManager(disasmClient, sourceClient, true, true);
+        disasm = new CspyDisassemblyService(disasmClient, sourceClient, true, true);
     });
 
     test("Handles invalid memory ranges", async() => {

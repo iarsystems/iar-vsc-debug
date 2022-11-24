@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import { CodeBreakpointDescriptorFactory, DataBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory, EmulDataBreakpointDescriptorFactory, HwCodeBreakpointDescriptorFactory, LogBreakpointDescriptorFactory, StdCode2BreakpointDescriptorFactory, StdData2BreakpointDescriptorFactory, StdLog2BreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
 import { logger } from "@vscode/debugadapter/lib/logger";
-import { BreakpointType } from "./cspyBreakpointManager";
+import { BreakpointType } from "./cspyBreakpointService";
 
 /**
  * Provides some driver-specific information.

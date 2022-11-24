@@ -12,9 +12,11 @@ export namespace SettingsConstants {
 
 	export const BREAKPOINT_TYPE = "breakpointType";
 	// Ought to match the enum in package.json
-	export enum BreakpointTypeValues {
+	export enum BreakpointTypeValue {
 		AUTO = "Auto",
 		HARDWARE = "Hardware",
 		SOFTWARE = "Software",
 	}
+
+	export const LOCKSTEP_MODE_ENABLED = "enableMulticoreLockstepMode";
 }

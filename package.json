@@ -43,8 +43,8 @@
 	],
 	"private": true,
 	"dependencies": {
-		"@vscode/debugadapter": "^1.53.0",
-		"@vscode/debugprotocol": "^1.53.0",
+		"@vscode/debugadapter": "^1.57.0",
+		"@vscode/debugprotocol": "^1.57.0",
 		"async-mutex": "^0.3.2",
 		"await-notify": "1.0.1",
 		"bufferutil": "^4.0.6",
@@ -62,7 +62,7 @@
 		"@types/vscode": "1.64.0",
 		"@typescript-eslint/eslint-plugin": "^5.2.0",
 		"@typescript-eslint/parser": "^5.2.0",
-		"@vscode/debugadapter-testsupport": "^1.51.0",
+		"@vscode/debugadapter-testsupport": "^1.57.0",
 		"eslint": "^8.1.0",
 		"eslint-plugin-deprecation": "^1.3.2",
 		"husky": "^7.0.4",
@@ -110,10 +110,26 @@
 						"Use hardware breakpoints.",
 						"Use software breakpoints."
 					]
+				},
+				"iar-debug.enableMulticoreLockstepMode": {
+					"default": true,
+					"description": "When enabled, run/step/stop actions in a multicore session affect all cores, instead of just the focused one.",
+					"type": "boolean"
 				}
 			}
 		},
-		"menus": {},
+		"menus": {
+			"debug/toolBar": [
+				{
+					"command": "iar.enableMulticoreLockstepMode",
+					"when": "debugType == cspy && iar-debug.sessionIsMulticore"
+				},
+				{
+					"command": "iar.disableMulticoreLockstepMode",
+					"when": "debugType == cspy && iar-debug.sessionIsMulticore"
+				}
+			]
+		},
 		"commands": [
 			{
 				"command": "iar.useAutoBreakpoints",
@@ -147,6 +163,26 @@
 				"category": "IAR Debug",
 				"title": "Set Breakpoint Type: Software (Current Session Only)",
 				"enablement": "debugType == cspy && !iar-debug.noSoftwareBreakpoints"
+			},
+			{
+				"command": "iar.enableMulticoreLockstepMode",
+				"category": "IAR Debug",
+				"title": "Set Run/Step/Stop affects all cores",
+				"enablement": "debugType == cspy && iar-debug.sessionIsMulticore && !iar-debug.lockstepEnabled",
+				"icon": {
+					"dark": "images/icons/DgCoresLockstepOn_dark.svg",
+					"light": "images/icons/DgCoresLockstepOn_light.svg"
+				}
+			},
+			{
+				"command": "iar.disableMulticoreLockstepMode",
+				"category": "IAR Debug",
+				"title": "Set Run/Step/Stop affects current core only",
+				"enablement": "debugType == cspy && iar-debug.sessionIsMulticore && iar-debug.lockstepEnabled",
+				"icon": {
+					"dark": "images/icons/DgCoresLockstepOff_dark.svg",
+					"light": "images/icons/DgCoresLockstepOff_light.svg"
+				}
 			}
 		],
 		"breakpoints": [
@@ -189,8 +225,13 @@
 							},
 							"stopOnEntry": {
 								"type": "boolean",
-								"description": "Automatically stop after launch.",
+								"description": "!DEPRECATED, use stopOnSymbol instead!\nAutomatically stop after launch.",
 								"default": true
+							},
+							"stopOnSymbol": {
+								"type": ["string", "boolean"],
+								"description": "A symbol for the debugger to run to when starting the debug session.\nSet to true to stop immediately after launch.\nSet to false to avoid stopping at all.",
+								"default": "main"
 							},
 							"trace": {
 								"type": "boolean",
@@ -343,7 +384,7 @@
 							"name": "${1:Debug with C-SPY}",
 							"target": "arm",
 							"program": "^\"\\${workspaceFolder}/\\${command:iar-config.project-configuration}/Exe/${2:ewproj.out}\"",
-							"stopOnEntry": true,
+							"stopOnSymbol": "main",
 							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
 							"projectPath": "^\"\\${command:iar-config.project-file}\"",
 							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
@@ -369,7 +410,7 @@
 							"name": "${1:Debug with C-SPY}",
 							"target": "arm",
 							"program": "^\"\\${workspaceFolder}/Debug/Exe/${2:ewproj.out}\"",
-							"stopOnEntry": true,
+							"stopOnSymbol": "main",
 							"workbenchPath": "${3:workbenchPath}",
 							"driver": "Simulator",
 							"driverOptions": [
@@ -393,7 +434,7 @@
 							"name": "${1:Debug with C-SPY I-Jet}",
 							"target": "arm",
 							"program": "${workspaceFolder}/Debug/Exe/${2:ewproj.out}",
-							"stopOnEntry": true,
+							"stopOnSymbol": "main",
 							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
 							"projectPath": "^\"\\${command:iar-config.project-file}\"",
 							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
@@ -435,7 +476,7 @@
 							"name": "${1:Debug with C-SPY J-Link}",
 							"target": "arm",
 							"program": "${workspaceFolder}/Debug/Exe/${2:ewproj.out}",
-							"stopOnEntry": true,
+							"stopOnSymbol": "main",
 							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
 							"projectPath": "^\"\\${command:iar-config.project-file}\"",
 							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
@@ -473,7 +514,7 @@
 							"name": "${1:Debug with C-SPY TI MSP-FET}",
 							"target": "arm",
 							"program": "${workspaceFolder}/Debug/Exe/${2:ewproj.out}",
-							"stopOnEntry": true,
+							"stopOnSymbol": "main",
 							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
 							"projectPath": "^\"\\${command:iar-config.project-file}\"",
 							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
@@ -510,7 +551,7 @@
 							"name": "${1:Debug with C-SPY Simulator}",
 							"target": "riscv",
 							"program": "${workspaceFolder}/Debug/Exe/${2:ewproj.out}",
-							"stopOnEntry": true,
+							"stopOnSymbol": "main",
 							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
 							"projectPath": "^\"\\${command:iar-config.project-file}\"",
 							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
@@ -533,7 +574,7 @@
 							"name": "${1:Debug with C-SPY I-Jet}",
 							"target": "riscv",
 							"program": "${workspaceFolder}/Debug/Exe/${2:ewproj.out}",
-							"stopOnEntry": true,
+							"stopOnSymbol": "main",
 							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
 							"projectPath": "^\"\\${command:iar-config.project-file}\"",
 							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
@@ -563,7 +604,7 @@
 							"name": "${1:Debug with C-SPY Simulator}",
 							"target": "rh850",
 							"program": "${workspaceFolder}/Debug/Exe/${2:ewproj.out}",
-							"stopOnEntry": true,
+							"stopOnSymbol": "main",
 							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
 							"projectPath": "^\"\\${command:iar-config.project-file}\"",
 							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
@@ -588,7 +629,7 @@
 							"name": "${1:Debug with C-SPY Emulator}",
 							"target": "rh850",
 							"program": "${workspaceFolder}/Debug/Exe/${2:ewproj.out}",
-							"stopOnEntry": true,
+							"stopOnSymbol": "main",
 							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
 							"projectPath": "^\"\\${command:iar-config.project-file}\"",
 							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",

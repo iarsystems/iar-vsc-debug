@@ -29,7 +29,7 @@ export namespace BuildExtensionConfigurationProvider {
     function parseCspyCommandLine(cspyCommands: string[], projPath: string, configName: string, target: string): ConfigResolutionCommon.PartialConfig {
         let program: string | undefined;
         let driver: string | undefined;
-        let stopOnEntry = false;
+        let stopOnSymbol: string | boolean = true;
         const plugins: string[] = [];
         const setupMacros: string[] = [];
         const deviceMacros: string[] = [];
@@ -43,8 +43,7 @@ export namespace BuildExtensionConfigurationProvider {
             if ((val = consumeArg1("/file", cspyCommands)) !== undefined) {
                 program = val;
             } else if ((val = consumeArg1("/runto", cspyCommands)) !== undefined) {
-                // Right now we don't support arbitrary symbol names here
-                stopOnEntry = true;
+                stopOnSymbol = val;
             } else if ((val = consumeArg1("/driver", cspyCommands)) !== undefined) {
                 driver = val;
             } else if ((val = consumeArg1("/plugin", cspyCommands)) !== undefined) {
@@ -87,7 +86,7 @@ export namespace BuildExtensionConfigurationProvider {
             program,
             driverPath: driver,
             target,
-            stopOnEntry,
+            stopOnSymbol,
             projectPath: projPath,
             configuration: configName,
             plugins,

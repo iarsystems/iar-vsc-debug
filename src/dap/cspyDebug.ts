@@ -4,17 +4,17 @@
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { CSpyServerServiceManager } from "./thrift/cspyServerServiceManager";
 import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
-import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, TerminatedEvent, InvalidatedEvent, Event } from "@vscode/debugadapter";
+import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, TerminatedEvent, InvalidatedEvent, Event, ExitedEvent } from "@vscode/debugadapter";
 import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
 import * as DebugEventListener from "iar-vsc-common/thrift/bindings/DebugEventListener";
 import * as LibSupportService2 from "iar-vsc-common/thrift/bindings/LibSupportService2";
 import * as Frontend from "iar-vsc-common/thrift/bindings/Frontend";
 import * as TimelineFrontend from "iar-vsc-common/thrift/bindings/TimelineFrontend";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
-import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, DkNotifyConstant, SessionConfiguration } from "iar-vsc-common/thrift/bindings/cspy_types";
+import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, SessionConfiguration } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
-import { CSpyContextManager } from "./contexts/cspyContextManager";
-import { BreakpointType, CSpyBreakpointManager } from "./breakpoints/cspyBreakpointManager";
+import { CSpyContextService } from "./contexts/cspyContextService";
+import { BreakpointType, CSpyBreakpointService } from "./breakpoints/cspyBreakpointService";
 import { LaunchArgumentConfigurationResolver}  from "./configresolution/launchArgumentConfigurationResolver";
 import { CSpyException } from "iar-vsc-common/thrift/bindings/shared_types";
 import { LIBSUPPORT_SERVICE } from "iar-vsc-common/thrift/bindings/libsupport_types";
@@ -24,17 +24,21 @@ import { LibSupportHandler } from "./libSupportHandler";
 // @ts-ignore
 import { Subject } from "await-notify";
 import { CSpyDriver } from "./breakpoints/cspyDriver";
-import { Command, CommandRegistry } from "./commandRegistry";
+import { CommandRegistry } from "./commandRegistry";
 import { Utils } from "./utils";
-import { CspyDisassemblyManager } from "./cspyDisassemblyManager";
-import { CspyMemoryManager } from "./cspyMemoryManager";
+import { CspyDisassemblyService } from "./cspyDisassemblyService";
+import { CspyMemoryService } from "./cspyMemoryService";
 import { CustomRequest } from "./customRequest";
-import { RegisterInformationGenerator } from "./registerInformationGenerator";
+import { RegisterInformationService } from "./registerInformationService";
 import { FrontendHandler } from "./frontendHandler";
 import { FRONTEND_SERVICE } from "iar-vsc-common/thrift/bindings/frontend_types";
 import { Workbench, WorkbenchType } from "iar-vsc-common/workbench";
 import { TimelineFrontendHandler } from "./timelineFrontendHandler";
 import { TIMELINE_FRONTEND_SERVICE } from "iar-vsc-common/thrift/bindings/timeline_types";
+import { CSpyCoresService } from "./contexts/cspyCoresService";
+import { CSpyRunControlService } from "./contexts/cspyRunControlService";
+import { MulticoreProtocolExtension } from "./multicoreProtocolExtension";
+import { BreakpointTypeProtocolExtension } from "./breakpoints/breakpointTypeProtocolExtension";
 
 /**
  * This interface describes the cspy-debug specific launch attributes
@@ -48,11 +52,16 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     target: string;
     /** An absolute path to the "program" to debug. */
     program: string;
-    /** Automatically stop target after launch. If not specified, target does not stop. */
+    /** @deprected use stopOnSymbol instead! Automatically stop target after launch. If not specified, target does not stop. */
     stopOnEntry?: boolean;
-    /** The type of breakpoint to use by default. This isn't normally provided directly in the launch.json (it's not declared in package.json).
-    * Instead it is provided from the user's selection in the UI. */
+    /** A symbol for the debugger to run to when starting the debug session. Specify true to stop immediately after launch. Specify false to avoid stopping at all. */
+    stopOnSymbol?: string | boolean;
+    /** The type of breakpoint to use by default. This is a hidden option; it isn't normally provided directly in the
+    * launch.json (it's not declared in package.json). Instead, it is provided from the user's selection in the UI. */
     breakpointType?: BreakpointType;
+    /** For multicore sessions, whether to enable lockstep mode (i.e. whether run/step should affect all cores, or
+    * just the selected one). Hidden option, see above. */
+    multicoreLockstepModeEnabled?: boolean;
     /** Enable logging the Debug Adapter Protocol */
     trace?: boolean;
     /** Path to the Embedded Workbench installation to use */
@@ -90,21 +99,27 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
  * parts that aren't already implemented by the DAP SDK).
  */
 export class CSpyDebugSession extends LoggingDebugSession {
-    // we don't support multiple threads, so we can use a hardcoded ID for the default thread
-    private static readonly THREAD_ID = 1;
 
-    private serviceManager: ThriftServiceManager | undefined = undefined;
+    // Various services that are initialized when launching a session (i.e. when handling a launch request)
+    private services: undefined | {
+        serviceManager: ThriftServiceManager;
+        cspyDebugger: ThriftClient<Debugger.Client>;
 
-    private cspyDebugger: ThriftClient<Debugger.Client> | undefined = undefined;
+        // Wrappers/abstractions around CSpyServer services
+        registerInfoService: RegisterInformationService;
+        contextService: CSpyContextService;
+        runControlService: CSpyRunControlService;
+        breakpointService: CSpyBreakpointService;
+        disassemblyService: CspyDisassemblyService;
+        memoryService: CspyMemoryService;
+
+        // Helpers for some of our DAP extensions
+        breakpointTypeExtension: BreakpointTypeProtocolExtension;
+        multicoreExtension?: MulticoreProtocolExtension;
+    } = undefined;
 
     private readonly cspyEventHandler = new DebugEventListenerHandler();
     private readonly libSupportHandler = new LibSupportHandler();
-
-    private registerInfoGenerator: RegisterInformationGenerator | undefined = undefined;
-    private stackManager: CSpyContextManager | undefined = undefined;
-    private breakpointManager: CSpyBreakpointManager | undefined = undefined;
-    private disassemblyManager: CspyDisassemblyManager | undefined = undefined;
-    private memoryManager: CspyMemoryManager | undefined = undefined;
 
     // Here, we can register actions to perform on e.g. receiving console commands, or custom dap requests
     private readonly consoleCommandRegistry: CommandRegistry<void, string> = new CommandRegistry();
@@ -116,7 +131,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     private clientLinesStartAt1 = false;
     private clientColumnsStartAt1 = false;
 
-    private expectedStoppingReason: "entry" | "exit" | "breakpoint" | "step" | "pause" = "entry";
+    private numCores = 1;
 
     /**
      * Creates a new debug adapter that is used for one debug session.
@@ -150,6 +165,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         response.body.supportsInstructionBreakpoints = true;
         response.body.supportsReadMemoryRequest = true;
         response.body.supportsWriteMemoryRequest = true;
+        response.body.supportsSingleThreadExecutionRequests = true;
         response.body.supportsConditionalBreakpoints = true;
         response.body.supportsHitConditionalBreakpoints = true;
         response.body.supportsDataBreakpoints = true;
@@ -170,12 +186,21 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.configurationDone.notify();
     }
 
+    /**
+     * This is responsible for setting up the entire session. This includes:
+     * - Launching CSpyServer.
+     * - Setting up our own thrift services (e.g. list window frontends and a debug event listener).
+     * - Telling CSpyServer to load macros, flash and start the session.
+     * - Connecting to necessary CSpyServer services (for breakpoints, context management and more).
+     * - Setting up our DAP extension requests (see {@link CustomRequest}).
+     */
     protected override async launchRequest(response: DebugProtocol.LaunchResponse, args: CSpyLaunchRequestArguments) {
         logger.init(e => this.sendEvent(e), undefined, true);
         logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop);
 
+        let serviceManager: ThriftServiceManager | undefined = undefined;
         try {
-            // validate the workbench before trying to use it
+            // -- Launch CSpyServer --
             const workbench = Workbench.create(args.workbenchPath);
             if (workbench === undefined) {
                 throw new Error(`'${args.workbenchPath}' does not point to a valid IAR Embedded Workbench installation.`);
@@ -183,14 +208,20 @@ export class CSpyDebugSession extends LoggingDebugSession {
             if (workbench.type === WorkbenchType.BX) {
                 throw new Error(`'${workbench.name}' is an IAR Build Tools installation. Debugging is only supported for full IAR Embedded Workbench installations.`);
             }
-            // initialize all the services we need
-            this.serviceManager = await CSpyServerServiceManager.fromWorkbench(workbench.path);
-            this.serviceManager.addCrashHandler(code => {
+            // Cspyserver requires that we specify the number of cores as a command line argument, so we need to know it early
+            const match = args.driverOptions.map(opt => opt.match(/--multicore_nr_of_cores=(\d+)/)).find(match => !!match);
+            if (match && match[1]) {
+                this.numCores = Number(match[1]);
+            }
+
+            // -- Launch all our thrift services so that they are available to CSpyServer --
+            serviceManager = await CSpyServerServiceManager.fromWorkbench(workbench.path, this.numCores);
+            serviceManager.addCrashHandler(code => {
                 this.sendEvent(new OutputEvent(`The debugger backend crashed (code ${code}).`));
                 this.sendEvent(new TerminatedEvent());
             });
 
-            await this.serviceManager.startService(DEBUGEVENT_SERVICE, DebugEventListener, this.cspyEventHandler);
+            await serviceManager.startService(DEBUGEVENT_SERVICE, DebugEventListener, this.cspyEventHandler);
             this.cspyEventHandler.observeLogEvents(event => {
                 if (!event.text.endsWith("\n")) {
                     event.text += "\n";
@@ -203,51 +234,79 @@ export class CSpyDebugSession extends LoggingDebugSession {
             });
             this.libSupportHandler.observeExit(code => {
                 this.sendEvent(new OutputEvent("Debugee terminated, exit code " + code + "\n"));
-                this.expectedStoppingReason = "exit";
+                this.sendEvent(new ExitedEvent(code));
             });
             this.libSupportHandler.observeInputRequest(() => {
                 this.sendEvent(new OutputEvent("Debugee requested terminal input:"));
             });
-            this.serviceManager.startService(LIBSUPPORT_SERVICE, LibSupportService2, this.libSupportHandler);
+            serviceManager.startService(LIBSUPPORT_SERVICE, LibSupportService2, this.libSupportHandler);
 
-            const frontendHandler = new FrontendHandler({ send: this.sendEvent.bind(this)}, args.sourceFileMap ?? {}, this.customRequestRegistry);
-            this.serviceManager.startService(FRONTEND_SERVICE, Frontend, frontendHandler);
+            const frontendHandler = new FrontendHandler(this, args.sourceFileMap ?? {}, this.customRequestRegistry);
+            serviceManager.startService(FRONTEND_SERVICE, Frontend, frontendHandler);
             const timelineFrontendHandler = new TimelineFrontendHandler();
-            this.serviceManager.startService(TIMELINE_FRONTEND_SERVICE, TimelineFrontend, timelineFrontendHandler);
+            serviceManager.startService(TIMELINE_FRONTEND_SERVICE, TimelineFrontend, timelineFrontendHandler);
 
+            // -- Start the CSpyServer session (incl. loading macros & flashing) --
             const sessionConfig: SessionConfiguration = await new LaunchArgumentConfigurationResolver().resolveLaunchArguments(args);
+            const cspyDebugger = await serviceManager.findService(DEBUGGER_SERVICE, Debugger);
+            this.sendEvent(new OutputEvent("Using C-SPY version: " + await cspyDebugger.service.getVersionString() + "\n"));
 
-            this.cspyDebugger = await this.serviceManager.findService(DEBUGGER_SERVICE, Debugger);
-            this.sendEvent(new OutputEvent("Using C-SPY version: " + await this.cspyDebugger.service.getVersionString() + "\n"));
+            await cspyDebugger.service.startSession(sessionConfig);
 
-            await this.cspyDebugger.service.startSession(sessionConfig);
-            const driver = CSpyDriver.driverFromName(args.driver, args.target, args.driverOptions);
-
-            // do flashing & downloading
             if (args.download) {
-                await Utils.loadMacros(this.cspyDebugger.service, args.download.deviceMacros ?? []);
+                await Utils.loadMacros(cspyDebugger.service, args.download.deviceMacros ?? []);
                 if (args.download.flashLoader) {
-                    await this.cspyDebugger.service.flashModule(args.download.flashLoader, sessionConfig.executable, [], []);
+                    await cspyDebugger.service.flashModule(args.download.flashLoader, sessionConfig.executable, [], []);
                 }
             }
-            await Utils.loadMacros(this.cspyDebugger.service, sessionConfig.setupMacros ?? []);
-            await this.cspyDebugger.service.loadModule(args.program);
-            this.sendEvent(new OutputEvent("Session started\n"));
+            await Utils.loadMacros(cspyDebugger.service, sessionConfig.setupMacros ?? []);
+            await cspyDebugger.service.loadModule(args.program);
 
-            this.registerInfoGenerator = new RegisterInformationGenerator(args.driverOptions, await this.serviceManager.findService(DEBUGGER_SERVICE, Debugger));
-            // only after loading modules can we initialize services using listwindows
-            this.stackManager = await CSpyContextManager.instantiate(this.serviceManager, this.cspyEventHandler, this.registerInfoGenerator);
-            this.memoryManager = await CspyMemoryManager.instantiate(this.serviceManager);
-            this.disassemblyManager = await CspyDisassemblyManager.instantiate(this.serviceManager,
+            // -- Connect to CSpyServer services --
+            // note that some services (most listwindows) are launched by loadModule, so we *have* to do this afterwards
+            const registerInfoGenerator = new RegisterInformationService(args.driverOptions, await serviceManager.findService(DEBUGGER_SERVICE, Debugger));
+            await CSpyCoresService.initialize(serviceManager);
+            const stackManager = await CSpyContextService.instantiate(serviceManager, registerInfoGenerator);
+            const runControlService = await CSpyRunControlService.instantiate(serviceManager, this.cspyEventHandler, this.libSupportHandler);
+            runControlService.onCoreStopped((core, reason) => {
+                this.sendEvent(new StoppedEvent(reason, core));
+            });
+            const memoryManager = await CspyMemoryService.instantiate(serviceManager);
+            const disassemblyManager = await CspyDisassemblyService.instantiate(serviceManager,
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1);
-            // initialize all breakpoint stuff
-            this.breakpointManager = await CSpyBreakpointManager.instantiate(this.serviceManager,
+
+            const driver = CSpyDriver.driverFromName(args.driver, args.target, args.driverOptions);
+            const breakpointManager = await CSpyBreakpointService.instantiate(serviceManager,
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1,
                 driver);
-            this.setupBreakpointRequests(args.breakpointType ?? BreakpointType.AUTO);
-            this.setupRegistersRequest();
+
+            // --- Set up custom DAP requests ---
+            const breakpointTypeExtension = new BreakpointTypeProtocolExtension(driver, this, args.breakpointType,
+                this.customRequestRegistry, this.consoleCommandRegistry);
+            this.customRequestRegistry.registerCommand(CustomRequest.Names.REGISTERS, async(): Promise<CustomRequest.RegistersResponse> => {
+                return { svdContent: await registerInfoGenerator.getSvdXml() };
+            });
+
+            let multicoreExtension: MulticoreProtocolExtension | undefined = undefined;
+            if (this.numCores > 1) {
+                multicoreExtension = new MulticoreProtocolExtension(args.multicoreLockstepModeEnabled ?? true, this.customRequestRegistry);
+            }
+
+            // -- Store everything needed to be able to handle requests --
+            this.services = {
+                serviceManager,
+                cspyDebugger,
+                registerInfoService: registerInfoGenerator,
+                contextService: stackManager,
+                runControlService,
+                breakpointService: breakpointManager,
+                disassemblyService: disassemblyManager,
+                memoryService: memoryManager,
+                multicoreExtension,
+                breakpointTypeExtension,
+            };
 
         } catch (e) {
             response.success = false;
@@ -258,36 +317,50 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 response.message += ` (${e.culprit})`;
             }
             this.sendResponse(response);
+            if (serviceManager) await serviceManager.dispose();
             await this.endSession();
             return;
         }
 
-        // we are ready to receive configuration requests (e.g. breakpoints)
+        // Setup is done. Tell the client we are ready to receive configuration requests (e.g. breakpoints).
         this.sendEvent(new InitializedEvent());
-        // wait until configuration is done
         await this.configurationDone.wait(1000);
 
+        this.sendEvent(new OutputEvent("Session started\n"));
         this.sendResponse(response);
 
-        this.addCSpyEventHandlers();
-
-        if (args.stopOnEntry) {
-            this.expectedStoppingReason = "entry";
-            // tell cspy to start the program
-            await this.cspyDebugger.service.runToULE("main", false);
+        // Perform any initial run-to action if needed
+        let doStop: boolean;
+        let stopSymbol: string | undefined = undefined;
+        if (typeof(args.stopOnSymbol) === "string") {
+            doStop = true;
+            stopSymbol = args.stopOnSymbol;
+        } else if (args.stopOnSymbol === false) {
+            doStop = false;
+        } else if (args.stopOnSymbol === true) {
+            doStop = true;
+        } else if (args.stopOnEntry) {
+            doStop = true;
+            stopSymbol = "main";
         } else {
-            this.expectedStoppingReason = "breakpoint";
-            await this.cspyDebugger.service.go();
+            doStop = false;
         }
-    }
-
-    private addCSpyEventHandlers() {
-        if (this.cspyEventHandler === undefined) {
-            throw new Error("Expected CSPY event handler to be initialized, but it is not");
+        if (doStop) {
+            if (stopSymbol) {
+                await this.services.runControlService.runToULE(undefined, stopSymbol);
+            } else {
+                // Use the initial entry state. Since no coreStopped event will be emitted, we must notify the client
+                // here that all cores are stopped.
+                const eventBody: DebugProtocol.StoppedEvent["body"] = {
+                    reason: "entry",
+                    threadId: 0,
+                    allThreadsStopped: true,
+                };
+                this.sendEvent(new Event("stopped", eventBody));
+            }
+        } else {
+            await this.services.runControlService.continue(undefined);
         }
-        this.cspyEventHandler.observeDebugEvents(DkNotifyConstant.kDkTargetStopped, () => {
-            this.sendEvent(new StoppedEvent(this.expectedStoppingReason, CSpyDebugSession.THREAD_ID));
-        });
     }
 
     protected override async terminateRequest(response: DebugProtocol.TerminateResponse, _args: DebugProtocol.TerminateArguments) {
@@ -307,65 +380,59 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.sendResponse(response);
     }
 
-    protected override async pauseRequest(response: DebugProtocol.PauseResponse) {
-        await CSpyDebugSession.tryResponseWith(this.cspyDebugger, response, cspyDebugger => {
-            this.expectedStoppingReason = "pause";
-            cspyDebugger.service.stop();
+    protected override async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments) {
+        await this.tryWithServices(response, async services => {
+            // The DAP pause request doesn't support singleThread yet, so we pretend it does for the purpose of being
+            // able to control the lockstep mode (see MulticoreProtocolExtension).
+            const newArgs: typeof args & { singleThread?: boolean } = args;
+            services.multicoreExtension?.massageExecutionRequest(newArgs, response);
+            await services.runControlService.pause(newArgs.singleThread ? newArgs.threadId : undefined);
         });
         this.sendResponse(response);
     }
-    protected override async continueRequest(response: DebugProtocol.ContinueResponse, _args: DebugProtocol.ContinueArguments) {
-        await CSpyDebugSession.tryResponseWith(this.cspyDebugger, response, cspyDebugger => {
-            this.expectedStoppingReason = "breakpoint";
-            cspyDebugger.service.go();
+    protected override async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments) {
+        await this.tryWithServices(response, async(services) => {
+            services.multicoreExtension?.massageExecutionRequest(args, response);
+            await services.runControlService.continue(args.singleThread ? args.threadId : undefined);
         });
         this.sendResponse(response);
     }
 
     protected override async restartRequest(response: DebugProtocol.RestartResponse, _args: DebugProtocol.RestartArguments) {
-        await CSpyDebugSession.tryResponseWith(this.cspyDebugger, response, async cspyDebugger => {
-            this.expectedStoppingReason = "entry";
-            await cspyDebugger.service.reset();
-            cspyDebugger.service.runToULE("main", false);
+        await this.tryWithServices(response, async services => {
+            await services.runControlService.reset();
         });
         this.sendResponse(response);
     }
 
     protected override async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments) {
-        await CSpyDebugSession.tryResponseWith(this.cspyDebugger, response, cspyDebugger => {
-            this.expectedStoppingReason = "step";
-            if (args.granularity === "instruction") {
-                cspyDebugger.service.instructionStepOver();
-            } else {
-                cspyDebugger.service.stepOver(true);
-            }
+        await this.tryWithServices(response, async(services) => {
+            services.multicoreExtension?.massageExecutionRequest(args, response);
+            await services.runControlService.next(args.singleThread ? args.threadId : undefined, args.granularity);
         });
         this.sendResponse(response);
     }
 
     protected override async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments) {
-        await CSpyDebugSession.tryResponseWith(this.cspyDebugger, response, cspyDebugger => {
-            this.expectedStoppingReason = "step";
-            if (args.granularity === "instruction") {
-                cspyDebugger.service.instructionStep();
-            } else {
-                cspyDebugger.service.step(true);
-            }
+        await this.tryWithServices(response, async(services) => {
+            services.multicoreExtension?.massageExecutionRequest(args, response);
+            await services.runControlService.stepIn(args.singleThread ? args.threadId : undefined, args.granularity);
         });
         this.sendResponse(response);
     }
 
-    protected override async stepOutRequest(response: DebugProtocol.StepOutResponse, _args: DebugProtocol.StepOutArguments) {
-        this.expectedStoppingReason = "step";
-        await CSpyDebugSession.tryResponseWith(this.cspyDebugger, response, cspyDebugger => {
-            cspyDebugger.service.stepOut();
+    protected override async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments) {
+        await this.tryWithServices(response, services => {
+            services.multicoreExtension?.massageExecutionRequest(args, response);
+            return services.runControlService.stepOut(args.singleThread ? args.threadId : undefined);
         });
         this.sendResponse(response);
     }
 
     protected override async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments) {
-        await CSpyDebugSession.tryResponseWith(this.breakpointManager, response, async breakpointManager => {
-            const bps = await breakpointManager.setBreakpointsFor(args.source, args.breakpoints ?? []);
+        await this.tryWithServices(response, async(services) => {
+            const bps = await services.breakpointService.setBreakpointsFor(args.source, args.breakpoints ?? [],
+                services.breakpointTypeExtension.getBreakpointType());
             response.body = {
                 breakpoints: bps,
             };
@@ -373,8 +440,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.sendResponse(response);
     }
     protected override async setInstructionBreakpointsRequest(response: DebugProtocol.SetInstructionBreakpointsResponse, args: DebugProtocol.SetInstructionBreakpointsArguments) {
-        await CSpyDebugSession.tryResponseWith(this.breakpointManager, response, async breakpointManager => {
-            const bps = await breakpointManager.setInstructionBreakpoints(args.breakpoints);
+        await this.tryWithServices(response, async(services) => {
+            const bps = await services.breakpointService.setInstructionBreakpoints(args.breakpoints,
+                services.breakpointTypeExtension.getBreakpointType());
             response.body = {
                 breakpoints: bps,
             };
@@ -382,8 +450,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.sendResponse(response);
     }
     protected override async setDataBreakpointsRequest(response: DebugProtocol.SetDataBreakpointsResponse, args: DebugProtocol.SetDataBreakpointsArguments) {
-        await CSpyDebugSession.tryResponseWith(this.breakpointManager, response, async breakpointManager => {
-            const bps = await breakpointManager.setDataBreakpoints(args.breakpoints);
+        await this.tryWithServices(response, async services => {
+            const bps = await services.breakpointService.setDataBreakpoints(args.breakpoints);
             response.body = {
                 breakpoints: bps,
             };
@@ -391,16 +459,16 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.sendResponse(response);
     }
     protected override async dataBreakpointInfoRequest(response: DebugProtocol.DataBreakpointInfoResponse, args: DebugProtocol.DataBreakpointInfoArguments) {
-        await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
+        await this.tryWithServices(response, async services => {
             if (args.variablesReference === undefined) {
                 throw new Error("Cannot find variable without a scope");
             }
-            const vars = await stackManager.fetchVariables(args.variablesReference);
+            const vars = await services.contextService.fetchVariables(args.variablesReference);
             const variable = vars.find(v => v.name === args.name);
             if (!variable) {
                 throw new Error("No such variable found");
             }
-            const accessTypes = this.breakpointManager?.supportedDataBreakpointAccessTypes();
+            const accessTypes = services.breakpointService.supportedDataBreakpointAccessTypes();
             if (accessTypes !== undefined && accessTypes.length > 0) {
                 response.body = {
                     dataId: variable.evaluateName ?? null,
@@ -414,30 +482,34 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
 
-    protected override threadsRequest(response: DebugProtocol.ThreadsResponse): void {
-        // doesn't support RTOS or multicore for now, so just return a default 'thread'
-        response.body = {
-            threads: [
-                new Thread(CSpyDebugSession.THREAD_ID, "core 1")
-            ]
-        };
+    protected override async threadsRequest(response: DebugProtocol.ThreadsResponse) {
+        await this.tryWithServices(response, async services => {
+            const nCores = await services.cspyDebugger.service.getNumberOfCores();
+            const threads: Thread[] = [];
+            for (let i = 0; i < nCores; i++) {
+                const description = await services.cspyDebugger.service.getCoreDescription(i);
+                threads.push(new Thread(i, `${i}: ${description}`));
+            }
+            response.body = {
+                threads,
+            };
+        });
         this.sendResponse(response);
     }
 
-    protected override async stackTraceRequest(response: DebugProtocol.StackTraceResponse, _args: DebugProtocol.StackTraceArguments) {
-        await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
-            const frames = await stackManager.fetchStackFrames();
+    protected override async stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments) {
+        await this.tryWithServices(response, async services => {
+            const frames = await services.contextService.fetchStackFrames(args.threadId, args.startFrame ?? 0, args.levels);
             response.body = {
                 stackFrames: frames,
-                totalFrames: frames.length,
             };
         });
         this.sendResponse(response);
     }
 
     protected override async scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments) {
-        await CSpyDebugSession.tryResponseWith(this.stackManager, response, stackManager => {
-            const scopes = stackManager.fetchScopes(args.frameId);
+        await this.tryWithServices(response, services => {
+            const scopes = services.contextService.fetchScopes(args.frameId);
             response.body = {
                 scopes: scopes,
             };
@@ -446,8 +518,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     protected override async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments) {
-        await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
-            const variables = await stackManager.fetchVariables(args.variablesReference);
+        await this.tryWithServices(response, async services => {
+            const variables = await services.contextService.fetchVariables(args.variablesReference);
             response.body = {
                 variables: variables,
             };
@@ -456,8 +528,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     protected override async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments) {
-        await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
-            const { newValue, changedAddress } = await stackManager.setVariable(args.variablesReference, args.name, args.value);
+        await this.tryWithServices(response, async services => {
+            const { newValue, changedAddress } = await services.contextService.setVariable(args.variablesReference, args.name, args.value);
             response.body = {
                 value: newValue
             };
@@ -496,8 +568,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 }
             }
         } else {
-            await CSpyDebugSession.tryResponseWith(this.stackManager, response, async stackManager => {
-                const result = await stackManager.evalExpression(args.frameId, args.expression);
+            await this.tryWithServices(response, async services => {
+                const result = await services.contextService.evalExpression(args.frameId, args.expression);
                 response.body = {
                     result: result.value,
                     type: result.type,
@@ -510,8 +582,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     protected override async disassembleRequest(response: DebugProtocol.DisassembleResponse, args: DebugProtocol.DisassembleArguments, _request?: DebugProtocol.Request) {
-        await CSpyDebugSession.tryResponseWith(this.disassemblyManager, response, async disassemblyManager => {
-            const instructions = await disassemblyManager.fetchDisassembly(args.memoryReference, args.instructionCount, args.offset, args.instructionOffset);
+        await this.tryWithServices(response, async services => {
+            const instructions = await services.disassemblyService.fetchDisassembly(args.memoryReference, args.instructionCount, args.offset, args.instructionOffset);
             response.body = {
                 instructions,
             };
@@ -532,8 +604,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     protected override async readMemoryRequest(response: DebugProtocol.ReadMemoryResponse, args: DebugProtocol.ReadMemoryArguments) {
-        await CSpyDebugSession.tryResponseWith(this.memoryManager, response, async memoryManager => {
-            const result = await memoryManager.readMemory(args.memoryReference.replace("'", ""), args.offset ?? 0, args.count);
+        await this.tryWithServices(response, async services => {
+            const result = await services.memoryService.readMemory(args.memoryReference.replace("'", ""), args.offset ?? 0, args.count);
             response.body = {
                 address: "0x" + result.addr.toOctetString(),
                 data: result.data,
@@ -543,8 +615,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.sendResponse(response);
     }
     protected override async writeMemoryRequest(response: DebugProtocol.WriteMemoryResponse, args: DebugProtocol.WriteMemoryArguments) {
-        await CSpyDebugSession.tryResponseWith(this.memoryManager, response, async memoryManager => {
-            const bytesWritten = await memoryManager.writeMemory(args.memoryReference.replace("'", ""), args.offset ?? 0, args.data);
+        await this.tryWithServices(response, async services => {
+            const bytesWritten = await services.memoryService.writeMemory(args.memoryReference.replace("'", ""), args.offset ?? 0, args.data);
             response.body = {
                 bytesWritten: bytesWritten,
                 offset: 0,
@@ -570,82 +642,35 @@ export class CSpyDebugSession extends LoggingDebugSession {
         this.sendResponse(response);
     }
 
-
-    /**
-     * Registers commands for setting breakpoints type via console commands and custom dap requests.
-     */
-    private setupBreakpointRequests(requestedInitialType: BreakpointType) {
-        const bpTypeMessage = (type: BreakpointType) => `Now using ${type} breakpoints (only applies to new breakpoints)`;
-        if (this.breakpointManager?.supportedBreakpointTypes().includes(requestedInitialType)) {
-            this.breakpointManager?.setBreakpointType(requestedInitialType);
-            this.sendEvent(new OutputEvent(`Using '${requestedInitialType}' breakpoint type.\n`));
-        }
-        // If the driver supports it, register console commands and custom requests
-        this.breakpointManager?.supportedBreakpointTypes().forEach(type => {
-            this.consoleCommandRegistry.registerCommand(new Command("__breakpoints_set_type_" + type, () => {
-                this.breakpointManager?.setBreakpointType(type);
-                return Promise.resolve(bpTypeMessage(type));
-            }));
-        });
-        // Custom requests are always registered, but will give an error if made on a driver that doesn't support it.
-        const makeCustomRequestCommand = (name: string, type: BreakpointType) => {
-            return new Command(name, () => {
-                if (this.breakpointManager?.supportedBreakpointTypes().includes(type)) {
-                    this.breakpointManager?.setBreakpointType(type);
-                    this.sendEvent(new OutputEvent(bpTypeMessage(type) + "\n"));
-                    return Promise.resolve();
-                } else {
-                    this.sendEvent(new OutputEvent("Cannot set breakpoint type (not supported by driver)"));
-                    return Promise.reject(new Error());
-                }
-            });
-        };
-        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.Names.USE_AUTO_BREAKPOINTS, BreakpointType.AUTO));
-        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.Names.USE_HARDWARE_BREAKPOINTS, BreakpointType.HARDWARE));
-        this.customRequestRegistry.registerCommand(makeCustomRequestCommand(CustomRequest.Names.USE_SOFTWARE_BREAKPOINTS, BreakpointType.SOFTWARE));
-
-        this.customRequestRegistry.registerCommand(new Command(CustomRequest.Names.GET_BREAKPOINT_TYPES, (): Promise<CustomRequest.BreakpointTypesResponse> => {
-            return Promise.resolve(this.breakpointManager?.supportedBreakpointTypes() ?? []);
-        }));
-    }
-
-    /**
-     * Sets up a custom request that returns the peripheral registers for the current device as an SVD string.
-     */
-    private setupRegistersRequest() {
-        this.customRequestRegistry.registerCommand(new Command(CustomRequest.Names.REGISTERS, async() => {
-            if (this.registerInfoGenerator) {
-                return { svdContent: await this.registerInfoGenerator.getSvdXml() };
-            }
-            return { svdContent: undefined };
-        }));
-    }
-
     private async endSession() {
-        await this.stackManager?.dispose();
-        this.breakpointManager?.dispose();
-        this.disassemblyManager?.dispose();
-        this.memoryManager?.dispose();
-        // Will disconnect this DAP debugger client
-        this.cspyDebugger?.close();
-        // VSC-3 This will take care of orderly shutting down CSpyServer
-        await this.serviceManager?.dispose();
+        if (this.services) {
+            await this.services.contextService.dispose();
+            this.services.runControlService.dispose();
+            await CSpyCoresService.dispose();
+            this.services.breakpointService.dispose();
+            this.services.disassemblyService.dispose();
+            this.services.memoryService.dispose();
+            // Will disconnect this DAP debugger client
+            this.services.cspyDebugger.close();
+            // VSC-3 This will take care of orderly shutting down CSpyServer
+            await this.services.serviceManager.dispose();
+            this.services = undefined;
+        }
     }
 
     /**
-     * Performs some standard error handling around a DAP request reponse, which requires some potentially undefined object.
-     * If the object is undefined, or the handling of the request throws an error, the request is marked as unsucessful and
-     * an appropriate error msg is set.
-     * @param obj The object required to be defined
-     * @param response The response to send to the DAP request
-     * @param fun The function to run with the object, if defined
+     * Performs some standard error handling around a DAP request.
+     * Most request handling should be wrapped with this method to check that the 'services' member has been initialized
+     * (i.e. that we are in a launched session) and to handle exceptions gracefully.
+     * @param response The response to modify with the request results (in case an error is thrown)
+     * @param fun The function to run to handle the request
      */
-    private static async tryResponseWith<T, R extends DebugProtocol.Response>(obj: T | undefined, response: R, fun: (obj: T) => void | Promise<void>) {
+    private async tryWithServices(response: DebugProtocol.Response, fun: (services: NonNullable<CSpyDebugSession["services"]>) => void | Promise<void>) {
         try {
-            if (obj === undefined) {
-                throw new Error("Unexpected undefined object");
+            if (this.services === undefined) {
+                throw new Error("Not yet initialized, send a launch request first");
             }
-            await fun(obj);
+            await fun(this.services);
         } catch (e) {
             response.success = false;
             if (typeof e === "string" || e instanceof Error) {

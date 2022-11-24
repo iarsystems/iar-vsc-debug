@@ -9,13 +9,17 @@ import { TestUtils } from "../testUtils";
 debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
 
     test("Hits breakpoint", () => {
-        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnEntry = false;
         return Promise.all([
-            dc().hitBreakpoint(
-                dbgConfigCopy,
-                { line: 36, path: fibonacciFile() }
-            ),
+            dc().launch(dbgConfig()),
+            dc().waitForEvent("stopped").then(async() => {
+                await dc().setBreakpointsRequest(
+                    { source: { path: fibonacciFile() },
+                        breakpoints: [{line: 36}] });
+                await Promise.all([
+                    dc().assertStoppedLocation("breakpoint", { path: fibonacciFile(), line: 36}),
+                    dc().continueRequest({threadId: 0, singleThread: true}),
+                ]);
+            }),
         ]);
     });
 
@@ -65,7 +69,7 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                 Assert(bps[0]?.verified);
 
                 await Promise.all([
-                    dc().continueRequest({threadId: 1}),
+                    dc().continueRequest({threadId: 0, singleThread: true}),
                     dc().assertStoppedLocation("breakpoint", { path: fibonacciFile(), line: 49 })
                 ]);
             }),
@@ -73,8 +77,6 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
     });
 
     test("Hits instruction breakpoint", () => {
-        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnEntry = false;
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfig()),
@@ -90,7 +92,7 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                 Assert(bpRes.body.breakpoints[0]?.verified);
                 Assert.strictEqual(bpRes.body.breakpoints[0]?.instructionReference, res.body.memoryReference);
                 await Promise.all([
-                    dc().continueRequest({threadId: 0}),
+                    dc().continueRequest({threadId: 0, singleThread: true}),
                     TestUtils.assertStoppedLocation(dc(), "breakpoint", 50, utilsFile(), /PutFib/)
                 ]);
             }),

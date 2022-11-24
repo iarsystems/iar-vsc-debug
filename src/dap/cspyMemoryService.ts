@@ -15,10 +15,10 @@ import { Disposable } from "./disposable";
  * No (mutable) state is carried here, so it might be better to make
  * this a namespace of pure functions.
  */
-export class CspyMemoryManager implements Disposable {
+export class CspyMemoryService implements Disposable {
     static async instantiate(serviceMgr: ThriftServiceManager,
-    ): Promise<CspyMemoryManager> {
-        return new CspyMemoryManager(
+    ): Promise<CspyMemoryService> {
+        return new CspyMemoryService(
             await serviceMgr.findService(MEMORY_SERVICE, Memory.Client),
         );
     }

@@ -1,0 +1,24 @@
+<svg
+	xmlns="http://www.w3.org/2000/svg"
+	xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 16 16">
+	<style>
+		.main-color {
+			fill: #88aaeb;
+		}
+	</style>
+	<g class="main-color">
+		<!-- side bars -->
+		<rect stroke="none" x="0" y="1" width="2" height="14" />
+		<rect stroke="none" x="14" y="1" width="2" height="14" />
+		<!-- upper arrow -->
+        <g>
+            <rect stroke="none" x="2" y="4" width="10" height="1"/>
+            <polygon stroke="none" points="14 4.5 10 1.5 10 7.5 14 4.5"/>
+        </g>
+		<!-- lower arrow -->
+        <g>
+            <rect stroke="none" x="2" y="11" width="10" height="1"/>
+            <polygon stroke="none" points="14 11.5 10 8.5 10 14.5 14 11.5"/>
+        </g>
+	</g>
+</svg>

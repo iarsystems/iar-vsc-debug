@@ -80,10 +80,10 @@ interface CspyRegisterData {
 
 
 /**
- * Functions for retrieving register information for a device. This includes both cpu registers and peripheral registers.
+ * Provides register information for a device. This includes both cpu registers and peripheral registers.
  * Generating this information can be slow, so we try to cache it for when the same device is debugged again.
  */
-export class RegisterInformationGenerator {
+export class RegisterInformationService {
     private readonly registerInfo: Promise<CspyRegisterData>;
     // A unique identifier to use when loading or storing cached data for this session.
     private readonly cacheId: string;

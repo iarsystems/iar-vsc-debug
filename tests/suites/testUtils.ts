@@ -32,7 +32,7 @@ export namespace TestUtils {
         let configuration: string;
 
         if (parameters.testProgram.variant === "doBuild") {
-            const targetProject = Path.join(TestUtils.PROJECT_ROOT, "tests/TestProjects/GettingStarted/BasicDebugging.ewp");
+            const targetProject = parameters.testProgram.project;
             const sandbox = new TestSandbox(PROJECT_ROOT);
             projectDir = sandbox.copyToSandbox(Path.dirname(targetProject));
             const project = Path.join(projectDir, Path.basename(targetProject));
@@ -49,11 +49,12 @@ export namespace TestUtils {
             request: "launch",
             name: "C-SPY Debugging Tests",
             ...parameters.debugConfiguration,
-            stopOnEntry: true,
+            stopOnSymbol: "main",
             projectPath: projectDir,
             projectConfiguration: configuration,
             program: program,
             workbenchPath: workbenchPath,
+            multicoreLockstepModeEnabled: true,
         };
     }
 
@@ -70,7 +71,7 @@ export namespace TestUtils {
     }
 
     export function assertCurrentLineIs(session: vscode.DebugSession, _path: string, line: number, column: number) {
-        return session.customRequest("stackTrace").then((response)=>{
+        return session.customRequest("stackTrace", { threadId: 0 }).then((response)=>{
             console.log("Checking stack");
             if (response.stackFrames) {
                 const currentStack = response.stackFrames[0];
@@ -86,19 +87,22 @@ export namespace TestUtils {
         });
     }
 
-    export function assertStoppedLocation(dc: DebugClient, reason: string, line: number, file: string | undefined, name: RegExp) {
-        return dc.waitForEvent("stopped").then(async(event) => {
+    export function assertStoppedLocation(dc: DebugClient, reason: string, line: number, file: string | undefined, name: RegExp, threadId = 0) {
+        return dc.waitForEvent("stopped").then(event => {
             assert.strictEqual(event.body?.reason, reason);
-            const stack = await dc.stackTraceRequest({threadId: 1});
-            const topStack = stack.body.stackFrames[0];
-            assert(topStack);
-            assert.strictEqual(topStack.line, line);
-            assert.strictEqual(topStack.source?.path, file);
-            assert.match(topStack.name, name);
+            return assertLocationIs(dc, line, file, name, threadId);
         });
     }
+    export async function assertLocationIs(dc: DebugClient, line: number, file: string | undefined, name: RegExp, threadId = 0) {
+        const stack = await dc.stackTraceRequest({threadId});
+        const topStack = stack.body.stackFrames[0];
+        assert(topStack);
+        assert.match(topStack.name, name);
+        assert.strictEqual(topStack.source?.path, file);
+        assert.strictEqual(topStack.line, line);
+    }
 
-    function buildProject(workbenchPath: string, ewpPath: string, configuration: string) {
+    export function buildProject(workbenchPath: string, ewpPath: string, configuration: string) {
         const iarBuildPath = Path.join(workbenchPath, "common/bin/iarbuild" + IarOsUtils.executableExtension());
         console.log("Building " + ewpPath);
         const proc = spawnSync(iarBuildPath, [ewpPath, "-build", configuration]);

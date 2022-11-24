@@ -64,7 +64,8 @@ export class ListWindowClient implements Disposable {
      */
     async getTopLevelRows(): Promise<ListWindowRowReference[]> {
         const rows = await this.getRows();
-        const topLevelRows = rows.filter(row => TreeInfoUtils.getDepth(row.treeinfo) === 0);
+        const topLevelRows = rows.filter(row => TreeInfoUtils.getDepth(row.treeinfo) === 0).
+            filter(row => row.cells.length > 0);
         return topLevelRows.map(row => this.createRowReference(row, []));
     }
 
@@ -106,7 +107,7 @@ export class ListWindowClient implements Disposable {
 
     /**
      * Sets the value of a cell
-     * @param reference The row in which to set the v alue
+     * @param reference The row in which to set the value
      * @param column The column in this row to set the value for
      * @param value The value to set
      * @returns The new value of the call (may differ from the value set)
@@ -117,6 +118,14 @@ export class ListWindowClient implements Disposable {
             throw new Error("Cannot find row in the window matching: " + reference.values[this.idColumn]);
         }
         await this.backend.service.setValue(new Int64(rowIndex), column, value);
+
+        // Some windows (e.g. registers) don't update immediately after calling setValue, so we wait for it it push and update first
+        await new Promise<void>(resolve => {
+            this.onChangeOnce(() => {
+                resolve();
+            });
+            setTimeout(() => resolve(), 500);
+        });
         const updatedRow = await this.backend.service.getRow(new Int64(rowIndex));
         this.rows[rowIndex] = updatedRow;
         const updatedValue = updatedRow.cells[column];
@@ -138,6 +147,12 @@ export class ListWindowClient implements Disposable {
     async clickContextMenu(command: number) {
         await this.backend.service.handleContextMenu(command);
     }
+    /**
+     * Gets the context menu for clicking the given cell. Parsing the menu items is left to the caller.
+     */
+    async doubleClickRow(row: Int64, col: number): Promise<void> {
+        return await this.backend.service.doubleClick(row, col);
+    }
 
     /**
      * Registers a function to call next time the window contents change.
@@ -156,6 +171,7 @@ export class ListWindowClient implements Disposable {
             });
         case What.kNormalUpdate:
         case What.kFullUpdate:
+        case What.kThaw:
             this.updateAllRows();
             break;
         }
@@ -300,6 +316,9 @@ namespace TreeInfoUtils {
      * How many parents does this row have?
      */
     export function getDepth(treeinfo: string): number {
+        if (treeinfo === "") {
+            return 0;
+        }
         return treeinfo.search(new RegExp(`[${TreeGraphItems.kLeaf}${TreeGraphItems.kPlus}\\${TreeGraphItems.kMinus}]`));
     }
 

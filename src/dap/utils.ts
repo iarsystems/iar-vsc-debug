@@ -1,6 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+import { DebugProtocol } from "@vscode/debugprotocol";
 import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
 import { FileDialogFilter } from "iar-vsc-common/thrift/bindings/frontend_types";
 
@@ -33,4 +34,11 @@ export namespace Utils {
         }
         return filterString + "|";
     }
+}
+
+/**
+ * Something through which we can send DAP events to the client
+ */
+export interface DapEventSink {
+    sendEvent(event: DebugProtocol.Event): void;
 }

@@ -188,7 +188,7 @@ suite("Configuration tests", () => {
         assert.deepStrictEqual(configTest["program"], path.join("${workspaceFolder}", program));
         assert.deepStrictEqual(configTest["driver"], "Simulator");
         assert.deepStrictEqual(configTest["target"], "arm");
-        assert.deepStrictEqual(configTest["stopOnEntry"], true);
+        assert.deepStrictEqual(configTest["stopOnSymbol"], "main");
         assert.deepStrictEqual(configTest["driverOptions"], ["some", "other", "opts"]);
 
         // include some unsupported args, make sure they are ignored
@@ -197,16 +197,17 @@ suite("Configuration tests", () => {
         configTest = ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfigTest, wsDir);
         assert.deepStrictEqual(configTest["driver"], "I-jet");
         assert.deepStrictEqual(configTest["target"], "arm");
-        assert.deepStrictEqual(configTest["stopOnEntry"], false);
+        assert.deepStrictEqual(configTest["stopOnSymbol"], true);
         assert.deepStrictEqual(configTest["driverOptions"], []);
 
         // Ensure that we can collect all listed plugins and macros
         const opts3 = ["/driver", "arm\\bin\\armijet.dll", path.resolve(wsDir, program), "/plugin", "bat.dll", "/plugin", "test1",
-            "/setup", "macro1", "/setup", "macro2", "/devicesetup", "devmacro1", "/flashboard", "flash.ddf"];
+            "/setup", "macro1", "/setup", "macro2", "/devicesetup", "devmacro1", "/flashboard", "flash.ddf", "/runto", "mymain"];
         partialConfigTest = BuildExtensionConfigurationProvider.provideDebugConfigurationFor(opts3.concat(programOpt), projectName, config, target);
         configTest = ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfigTest, wsDir);
         assert.deepStrictEqual(configTest["setupMacros"], ["macro1", "macro2"]);
         assert.deepStrictEqual(configTest["plugins"], ["test1"]);
+        assert.deepStrictEqual(configTest["stopOnSymbol"], "mymain");
         assert.deepStrictEqual(configTest["download"]?.["deviceMacros"], ["devmacro1"]);
         assert.deepStrictEqual(configTest["download"]?.["flashLoader"], "flash.ddf");
 

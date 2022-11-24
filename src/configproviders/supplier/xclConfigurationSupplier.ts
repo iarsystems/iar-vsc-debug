@@ -112,7 +112,7 @@ export namespace XclConfigurationSupplier {
         let program: string | undefined;
         let driver: string | undefined;
         let target: string | undefined;
-        let stopOnEntry = true;
+        let stopOnSymbol = true;
         const plugins: string[] = [];
         const setupMacros: string[] = [];
         const deviceMacros: string[] = [];
@@ -150,7 +150,7 @@ export namespace XclConfigurationSupplier {
                 } else if (flashLoaderMatch && flashLoaderMatch[1]) {
                     flashLoader = stripQuotes(flashLoaderMatch[1]);
                 } else if (Regexps._attachReg.test(arg)) {
-                    stopOnEntry = false;
+                    stopOnSymbol = false;
                 } else {
                     driverOptions.push(arg);
                 }
@@ -175,7 +175,7 @@ export namespace XclConfigurationSupplier {
             driverPath: driver,
             target,
             projectPath,
-            stopOnEntry,
+            stopOnSymbol,
             configuration,
             plugins,
             setupMacros,

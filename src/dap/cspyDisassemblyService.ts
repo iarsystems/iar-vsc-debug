@@ -16,21 +16,21 @@ import { basename } from "path";
 import { logger } from "@vscode/debugadapter/lib/logger";
 
 /**
- * Requests disassembly from cspyserver and converts it to a dap-friendly format.
+ * Provides disassembly from CspyServer in a DAP-friendly format.
  *
- * The base unit for dap disassembly is lines (i.e. it requests X lines), whereas cspy
+ * The base unit for DAP disassembly is lines (i.e. it requests X lines), whereas cspy
  * only deals with addresses. We can't really know how much memory to disassemble to generate
  * a certain number of lines, so we simply guess and fetch more if it wasn't enough.
  *
  * No (mutable) state is carried here, so it might be better to make
  * this a namespace of pure functions.
  */
-export class CspyDisassemblyManager implements Disposable {
+export class CspyDisassemblyService implements Disposable {
     static async instantiate(serviceMgr: ThriftServiceManager,
         clientLinesStartAt1: boolean,
         clientColumnsStartAt1: boolean,
-    ): Promise<CspyDisassemblyManager> {
-        return new CspyDisassemblyManager(
+    ): Promise<CspyDisassemblyService> {
+        return new CspyDisassemblyService(
             await serviceMgr.findService(DISASSEMBLY_SERVICE, Disassembly.Client),
             await serviceMgr.findService(SOURCE_LOOKUP_SERVICE, SourceLookup.Client),
             clientLinesStartAt1,

@@ -10,13 +10,13 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
 
     test("Shows variable values", () => {
         const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnEntry = false;
+        dbgConfigCopy.stopOnSymbol = false;
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
             dc().waitForEvent("stopped").then(async() => {
                 // Locals are tested in other test cases
-                const stack = await dc().stackTraceRequest({ threadId: 1});
+                const stack = await dc().stackTraceRequest({ threadId: 0});
                 const scopes = await dc().scopesRequest({frameId: stack.body.stackFrames[0]!.id});
 
                 const statics = (await dc().variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
@@ -83,12 +83,12 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
     });
     test("Supports deeply nested variables", () => {
         const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnEntry = false;
+        dbgConfigCopy.stopOnSymbol = false;
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
             dc().waitForEvent("stopped").then(async() => {
-                const stack = await dc().stackTraceRequest({ threadId: 1});
+                const stack = await dc().stackTraceRequest({ threadId: 0});
                 const scopes = await dc().scopesRequest({frameId: stack.body.stackFrames[0]!.id});
 
                 const statics = (await dc().variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
@@ -161,12 +161,12 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
     });
     test("Supports cyclic variables", () => {
         const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnEntry = false;
+        dbgConfigCopy.stopOnSymbol = false;
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
             dc().waitForEvent("stopped").then(async() => {
-                const stack = await dc().stackTraceRequest({ threadId: 1});
+                const stack = await dc().stackTraceRequest({ threadId: 0});
                 const scopes = await dc().scopesRequest({frameId: stack.body.stackFrames[0]!.id});
 
                 const statics = (await dc().variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
@@ -195,14 +195,17 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
     });
 
     test("Supports setting variable values", () => {
-        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnEntry = false;
         return Promise.all([
-            dc().hitBreakpoint(
-                dbgConfigCopy,
-                { line: 38, path: fibonacciFile() }
-            ).then(async() => {
-                const stack = await dc().stackTraceRequest({ threadId: 1});
+            dc().launch(dbgConfig()),
+            dc().waitForEvent("stopped").then(async() => {
+                await dc().setBreakpointsRequest(
+                    { source: { path: fibonacciFile() },
+                        breakpoints: [{line: 38}] });
+                await Promise.all([
+                    dc().continueRequest({threadId: 0, singleThread: true}),
+                    dc().waitForEvent("stopped"),
+                ]);
+                const stack = await dc().stackTraceRequest({ threadId: 0});
                 const scopes = await dc().scopesRequest({frameId: stack.body.stackFrames[0]!.id});
 
                 // First set new values
@@ -264,7 +267,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
             dc().configurationSequence(),
             dc().launch(dbgConfig()),
             dc().waitForEvent("stopped").then(async() => {
-                const stack = await dc().stackTraceRequest({ threadId: 1});
+                const stack = await dc().stackTraceRequest({ threadId: 0});
                 const scopes = await dc().scopesRequest({frameId: stack.body.stackFrames[0]!.id});
                 const registersScope = scopes.body.scopes[2]!;
                 const registerGroups = (await dc().variablesRequest({ variablesReference: registersScope.variablesReference })).body.variables;
@@ -306,13 +309,12 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
     // rather than the address of the pointer itself.
     test("Pointer memoryReference uses value", () => {
         const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnEntry = false;
-        dbgConfigCopy.trace = true;
+        dbgConfigCopy.stopOnSymbol = false;
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
             dc().waitForEvent("stopped").then(async() => {
-                const stack = await dc().stackTraceRequest({ threadId: 1});
+                const stack = await dc().stackTraceRequest({ threadId: 0});
                 const scopes = await dc().scopesRequest({frameId: stack.body.stackFrames[0]!.id});
                 const staticsScope = scopes.body.scopes[1]!;
 
