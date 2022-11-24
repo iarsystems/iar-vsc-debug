@@ -33,6 +33,7 @@ export class BreakpointTypeProtocolExtension {
             if (defaultBreakpointType === undefined) {
                 throw new Error("The driver does specify any supported breakpoint types");
             }
+            this.breakpointType = defaultBreakpointType;
         }
         // If the driver supports it, register console commands and custom requests
         this.getSupportedBreakpointTypes().forEach(type => {
