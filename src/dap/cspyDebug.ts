@@ -198,6 +198,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         logger.init(e => this.sendEvent(e), undefined, true);
         logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop);
 
+        let serviceManager: ThriftServiceManager | undefined = undefined;
         try {
             // -- Launch CSpyServer --
             const workbench = Workbench.create(args.workbenchPath);
@@ -214,7 +215,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             }
 
             // -- Launch all our thrift services so that they are available to CSpyServer --
-            const serviceManager = await CSpyServerServiceManager.fromWorkbench(workbench.path, this.numCores);
+            serviceManager = await CSpyServerServiceManager.fromWorkbench(workbench.path, this.numCores);
             serviceManager.addCrashHandler(code => {
                 this.sendEvent(new OutputEvent(`The debugger backend crashed (code ${code}).`));
                 this.sendEvent(new TerminatedEvent());
@@ -316,6 +317,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 response.message += ` (${e.culprit})`;
             }
             this.sendResponse(response);
+            if (serviceManager) await serviceManager.dispose();
             await this.endSession();
             return;
         }
