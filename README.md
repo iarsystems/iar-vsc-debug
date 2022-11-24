@@ -51,10 +51,11 @@ This extension is compatible with selected IAR Embedded Workbench (EW) products 
 
 | IAR EW version  | Limitation
 |--------------|---------
-| Arm v9.30 or later | None |
-| RISC-V v3.10 or later | Terminal I/O is not supported |
-| Arm v8.50-9.20.4<br>RH850 v3.10 or later| An initial debug session with EW is required prior to debugging in VSCode |
+| Arm v9.30 or later<br>RISC-V 3.11.1 or later<br>RL78 v5.10 or later<br>AVR v8.10 or later| None |
+| RISC-V v3.10 | Terminal I/O is not supported |
+| Arm v8.50-9.20.4<br>RH850 v3.10 or later | An initial debug session with EW is required prior to debugging in VSCode |
 | Arm v8.40-8.50 | The variables view is not supported |
+**Note:** You may experience crashes using multicore debugging with Arm 9.10.2 and earlier, as well as RH850 3.10.2 and earlier.
 
 </details>
 
