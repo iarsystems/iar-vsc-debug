@@ -31,7 +31,10 @@ async function main() {
         printHelp();
         exit(1);
     }
-    const cspyArgs = cmdlineEnvs["cspybat-args"].split(/(?<!\\)\s+/g).filter(arg => arg !== "--silent");
+    const cspyArgs = cmdlineEnvs["cspybat-args"].
+        split(/(?<!\\)\s+/g).
+        map(arg => arg.replace(/\\(?=\s)/g, "")).
+        filter(arg => arg !== "--silent");
     const backendIdx = cspyArgs.indexOf("--backend");
     const partialConfig = XclConfigurationSupplier.generateDebugConfiguration(
         "",
