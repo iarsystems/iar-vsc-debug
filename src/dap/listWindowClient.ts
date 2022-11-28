@@ -250,7 +250,6 @@ export class ListWindowClient implements Disposable {
         });
         updatePromise.then(() => {
             if (this.currentUpdate === updatePromise) {
-                if (this.debug) console.log("Calling handlers from expansion");
                 this.currentUpdate = undefined;
                 this.oneshotChangeHandlers.forEach(handler => handler());
                 this.oneshotChangeHandlers = [];
