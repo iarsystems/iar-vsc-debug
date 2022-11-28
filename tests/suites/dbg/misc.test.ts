@@ -47,7 +47,7 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
-            TestUtils.assertStoppedLocation(dc(), "entry", 38, utilsFile(), /GetFib/),
+            TestUtils.assertStoppedLocation(dc(), "entry", [35, 38], utilsFile(), /GetFib/),
         ]);
     });
 
