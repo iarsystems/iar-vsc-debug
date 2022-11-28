@@ -86,10 +86,8 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                 const args: DebugProtocol.SetInstructionBreakpointsArguments = {
                     breakpoints: [{instructionReference: res.body.memoryReference}]
                 };
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                const bpRes: DebugProtocol.SetInstructionBreakpointsResponse = await dc().customRequest("setInstructionBreakpoints", args);
-                Assert(bpRes.body.breakpoints[0]?.verified);
+                const bpRes: Partial<DebugProtocol.SetInstructionBreakpointsResponse> = await dc().customRequest("setInstructionBreakpoints", args);
+                Assert(bpRes.body?.breakpoints[0]?.verified);
                 Assert.strictEqual(bpRes.body.breakpoints[0]?.instructionReference, res.body.memoryReference);
                 await Promise.all([
                     dc().continueRequest({threadId: 0, singleThread: true}),
@@ -149,6 +147,16 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                     const breakInfo = await dc().dataBreakpointInfoRequest({name: callCount.name, variablesReference: scopes.body.scopes[1]!.variablesReference});
                     Assert.strictEqual(breakInfo.body.dataId, "callCount");
 
+                    const getCallCountVariable = async() => {
+                        const stack = await dc().stackTraceRequest({ threadId: 0});
+                        const scopes = await dc().scopesRequest({frameId: stack.body.stackFrames[0]!.id});
+                        const statics = (await dc().variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
+                        return statics.find(variable => variable.name.startsWith("callCount"));
+                    };
+
+                    // Data breakpoints (esp on hardware and esp write breakpoints) sometimes stop a few instructions after
+                    // where the actual access was performed, which makes them difficult to test using stop locations
+                    // (i.e. line numbers).
                     await dc().setDataBreakpointsRequest(
                         {breakpoints: [{dataId: breakInfo.body.dataId, accessType: "write" }] });
                     await Promise.all([
@@ -156,17 +164,20 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                         dc().waitForEvent("stopped", 2000).then(async ev => {
                             // should be right after callCount is set to 0
                             Assert.strictEqual(ev.body["reason"], "breakpoint");
-                            const stack = await dc().stackTraceRequest({ threadId: 0});
-                            const scopes = await dc().scopesRequest({frameId: stack.body.stackFrames[0]!.id});
-                            const statics = (await dc().variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
-                            const callCount = statics.find(variable => variable.name.startsWith("callCount"));
+                            const callCount = await getCallCountVariable();
                             Assert(callCount);
                             Assert.strictEqual(callCount.value, "0");
                         }),
                     ]);
                     await Promise.all([
                         dc().continueRequest({threadId: 0, singleThread: true}),
-                        dc().assertStoppedLocation("breakpoint", { path: fibonacciFile(), line: 29}),
+                        dc().waitForEvent("stopped", 2000).then(async ev => {
+                            // should be right after callCount is first incremented
+                            Assert.strictEqual(ev.body["reason"], "breakpoint");
+                            const callCount = await getCallCountVariable();
+                            Assert(callCount);
+                            Assert.strictEqual(callCount.value, "1");
+                        }),
                     ]);
 
                     await dc().setDataBreakpointsRequest(

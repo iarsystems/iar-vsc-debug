@@ -19,7 +19,7 @@
 static void NextCounter(void);
 static void DoForegroundProcess(void);
 
-static int_fast8_t callCount;
+static int_fast8_t callCount = -1;
 
 
 /* Increase the 'callCount' variable by one. */
