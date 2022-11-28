@@ -48,7 +48,7 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
             TestUtils.assertStoppedLocation(dc(), "entry", [35, 38], utilsFile(), /GetFib/),
-        ]);
+        ]]);
     });
 
     test("Stops on entry", () => {
@@ -146,7 +146,7 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
                 let res = await dc().evaluateRequest({expression: "2"});
                 Assert.strictEqual(res.body.result, "2");
                 res = await dc().evaluateRequest({expression: "callCount"});
-                Assert.strictEqual(res.body.result, "0");
+                Assert.strictEqual(res.body.result, "-1");
                 res = await dc().evaluateRequest({expression: "str"});
                 Assert.match(res.body.result, /"This is a sträng"$/);
                 try {
