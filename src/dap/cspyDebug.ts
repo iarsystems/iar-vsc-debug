@@ -4,7 +4,7 @@
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { CSpyServerServiceManager } from "./thrift/cspyServerServiceManager";
 import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
-import { LoggingDebugSession,  StoppedEvent, OutputEvent, InitializedEvent, logger, Logger, Thread, TerminatedEvent, InvalidatedEvent, Event, ExitedEvent } from "@vscode/debugadapter";
+import { LoggingDebugSession, OutputEvent, InitializedEvent, logger, Logger, Thread, TerminatedEvent, InvalidatedEvent, Event, ExitedEvent } from "@vscode/debugadapter";
 import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
 import * as DebugEventListener from "iar-vsc-common/thrift/bindings/DebugEventListener";
 import * as LibSupportService2 from "iar-vsc-common/thrift/bindings/LibSupportService2";
@@ -268,8 +268,19 @@ export class CSpyDebugSession extends LoggingDebugSession {
             await CSpyCoresService.initialize(serviceManager);
             const stackManager = await CSpyContextService.instantiate(serviceManager, registerInfoGenerator);
             const runControlService = await CSpyRunControlService.instantiate(serviceManager, this.cspyEventHandler, this.libSupportHandler);
-            runControlService.onCoreStopped((core, reason) => {
-                this.sendEvent(new StoppedEvent(reason, core));
+            runControlService.onCoreStopped(stoppedEvents => {
+                // Prefer to batch all events into a single one with the 'allThreadsStopped' flag, since it allows
+                // controlling which core is focused. There is a proposal here for improving the ability to batch stopped events:
+                // https://github.com/microsoft/debug-adapter-protocol/issues/161
+                if (stoppedEvents.length === this.numCores) {
+                    const focusedCore = stoppedEvents.find(ev => ev.stoppedDeliberately) ?? stoppedEvents[0];
+                    if (focusedCore) this.sendStoppedEvent(focusedCore.core, focusedCore.reason, true);
+                } else {
+                    // Try to force the correct UI focus by sending cores that stopped deliberately last
+                    stoppedEvents.sort((ev1, ev2) => Number(ev1.stoppedDeliberately) - Number(ev2.stoppedDeliberately)).forEach(ev => {
+                        this.sendStoppedEvent(ev.core, ev.reason, false);
+                    });
+                }
             });
             const memoryManager = await CspyMemoryService.instantiate(serviceManager);
             const disassemblyManager = await CspyDisassemblyService.instantiate(serviceManager,
@@ -351,12 +362,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             } else {
                 // Use the initial entry state. Since no coreStopped event will be emitted, we must notify the client
                 // here that all cores are stopped.
-                const eventBody: DebugProtocol.StoppedEvent["body"] = {
-                    reason: "entry",
-                    threadId: 0,
-                    allThreadsStopped: true,
-                };
-                this.sendEvent(new Event("stopped", eventBody));
+                this.sendStoppedEvent(0, "entry", true);
             }
         } else {
             await this.services.runControlService.continue(undefined);
@@ -678,5 +684,18 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 logger.error(e.toString());
             }
         }
+    }
+
+    /**
+     * Helper for sending a stoppedEvent with the 'allThreadsStopped' flag. It hasn't made it into the node debug
+     * adapter library yet, so we can't simply use 'new StoppedEvent()'.
+     */
+    private sendStoppedEvent(threadId: number, reason: string, allThreadsStopped: boolean) {
+        const eventBody: DebugProtocol.StoppedEvent["body"] = {
+            reason,
+            threadId,
+            allThreadsStopped,
+        };
+        this.sendEvent(new Event("stopped", eventBody));
     }
 }

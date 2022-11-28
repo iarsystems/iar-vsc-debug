@@ -13,6 +13,13 @@ import { Disposable } from "../disposable";
 import { LibSupportHandler } from "../libSupportHandler";
 
 type StoppingReason = DebugProtocol.StoppedEvent["body"]["reason"];
+interface CoreStoppedEvent {
+    core: number;
+    reason: StoppingReason;
+    /** Whether the core stopped executing for its own real reason, not just because it is syncing with another core */
+    stoppedDeliberately: boolean;
+}
+type CoresStoppedCallback = (events: CoreStoppedEvent[]) => void;
 
 /**
  * Keeps track of core states (running/stopped) and allows running/pausing/stepping cores.
@@ -28,7 +35,7 @@ export class CSpyRunControlService implements Disposable {
         return new CSpyRunControlService(dbgr, await dbgr.service.getNumberOfCores(), eventListener, libSupportHandler);
     }
 
-    private readonly coreStoppedCallbacks: Array<(core: number, reason: StoppingReason) => void> = [];
+    private readonly coresStoppedCallbacks: Array<CoresStoppedCallback> = [];
     // For each running core, keeps the reason why the core would stop in the future. This depends on what action caused
     // the core to start (i.e. if we called stopCore on it, we expect it to stop with reason "pause"). When a core
     // stops (i.e. we receive a kDkCoreStopped), the reason stored here is sent to the DAP client (VS Code displays it
@@ -58,8 +65,8 @@ export class CSpyRunControlService implements Disposable {
      * Registers a function to be called when any core stops (e.g. because it hit a breakpoint or was stepped).
      * The callback function takes the index of the core and a reason for stopping that can be sent to the frontend.
      */
-    onCoreStopped(callback: (core: number, reason: StoppingReason) => void) {
-        this.coreStoppedCallbacks.push(callback);
+    onCoreStopped(callback: CoresStoppedCallback) {
+        this.coresStoppedCallbacks.push(callback);
     }
 
     /**
@@ -157,18 +164,25 @@ export class CSpyRunControlService implements Disposable {
 
     private async updateCoreStatus() {
         const nCores = await this.dbgr.service.getNumberOfCores();
-        const coreIds = Array.from({length: nCores}, (_, i) => i);
-        return Promise.all(coreIds.map(async i => {
-            const isStopped = (await this.dbgr.service.getCoreState(i)) !== DkCoreStatusConstants.kDkCoreStateRunning;
+        const coreIds = Array.from({ length: nCores }, (_, i) => i);
+        const stoppedCores = await Promise.all(coreIds.map(async i => {
+            const isStopped = await this.dbgr.service.getCoreState(i) !== DkCoreStatusConstants.kDkCoreStateRunning;
             if (isStopped) {
                 const expectedStoppingReason = this.expectedStoppingReason.get(i);
                 const wasStopped = expectedStoppingReason === undefined;
                 // Only if the core wasn't stopped last time we checked do we take any action.
                 if (!wasStopped) {
                     this.expectedStoppingReason.delete(i);
-                    this.coreStoppedCallbacks.forEach(cb => cb(i, expectedStoppingReason));
+                    return {
+                        core: i,
+                        reason: expectedStoppingReason,
+                        stoppedDeliberately: await this.dbgr.service.hasCoreStoppedDeliberately(i),
+                    };
                 }
             }
+            return undefined;
         }));
+        const actualStoppedCores = stoppedCores.filter((ev): ev is CoreStoppedEvent => !!ev);
+        this.coresStoppedCallbacks.forEach(cb => cb(actualStoppedCores));
     }
 }
