@@ -117,9 +117,12 @@ export class ListWindowClient implements Disposable {
         if (rowIndex === undefined) {
             throw new Error("Cannot find row in the window matching: " + reference.values[this.idColumn]);
         }
+        // Wait for any updates to finish so that when we wait again below, we know that any updates we see are
+        // because of the setValue call, not some old update that hadn't finished.
+        if (this.currentUpdate) await this.currentUpdate;
         await this.backend.service.setValue(new Int64(rowIndex), column, value);
 
-        // Some windows (e.g. registers) don't update immediately after calling setValue, so we wait for it it push and update first
+        // Some windows (e.g. registers) don't update immediately after calling setValue, so we wait for it it push an update first
         await new Promise<void>(resolve => {
             this.onChangeOnce(() => {
                 resolve();
@@ -247,6 +250,7 @@ export class ListWindowClient implements Disposable {
         });
         updatePromise.then(() => {
             if (this.currentUpdate === updatePromise) {
+                if (this.debug) console.log("Calling handlers from expansion");
                 this.currentUpdate = undefined;
                 this.oneshotChangeHandlers.forEach(handler => handler());
                 this.oneshotChangeHandlers = [];
