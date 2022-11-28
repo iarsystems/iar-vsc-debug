@@ -88,19 +88,23 @@ export namespace TestUtils {
         });
     }
 
-    export function assertStoppedLocation(dc: DebugClient, reason: string, line: number, file: string | undefined, name: RegExp, threadId = 0) {
+    export function assertStoppedLocation(dc: DebugClient, reason: string, line: number | [number, number], file: string | undefined, name: RegExp, threadId = 0) {
         return dc.waitForEvent("stopped").then(event => {
             assert.strictEqual(event.body?.reason, reason);
             return assertLocationIs(dc, line, file, name, threadId);
         });
     }
-    export async function assertLocationIs(dc: DebugClient, line: number, file: string | undefined, name: RegExp, threadId = 0) {
+    export async function assertLocationIs(dc: DebugClient, line: number | [number, number], file: string | undefined, name: RegExp, threadId = 0) {
         const stack = await dc.stackTraceRequest({threadId});
         const topStack = stack.body.stackFrames[0];
         assert(topStack);
         assert.match(topStack.name, name);
         assert.strictEqual(topStack.source?.path, file);
-        assert.strictEqual(topStack.line, line);
+        if (typeof(line) === "number") {
+            assert.strictEqual(topStack.line, line);
+        } else {
+            assert(topStack.line >= line[0] && topStack.line <= line[1], `Line ${topStack.line} was not in range [${line[0], line[1]}]`);
+        }
     }
 
     export function buildProject(workbenchPath: string, ewpPath: string, configuration: string) {
