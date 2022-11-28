@@ -21,7 +21,7 @@ debugAdapterSuite("Stepping", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                 }
                 await Promise.all([
                     dc().stepInRequest({threadId: 0, singleThread: true}),
-                    TestUtils.assertStoppedLocation(dc(), "step", 35, fibonacciFile(), /DoForegroundProcess/)
+                    TestUtils.assertStoppedLocation(dc(), "step", [33, 35], fibonacciFile(), /DoForegroundProcess/)
                 ]);
                 await dc().setBreakpointsRequest({ source: { path: utilsFile() },
                     breakpoints: [{line: 54}] });
