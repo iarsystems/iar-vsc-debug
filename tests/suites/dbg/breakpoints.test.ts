@@ -153,7 +153,16 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                         {breakpoints: [{dataId: breakInfo.body.dataId, accessType: "write" }] });
                     await Promise.all([
                         dc().continueRequest({threadId: 0, singleThread: true}),
-                        dc().assertStoppedLocation("breakpoint", { path: fibonacciFile(), line: 47}),
+                        dc().waitForEvent("stopped", 2000).then(async ev => {
+                            // should be right after callCount is set to 0
+                            Assert.strictEqual(ev.body["reason"], "breakpoint");
+                            const stack = await dc().stackTraceRequest({ threadId: 0});
+                            const scopes = await dc().scopesRequest({frameId: stack.body.stackFrames[0]!.id});
+                            const statics = (await dc().variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
+                            const callCount = statics.find(variable => variable.name.startsWith("callCount"));
+                            Assert(callCount);
+                            Assert.strictEqual(callCount.value, "0");
+                        }),
                     ]);
                     await Promise.all([
                         dc().continueRequest({threadId: 0, singleThread: true}),
