@@ -46,7 +46,6 @@ export class CSpyCoresService {
         this._instance = undefined;
     }
 
-    // private readonly expectedStoppingReason: Map<number, StoppingReason>;
     private readonly mutex = new Mutex();
 
     private constructor(

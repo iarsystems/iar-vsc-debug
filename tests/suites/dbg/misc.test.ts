@@ -7,6 +7,7 @@ import { OsUtils } from "iar-vsc-common/osUtils";
 import { debugAdapterSuite } from "./debugAdapterSuite";
 import { TestUtils } from "../testUtils";
 import { mkdirSync, renameSync } from "fs";
+import { DebugProtocol } from "@vscode/debugprotocol";
 
 /**
  * Tests directly against the debug adapter, using the DAP.
@@ -81,8 +82,17 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
             dc().configurationSequence(),
             dc().launch(dbgConfig()),
             dc().waitForEvent("stopped").then(async() => {
+                let expectedOutput = "\n" + FIBS.join("\n");
                 await Promise.all([
-                    dc().assertOutput("stdout", "\n" + FIBS.join("\n"), 5000),
+                    Promise.race([
+                        new Promise<void>(resolve => dc().addListener("output", (ev: DebugProtocol.OutputEvent) => {
+                            if (ev.body.category === "stdout" && expectedOutput.startsWith(ev.body.output)) {
+                                expectedOutput = expectedOutput.substring(ev.body.output.length);
+                                if (expectedOutput.length === 0) resolve();
+                            }
+                        })),
+                        TestUtils.wait(5000).then(() => Promise.reject(new Error("Timed out waiting for console output"))),
+                    ]),
                     dc().continueRequest({threadId: 0, singleThread: true})
                 ]);
             }),
