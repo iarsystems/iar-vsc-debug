@@ -48,7 +48,7 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
             TestUtils.assertStoppedLocation(dc(), "entry", [35, 38], utilsFile(), /GetFib/),
-        ]]);
+        ]);
     });
 
     test("Stops on entry", () => {
