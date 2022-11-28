@@ -368,6 +368,11 @@ export class CSpyDebugSession extends LoggingDebugSession {
             await this.services.runControlService.continue(undefined);
         }
     }
+    protected override attachRequest(response: DebugProtocol.AttachResponse, _args: CSpyLaunchRequestArguments) {
+        response.success = false;
+        response.message = "Attach requests are currently not supported (see https://github.com/IARSystems/iar-vsc-debug/issues/15).";
+        this.sendResponse(response);
+    }
 
     protected override async terminateRequest(response: DebugProtocol.TerminateResponse, _args: DebugProtocol.TerminateArguments) {
         this.sendResponse(response);
