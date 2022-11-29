@@ -85,7 +85,7 @@ export function debugAdapterSuite(title: string, runner: DebugAdapterSuiteRunner
             });
             // The test program requests terminal input, we always respond with this.
             dc.on("output", (ev: DebugProtocol.OutputEvent) => {
-                if (ev.body.output.includes("requested terminal input")) {
+                if (ev.body.output.startsWith("Debugee requested terminal input")) {
                     dc!.evaluateRequest({ expression: "1234\nhello", context: "repl" });
                 }
             });
