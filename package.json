@@ -216,7 +216,14 @@
 							"target": {
 								"type": "string",
 								"description": "The target type, e.g 'arm', in lower case.",
-								"default": "arm"
+								"default": "arm",
+								"enum": [
+									"arm",
+									"riscv",
+									"rh850",
+									"rl78",
+									"avr"
+								]
 							},
 							"program": {
 								"type": "string",
