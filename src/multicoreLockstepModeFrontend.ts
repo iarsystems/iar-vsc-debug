@@ -11,7 +11,7 @@ import { SettingsConstants } from "./settingsConstants";
 
 /**
  * Manages the frontend (client) side of the lockstep mode selection for multicore sessions (i.e. toggling whether
- * run/step actions affect all cores or only the focused one).
+ * continue/step/pause actions affect all cores or only the focused one).
  * Provides commands for setting the lockstep mode, and sends the set lockstep mode to the backend (debug adapter)
  * by injecting data into launch configurations and sending custom DAP requests.
  */

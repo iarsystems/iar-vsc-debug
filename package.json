@@ -113,7 +113,7 @@
 				},
 				"iar-debug.enableMulticoreLockstepMode": {
 					"default": true,
-					"description": "When enabled, run/step/stop actions in a multicore session affect all cores, instead of just the focused one.",
+					"description": "When enabled, continue/step/pause actions in a multicore session affect all cores, instead of just the focused one.",
 					"type": "boolean"
 				}
 			}
@@ -167,7 +167,7 @@
 			{
 				"command": "iar.enableMulticoreLockstepMode",
 				"category": "IAR Debug",
-				"title": "Set Run/Step/Stop affects all cores",
+				"title": "Set Continue/Step/Pause affects all cores",
 				"enablement": "debugType == cspy && iar-debug.sessionIsMulticore && !iar-debug.lockstepEnabled",
 				"icon": {
 					"dark": "images/icons/DgCoresLockstepOn_dark.svg",
@@ -177,7 +177,7 @@
 			{
 				"command": "iar.disableMulticoreLockstepMode",
 				"category": "IAR Debug",
-				"title": "Set Run/Step/Stop affects current core only",
+				"title": "Set Continue/Step/Pause affects current core only",
 				"enablement": "debugType == cspy && iar-debug.sessionIsMulticore && iar-debug.lockstepEnabled",
 				"icon": {
 					"dark": "images/icons/DgCoresLockstepOff_dark.svg",

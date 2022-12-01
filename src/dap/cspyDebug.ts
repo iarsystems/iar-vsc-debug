@@ -59,7 +59,7 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     /** The type of breakpoint to use by default. This is a hidden option; it isn't normally provided directly in the
     * launch.json (it's not declared in package.json). Instead, it is provided from the user's selection in the UI. */
     breakpointType?: BreakpointType;
-    /** For multicore sessions, whether to enable lockstep mode (i.e. whether run/step should affect all cores, or
+    /** For multicore sessions, whether to enable lockstep mode (i.e. whether continue/step/pause should affect all cores, or
     * just the selected one). Hidden option, see above. */
     multicoreLockstepModeEnabled?: boolean;
     /** Enable logging the Debug Adapter Protocol */
