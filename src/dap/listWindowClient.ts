@@ -8,7 +8,7 @@ import * as ListWindowFrontend from "iar-vsc-common/thrift/bindings/ListWindowFr
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
 import { Int64 } from "thrift";
-import { Disposable } from "./disposable";
+import { Disposable } from "./utils";
 import { logger } from "@vscode/debugadapter/lib/logger";
 
 export interface ListWindowRowReference {
@@ -26,7 +26,7 @@ export interface ListWindowRowReference {
  * Getting around this limitation is *possible*, but way too complicated to be worth doing until we actually need it.
  * NOTE 2: This class **only** works with non-sliding list windows.
  */
-export class ListWindowClient implements Disposable {
+export class ListWindowClient implements Disposable.Disposable {
     // IMPLEMENTATION NOTE: We always expand all rows as far as possible when fetching window contents from the backend
     // (as opposed to only expanding them when needed). This removes a lot of complexity in keeping track of rows' positions,
     // but may be a little slow sometimes.

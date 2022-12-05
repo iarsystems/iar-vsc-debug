@@ -9,7 +9,7 @@ import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
 import { StackFrame, Source, Scope, Handles, Variable, logger } from "@vscode/debugadapter";
 import { basename } from "path";
 import { CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE, ExprValue } from "iar-vsc-common/thrift/bindings/cspy_types";
-import { Disposable } from "../disposable";
+import { Disposable } from "../utils";
 import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { WindowNames } from "../listWindowConstants";
@@ -60,12 +60,16 @@ class EvalExpressionReference {
  * Takes care of managing stack contexts, and allows to perform operations
  * on/in a context (e.g. fetching or setting variables, evaluating expressions)
  */
-export class CSpyContextService implements Disposable {
+export class CSpyContextService implements Disposable.Disposable {
 
     /**
      * Creates a new context manager using services from the given service manager.
+     * @param serviceMgr The service manager running the session
+     * @param coresService The cores service belonging to the session. This class does not take ownership of the
+     *      service, and is not responsible for disposing of it.
+     * @param regInfoGen A registry information service to help provide register variables
      */
-    static async instantiate(serviceMgr: ThriftServiceManager, regInfoGen: RegisterInformationService): Promise<CSpyContextService> {
+    static async instantiate(serviceMgr: ThriftServiceManager, coresService: CSpyCoresService, regInfoGen: RegisterInformationService): Promise<CSpyContextService> {
         const onProviderUnavailable = (reason: unknown) => {
             logger.error("Failed to initialize variables provider: " + reason);
             return undefined;
@@ -73,6 +77,7 @@ export class CSpyContextService implements Disposable {
         return new CSpyContextService(
             await serviceMgr.findService(CONTEXT_MANAGER_SERVICE, ContextManager.Client),
             await serviceMgr.findService(DEBUGGER_SERVICE, Debugger.Client),
+            coresService,
             await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.LOCALS, 0, 1, 3, 2).catch(onProviderUnavailable),
             await ListWindowVariablesProvider.instantiate(serviceMgr, WindowNames.STATICS, 0, 1, 3, 2).catch(onProviderUnavailable),
             // Registers need a special implementation to handle all the register groups
@@ -90,6 +95,7 @@ export class CSpyContextService implements Disposable {
 
     private constructor(private readonly contextManager: ThriftClient<ContextManager.Client>,
                         private readonly dbgr: ThriftClient<Debugger.Client>,
+                        private readonly coresService: CSpyCoresService,
                         private readonly localsProvider: ListWindowVariablesProvider | undefined,
                         private readonly staticsProvider: ListWindowVariablesProvider | undefined,
                         private readonly registersProvider: RegistersVariablesProvider | undefined) {
@@ -258,7 +264,7 @@ export class CSpyContextService implements Disposable {
     }
 
     private withContext<T>(context: ContextRef, task: () => Promise<T>): Promise<T> {
-        return CSpyCoresService.instance.performOnCore(context.core, async() => {
+        return this.coresService.performOnCore(context.core, async() => {
             // Tell the variable windows to wait for an update before providing any variables
             this.localsProvider?.notifyUpdateImminent();
             this.staticsProvider?.notifyUpdateImminent();

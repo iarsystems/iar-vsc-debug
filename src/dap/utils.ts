@@ -42,3 +42,44 @@ export namespace Utils {
 export interface DapEventSink {
     sendEvent(event: DebugProtocol.Event): void;
 }
+
+export namespace Disposable {
+
+    /**
+        * An object that can be or needs to disposed of,
+    * in order to release some resource(s) held by it.
+        *
+        * Similar to vscode's Disposable, but redeclared here to avoid
+    * having DAP code depend on vscode interfaces.
+        */
+    export interface Disposable {
+        dispose(): void | Promise<void>;
+    }
+
+    /**
+     * Stores multiple {@link Disposable}s, added using {@link pushDisposable} or {@link pushFunction}. When
+     * {@link disposeAll} is called, all stored disposables are disposed of in the reverse order that they were pushed
+     * (like a stack).
+     */
+    export class DisposableStack {
+        private disposables: Disposable[] = [];
+
+        pushDisposable(disposable: Disposable) {
+            this.disposables.push(disposable);
+        }
+        pushFunction(disposeFun: () => Promise<void> | void) {
+            this.disposables.push({
+                dispose: disposeFun,
+            });
+        }
+
+        async disposeAll() {
+            const disposables = this.disposables;
+            this.disposables = [];
+            disposables.reverse();
+            for (const disp of disposables) {
+                await disp.dispose();
+            }
+        }
+    }
+}

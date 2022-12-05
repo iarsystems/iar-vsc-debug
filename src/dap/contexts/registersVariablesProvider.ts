@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import { Handles, Variable } from "@vscode/debugadapter";
-import { Disposable } from "../disposable";
+import { Disposable } from "../utils";
 import { ListWindowVariablesProvider, VariablesProvider } from "./variablesProvider";
 import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
 import { ListWindowClient } from "../listWindowClient";
@@ -25,7 +25,7 @@ interface GroupReference {
  * Provides registers as DAP variables. This uses a ListWindowVariablesProvider, but wraps it in
  * order to handle the register groups, which are accessible through the context menu.
  */
-export class RegistersVariablesProvider implements VariablesProvider, Disposable {
+export class RegistersVariablesProvider implements VariablesProvider, Disposable.Disposable {
     private readonly variableReferences: Handles<RegisterReference> = new Handles();
     private visibleGroup = "";
     private availableGroups: Array<GroupReference> | undefined = undefined;

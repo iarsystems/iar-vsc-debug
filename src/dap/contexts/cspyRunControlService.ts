@@ -9,7 +9,7 @@ import { DEBUGGER_SERVICE, DkCoreStatusConstants, DkNotifyConstant } from "iar-v
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { CSpyCoresService } from "./cspyCoresService";
 import { DebugProtocol } from "@vscode/debugprotocol";
-import { Disposable } from "../disposable";
+import { Disposable } from "../utils";
 import { LibSupportHandler } from "../libSupportHandler";
 
 type StoppingReason = DebugProtocol.StoppedEvent["body"]["reason"];
@@ -24,15 +24,17 @@ type CoresStoppedCallback = (events: CoreStoppedEvent[]) => void;
 /**
  * Keeps track of core states (running/stopped) and allows running/pausing/stepping cores.
  */
-export class CSpyRunControlService implements Disposable {
+export class CSpyRunControlService implements Disposable.Disposable {
 
     static async instantiate(
         serviceManager: ThriftServiceManager,
+        coresService: CSpyCoresService,
         eventListener: DebugEventListenerHandler,
         libSupportHandler: LibSupportHandler,
     ): Promise<CSpyRunControlService> {
         const dbgr = await serviceManager.findService(DEBUGGER_SERVICE, Debugger);
-        return new CSpyRunControlService(dbgr, await dbgr.service.getNumberOfCores(), eventListener, libSupportHandler);
+        const nCores = await dbgr.service.getNumberOfCores();
+        return new CSpyRunControlService(dbgr, nCores, coresService, eventListener, libSupportHandler);
     }
 
     private readonly coresStoppedCallbacks: Array<CoresStoppedCallback> = [];
@@ -45,6 +47,7 @@ export class CSpyRunControlService implements Disposable {
     private constructor(
         private readonly dbgr: ThriftClient<Debugger.Client>,
         private readonly nCores: number,
+        private readonly coresService: CSpyCoresService,
         eventListener: DebugEventListenerHandler,
         libSupportHandler: LibSupportHandler,
     ) {
@@ -109,7 +112,7 @@ export class CSpyRunControlService implements Disposable {
      */
     continue(core: number | undefined) {
         if (core !== undefined) {
-            return CSpyCoresService.instance.performOnCore(core, async() => {
+            return this.coresService.performOnCore(core, async() => {
                 this.expectedStoppingReason.set(core, "breakpoint");
                 await this.dbgr.service.goCore(core);
             });
@@ -117,7 +120,7 @@ export class CSpyRunControlService implements Disposable {
             for (let i = 0; i < this.nCores; i++) {
                 this.expectedStoppingReason.set(i, "breakpoint");
             }
-            return CSpyCoresService.instance.performOnAllCores(async() => {
+            return this.coresService.performOnAllCores(async() => {
                 await this.dbgr.service.multiGo(-1);
             });
         }
@@ -153,12 +156,12 @@ export class CSpyRunControlService implements Disposable {
     private performOnOneOrAllCores<T>(core: number | undefined, expectedStoppingReason: string, task: () => Promise<T>) {
         if (core !== undefined) {
             this.expectedStoppingReason.set(core, expectedStoppingReason);
-            return CSpyCoresService.instance.performOnCore(core, task);
+            return this.coresService.performOnCore(core, task);
         } else {
             for (let i = 0; i < this.nCores; i++) {
                 this.expectedStoppingReason.set(i, expectedStoppingReason);
             }
-            return CSpyCoresService.instance.performOnAllCores(task);
+            return this.coresService.performOnAllCores(task);
         }
     }
 

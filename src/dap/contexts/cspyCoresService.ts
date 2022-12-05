@@ -9,6 +9,7 @@ import { Mutex } from "async-mutex";
 import Int64 = require("node-int64");
 import { ListWindowClient } from "../listWindowClient";
 import { WindowNames } from "../listWindowConstants";
+import { Disposable } from "../utils";
 
 /**
  * Allows running actions on specific cores in a multi-core session. Call ${@link performOnCore} to run an action in the
@@ -19,31 +20,20 @@ import { WindowNames } from "../listWindowConstants";
  * some action with the new active core. All context-sensitive actions should use this service to make sure they are
  * done on the correct core.
  */
-export class CSpyCoresService {
-    private static _instance: CSpyCoresService | undefined = undefined;
-
-    static get instance(): CSpyCoresService {
-        if (this._instance === undefined) {
-            throw new Error("Cores service has not been initialized");
-        }
-        return this._instance;
-    }
-
+export class CSpyCoresService implements Disposable.Disposable {
     /**
-     * Must be called before accessing the {@link instance}.
+     * Creates a new cores service from the given service manager instance. Note that there should only be one
+     * {@link CSpyCoresService} instance per debug session/service manager (since it needs to be the single authority on
+     * what core is focused).
      */
-    static async initialize(serviceManager: ThriftServiceManager) {
+    static async instantiate(serviceManager: ThriftServiceManager): Promise<CSpyCoresService> {
         const dbgr = await serviceManager.findService(DEBUGGER_SERVICE, Debugger);
         const nCores = await dbgr.service.getNumberOfCores();
+        dbgr.close();
         // We don't need the cores window if we're running single-core. This lets us support single-core debugging
         // when the cores window is unavailable (i.e. for some 8.X ide versions).
         const coresWindow = nCores > 1 ? await ListWindowClient.instantiate(serviceManager, WindowNames.CORES, 1) : undefined;
-        this._instance = new CSpyCoresService(coresWindow);
-    }
-
-    static async dispose() {
-        await this._instance?.dispose();
-        this._instance = undefined;
+        return new CSpyCoresService(coresWindow);
     }
 
     private readonly mutex = new Mutex();
@@ -90,6 +80,11 @@ export class CSpyCoresService {
             return task();
         }
     }
+
+    async dispose() {
+        await this.coresWindow?.dispose();
+    }
+
     private async setActionsAffectAllCores(actionsAffectAllCores: boolean) {
         // TODO: cache state to avoid doing this every time
         if (this.coresWindow) {
@@ -101,9 +96,5 @@ export class CSpyCoresService {
             }
             await this.coresWindow?.clickContextMenu(targetItem.command);
         }
-    }
-
-    private async dispose(): Promise<void> {
-        await this.coresWindow?.dispose();
     }
 }

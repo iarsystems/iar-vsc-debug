@@ -6,7 +6,7 @@
 import { Variable, Handles } from "@vscode/debugadapter";
 import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
 import { ListWindowClient, ListWindowRowReference } from "../listWindowClient";
-import { Disposable } from "../disposable";
+import { Disposable } from "../utils";
 import { VariablesUtils } from "./variablesUtils";
 import { DebugProtocol } from "@vscode/debugprotocol";
 
@@ -37,7 +37,7 @@ export interface VariablesProvider {
 /**
  * Provides DAP-format variables from a C-SPY window.
  */
-export class ListWindowVariablesProvider implements VariablesProvider, Disposable {
+export class ListWindowVariablesProvider implements VariablesProvider, Disposable.Disposable {
     // The maximum amount of time to wait when expecting an update
     private static readonly UPDATE_TIMEOUT = 300;
 

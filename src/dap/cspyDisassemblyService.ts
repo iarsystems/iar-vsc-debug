@@ -11,7 +11,7 @@ import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
 import { SOURCE_LOOKUP_SERVICE } from "iar-vsc-common/thrift/bindings/sourcelookup_types";
 import { Source } from "@vscode/debugadapter";
-import { Disposable } from "./disposable";
+import { Disposable } from "./utils";
 import { basename } from "path";
 import { logger } from "@vscode/debugadapter/lib/logger";
 
@@ -25,7 +25,7 @@ import { logger } from "@vscode/debugadapter/lib/logger";
  * No (mutable) state is carried here, so it might be better to make
  * this a namespace of pure functions.
  */
-export class CspyDisassemblyService implements Disposable {
+export class CspyDisassemblyService implements Disposable.Disposable {
     static async instantiate(serviceMgr: ThriftServiceManager,
         clientLinesStartAt1: boolean,
         clientColumnsStartAt1: boolean,

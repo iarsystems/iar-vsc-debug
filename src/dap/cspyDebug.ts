@@ -25,7 +25,7 @@ import { LibSupportHandler } from "./libSupportHandler";
 import { Subject } from "await-notify";
 import { CSpyDriver } from "./breakpoints/cspyDriver";
 import { CommandRegistry } from "./commandRegistry";
-import { Utils } from "./utils";
+import { Disposable, Utils } from "./utils";
 import { CspyDisassemblyService } from "./cspyDisassemblyService";
 import { CspyMemoryService } from "./cspyMemoryService";
 import { CustomRequest } from "./customRequest";
@@ -100,12 +100,17 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
  */
 export class CSpyDebugSession extends LoggingDebugSession {
 
+    // Resources to clean up on session end. We progressively build a stack of teardown actions when launching the
+    // session, which allows the launch to be interrupted at any point and cleanly torn down.
+    private readonly teardown = new Disposable.DisposableStack();
+
     // Various services that are initialized when launching a session (i.e. when handling a launch request)
     private services: undefined | {
         serviceManager: ThriftServiceManager;
         cspyDebugger: ThriftClient<Debugger.Client>;
 
         // Wrappers/abstractions around CSpyServer services
+        coresService: CSpyCoresService;
         registerInfoService: RegisterInformationService;
         contextService: CSpyContextService;
         runControlService: CSpyRunControlService;
@@ -198,7 +203,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
         logger.init(e => this.sendEvent(e), undefined, true);
         logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop);
 
-        let serviceManager: ThriftServiceManager | undefined = undefined;
         try {
             // -- Launch CSpyServer --
             const workbench = Workbench.create(args.workbenchPath);
@@ -215,7 +219,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
             }
 
             // -- Launch all our thrift services so that they are available to CSpyServer --
-            serviceManager = await CSpyServerServiceManager.fromWorkbench(workbench.path, this.numCores);
+            const serviceManager = await CSpyServerServiceManager.fromWorkbench(workbench.path, this.numCores);
+            this.teardown.pushDisposable(serviceManager);
             serviceManager.addCrashHandler(code => {
                 this.sendEvent(new OutputEvent(`The debugger backend crashed (code ${code}).`));
                 this.sendEvent(new TerminatedEvent());
@@ -249,6 +254,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             // -- Start the CSpyServer session (incl. loading macros & flashing) --
             const sessionConfig: SessionConfiguration = await new LaunchArgumentConfigurationResolver().resolveLaunchArguments(args);
             const cspyDebugger = await serviceManager.findService(DEBUGGER_SERVICE, Debugger);
+            this.teardown.pushFunction(() => cspyDebugger.close());
             this.sendEvent(new OutputEvent("Using C-SPY version: " + await cspyDebugger.service.getVersionString() + "\n"));
 
             await cspyDebugger.service.startSession(sessionConfig);
@@ -264,10 +270,15 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
             // -- Connect to CSpyServer services --
             // note that some services (most listwindows) are launched by loadModule, so we *have* to do this afterwards
+            const coresService = await CSpyCoresService.instantiate(serviceManager);
+            this.teardown.pushDisposable(coresService);
+
             const registerInfoGenerator = new RegisterInformationService(args.driverOptions, await serviceManager.findService(DEBUGGER_SERVICE, Debugger));
-            await CSpyCoresService.initialize(serviceManager);
-            const stackManager = await CSpyContextService.instantiate(serviceManager, registerInfoGenerator);
-            const runControlService = await CSpyRunControlService.instantiate(serviceManager, this.cspyEventHandler, this.libSupportHandler);
+            const contextService = await CSpyContextService.instantiate(serviceManager, coresService, registerInfoGenerator);
+            this.teardown.pushDisposable(contextService);
+
+            const runControlService = await CSpyRunControlService.instantiate(serviceManager, coresService, this.cspyEventHandler, this.libSupportHandler);
+            this.teardown.pushDisposable(runControlService);
             runControlService.onCoreStopped(stoppedEvents => {
                 // Prefer to batch all events into a single one with the 'allThreadsStopped' flag, since it allows
                 // controlling which core is focused. There is a proposal here for improving the ability to batch stopped events:
@@ -282,16 +293,20 @@ export class CSpyDebugSession extends LoggingDebugSession {
                     });
                 }
             });
+
             const memoryManager = await CspyMemoryService.instantiate(serviceManager);
+            this.teardown.pushDisposable(memoryManager);
             const disassemblyManager = await CspyDisassemblyService.instantiate(serviceManager,
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1);
+            this.teardown.pushDisposable(disassemblyManager);
 
             const driver = CSpyDriver.driverFromName(args.driver, args.target, args.driverOptions);
             const breakpointManager = await CSpyBreakpointService.instantiate(serviceManager,
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1,
                 driver);
+            this.teardown.pushDisposable(breakpointManager);
 
             // --- Set up custom DAP requests ---
             const breakpointTypeExtension = new BreakpointTypeProtocolExtension(driver, this, args.breakpointType,
@@ -309,8 +324,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.services = {
                 serviceManager,
                 cspyDebugger,
+                coresService,
                 registerInfoService: registerInfoGenerator,
-                contextService: stackManager,
+                contextService,
                 runControlService,
                 breakpointService: breakpointManager,
                 disassemblyService: disassemblyManager,
@@ -318,6 +334,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 multicoreExtension,
                 breakpointTypeExtension,
             };
+            this.teardown.pushFunction(() => this.services = undefined);
 
         } catch (e) {
             response.success = false;
@@ -328,7 +345,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 response.message += ` (${e.culprit})`;
             }
             this.sendResponse(response);
-            if (serviceManager) await serviceManager.dispose();
             await this.endSession();
             return;
         }
@@ -654,19 +670,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
 
     private async endSession() {
-        if (this.services) {
-            await this.services.contextService.dispose();
-            this.services.runControlService.dispose();
-            await CSpyCoresService.dispose();
-            this.services.breakpointService.dispose();
-            this.services.disassemblyService.dispose();
-            this.services.memoryService.dispose();
-            // Will disconnect this DAP debugger client
-            this.services.cspyDebugger.close();
-            // VSC-3 This will take care of orderly shutting down CSpyServer
-            await this.services.serviceManager.dispose();
-            this.services = undefined;
-        }
+        await this.teardown.disposeAll();
     }
 
     /**

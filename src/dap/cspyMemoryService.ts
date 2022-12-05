@@ -7,7 +7,7 @@ import { MEMORY_SERVICE } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { Location, Zone } from "iar-vsc-common/thrift/bindings/shared_types";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
-import { Disposable } from "./disposable";
+import { Disposable } from "./utils";
 
 /**
  * A thin wrapper around the cspy memory lookup service.
@@ -15,7 +15,7 @@ import { Disposable } from "./disposable";
  * No (mutable) state is carried here, so it might be better to make
  * this a namespace of pure functions.
  */
-export class CspyMemoryService implements Disposable {
+export class CspyMemoryService implements Disposable.Disposable {
     static async instantiate(serviceMgr: ThriftServiceManager,
     ): Promise<CspyMemoryService> {
         return new CspyMemoryService(

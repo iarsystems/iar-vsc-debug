@@ -6,7 +6,7 @@
 import * as Breakpoints from "iar-vsc-common/thrift/bindings/Breakpoints";
 import { DebugProtocol } from "@vscode/debugprotocol";
 import * as Thrift from "iar-vsc-common/thrift/bindings/shared_types";
-import { Disposable } from "../disposable";
+import { Disposable } from "../utils";
 import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
 import { BREAKPOINTS_SERVICE } from "iar-vsc-common/thrift/bindings/breakpoints_types";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
@@ -39,7 +39,7 @@ type InstalledDataBreakpoint = InstalledBreakpoint<DebugProtocol.DataBreakpoint>
 /**
  * Sets, unsets and verifies C-SPY breakpoints.
  */
-export class CSpyBreakpointService implements Disposable {
+export class CSpyBreakpointService implements Disposable.Disposable {
 
     /**
      * Creates and returns a new breakpoint manager
