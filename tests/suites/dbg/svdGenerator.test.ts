@@ -169,7 +169,7 @@ suite("Specific device SVD Tests", () => {
                 Assert.strictEqual(BigInt(size), BigInt(cspySize), `The register size did not match for '${regName}'`);
                 const addressOffset = svdRegister.getElementsByTagName("addressOffset").item(0)!.textContent!;
                 const address = baseAddress + BigInt(addressOffset);
-                const cspyAddress: BigInt = BigInt(cspyPeripheral.getElementsByTagName("baseAddress").item(0)!.textContent!) + BigInt(cspyRegister.getElementsByTagName("addressOffset").item(0)!.textContent!);
+                const cspyAddress: bigint = BigInt(cspyPeripheral.getElementsByTagName("baseAddress").item(0)!.textContent!) + BigInt(cspyRegister.getElementsByTagName("addressOffset").item(0)!.textContent!);
                 Assert.strictEqual(address, cspyAddress, `The address did not match for register '${regName}'`);
 
                 const fields: HTMLCollection = svdRegister.getElementsByTagName("field");
