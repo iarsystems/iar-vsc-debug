@@ -75,7 +75,7 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
             options: partialValues.options,
             plugins: partialValues.plugins,
             // VSC-298 Specify .vscode as project dir to avoid sharing settings folder with Embedded Workbench
-            projectDir: Path.join(projectDir ?? Path.dirname(launchArguments.program), ".vscode"),
+            projectDir: projectDir ?? Path.dirname(launchArguments.program),
             projectName: projectName,
             setupMacros: partialValues.setupMacros,
             target: partialValues.target,
