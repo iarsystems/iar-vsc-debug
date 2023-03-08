@@ -73,7 +73,7 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
             // The name of the frame is *usually* __exit_0, but it varies between devices
-            TestUtils.assertStoppedLocation(dc(), "exit", 0, undefined, /__exit_0|__iar_get_ttio_0/),
+            TestUtils.assertStoppedLocation(dc(), "exit", 0, undefined, /__exit|__iar_get_ttio_0/),
         ]);
     });
 
@@ -241,7 +241,7 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
                     const updatedVars = await dc().variablesRequest({ variablesReference: staticsScope.variablesReference });
                     const updatedCallCount = updatedVars.body.variables.find(variable => variable.name.startsWith("callCount"));
                     Assert(updatedCallCount);
-                    Assert.strictEqual(updatedCallCount?.value, "16'781'823");
+                    Assert.strictEqual(updatedCallCount?.value.replace(/'/g, ""), "16781823");
                 }
             })
         ]);
@@ -266,7 +266,7 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
                 const vars = await dc().variablesRequest({ variablesReference: staticsScope.variablesReference });
                 const int = vars.body.variables.find(variable => variable.name.startsWith("scan_to_me"));
                 Assert(int, "Found variables: " + vars.body.variables.map(v => v.name).join(", "));
-                Assert.strictEqual(int.value, "1'234");
+                Assert.strictEqual(int.value.replace(/'/g, ""), "1234");
                 const buf = vars.body.variables.find(variable => variable.name.startsWith("buf"));
                 Assert(buf);
                 Assert.strictEqual(buf.value, "<array>\"hello\"");

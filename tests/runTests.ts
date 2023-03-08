@@ -10,15 +10,19 @@ async function main() {
     const armsimEnvs = TestConfiguration.asEnvVars(TestConfiguration.ARMSIM2_CONFIG);
     const armimperasEnvs = TestConfiguration.asEnvVars(TestConfiguration.ARMIMPERAS_CONFIG);
     const cmdlineEnvs = getEnvs();
+    const doSmokeTests = !!cmdlineEnvs["smoke-tests"];
+    const label = cmdlineEnvs["label"];
     // Configuration tests are not driver-dependent, so running it with only one config is fine
     await runTestsIn(path.resolve(__dirname), "../../", "./suites/config/index", {...cmdlineEnvs, ...armsimEnvs}, "../../tests/TestProjects/ConfigTests");
 
     // Run debugger tests with both 32-bit and 64-bit simulator
     console.log("------Running sim2 tests------");
-    await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", {...cmdlineEnvs, ...armsimEnvs}, undefined, "Sim2");
-    if (OsUtils.OsType.Windows === OsUtils.detectOsType()) {
+    await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", {...cmdlineEnvs, ...armsimEnvs},
+        undefined, label ? `${label}.Sim2` : "Sim2");
+    if (!doSmokeTests && OsUtils.OsType.Windows === OsUtils.detectOsType()) {
         console.log("------Running imperas tests------");
-        await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", {...cmdlineEnvs, ...armimperasEnvs}, undefined, "Imperas");
+        await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", {...cmdlineEnvs, ...armimperasEnvs},
+            undefined, label ? `${label}.Imperas` : "Imperas");
     }
 }
 

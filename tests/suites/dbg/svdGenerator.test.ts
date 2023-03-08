@@ -49,8 +49,10 @@ suite("Specific device SVD Tests", () => {
         console.log("\n==========================================================" + this.currentTest!.title + "==========================================================\n");
     });
     test("STM32F401CB", async function() {
-        if (JSON.stringify(TestConfiguration.getConfiguration()) !== JSON.stringify(TestConfiguration.ARMSIM2_CONFIG)) {
+        if (JSON.stringify(TestConfiguration.getConfiguration()) !== JSON.stringify(TestConfiguration.ARMSIM2_CONFIG)
+            || TestConfiguration.getConfiguration().smokeTestsOnly) {
             this.skip();
+            return;
         }
 
         const targetProject = Path.join(__dirname, "../../../../tests/TestProjects/RegistersTest/stm32.ewp");

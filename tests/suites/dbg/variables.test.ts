@@ -48,9 +48,13 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                         Assert.strictEqual(arrContents[i]!.value, FIBS[i]!.toString());
                         Assert.match(arrContents[i]!.type!, /uint32_t @ 0x/);
                         Assert(arrContents[i]!.evaluateName);
-                        const evalResult = (await dc().evaluateRequest({expression: arrContents[i]!.evaluateName!})).body;
-                        Assert.strictEqual(evalResult.result, arrContents[i]!.value);
-                        Assert.strictEqual(BigInt(evalResult.memoryReference!), BigInt(arrContents[i]!.memoryReference!));
+                        // DBUG-36 some older EWs can't eval typedef'd types well (like uint32_t), so only do this check
+                        // when we're doing full tests with relatively modern EWs.
+                        if (!TestConfiguration.getConfiguration().smokeTestsOnly) {
+                            const evalResult = (await dc().evaluateRequest({expression: arrContents[i]!.evaluateName!})).body;
+                            Assert.strictEqual(evalResult.result, arrContents[i]!.value);
+                            Assert.strictEqual(BigInt(evalResult.memoryReference!), BigInt(arrContents[i]!.memoryReference!));
+                        }
                     }
                 }
 
@@ -277,7 +281,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                 const isAArch64 = registerGroups.some(group => group.name.startsWith("AArch64"));
                 // First set new values
                 const regName =  isAArch64 ? "X8" : "R8";
-                const regVal = isAArch64 ?  "0xDEAD'BEEF'DEAD'BEEF" : "0xDEAD'BEEF";
+                const regVal = isAArch64 ?  "0xDEADBEEFDEADBEEF" : "0xDEADBEEF";
                 dc().setVariableRequest({name: regName, value: regVal, variablesReference: cpuRegisters.variablesReference});
                 const statusRegName = isAArch64 ? "PSTATE" : "APSR";
                 {
@@ -291,7 +295,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
 
                 // Now check that the values changed
                 const regs = (await dc().variablesRequest({variablesReference: cpuRegisters.variablesReference})).body.variables;
-                Assert(regs.some(reg => reg.name === regName && reg.value === regVal.toLowerCase()), JSON.stringify(regs));
+                Assert(regs.some(reg => reg.name === regName && reg.value.replace(/'/g, "") === regVal.toLowerCase()), JSON.stringify(regs));
                 {
                     const statusReg = regs.find(reg => reg.name === statusRegName);
                     Assert(statusReg !== undefined);
@@ -321,7 +325,8 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                 const vars = await dc().variablesRequest({ variablesReference: staticsScope.variablesReference });
                 const pointer = vars.body.variables.find(variable => variable.name.startsWith("pointer"));
                 Assert(pointer);
-                Assert.strictEqual(pointer.memoryReference, "0x1337");
+                Assert(pointer.memoryReference);
+                Assert.match(pointer.memoryReference, /0x0*1337/);
             })
         ]);
     });

@@ -43,6 +43,10 @@ export interface TestConfiguration {
      * Whether to expect (and test for) the device to have floating-point registers.
      */
     hasFPU: boolean,
+    /**
+     * Whether to run only a small set of tests to verify the most basic functionality.
+     */
+    smokeTestsOnly?: boolean,
 }
 
 export namespace TestConfiguration {
@@ -75,14 +79,15 @@ export namespace TestConfiguration {
      * Defaults to {@link ARMSIM2_CONFIG}.
      */
     export function getConfiguration(): TestConfiguration {
+        const smokeTestsOnly = !!process.env["smoke-tests"];
         if (parameters) {
-            return parameters;
+            return { ...parameters, smokeTestsOnly };
         }
         const envParams = process.env[ENV_KEY];
         if (envParams) {
-            return JSON.parse(envParams);
+            return { ...JSON.parse(envParams), smokeTestsOnly };
         }
-        return ARMSIM2_CONFIG;
+        return { ...ARMSIM2_CONFIG, smokeTestsOnly };
     }
 
     /// Standard test configurations below

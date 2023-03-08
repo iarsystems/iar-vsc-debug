@@ -19,6 +19,10 @@ debugAdapterSuite("Test multicore debugging", function(dc, dbgConfig, fibonacciF
     let config: CSpyLaunchRequestArguments;
 
     suiteSetup(function() {
+        if (TestConfiguration.getConfiguration().smokeTestsOnly) {
+            this.skip();
+            return;
+        }
         const numCores = TestConfiguration.getConfiguration().multicoreNrOfCores;
         if (numCores === undefined || numCores <= 1) {
             this.skip();

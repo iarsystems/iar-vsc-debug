@@ -11,6 +11,7 @@ import { XclConfigurationSupplier } from "../../../src/configproviders/supplier/
 import { ConfigResolutionCommon } from "../../../src/configproviders/supplier/common";
 import { BuildExtensionConfigurationProvider } from "../../../src/configproviders/supplier/buildExtensionConfigurationSupplier";
 import { CSpyConfigurationSupplier } from "../../../src/configproviders/supplier/supplier";
+import { TestConfiguration } from "../testConfiguration";
 
 /**
  * This test suite tests our ability to generate a launch configuration based on the xcl files
@@ -22,7 +23,11 @@ suite("Configuration tests", () => {
     // The current workspace.
     let rootFolder: vscode.WorkspaceFolder;
 
-    suiteSetup(() => {
+    suiteSetup(function() {
+        if (TestConfiguration.getConfiguration().smokeTestsOnly) {
+            this.skip();
+            return;
+        }
         // Start by setting loading the current workspace.
         const folders = vscode.workspace.workspaceFolders;
         console.log(folders);

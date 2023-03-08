@@ -46,6 +46,7 @@ export function debugAdapterSuite(title: string, runner: DebugAdapterSuiteRunner
         let utilsFile = "";
 
         suiteSetup(async function() {
+            this.timeout(40000);
             // Find a workbench to build with
             const installDirs = TestUtils.getEwPaths();
             // For now just use the first entry, and assume it points directly to a top-level ew directory
