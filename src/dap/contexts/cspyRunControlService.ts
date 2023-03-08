@@ -51,7 +51,7 @@ export class CSpyRunControlService implements Disposable.Disposable {
         eventListener: DebugEventListenerHandler,
         libSupportHandler: LibSupportHandler,
     ) {
-        eventListener.observeDebugEvents(DkNotifyConstant.kDkCoreStopped, this.updateCoreStatus.bind(this));
+        eventListener.observeDebugEvents(DkNotifyConstant.kDkCoreStopped, this.handleCoreStopped.bind(this));
 
         libSupportHandler.observeExit(() => {
             for (let i = 0; i < nCores; i++) {
@@ -165,11 +165,20 @@ export class CSpyRunControlService implements Disposable.Disposable {
         }
     }
 
-    private async updateCoreStatus() {
+    // In reponse to a coreStopped event, figures out which core(s) stopped and sends out events for them.
+    private async handleCoreStopped() {
         const nCores = await this.dbgr.service.getNumberOfCores();
         const coreIds = Array.from({ length: nCores }, (_, i) => i);
+        await new Promise(res => setTimeout(res, 500));
         const stoppedCores = await Promise.all(coreIds.map(async i => {
-            const isStopped = await this.dbgr.service.getCoreState(i) !== DkCoreStatusConstants.kDkCoreStateRunning;
+            let isStopped = false;
+            // VSC-367 If there is only a single core, we know it is the one that stopped. This lets us avoid
+            // calling getCoreState, which behaves poorly on some older EWs.
+            if (nCores === 1) {
+                isStopped = true;
+            } else {
+                isStopped = await this.dbgr.service.getCoreState(i) !== DkCoreStatusConstants.kDkCoreStateRunning;
+            }
             if (isStopped) {
                 const expectedStoppingReason = this.expectedStoppingReason.get(i);
                 const wasStopped = expectedStoppingReason === undefined;
