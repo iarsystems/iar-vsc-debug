@@ -88,10 +88,7 @@
 	"activationEvents": [
 		"onDebugResolve:cspy",
 		"onDebugDynamicConfigurations:cspy",
-		"onDebugInitialConfigurations",
-		"onCommand:iar.useAutoBreakpoints",
-		"onCommand:iar.useHardwareBreakpoints",
-		"onCommand:iar.useSoftwareBreakpoints"
+		"onDebugInitialConfigurations"
 	],
 	"contributes": {
 		"configuration": {
