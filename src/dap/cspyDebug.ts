@@ -209,8 +209,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
             if (workbench === undefined) {
                 throw new Error(`'${args.workbenchPath}' does not point to a valid IAR Embedded Workbench installation.`);
             }
-            if (workbench.type === WorkbenchType.BX) {
-                throw new Error(`'${workbench.name}' is an IAR Build Tools installation. Debugging is only supported for full IAR Embedded Workbench installations.`);
+            if (workbench.type === WorkbenchType.LEGACY_BX) {
+                throw new Error(`'${workbench.name}' is an IAR Build Tools installation without debugging capabilities. Please use a newer IAR Build Tools version or a full IAR Embedded Workbench installation.`);
             }
             // Cspyserver requires that we specify the number of cores as a command line argument, so we need to know it early
             const match = args.driverOptions.map(opt => opt.match(/--multicore_nr_of_cores=(\d+)/)).find(match => !!match);
