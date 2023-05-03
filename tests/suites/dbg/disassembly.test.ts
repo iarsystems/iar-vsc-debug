@@ -198,10 +198,14 @@ debugAdapterSuite("Disassembly with real service", (dc, dbgConfig, fibonacciFile
                 const disAsm: DebugProtocol.DisassembleResponse = await dc().customRequest("disassemble", args);
                 Assert.strictEqual(disAsm.body?.instructions.length, 1);
                 const instr = disAsm.body.instructions[0];
-                Assert.strictEqual(instr?.address, stackFrames[0]?.instructionPointerReference);
-                Assert.strictEqual(instr?.location?.path, fibonacciFile());
-                Assert.strictEqual(instr?.line, 43);
-                Assert.strictEqual(instr?.endLine, 44);
+                Assert(instr);
+                Assert.strictEqual(instr.address, stackFrames[0]?.instructionPointerReference);
+                Assert.strictEqual(instr.line, 43);
+                Assert.strictEqual(instr.endLine, 44);
+
+                Assert(instr.location);
+                Assert(instr.location.path);
+                Assert(OsUtils.pathsEqual(instr.location.path, fibonacciFile()));
             })
         ]);
     });

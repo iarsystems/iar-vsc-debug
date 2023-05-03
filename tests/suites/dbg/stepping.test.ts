@@ -4,6 +4,7 @@
 import * as Assert from "assert";
 import { debugAdapterSuite } from "./debugAdapterSuite";
 import { TestUtils } from "../testUtils";
+import { OsUtils } from "iar-vsc-common/osUtils";
 
 debugAdapterSuite("Stepping", (dc, dbgConfig, fibonacciFile, utilsFile) => {
 
@@ -32,7 +33,9 @@ debugAdapterSuite("Stepping", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                         Assert(stack.length >= 3);
                         Assert.strictEqual(stack[1]!.name, "DoForegroundProcess");
                         Assert.strictEqual(stack[1]!.line, 38);
-                        Assert.strictEqual(stack[1]!.source?.path, fibonacciFile());
+                        Assert(stack[1]!.source);
+                        Assert(stack[1]!.source.path);
+                        Assert(OsUtils.pathsEqual(stack[1]!.source?.path, fibonacciFile()));
 
                         const res = await dc().scopesRequest({frameId: stack[1]!.id});
                         const vars = (await dc().variablesRequest({variablesReference: res.body.scopes[0]!.variablesReference})).body.variables;

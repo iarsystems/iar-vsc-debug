@@ -4,7 +4,7 @@
 import assert = require("assert")
 import * as vscode from "vscode";
 import * as Path from "path";
-import { IarOsUtils } from "iar-vsc-common/osUtils";
+import { IarOsUtils, OsUtils } from "iar-vsc-common/osUtils";
 import { spawnSync } from "child_process";
 import { TestSandbox } from "iar-vsc-common/testutils/testSandbox";
 import { CSpyLaunchRequestArguments } from "../../src/dap/cspyDebug";
@@ -99,7 +99,11 @@ export namespace TestUtils {
         const topStack = stack.body.stackFrames[0];
         assert(topStack);
         assert.match(topStack.name, name);
-        assert.strictEqual(topStack.source?.path, file);
+        if (file) {
+            assert(topStack.source);
+            assert(topStack.source.path);
+            assert(OsUtils.pathsEqual(topStack.source.path, file));
+        }
         if (typeof(line) === "number") {
             assert.strictEqual(topStack.line, line);
         } else {
