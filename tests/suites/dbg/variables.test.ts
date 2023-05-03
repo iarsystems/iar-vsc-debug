@@ -78,8 +78,8 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                         const fpRegContents = await dc().variablesRequest({variablesReference: floatRegisters.variablesReference});
 
                         const registers = fpRegContents.body.variables;
-                        Assert(registers.some(reg => reg.name === "S6" && reg.variablesReference > 0)); // Should be nested
-                        Assert(registers.some(reg => reg.name === "D12"));
+                        Assert(registers.some(reg => reg.name.toLowerCase() === "s6" && reg.variablesReference > 0)); // Should be nested
+                        Assert(registers.some(reg => reg.name.toLowerCase() === "d12"));
                     }
                 }
             }),
