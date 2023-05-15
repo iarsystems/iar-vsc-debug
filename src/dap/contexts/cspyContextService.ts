@@ -218,7 +218,7 @@ export class CSpyContextService implements Disposable.Disposable {
             } else if (reference instanceof VariableReference) {
                 return reference.provider.setVariable(variable, reference.variableReference, value);
             } else {
-                const subExprNames = await this.dbgr.service.getSubExpressionLabels(reference.context, reference.rootExpression, reference.subExprIndex, 0, reference.subExpressions - 1, false);
+                const subExprNames = await this.dbgr.service.getSubExpressionLabels(reference.context, reference.rootExpression, reference.subExprIndex, 0, reference.subExpressions, false);
                 for (let i = 0; i < reference.subExpressions; i++) {
                     if (variable === subExprNames[i]) {
                         const expr = await this.dbgr.service.evalExpression(reference.context, value, [], ExprFormat.kDefault, true);

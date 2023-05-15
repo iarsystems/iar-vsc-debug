@@ -232,7 +232,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                     const fibArray = (await dc().evaluateRequest({expression: "Fib"})).body;
                     Assert(fibArray !== undefined);
                     Assert(fibArray.variablesReference > 0);
-                    await dc().setVariableRequest({ name: "[3]", value: "37", variablesReference: fibArray.variablesReference});
+                    await dc().setVariableRequest({ name: "[9]", value: "37", variablesReference: fibArray.variablesReference});
                 }
 
                 // Now check that the values changed
@@ -259,8 +259,11 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                     Assert(fibArray !== undefined);
                     Assert(fibArray.variablesReference > 0);
                     const arrContents = (await dc().variablesRequest({variablesReference: fibArray.variablesReference})).body.variables;
-                    Assert.strictEqual(arrContents[3]!.name, "[3]");
-                    Assert.strictEqual(arrContents[3]!.value, "37");
+                    Assert.strictEqual(arrContents[9]!.name, "[9]");
+                    Assert.strictEqual(arrContents[9]!.value, "37");
+
+                    const callCount = statics.find(variable => variable.name === "callCount <Fibonacci\\callCount>");
+                    Assert(callCount !== undefined);
                 }
             })
         ]);
