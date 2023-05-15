@@ -255,6 +255,21 @@ export class CSpyContextService implements Disposable.Disposable {
         });
     }
 
+    /**
+     * Sets the value of some l-value expression
+     */
+    setExpression(frameId: number | undefined, expression: string, value: string): Promise<{ newValue: string, changedAddress?: string }> {
+        const context = frameId === undefined ? new ContextRef({ core: 0, level: 0, task: 0, type: ContextType.CurrentInspection }) : this.stackFrameHandles.get(frameId);
+        if (!context) {
+            throw new Error(`No such frame (id ${frameId})`);
+        }
+        return this.withContext(context, async() => {
+            const expr = await this.dbgr.service.evalExpression(context, value, [], ExprFormat.kDefault, true);
+            this.dbgr.service.assignExpression(context, expression, [], expr);
+            return { newValue: value, changedAddress: expr.hasLocation ? "0x" + expr.location.address.toOctetString() : undefined };
+        });
+    }
+
     async dispose() {
         await this.localsProvider?.dispose();
         await this.staticsProvider?.dispose();

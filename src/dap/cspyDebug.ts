@@ -163,6 +163,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         response.body.supportsEvaluateForHovers = true;
         response.body.supportsRestartRequest = true;
         response.body.supportsSetVariable = true;
+        response.body.supportsSetExpression = true;
         response.body.supportsTerminateRequest = true;
         response.body.supportsSteppingGranularity = true;
         response.body.supportsCompletionsRequest = true;
@@ -599,13 +600,31 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 const result = await services.contextService.evalExpression(args.frameId, args.expression);
                 response.body = {
                     result: result.value,
-                    type: result.type,
-                    memoryReference: result.memoryReference,
-                    variablesReference: result.variablesReference,
+                    ...result,
                 };
             });
         }
         this.sendResponse(response);
+    }
+
+    protected override async setExpressionRequest(response: DebugProtocol.SetExpressionResponse, args: DebugProtocol.SetExpressionArguments) {
+        await this.tryWithServices(response, async services => {
+            const { newValue, changedAddress } = await services.contextService.setExpression(args.frameId, args.expression, args.value);
+            response.body = {
+                value: newValue
+            };
+            // Notify the client that some memory changed
+            if (changedAddress) {
+                this.sendEvent(new Event("memory", {
+                    memoryReference: changedAddress,
+                    offset: 0,
+                    count: 1024, // We don't know the size, so just update a big chunk
+                }));
+            }
+        });
+        this.sendResponse(response);
+        // When changing a variable, other variables pointing to the same memory may change, so force the UI to reload all variables
+        this.sendEvent(new InvalidatedEvent(["variables"]));
     }
 
     protected override async disassembleRequest(response: DebugProtocol.DisassembleResponse, args: DebugProtocol.DisassembleArguments, _request?: DebugProtocol.Request) {

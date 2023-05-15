@@ -233,6 +233,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                     Assert(fibArray !== undefined);
                     Assert(fibArray.variablesReference > 0);
                     await dc().setVariableRequest({ name: "[9]", value: "37", variablesReference: fibArray.variablesReference});
+                    await dc().customRequest("setExpression", { expression: "callCount", value: "42" });
                 }
 
                 // Now check that the values changed
