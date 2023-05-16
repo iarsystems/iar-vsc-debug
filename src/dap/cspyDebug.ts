@@ -39,6 +39,8 @@ import { CSpyCoresService } from "./contexts/cspyCoresService";
 import { CSpyRunControlService } from "./contexts/cspyRunControlService";
 import { MulticoreProtocolExtension } from "./multicoreProtocolExtension";
 import { BreakpointTypeProtocolExtension } from "./breakpoints/breakpointTypeProtocolExtension";
+import { WorkbenchFeatures} from "iar-vsc-common/workbenchfeatureregistry";
+
 
 /**
  * This interface describes the cspy-debug specific launch attributes
@@ -271,6 +273,11 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 if (args.download.flashLoader) {
                     await cspyDebugger.service.flashModule(args.download.flashLoader, sessionConfig.executable, [], []);
                 }
+            }
+
+
+            if (args.leaveTargetRunning && !WorkbenchFeatures.supportsFeature(workbench, WorkbenchFeatures.LeaveTargetRunning, args.target)) {
+                this.sendEvent(new OutputEvent("Leave target running requires C-SPY version " + WorkbenchFeatures.LeaveTargetRunning.baseVersion.join(".") + "\n"));
             }
 
             // Setup the module loading options, which is basically just
