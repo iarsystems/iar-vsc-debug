@@ -48,7 +48,7 @@
 		"async-mutex": "^0.3.2",
 		"await-notify": "1.0.1",
 		"bufferutil": "^4.0.6",
-		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#7f98fd9b",
+		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#28ee11cc",
 		"thrift": "^0.12.0",
 		"utf-8-validate": "^5.0.9",
 		"xmlbuilder2": "^3.0.2"
@@ -201,6 +201,169 @@
 					"cpp"
 				],
 				"configurationAttributes": {
+					"attach": {"required": [
+						"target",
+						"program",
+						"workbenchPath",
+						"driver",
+						"driverOptions"
+					],
+					"properties": {
+						"target": {
+							"type": "string",
+							"description": "The target type, e.g 'arm', in lower case.",
+							"default": "arm",
+							"enum": [
+								"arm",
+								"riscv",
+								"rh850",
+								"rl78",
+								"avr"
+							]
+						},
+						"program": {
+							"type": "string",
+							"description": "Absolute path to a .out file to debug.",
+							"default": "${workspaceFolder}/Debug/Exe/ewproj.out"
+						},
+						"trace": {
+							"type": "boolean",
+							"description": "Log all Debug Adapter Protocol traffic.",
+							"default": true
+						},
+						"workbenchPath": {
+							"type": "string",
+							"description": "Path to the IAR Embedded Workbench installation to use (e.g. \"C:\\\\Program Files (x86)\\\\IAR Systems\\\\Embedded Workbench 8.3\").",
+							"default": "${command:iar-config.toolchain} for an iar-build project or path to EW root."
+						},
+						"projectPath": {
+							"type": "string",
+							"description": "Path to a .ewp file, or a folder in which to place debug settings files.",
+							"default": "${command:iar-config.project-file} for an iar-build project."
+						},
+						"projectConfiguration": {
+							"type": "string",
+							"description": "Name of the project configuration to debug (e.g. Debug). Only applicable to .ewp projects",
+							"default": "${command:iar-config.project-configuration} for an iar-build project. Remove this for other project types."
+						},
+						"driver": {
+							"type": "string",
+							"description": "The driver to use.",
+							"default": "Simulator",
+							"enum": [
+								"Simulator",
+								"64-bit Simulator",
+								"I-jet",
+								"J-Link/J-Trace",
+								"GDB Server",
+								"CADI",
+								"TI Stellaris",
+								"PE micro",
+								"ST-LINK",
+								"TI XDS",
+								"TI MSP-FET",
+								"Renesas E1",
+								"Renesas E2",
+								"Renesas E20",
+								"Renesas E2 Lite / E2 On-board",
+								"EZ-CUBE",
+								"EZ-CUBE2",
+								"IECUBE",
+								"TK",
+								"Atmel-ICE",
+								"AVR ONE!",
+								"JTAGICE3",
+								"JTAGICE mkII",
+								"Dragon",
+								"Power Debugger"
+							],
+							"enumDescriptions": [
+								"Arm/RISC-V/RH850/RL78/AVR",
+								"Arm",
+								"Arm/RISC-V",
+								"Arm",
+								"Arm/RISC-V",
+								"Arm",
+								"Arm",
+								"Arm",
+								"Arm",
+								"Arm",
+								"Arm",
+								"RH850/RL78",
+								"RH850/RL78",
+								"RH850/RL78",
+								"RL78",
+								"RL78",
+								"RL78",
+								"RL78",
+								"RL78",
+								"AVR",
+								"AVR",
+								"AVR",
+								"AVR",
+								"AVR",
+								"AVR"
+							]
+						},
+						"driverOptions": {
+							"type": "array",
+							"description": "The command line to use when launching the debugger. For reference, see \"Summary of C-SPY command line options\" in the C-SPY Debugging Guide: https://wwwfiles.iar.com/arm/webic/doc/EWARM_DebuggingGuide.ENU.pdf",
+							"items": {
+								"type": "string"
+							},
+							"default": [
+								"--endian=little",
+								"--cpu=<CPU_NAME>",
+								"--fpu=None",
+								"--semihosting"
+							]
+						},
+						"plugins": {
+							"type": "array",
+							"description": "The set of plugins to be loaded during the debug session.",
+							"items": {
+								"type": "string",
+								"format": "uri"
+							},
+							"default": []
+						},
+						"setupMacros": {
+							"type": "array",
+							"description": "A list of macros to be loaded with the debug session.",
+							"items": {
+								"type": "string",
+								"format": "uri"
+							},
+							"default": []
+						},
+						"sourceFileMap": {
+							"type": "object",
+							"description": "A set of path mappings to use when resolving nonexistent source files. If the source files have been moved after compiling, this can be used to locate them. Example: `{\"/original/path\": \"/new/path\"}`",
+							"default": {
+								"<source-path>": "<target-path>"
+							}
+						},
+						"leaveTargetRunning":{
+							"type": "boolean",
+							"description": "Set to false to halt the target when the debugsession ends",
+							"default:": "false"
+						},
+						"download": {
+							"type": "object",
+							"description": "Options for downloading to hardware. Can be omitted.",
+							"properties": {
+								"deviceMacros": {
+									"type": "array",
+									"description": "A list of device macros to load when running the flash loader.",
+									"items": {
+										"type": "string",
+										"format": "uri"
+									}
+								}
+							}
+						}
+					}
+				},
 					"launch": {
 						"required": [
 							"target",
@@ -375,6 +538,11 @@
 								"default": {
 									"<source-path>": "<target-path>"
 								}
+							},
+							"leaveTargetRunning":{
+								"type": "boolean",
+								"description": "Set to false to halt the target when the debugsession ends",
+								"default:": "false"
 							}
 						}
 					}

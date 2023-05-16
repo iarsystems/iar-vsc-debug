@@ -11,7 +11,7 @@ import * as LibSupportService2 from "iar-vsc-common/thrift/bindings/LibSupportSe
 import * as Frontend from "iar-vsc-common/thrift/bindings/Frontend";
 import * as TimelineFrontend from "iar-vsc-common/thrift/bindings/TimelineFrontend";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
-import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, SessionConfiguration } from "iar-vsc-common/thrift/bindings/cspy_types";
+import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, SessionConfiguration, ModuleLoadingOptions } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
 import { CSpyContextService } from "./contexts/cspyContextService";
 import { BreakpointType, CSpyBreakpointService } from "./breakpoints/cspyBreakpointService";
@@ -39,6 +39,8 @@ import { CSpyCoresService } from "./contexts/cspyCoresService";
 import { CSpyRunControlService } from "./contexts/cspyRunControlService";
 import { MulticoreProtocolExtension } from "./multicoreProtocolExtension";
 import { BreakpointTypeProtocolExtension } from "./breakpoints/breakpointTypeProtocolExtension";
+import { WorkbenchFeatures} from "iar-vsc-common/workbenchfeatureregistry";
+
 
 /**
  * This interface describes the cspy-debug specific launch attributes
@@ -89,9 +91,16 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     plugins?: string[];
     /** A set of path mappings to use when resolving nonexistent source files */
     sourceFileMap?: Record<string, string>;
+    /** For hardware sessions, ask the driver to not terminate the target when the debug sessions ends. */
+    leaveTargetRunning?: boolean
     /** Hidden option. Allows starting sessions with any target (although it might not work) */
     bypassTargetRestriction?: boolean;
 }
+
+/**
+ * The Attach request is basically the same as the launch request, but the not all fields are used.
+ */
+type CSpyAttachRequestArguments = Omit<CSpyLaunchRequestArguments, "stopOnEntry" | "stopOnSymbol">;
 
 /**
  * Manages a debugging session between VS Code and C-SPY (via CSpyServer2)
@@ -200,7 +209,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
      * - Connecting to necessary CSpyServer services (for breakpoints, context management and more).
      * - Setting up our DAP extension requests (see {@link CustomRequest}).
      */
-    protected override async launchRequest(response: DebugProtocol.LaunchResponse, args: CSpyLaunchRequestArguments) {
+    protected async startDebugSession(response: DebugProtocol.LaunchResponse | DebugProtocol.AttachResponse, args: CSpyLaunchRequestArguments, isAttachRequest: boolean) {
         logger.init(e => this.sendEvent(e), undefined, true);
         logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop);
 
@@ -260,14 +269,32 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
             await cspyDebugger.service.startSession(sessionConfig);
 
-            if (args.download) {
+            if (!isAttachRequest && args.download) {
                 await Utils.loadMacros(cspyDebugger.service, args.download.deviceMacros ?? []);
                 if (args.download.flashLoader) {
                     await cspyDebugger.service.flashModule(args.download.flashLoader, sessionConfig.executable, [], []);
                 }
             }
-            await Utils.loadMacros(cspyDebugger.service, sessionConfig.setupMacros ?? []);
-            await cspyDebugger.service.loadModule(args.program);
+
+
+            if (args.leaveTargetRunning && !WorkbenchFeatures.supportsFeature(workbench, WorkbenchFeatures.LeaveTargetRunning, args.target)) {
+                this.sendEvent(new OutputEvent("Leave target running requires C-SPY version " + WorkbenchFeatures.LeaveTargetRunning.baseVersion.join(".") + "\n"));
+            }
+
+            // Setup the module loading options, which is basically just
+            // based on whether we're attaching or not.
+            const moduleOptions = new ModuleLoadingOptions();
+            moduleOptions.extraDebugFiles = []; // Not support atm.
+            moduleOptions.shouldAttach = isAttachRequest;
+            moduleOptions.onlyPrefixNotation = false; // Always false.
+            moduleOptions.shouldLeaveRunning = args.leaveTargetRunning?? false;
+
+            moduleOptions.callUserMacros = !isAttachRequest;
+            moduleOptions.resetAfterLoad = !isAttachRequest;
+            moduleOptions.suppressDownload = isAttachRequest;
+
+            await Utils.loadMacros(cspyDebugger.service, sessionConfig.setupMacros);
+            await cspyDebugger.service.loadModuleWithOptions(args.program, moduleOptions);
 
             // -- Connect to CSpyServer services --
             // note that some services (most listwindows) are launched by loadModule, so we *have* to do this afterwards
@@ -385,10 +412,20 @@ export class CSpyDebugSession extends LoggingDebugSession {
             await this.services.runControlService.continue(undefined);
         }
     }
-    protected override attachRequest(response: DebugProtocol.AttachResponse, _args: CSpyLaunchRequestArguments) {
-        response.success = false;
-        response.message = "Attach requests are currently not supported (see https://github.com/IARSystems/iar-vsc-debug/issues/15).";
-        this.sendResponse(response);
+
+    protected override async launchRequest(response: DebugProtocol.LaunchResponse, args: CSpyLaunchRequestArguments) {
+        await this.startDebugSession(response, args, false);
+    }
+
+    protected override async attachRequest(response: DebugProtocol.AttachResponse, args: CSpyAttachRequestArguments) {
+        // We convert the attach request into a CSpyLaunchRequestArguments with some special options.
+        const launchArgs: CSpyLaunchRequestArguments = {
+            ...args,
+            stopOnEntry: false,
+            stopOnSymbol: undefined,
+        };
+
+        await this.startDebugSession(response, launchArgs, true);
     }
 
     protected override async terminateRequest(response: DebugProtocol.TerminateResponse, _args: DebugProtocol.TerminateArguments) {
