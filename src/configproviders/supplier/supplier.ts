@@ -122,6 +122,8 @@ export namespace CSpyConfigurationSupplier {
                 },
                 {
                     ...config,
+                    stopOnEntry: undefined,
+                    stopOnSymbol: undefined,
                     request: "attach",
                     name: "Attach: " + config.name,
                 }
