@@ -85,11 +85,13 @@ export namespace CSpyConfigurationSupplier {
             return [];
         }
 
+        let result: CspyLaunchJsonConfiguration[] = [];
+
         // First try the more robust thrift-based supplier. Use the xcl-based version as a fallback.
         try {
             const configs = await buildExtension.getProjectConfigurations(project);
             if (configs) {
-                return await Promise.all(configs.map(async(conf) => {
+                result = await Promise.all(configs.map(async(conf) => {
                     const cmds = await buildExtension.getCSpyCommandline(project, conf.name);
                     if (!cmds) {
                         throw new Error("Could not get C-SPY cmdline");
@@ -102,11 +104,28 @@ export namespace CSpyConfigurationSupplier {
         } catch (e) {
             logger.debug("Failed to generate config from build extension: " + e);
         }
-        try {
-            const partialConfigs = XclConfigurationSupplier.provideDebugConfigurations(workspaceFolder, path.dirname(project));
-            return partialConfigs.map(config => ConfigResolutionCommon.toLaunchJsonConfiguration(config, workspaceFolder?.uri.fsPath));
-        } catch (e) {
-            logger.debug("Failed to generate config from .xcl files: " + e);
+
+        if (result.length === 0) {
+            try {
+                const partialConfigs = XclConfigurationSupplier.provideDebugConfigurations(workspaceFolder, path.dirname(project));
+                result = partialConfigs.map(config => ConfigResolutionCommon.toLaunchJsonConfiguration(config, workspaceFolder?.uri.fsPath));
+            } catch (e) {
+                logger.debug("Failed to generate config from .xcl files: " + e);
+            }
+        }
+
+        if (result.length > 0) {
+            return result.flatMap(config => [
+                {
+                    ...config,
+                    name: "Launch: " + config.name
+                },
+                {
+                    ...config,
+                    request: "attach",
+                    name: "Attach: " + config.name,
+                }
+            ]);
         }
         return ErrorReason.noConfigurationsAvailable;
     }
