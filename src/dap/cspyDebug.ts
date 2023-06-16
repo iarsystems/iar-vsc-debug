@@ -269,9 +269,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
             await cspyDebugger.service.startSession(sessionConfig);
 
-            if (!isAttachRequest && args.download) {
+            if (args.download) {
                 await Utils.loadMacros(cspyDebugger.service, args.download.deviceMacros ?? []);
-                if (args.download.flashLoader) {
+                if (!isAttachRequest && args.download.flashLoader) {
                     await cspyDebugger.service.flashModule(args.download.flashLoader, sessionConfig.executable, [], []);
                 }
             }
