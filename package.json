@@ -333,8 +333,7 @@
 							"type": "array",
 							"description": "A list of macros to be loaded with the debug session.",
 							"items": {
-								"type": "string",
-								"format": "uri"
+								"type": "string"
 							},
 							"default": []
 						},
@@ -358,8 +357,7 @@
 									"type": "array",
 									"description": "A list of device macros to load when running the flash loader.",
 									"items": {
-										"type": "string",
-										"format": "uri"
+										"type": "string"
 									}
 								}
 							}
@@ -505,15 +503,13 @@
 								"properties": {
 									"flashLoader": {
 										"type": "string",
-										"description": "A flash loader specification XML file, with the filename extension '.board'.",
-										"format": "uri"
+										"description": "A flash loader specification XML file, with the filename extension '.board'."
 									},
 									"deviceMacros": {
 										"type": "array",
 										"description": "A list of device macros to load when running the flash loader.",
 										"items": {
-											"type": "string",
-											"format": "uri"
+											"type": "string"
 										}
 									}
 								}
@@ -531,8 +527,7 @@
 								"type": "array",
 								"description": "A list of macros to be loaded with the debug session.",
 								"items": {
-									"type": "string",
-									"format": "uri"
+									"type": "string"
 								},
 								"default": []
 							},

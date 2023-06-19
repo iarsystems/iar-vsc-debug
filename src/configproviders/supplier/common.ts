@@ -35,8 +35,13 @@ export namespace ConfigResolutionCommon {
      * and also adds VS Code-specific fields.
      * @param parts The partial configuration from some configuration provider
      * @param wsDir The workspace folder this configuration will be used in
+     * @param workbenchPath The workbench that was used to generate the config, if known
      */
-    export function toLaunchJsonConfiguration(parts: PartialConfig, wsDir?: string): vscode.DebugConfiguration & CSpyLaunchRequestArguments {
+    export function toLaunchJsonConfiguration(
+        parts: PartialConfig,
+        wsDir?: string,
+        workbenchPath?: string,
+    ): vscode.DebugConfiguration & CSpyLaunchRequestArguments {
 
         // The driver is usually given as a path to a shared library file (e.g. libarmsim2.so), so remove the
         // directory part, the target name and any extensions
@@ -63,6 +68,18 @@ export namespace ConfigResolutionCommon {
         if (emulatorDrivers.includes(driverName) && ["rh850", "rl78"].includes(parts.target)) {
             parts.driverOptions.push("--cspybat_inifile");
             parts.driverOptions.push(Path.join(Path.dirname(project), `settings/${projectName}.dnx`));
+        }
+
+        // Simplify paths by using $TOOLKIT_DIR$
+        if (workbenchPath) {
+            const toolkitDir = Path.join(workbenchPath, parts.target);
+            const makeRelative = (path: string) => toToolkitRelativePath(path, toolkitDir);
+            parts.driverOptions = parts.driverOptions.map(makeRelative);
+            parts.deviceMacros  = parts.deviceMacros.map(makeRelative);
+            parts.setupMacros   = parts.setupMacros.map(makeRelative);
+            if (parts.flashLoader) {
+                parts.flashLoader   = makeRelative(parts.flashLoader);
+            }
         }
 
         // Assemble the configuration
@@ -109,6 +126,16 @@ export namespace ConfigResolutionCommon {
         const wsRelativePath = Path.relative(wsDir, path);
         if (!wsRelativePath.startsWith("..") && !Path.isAbsolute(wsRelativePath)) {
             return Path.join("${workspaceFolder}", wsRelativePath);
+        }
+        return path;
+    }
+
+    // Converts `path` to a path that is expressed as relative to the given toolkit directory.
+    // If `path` is not in `toolkitDir`, returns `path` as-is.
+    function toToolkitRelativePath(path: string, toolkitDir: string) {
+        const toolkitRelativePath = Path.relative(toolkitDir, path);
+        if (!toolkitRelativePath.startsWith("..") && !Path.isAbsolute(toolkitRelativePath)) {
+            return Path.join("$TOOLKIT_DIR$", toolkitRelativePath);
         }
         return path;
     }
