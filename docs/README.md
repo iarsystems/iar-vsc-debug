@@ -177,7 +177,7 @@ Use the context menu to copy the call stack, if you want to save it to a file fo
 
 ![Breakpoints view](images/VSCode_BreakpointsView_01.png)
 
-Use this view to add new breakpoints, or toggle breakpoints on and off. Hover over a breakpoint to see the details.
+Use this view to add new breakpoints, or toggle breakpoints on and off. Hover over a breakpoint to see the details. 
 
 For information on specifying which type of breakpoints to use, hardware or software breakpoints, see [Breakpoint types](#BreakpointTypes).
 
@@ -283,7 +283,8 @@ The easiest way to generate a `launch.json` configuration is from an IAR Embedde
             "workbenchPath": "${command:iar-settings.toolchain}",
             "projectPath": "${workspaceFolder}",
             "projectConfiguration": "Debug",
-            "trace": true,
+            "leaveTargetRunning": false,
+            "trace": false,
             "driverOptions": [
                 "--crun=disabled",
                 "--endian=little",
@@ -318,3 +319,5 @@ The easiest way to generate a `launch.json` configuration is from an IAR Embedde
 For information about each supported attribute, see the autocompletion and tooltips in the `launch.json` file.
 
 The `driverOptions` attribute takes C-SPY command line parameters. For reference information, see *The C-SPY command line utility—cspybat* in the *IAR Embedded Workbench C-SPY® Debugging Guide* (PDF).
+
+The current version of the IAR C-SPY Debug extension adds support for leaving the application running after the debug session is closed (`"leaveTargetRunning": true`) and for making the debugger attach to a running application at its current location, without resetting the target system (`"request": "attach"`). You can, for example, use this to create one debug configuration to flash and launch your application in C-SPY, and one configuration to reattach to the application when needed.
