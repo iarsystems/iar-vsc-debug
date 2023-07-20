@@ -11,8 +11,13 @@ import { Int64 } from "thrift";
 import { Disposable } from "./utils";
 import { logger } from "@vscode/debugadapter/lib/logger";
 
+export interface Cell {
+    value: string,
+    isEditable: boolean,
+}
+
 export interface ListWindowRowReference {
-    values: string[];
+    cells: Cell[];
     hasChildren: boolean;
     parentIds: string[];
 }
@@ -78,13 +83,13 @@ export class ListWindowClient implements Disposable.Disposable {
         }
         const rowIndex = await this.getRowIndex(parent);
         if (rowIndex === undefined) {
-            throw new Error("Cannot find row in the window matching: " + parent.values[this.idColumn]);
+            throw new Error("Cannot find row in the window matching: " + parent.cells[this.idColumn]?.value);
         }
         this.expandRow(rowIndex);
         const rows = await this.getRows();
         const row = rows[rowIndex];
         if (row === undefined) {
-            throw new Error("Cannot find row in the window matching: " + parent.values[this.idColumn]);
+            throw new Error("Cannot find row in the window matching: " + parent.cells[this.idColumn]?.value);
         }
 
         // How deep in a structure of subvariables are we?
@@ -102,7 +107,8 @@ export class ListWindowClient implements Disposable.Disposable {
             }
         }
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        return children.map(row => this.createRowReference(row, parent.parentIds.concat([parent.values[this.idColumn]!])));
+        const parentIds = parent.parentIds.concat([parent.cells[this.idColumn]!.value]);
+        return children.map(row => this.createRowReference(row, parentIds));
     }
 
     /**
@@ -115,7 +121,7 @@ export class ListWindowClient implements Disposable.Disposable {
     async setValueOf(reference: ListWindowRowReference, column: number, value: string) {
         const rowIndex = await this.getRowIndex(reference);
         if (rowIndex === undefined) {
-            throw new Error("Cannot find row in the window matching: " + reference.values[this.idColumn]);
+            throw new Error("Cannot find row in the window matching: " + reference.cells[this.idColumn]?.value);
         }
         // Wait for any updates to finish so that when we wait again below, we know that any updates we see are
         // because of the setValue call, not some old update that hadn't finished.
@@ -261,9 +267,11 @@ export class ListWindowClient implements Disposable.Disposable {
     }
 
     // converts from internal (thrift) row class to the class used outwards
-    private createRowReference(row: Row, parentIds: string[]) {
+    private createRowReference(row: Row, parentIds: string[]): ListWindowRowReference {
         return {
-            values: row.cells.map(cell => cell.text),
+            cells: row.cells.map(cell => {
+                return { value: cell.text, isEditable: cell.format.editable };
+            }),
             hasChildren: TreeInfoUtils.isExpandable(row.treeinfo),
             parentIds: parentIds,
         };
@@ -272,7 +280,7 @@ export class ListWindowClient implements Disposable.Disposable {
     private async getRowIndex(reference: ListWindowRowReference): Promise<number | undefined> {
         const rows = await this.getRows();
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const path = reference.parentIds.concat([reference.values[this.idColumn]!]);
+        const path = reference.parentIds.concat([reference.cells[this.idColumn]!.value]);
         return this.getRowIndexRecursive(path, rows, 0);
     }
     private getRowIndexRecursive(ids: string[], candidates: Row[], depth: number): number | undefined {
