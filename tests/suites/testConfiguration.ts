@@ -44,6 +44,12 @@ export interface TestConfiguration {
      */
     hasFPU: boolean,
     /**
+     * If true, signals that data breakpoints do not always break immediately on
+     * access, but rather a few instructions later. This is usually the case for
+     * hardware debugging.
+     */
+    dataBreakpointsAreUnreliable: boolean,
+    /**
      * Whether to run only a small set of tests to verify the most basic functionality.
      */
     smokeTestsOnly?: boolean,
@@ -113,6 +119,7 @@ export namespace TestConfiguration {
         multicoreNrOfCores: 2,
         expectPeriphals: true,
         hasFPU: true,
+        dataBreakpointsAreUnreliable: false,
     };
     export const ARMIMPERAS_CONFIG: TestConfiguration = {
         debugConfiguration: {
@@ -127,5 +134,6 @@ export namespace TestConfiguration {
         },
         expectPeriphals: false,
         hasFPU: true,
+        dataBreakpointsAreUnreliable: false,
     };
 }

@@ -5,6 +5,7 @@ import * as Assert from "assert";
 import { debugAdapterSuite } from "./debugAdapterSuite";
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { TestUtils } from "../testUtils";
+import { TestConfiguration } from "../testConfiguration";
 
 debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
 
@@ -154,9 +155,6 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                         return statics.find(variable => variable.name.startsWith("callCount"));
                     };
 
-                    // Data breakpoints (esp on hardware and esp write breakpoints) sometimes stop a few instructions after
-                    // where the actual access was performed, which makes them difficult to test using stop locations
-                    // (i.e. line numbers).
                     await dc().setDataBreakpointsRequest(
                         {breakpoints: [{dataId: breakInfo.body.dataId, accessType: "write" }] });
                     await Promise.all([
@@ -179,6 +177,13 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                             Assert.strictEqual(callCount.value, "1");
                         }),
                     ]);
+
+                    // The rest of this test uses exact line numbers, and
+                    // requires that data breakpoints reliably stop exactly when
+                    // the access occurs.
+                    if (TestConfiguration.getConfiguration().dataBreakpointsAreUnreliable) {
+                        return;
+                    }
 
                     await dc().setDataBreakpointsRequest(
                         {breakpoints: [{dataId: breakInfo.body.dataId, accessType: "read" }] });

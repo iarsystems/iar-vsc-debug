@@ -55,6 +55,7 @@ async function main() {
         },
         expectPeriphals: true,
         hasFPU: !cspyArgs.includes("--fpu=None"),
+        dataBreakpointsAreUnreliable: true
     };
     const configEnvs = TestConfiguration.asEnvVars(config);
     await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", {...cmdlineEnvs, ...configEnvs}, undefined, "Sim2");
