@@ -16,7 +16,7 @@ import { DebugEventListenerHandler } from "./debugEventListenerHandler";
 import { CSpyContextService } from "./contexts/cspyContextService";
 import { BreakpointType, CSpyBreakpointService } from "./breakpoints/cspyBreakpointService";
 import { LaunchArgumentConfigurationResolver}  from "./configresolution/launchArgumentConfigurationResolver";
-import { CSpyException } from "iar-vsc-common/thrift/bindings/shared_types";
+import { CSpyException, DcResultConstant } from "iar-vsc-common/thrift/bindings/shared_types";
 import { LIBSUPPORT_SERVICE } from "iar-vsc-common/thrift/bindings/libsupport_types";
 import { LibSupportHandler } from "./libSupportHandler";
 // There are no types for this library. We should probably look to replace it.
@@ -748,7 +748,18 @@ export class CSpyDebugSession extends LoggingDebugSession {
             await fun(this.services);
         } catch (e) {
             response.success = false;
-            if (typeof e === "string" || e instanceof Error) {
+            // Usually the backend threw a CSpyException, so let's put some effort
+            // into making these look nice.
+            if (e instanceof CSpyException) {
+                if (e.message) {
+                    response.message = e.message;
+                } else if (e.code === DcResultConstant.kDcUnavailable) {
+                    response.message = "<unavailable>";
+                } else {
+                    response.message = `Error: ${DcResultConstant[e.code]?.substring(3)}, method: ${e.method}, culprit: ${e.culprit}`;
+                }
+                logger.error(response.message);
+            } else if (typeof e === "string" || e instanceof Error) {
                 response.message = e.toString();
                 logger.error(e.toString());
             }
