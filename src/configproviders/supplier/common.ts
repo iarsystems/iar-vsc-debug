@@ -60,7 +60,7 @@ export namespace ConfigResolutionCommon {
             CSpyDriver.DriverNames.IECUBE,
             CSpyDriver.DriverNames.TK,
         ];
-        if (emulatorDrivers.includes(driverName) && ["rh850", "rl78"].includes(parts.target)) {
+        if (emulatorDrivers.includes(driverName) && ["rh850", "rl78", "rx"].includes(parts.target)) {
             parts.driverOptions.push("--cspybat_inifile");
             parts.driverOptions.push(Path.join(Path.dirname(project), `settings/${projectName}.dnx`));
         }
