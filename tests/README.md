@@ -6,5 +6,6 @@ The test-suite can be executed from within vscode using the "Run Extension Tests
 
 A small set of testproject are placed in the TestProjects folder.
 
-## Writing a new test.
-The integration tests uses the DAP protocol directly to communicate with the backend. A command is sent to the session using "vscode.debug.activeDebugSession.customRequest("...")" where the commands can be obtained from https://microsoft.github.io/debug-adapter-protocol/specification.
+## Writing a new test
+
+The integration tests uses the DAP protocol directly to communicate with the backend. A command is sent to the session using "vscode.debug.activeDebugSession.customRequest("...")" where the commands can be obtained from <https://microsoft.github.io/debug-adapter-protocol/specification>.

@@ -31,7 +31,7 @@
         {
             "name": "BasicDebugging.Debug3",
             "type": "cspy",
-            "request": "launch",
+            "request": "attach",
             "stopOnEntry": true,
             "target": "arm",
             "driver": "sim2",
@@ -49,6 +49,60 @@
                 "--device=STM32F429II",
                 "--multicore_nr_of_cores=1"
             ]
+        },
+        {
+            "type": "cspy",
+            "request": "attach",
+            "name": "Attach: BasicDebugging.STM",
+            "target": "arm",
+            "program": "${workspaceFolder}\\STM\\Exe\\BasicDebugging.out",
+            "driver": "Simulator",
+            "workbenchPath": "${command:iar-config.toolchain}",
+            "projectPath": "${workspaceFolder}\\BasicDebugging.ewp",
+            "projectConfiguration": "STM",
+            "driverOptions": [
+                "--crun=disabled",
+                "--endian=little",
+                "--cpu=Cortex-M4",
+                "--fpu=VFPv4_SP",
+                "-p",
+                "D:\\Devel\\EWARM\\ewarm-ide-core-master\\StageWin64_17\\Debug\\arm\\config\\debugger\\ST\\STM32F429II.ddf",
+                "--semihosting",
+                "--device=STM32F429II",
+                "--multicore_nr_of_cores=1"
+            ],
+            "download": {
+                "deviceMacros": [
+                    "D:\\Devel\\EWARM\\ewarm-ide-core-master\\StageWin64_17\\Debug\\arm/config/debugger/ST/STM32F4xx.dmac"
+                ]
+            }
+        },
+        {
+            "type": "cspy",
+            "request": "attach",
+            "name": "Attach: BasicDebugging.Debug2",
+            "target": "arm",
+            "program": "${workspaceFolder}\\Debug2\\Exe\\BasicDebugging.out",
+            "driver": "64-bit Simulator",
+            "workbenchPath": "${command:iar-config.toolchain}",
+            "projectPath": "${workspaceFolder}\\BasicDebugging.ewp",
+            "projectConfiguration": "Debug2",
+            "driverOptions": [
+                "--crun=disabled",
+                "--cpu=Cortex-A53",
+                "--abi=ilp32",
+                "-p",
+                "D:\\Devel\\EWARM\\ewarm-ide-core-master\\StageWin64_17\\Debug\\arm\\config\\debugger\\TexasInstruments\\AM6548_A53_SS1.ddf",
+                "--semihosting",
+                "--device=AM6548_A53_SS1",
+                "--multicore_nr_of_cores=2"
+            ],
+            "download": {
+                "deviceMacros": [
+                    "D:\\Devel\\EWARM\\ewarm-ide-core-master\\StageWin64_17\\Debug\\arm/config/debugger/TexasInstruments/am65xx.dmac",
+                    "D:\\Devel\\EWARM\\ewarm-ide-core-master\\StageWin64_17\\Debug\\arm/config/debugger/TexasInstruments/am65xx_armss1.dmac"
+                ]
+            }
         }
     ]
 }

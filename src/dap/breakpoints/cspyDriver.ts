@@ -189,7 +189,7 @@ export namespace CSpyDriver {
         { name: DriverNames.STLINK,        driver: new GenericHardwareDriver(["stlink", "stlink2"]) },
         { name: DriverNames.XDS,           driver: new GenericHardwareDriver(["xds", "xds2"]) },
         { name: DriverNames.TIFET,         driver: new GenericHardwareDriver(["tifet"]) },
-        { name: DriverNames.ARME2,         driver: new GenericHardwareDriver(["E2"]), target: "arm" },
+        { name: DriverNames.ARME2,         driver: new GenericHardwareDriver(["e2"]), target: "arm" },
         { name: DriverNames.E1,            driver: new Rh850EmuDriver(["ocd"]), target: "rh850", driverArgument: "e1" },
         { name: DriverNames.E2,            driver: new Rh850EmuDriver(["ocd"]), target: "rh850", driverArgument: "e2" },
         { name: DriverNames.E20,           driver: new Rh850EmuDriver(["ocd"]), target: "rh850", driverArgument: "e20" },

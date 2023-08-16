@@ -14,9 +14,18 @@ export namespace VariablesUtils {
      * @param address The address of the variable if available
      * @param isGloballyAvailable Whether the variable is a top-level variable in its inspection context, i.e. is not a
      *     child of e.g. a struct or pointer. This lets us use the variable's name as evaluateName, instead of a pointer expression.
+     * @param readOnly Whether the user should be allowed to assign new values to the variable
      * @returns A DAP variable
      */
-    export function createVariable(name: string, value: string, type: string | undefined, variablesReference: number, address: string | undefined, isGloballyAvailable: boolean): DebugProtocol.Variable {
+    export function createVariable(
+        name: string,
+        value: string,
+        type: string | undefined,
+        variablesReference: number,
+        address: string | undefined,
+        isGloballyAvailable: boolean,
+        readOnly: boolean,
+    ): DebugProtocol.Variable {
         let evaluateName: string | undefined;
         if (isGloballyAvailable) {
             // Some variables have display names that don't match the actual variable names (e.g. statics which have the module name at the end).
@@ -35,7 +44,7 @@ export namespace VariablesUtils {
                 evaluateName = address && evalType ? `*(${evalType}*)(${address})` : undefined;
             }
         }
-        return createVariableInternal(name, value, type, variablesReference, address, evaluateName);
+        return createVariableInternal(name, value, type, variablesReference, address, evaluateName, readOnly);
     }
 
     /**
@@ -81,7 +90,15 @@ export namespace VariablesUtils {
         return createVariableInternal(name, value.value, value.type, variablesReference, address, evaluateName);
     }
 
-    function createVariableInternal(name: string, value: string, type: string | undefined, variablesReference: number, address: string | undefined, evaluateName: string | undefined): DebugProtocol.Variable {
+    function createVariableInternal(
+        name: string,
+        value: string,
+        type: string | undefined,
+        variablesReference: number,
+        address: string | undefined,
+        evaluateName: string | undefined,
+        readOnly?: boolean,
+    ): DebugProtocol.Variable {
         let memoryReference;
         // The specs are not very clear, but it seems pointer values should be treated specially, and use their value
         // as memory reference rather then the address of the pointer variable. This is how MS's RTOS view expects things to be.
@@ -100,6 +117,9 @@ export namespace VariablesUtils {
             variablesReference: variablesReference,
             memoryReference: memoryReference?.replace(/'/g, ""),
             // This only works for some types (e.g. not arrays)
+            presentationHint: readOnly ? {
+                attributes: ["readOnly"]
+            } : {},
             evaluateName: evaluateName,
         };
     }

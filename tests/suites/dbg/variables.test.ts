@@ -334,4 +334,21 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
             })
         ]);
     });
+
+    test("Marks read-only variables as read-only", () => {
+        return Promise.all([
+            dc().launch(dbgConfig()),
+            dc().waitForEvent("stopped").then(async() => {
+                const stack = await dc().stackTraceRequest({ threadId: 0});
+                const scopes = await dc().scopesRequest({frameId: stack.body.stackFrames[0]!.id});
+
+                const staticsScope = scopes.body.scopes[1]!;
+                const statics = (await dc().variablesRequest({variablesReference: staticsScope.variablesReference})).body.variables;
+                const fibArray= statics.find(variable => variable.name === "Fib <Utilities\\Fib>");
+                Assert(fibArray !== undefined);
+                Assert(fibArray.variablesReference > 0);
+                Assert(fibArray.presentationHint?.attributes?.includes("readOnly"));
+            })
+        ]);
+    });
 });

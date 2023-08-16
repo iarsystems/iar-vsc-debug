@@ -47,6 +47,8 @@ export namespace CSpyConfigurationSupplier {
             return ErrorReason.noProjectConfigSelected;
         }
 
+        const workbenchPath = await buildExtension.getSelectedWorkbench();
+
         // First try the more robust thrift-based supplier. Use the xcl-based version as a fallback.
         try {
             const cmds = await buildExtension.getCSpyCommandline(project, config.name);
@@ -55,13 +57,19 @@ export namespace CSpyConfigurationSupplier {
             }
             logger.debug("Got C-SPY command line: " + cmds);
             const partialConfig = BuildExtensionConfigurationSupplier.provideDebugConfigurationFor(cmds, project, config.name, config.target);
-            return ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfig, workspaceFolder?.uri.fsPath);
+            return ConfigResolutionCommon.toLaunchJsonConfiguration(
+                partialConfig,
+                workspaceFolder?.uri.fsPath,
+                workbenchPath);
         } catch (e) {
             logger.debug("Failed to generate config from build extension: " + e);
         }
         try {
             const partialConfig = XclConfigurationSupplier.provideDebugConfigurationFor(project, config.name);
-            return ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfig, workspaceFolder?.uri.fsPath);
+            return ConfigResolutionCommon.toLaunchJsonConfiguration(
+                partialConfig,
+                workspaceFolder?.uri.fsPath,
+                workbenchPath);
         } catch (e) {
             logger.debug("Failed to generate config from .xcl files: " + e);
         }
@@ -85,28 +93,57 @@ export namespace CSpyConfigurationSupplier {
             return [];
         }
 
+        const workbenchPath = await buildExtension.getSelectedWorkbench();
+
+        let result: CspyLaunchJsonConfiguration[] = [];
+
         // First try the more robust thrift-based supplier. Use the xcl-based version as a fallback.
         try {
             const configs = await buildExtension.getProjectConfigurations(project);
             if (configs) {
-                return await Promise.all(configs.map(async(conf) => {
+                result = await Promise.all(configs.map(async(conf) => {
                     const cmds = await buildExtension.getCSpyCommandline(project, conf.name);
                     if (!cmds) {
                         throw new Error("Could not get C-SPY cmdline");
                     }
                     logger.debug("Got C-SPY command line: " + cmds);
                     const partialConfig = BuildExtensionConfigurationSupplier.provideDebugConfigurationFor(cmds, project, conf.name, conf.target);
-                    return ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfig, workspaceFolder?.uri.fsPath);
+                    return ConfigResolutionCommon.toLaunchJsonConfiguration(
+                        partialConfig,
+                        workspaceFolder?.uri.fsPath,
+                        workbenchPath);
                 }));
             }
         } catch (e) {
             logger.debug("Failed to generate config from build extension: " + e);
         }
-        try {
-            const partialConfigs = XclConfigurationSupplier.provideDebugConfigurations(workspaceFolder, path.dirname(project));
-            return partialConfigs.map(config => ConfigResolutionCommon.toLaunchJsonConfiguration(config, workspaceFolder?.uri.fsPath));
-        } catch (e) {
-            logger.debug("Failed to generate config from .xcl files: " + e);
+
+        if (result.length === 0) {
+            try {
+                const partialConfigs = XclConfigurationSupplier.provideDebugConfigurations(workspaceFolder, path.dirname(project));
+                result = partialConfigs.map(config => ConfigResolutionCommon.toLaunchJsonConfiguration(
+                    config,
+                    workspaceFolder?.uri.fsPath,
+                    workbenchPath));
+            } catch (e) {
+                logger.debug("Failed to generate config from .xcl files: " + e);
+            }
+        }
+
+        if (result.length > 0) {
+            return result.flatMap(config => [
+                {
+                    ...config,
+                    name: "Launch: " + config.name
+                },
+                {
+                    ...config,
+                    stopOnEntry: undefined,
+                    stopOnSymbol: undefined,
+                    request: "attach",
+                    name: "Attach: " + config.name,
+                }
+            ]);
         }
         return ErrorReason.noConfigurationsAvailable;
     }

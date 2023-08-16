@@ -16,7 +16,7 @@ import { DebugEventListenerHandler } from "./debugEventListenerHandler";
 import { CSpyContextService } from "./contexts/cspyContextService";
 import { BreakpointType, CSpyBreakpointService } from "./breakpoints/cspyBreakpointService";
 import { LaunchArgumentConfigurationResolver}  from "./configresolution/launchArgumentConfigurationResolver";
-import { CSpyException } from "iar-vsc-common/thrift/bindings/shared_types";
+import { CSpyException, DcResultConstant } from "iar-vsc-common/thrift/bindings/shared_types";
 import { LIBSUPPORT_SERVICE } from "iar-vsc-common/thrift/bindings/libsupport_types";
 import { LibSupportHandler } from "./libSupportHandler";
 // There are no types for this library. We should probably look to replace it.
@@ -222,6 +222,10 @@ export class CSpyDebugSession extends LoggingDebugSession {
             if (workbench.type === WorkbenchType.LEGACY_BX) {
                 throw new Error(`'${workbench.name}' is an IAR Build Tools installation without debugging capabilities. Please use a newer IAR Build Tools version or a full IAR Embedded Workbench installation.`);
             }
+            if (!WorkbenchFeatures.supportsFeature(workbench, WorkbenchFeatures.Debugging)) {
+                const minVersions = WorkbenchFeatures.getMinProductVersions(workbench, WorkbenchFeatures.Debugging);
+                this.sendEvent(new OutputEvent(`${workbench.name} does not officially support VS Code debugging. Please upgrade to ${minVersions.join(", ")} or later`, "stderr"));
+            }
             // Cspyserver requires that we specify the number of cores as a command line argument, so we need to know it early
             const match = args.driverOptions.map(opt => opt.match(/--multicore_nr_of_cores=(\d+)/)).find(match => !!match);
             if (match && match[1]) {
@@ -269,9 +273,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
             await cspyDebugger.service.startSession(sessionConfig);
 
-            if (!isAttachRequest && args.download) {
+            if (args.download) {
                 await Utils.loadMacros(cspyDebugger.service, args.download.deviceMacros ?? []);
-                if (args.download.flashLoader) {
+                if (!isAttachRequest && args.download.flashLoader) {
                     await cspyDebugger.service.flashModule(args.download.flashLoader, sessionConfig.executable, [], []);
                 }
             }
@@ -744,7 +748,18 @@ export class CSpyDebugSession extends LoggingDebugSession {
             await fun(this.services);
         } catch (e) {
             response.success = false;
-            if (typeof e === "string" || e instanceof Error) {
+            // Usually the backend threw a CSpyException, so let's put some effort
+            // into making these look nice.
+            if (e instanceof CSpyException) {
+                if (e.message) {
+                    response.message = e.message;
+                } else if (e.code === DcResultConstant.kDcUnavailable) {
+                    response.message = "<unavailable>";
+                } else {
+                    response.message = `Error: ${DcResultConstant[e.code]?.substring(3)}, method: ${e.method}, culprit: ${e.culprit}`;
+                }
+                logger.error(response.message);
+            } else if (typeof e === "string" || e instanceof Error) {
                 response.message = e.toString();
                 logger.error(e.toString());
             }

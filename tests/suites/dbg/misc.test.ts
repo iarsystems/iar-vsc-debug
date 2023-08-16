@@ -200,7 +200,7 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
     });
 
     test("Supports read and write memory", () => {
-        /// This test assumes ints are at least 4 bytes and that memory is little-endian, which may not be true in all cases
+        /// This test assumes ints are 4 bytes, which may not be true in all cases
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfig()),
@@ -219,10 +219,16 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
                 Assert(callCount?.memoryReference);
 
                 // Read the variable value from memory --- should be 10
+                const expectedValue = [10, 0, 0, 0];
+                let isBigEndian = false;
                 {
                     const response = await dc().customRequest("readMemory", { memoryReference: callCount.memoryReference, count: 4 });
                     const data = Buffer.from(response.body?.data, "base64");
-                    Assert.deepStrictEqual(data, Buffer.from([10, 0, 0, 0]));
+                    if (Buffer.compare(data, Buffer.from(expectedValue)) !== 0) {
+                        isBigEndian = true;
+                        expectedValue.reverse();
+                        Assert.deepStrictEqual(data, Buffer.from(expectedValue));
+                    }
                 }
 
                 // Make sure the adapter can parse decimal addresses
@@ -230,11 +236,15 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
                     const decimalMemoryReference = BigInt(callCount.memoryReference).toString(10);
                     const response = await dc().customRequest("readMemory", { memoryReference: decimalMemoryReference, count: 4 });
                     const data = Buffer.from(response.body?.data, "base64");
-                    Assert.deepStrictEqual(data, Buffer.from([10, 0, 0, 0]));
+                    Assert.deepStrictEqual(data, Buffer.from(expectedValue));
                 }
 
                 // Write a new value to the variable memory --- 0x010011ff
-                await dc().customRequest("writeMemory", { memoryReference: callCount.memoryReference, data: Buffer.from([0xff, 0x11, 0x00, 0x01]).toString("base64")});
+                const toWrite = [0xff, 0x11, 0x00, 0x01];
+                if (isBigEndian) {
+                    toWrite.reverse();
+                }
+                await dc().customRequest("writeMemory", { memoryReference: callCount.memoryReference, data: Buffer.from(toWrite).toString("base64")});
 
                 {
                     // Make sure the variable value now matches what we set

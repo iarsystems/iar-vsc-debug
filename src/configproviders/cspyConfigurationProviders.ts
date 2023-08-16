@@ -122,7 +122,7 @@ const TEMPLATES: LaunchConfigurationSupplier.CspyLaunchJsonConfiguration[] = [
             "--cpu=<CPU-NAME>",
             "--fpu=<FPU-NAME>",
             "-p",
-            "<EW-PATH>/arm/CONFIG/debugger/<PATH-TO-.ddf>",
+            "<EW-PATH>/arm/config/debugger/<PATH-TO-.ddf>",
             "--device=<DEVICE-NAME>",
             "--semihosting",
             "--jet_standard_reset=4,0,0",
@@ -140,7 +140,7 @@ const TEMPLATES: LaunchConfigurationSupplier.CspyLaunchJsonConfiguration[] = [
         download: {
             flashLoader: "<EW-PATH>/arm/config/flashloader/<PATH-TO-.board>",
             deviceMacros: [
-                "<EW-PATH>/arm/CONFIG/debugger/<PATH-TO-.dmac>"
+                "<EW-PATH>/arm/config/debugger/<PATH-TO-.dmac>"
             ]
         }
     },

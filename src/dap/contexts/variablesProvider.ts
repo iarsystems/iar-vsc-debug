@@ -103,14 +103,14 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
             const parentRow = this.variableReferences.get(variableReference);
             rows = await this.windowClient.getChildrenOf(parentRow);
         }
-        const row = rows.find(row => row.values[this.varNameColumn] === name);
+        const row = rows.find(row => row.cells[this.varNameColumn]?.value === name);
         if (!row) {
             throw new Error("Failed to find variable with name: " + name);
         }
         this.notifyUpdateImminent();
         const newVal = await this.windowClient.setValueOf(row, this.varValueColumn, value);
 
-        const location = row.values[this.varLocationColumn];
+        const location = row.cells[this.varLocationColumn]?.value;
         return { newValue: newVal, changedAddress: location ? this.locationToAddress(location) : undefined };
     }
 
@@ -133,15 +133,23 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
     }
 
     private createVariableFromRow(row: ListWindowRowReference, isGloballyAvailable = false): DebugProtocol.Variable {
-        const name = row.values[this.varNameColumn];
-        const value = row.values[this.varValueColumn];
+        const name = row.cells[this.varNameColumn]?.value;
+        const value = row.cells[this.varValueColumn];
         if (name === undefined || value === undefined) {
             throw new Error("Not enough data in row to parse variable");
         }
-        const location = row.values[this.varLocationColumn];
+        const location = row.cells[this.varLocationColumn]?.value;
         const address = location ? this.locationToAddress(location) : undefined;
-        const type = row.values[this.varTypeColumn];
-        return VariablesUtils.createVariable(name, value, type, row.hasChildren ? this.variableReferences.create(row) : 0, address, isGloballyAvailable);
+        const type = row.cells[this.varTypeColumn]?.value;
+        return VariablesUtils.createVariable(
+            name,
+            value.value,
+            type,
+            row.hasChildren ? this.variableReferences.create(row) : 0,
+            address,
+            isGloballyAvailable,
+            !value.isEditable
+        );
     }
 
     // converts the contents of a list window cell to a dap memory reference, if possible

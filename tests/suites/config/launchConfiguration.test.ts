@@ -88,18 +88,17 @@ suite("Configuration tests", () => {
             assert.fail("Failed to generate a configuration");
         }
 
-        assert.deepStrictEqual(cspyConfigs?.length, 2, "Should have found two configurations");
+        assert.deepStrictEqual(cspyConfigs?.length, 4, "Should have found two configurations");
         const configsToFind = ["Release", "Debug"];
 
         // Make sure that all the expected configuration are found.
         configsToFind.forEach((config)=>{
-            let found = false;
-            cspyConfigs.forEach(cspyConfig=>{
-                if (cspyConfig["name"] === ("BasicDebugging." + config)) {
-                    found = true;
-                }
-            });
-            assert.deepStrictEqual(true, found, "Failed to find configuration " + config);
+            const foundLaunch = cspyConfigs.some(cspyConfig =>
+                cspyConfig["name"] === "Launch: BasicDebugging." + config);
+            assert(foundLaunch, "Failed to find launch configuration " + config);
+            const foundAttach = cspyConfigs.some(cspyConfig =>
+                cspyConfig["name"] === "Attach: BasicDebugging." + config);
+            assert(foundAttach, "Failed to find attach configuration " + config);
         });
     });
 
