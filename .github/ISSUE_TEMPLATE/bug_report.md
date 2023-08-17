@@ -19,7 +19,7 @@ A clear and concise description of what you expected to happen.
 **Environment:**
 
 - OS: [Windows, linux]
-- Embedded Workbench: [Arm, RX, RL78, AVR, RISC-V]
+- Embedded Workbench: [Arm, RX, RL78, AVR, RISC-V, ...]
 - Embedded Workbench version:
 - VSC Extension version:
 
