@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-import { CodeBreakpointDescriptorFactory, DataBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory, EmulDataBreakpointDescriptorFactory, HwCodeBreakpointDescriptorFactory, LogBreakpointDescriptorFactory, StdCode2BreakpointDescriptorFactory, StdData2BreakpointDescriptorFactory, StdLog2BreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
+import { CodeBreakpointDescriptorFactory, DataBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory, EmulDataBreakpointDescriptorFactory, HwCodeBreakpointDescriptorFactory, LogBreakpointDescriptorFactory, StdCode2BreakpointDescriptorFactory, StdData2BreakpointDescriptorFactory, StdLog2BreakpointDescriptorFactory, EmuHwCodeBreakpointDescriptorFactory, EmuSwCodeBreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
 import { logger } from "@vscode/debugadapter/lib/logger";
 import { BreakpointType } from "./cspyBreakpointService";
 
@@ -116,6 +116,24 @@ class AvrEmuDriver implements CSpyDriver {
     }
 }
 
+class RxEmuDriver implements CSpyDriver {
+    readonly codeBreakpointFactories: ReadonlyMap<BreakpointType, CodeBreakpointDescriptorFactory>;
+    readonly dataBreakpointFactory = new StdData2BreakpointDescriptorFactory();
+    readonly logBreakpointFactory = new StdLog2BreakpointDescriptorFactory();
+
+    constructor(public readonly libraryBaseNames: string[]) {
+        this.codeBreakpointFactories = new Map([
+            [BreakpointType.AUTO, new StdCode2BreakpointDescriptorFactory()],
+            [BreakpointType.HARDWARE, new EmuHwCodeBreakpointDescriptorFactory()],
+            [BreakpointType.SOFTWARE, new EmuSwCodeBreakpointDescriptorFactory()],
+        ]);
+    }
+
+    isSimulator(): boolean {
+        return false;
+    }
+}
+
 export namespace CSpyDriver {
     /**
      * Driver display names.
@@ -178,6 +196,11 @@ export namespace CSpyDriver {
         { name: DriverNames.E1,            driver: new Rl78EmuDriver(["ocd"]), target: "rl78", driverArgument: "e1" },
         { name: DriverNames.E2,            driver: new Rl78EmuDriver(["ocd"]), target: "rl78", driverArgument: "e2" },
         { name: DriverNames.E20,           driver: new Rl78EmuDriver(["ocd"]), target: "rl78", driverArgument: "e20" },
+        { name: DriverNames.E1,            driver: new RxEmuDriver(["e1e20"]), target: "rx" },
+        { name: DriverNames.E20,           driver: new RxEmuDriver(["e1e20"]), target: "rx" },
+        { name: DriverNames.E2,            driver: new RxEmuDriver(["e2e2l"]), target: "rx", driverArgument: "e2" },
+        { name: DriverNames.E2LITE,        driver: new RxEmuDriver(["e2e2l"]), target: "rx", driverArgument: "e2lite"},
+        { name: DriverNames.EZCUBE2,       driver: new RxEmuDriver(["e2e2l"]), target: "rx", driverArgument: "e2lite"},
         { name: DriverNames.E2LITE,        driver: new Rl78EmuDriver(["ocd"]), driverArgument: "e2lite" },
         { name: DriverNames.EZCUBE,        driver: new Rl78EmuDriver(["ocd"]), driverArgument: "ezcube" },
         { name: DriverNames.EZCUBE2,       driver: new Rl78EmuDriver(["ocd"]), driverArgument: "ezcube2" },

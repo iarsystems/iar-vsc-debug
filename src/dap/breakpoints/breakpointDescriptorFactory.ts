@@ -78,6 +78,20 @@ export class HwCodeBreakpointDescriptorFactory implements CodeBreakpointDescript
     }
 }
 
+export class EmuHwCodeBreakpointDescriptorFactory implements CodeBreakpointDescriptorFactory {
+
+    createOnUle(ule: string): LocOnlyDescriptor {
+        return new LocOnlyDescriptor([BreakpointCategory.EMUL_HW_CODE, ule]);
+    }
+}
+
+export class EmuSwCodeBreakpointDescriptorFactory implements CodeBreakpointDescriptorFactory {
+
+    createOnUle(ule: string): LocOnlyDescriptor {
+        return new LocOnlyDescriptor([BreakpointCategory.EMUL_SW_CODE, ule]);
+    }
+}
+
 // Data Breakpoints
 
 export class StdData2BreakpointDescriptorFactory extends DataBreakpointDescriptorFactory {

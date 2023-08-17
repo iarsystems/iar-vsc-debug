@@ -9,7 +9,7 @@
 			"runtimeExecutable": "${execPath}",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}",
-				"${workspaceFolder}/samples/GettingStarted"
+				"C:/Users/joakimlo/Documents/IAR Embedded Workbench/rx/examples/RX starter kits/RSKRX610/Power_debugging_demo"
 			],
 			"outFiles": [ "${workspaceFolder}/dist/**/*.js" ]
 		},

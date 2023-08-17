@@ -47,7 +47,7 @@
 		"@vscode/debugprotocol": "^1.57.0",
 		"async-mutex": "^0.3.2",
 		"await-notify": "1.0.1",
-		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#027c5ff8",
+		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#86909f2a",
 		"thrift": "^0.12.0",
 		"xmlbuilder2": "^3.0.2"
 	},
@@ -222,7 +222,8 @@
 								"riscv",
 								"rh850",
 								"rl78",
-								"avr"
+								"avr",
+								"rx"
 							]
 						},
 						"program": {
@@ -386,7 +387,8 @@
 									"riscv",
 									"rh850",
 									"rl78",
-									"avr"
+									"avr",
+									"rx"
 								]
 							},
 							"program": {
