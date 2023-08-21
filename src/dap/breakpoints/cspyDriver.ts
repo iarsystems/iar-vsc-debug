@@ -177,11 +177,11 @@ export namespace CSpyDriver {
      * * Each driver name should only appear once
      * * If a driver base name appears more than once (e.g. ocd), each instance should be qualified with a target and/or driver option to differentiate it from other instances
      */
-    const driverMap: Array<{ name: string, driver: CSpyDriver, target?: string, driverArgument?: string }> = [
+    const driverMap: Array<{ name: string, driver: CSpyDriver, targets?: string[], driverArgument?: string }> = [
         { name: DriverNames.SIMULATOR,     driver: new SimulatorDriver(["sim", "sim2"]) },
         { name: DriverNames.IMPERAS,       driver: new SimulatorDriver(["imperas"]) },
         { name: DriverNames.IJET,          driver: new GenericHardwareDriver(["ijet", "jet"]) },
-        { name: DriverNames.JLINK,         driver: new GenericHardwareDriver(["jlink", "jlink2"]) },
+        { name: DriverNames.JLINK,         driver: new GenericHardwareDriver(["jlink", "jlink2"]), targets: ["arm"] },
         { name: DriverNames.GDBSERV,       driver: new GenericHardwareDriver(["gdbserv"]) },
         { name: DriverNames.CADI,          driver: new CadiDriver(["cadi"]) },
         { name: DriverNames.STELLARIS,     driver: new GenericHardwareDriver(["lmiftdi"]) },
@@ -189,18 +189,19 @@ export namespace CSpyDriver {
         { name: DriverNames.STLINK,        driver: new GenericHardwareDriver(["stlink", "stlink2"]) },
         { name: DriverNames.XDS,           driver: new GenericHardwareDriver(["xds", "xds2"]) },
         { name: DriverNames.TIFET,         driver: new GenericHardwareDriver(["tifet"]) },
-        { name: DriverNames.ARME2,         driver: new GenericHardwareDriver(["e2"]), target: "arm" },
-        { name: DriverNames.E1,            driver: new Rh850EmuDriver(["ocd"]), target: "rh850", driverArgument: "e1" },
-        { name: DriverNames.E2,            driver: new Rh850EmuDriver(["ocd"]), target: "rh850", driverArgument: "e2" },
-        { name: DriverNames.E20,           driver: new Rh850EmuDriver(["ocd"]), target: "rh850", driverArgument: "e20" },
-        { name: DriverNames.E1,            driver: new Rl78EmuDriver(["ocd"]), target: "rl78", driverArgument: "e1" },
-        { name: DriverNames.E2,            driver: new Rl78EmuDriver(["ocd"]), target: "rl78", driverArgument: "e2" },
-        { name: DriverNames.E20,           driver: new Rl78EmuDriver(["ocd"]), target: "rl78", driverArgument: "e20" },
-        { name: DriverNames.E1,            driver: new RxEmuDriver(["e1e20"]), target: "rx" },
-        { name: DriverNames.E20,           driver: new RxEmuDriver(["e1e20"]), target: "rx" },
-        { name: DriverNames.E2,            driver: new RxEmuDriver(["e2e2l"]), target: "rx", driverArgument: "e2" },
-        { name: DriverNames.E2LITE,        driver: new RxEmuDriver(["e2e2l"]), target: "rx", driverArgument: "e2lite"},
-        { name: DriverNames.EZCUBE2,       driver: new RxEmuDriver(["e2e2l"]), target: "rx", driverArgument: "e2lite"},
+        { name: DriverNames.ARME2,         driver: new GenericHardwareDriver(["e2"]), targets: ["arm"] },
+        { name: DriverNames.E1,            driver: new Rh850EmuDriver(["ocd"]), targets: ["rh850"], driverArgument: "e1" },
+        { name: DriverNames.E2,            driver: new Rh850EmuDriver(["ocd"]), targets: ["rh850"], driverArgument: "e2" },
+        { name: DriverNames.E20,           driver: new Rh850EmuDriver(["ocd"]), targets: ["rh850"], driverArgument: "e20" },
+        { name: DriverNames.E1,            driver: new Rl78EmuDriver(["ocd"]), targets: ["rl78"], driverArgument: "e1" },
+        { name: DriverNames.E2,            driver: new Rl78EmuDriver(["ocd"]), targets: ["rl78"], driverArgument: "e2" },
+        { name: DriverNames.E20,           driver: new Rl78EmuDriver(["ocd"]), targets: ["rl78"], driverArgument: "e20" },
+        { name: DriverNames.E1,            driver: new RxEmuDriver(["e1e20"]), targets: ["rx"] },
+        { name: DriverNames.E20,           driver: new RxEmuDriver(["e1e20"]), targets: ["rx"] },
+        { name: DriverNames.E2,            driver: new RxEmuDriver(["e2e2l"]), targets: ["rx"], driverArgument: "e2" },
+        { name: DriverNames.E2LITE,        driver: new RxEmuDriver(["e2e2l"]), targets: ["rx"], driverArgument: "e2lite"},
+        { name: DriverNames.EZCUBE2,       driver: new RxEmuDriver(["e2e2l"]), targets: ["rx"], driverArgument: "e2lite"},
+        { name: DriverNames.JLINK,         driver: new RxEmuDriver(["jlink", "jlink2"]), targets: ["rx"] },
         { name: DriverNames.E2LITE,        driver: new Rl78EmuDriver(["ocd"]), driverArgument: "e2lite" },
         { name: DriverNames.EZCUBE,        driver: new Rl78EmuDriver(["ocd"]), driverArgument: "ezcube" },
         { name: DriverNames.EZCUBE2,       driver: new Rl78EmuDriver(["ocd"]), driverArgument: "ezcube2" },
@@ -219,8 +220,8 @@ export namespace CSpyDriver {
      * is needed to select the correct driver.
      */
     export function driverFromName(driverName: string, targetName: string, driverArgs: string[]): CSpyDriver {
-        const result = driverMap.find(({ name, target, driverArgument }) => name === driverName &&
-            (target === undefined || target === targetName) &&
+        const result = driverMap.find(({ name, targets, driverArgument }) => name === driverName &&
+            (targets === undefined || targets.includes(targetName)) &&
             (driverArgument === undefined || driverArgs.includes(driverArgument)));
         if (!result) {
             logger.error("Unable to recognize driver: " + driverName);
@@ -241,9 +242,9 @@ export namespace CSpyDriver {
         if (targetName && basename.startsWith(targetName.toLowerCase())) {
             basename = basename.substring(targetName.length);
         }
-        return driverMap.find(({ driver, target, driverArgument }) => {
+        return driverMap.find(({ driver, targets, driverArgument }) => {
             return driver.libraryBaseNames.some(base => basename.endsWith(base)) &&
-                (target === undefined || target === targetName) &&
+                (targets === undefined || targets.includes(targetName)) &&
                 (driverArgument === undefined || driverArgs.includes(driverArgument));
         })?.name ?? basename;
     }
