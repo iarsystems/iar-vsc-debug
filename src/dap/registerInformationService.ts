@@ -231,7 +231,7 @@ namespace RegistersHelpers {
             peripherals: { peripheral: groups.map(group => {
                 const baseAddress = group.registers.reduce((currentMin, register) => {
                     const addressBuf = Buffer.from(register.location.realLocation.address, "hex");
-                    return currentMin.compare(addressBuf) === -1 ? currentMin : addressBuf;
+                    return compareBuffers(currentMin, addressBuf) === -1 ? currentMin : addressBuf;
                 }, Buffer.from("ffffffffffffffff", "hex"));
                 const baseAddressInt = BigInt("0x" + baseAddress.toString("hex"));
                 const registers: SvdRegister[] = group.registers.map(reg => createSvdRegister(reg, baseAddressInt));
@@ -312,5 +312,16 @@ namespace RegistersHelpers {
                 return { used: mask.used, mask: mask.mask.toOctetString() };
             }),
         };
+    }
+
+    // Compare two buffers as big-endian numbers
+    function compareBuffers(b1: Buffer, b2: Buffer) {
+        if (b1.length === b2.length) {
+            return b1.compare(b2);
+        }
+        if (b1.length > b2.length) {
+            return 1;
+        }
+        return -1;
     }
 }
