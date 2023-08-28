@@ -828,6 +828,132 @@
 								"${workspaceFolder}/settings/${7:MyProjectName}.dnx"
 							]
 						}
+					},
+					{
+						"label": "C-SPY RL78: Simulator launch configuration",
+						"description": "A new configuration for debugging an .ewp project with the simulator.",
+						"body": {
+							"type": "cspy",
+							"request": "launch",
+							"name": "${1:Debug with C-SPY Simulator}",
+							"target": "rl78",
+							"program": "${workspaceFolder}/Debug/Exe/${2:ewproj.out}",
+							"stopOnSymbol": "main",
+							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
+							"projectPath": "^\"\\${command:iar-config.project-file}\"",
+							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
+							"driver": "Simulator",
+							"driverOptions": [
+								"--core",
+								"${3:s2}",
+								"--near_const_location",
+								"rom0",
+								"--near_const_start",
+								"0xF2000",
+								"--near_const_size",
+								"51.749",
+								"-p",
+								"^\"\\${command:iar-config.toolchain}/rl78/config/debugger/${4:iorl78_s2.ddf}\"",
+								"--double=32",
+								"-d",
+								"sim"
+							]
+						}
+					},
+					{
+						"label": "C-SPY RL78: E2 Emulator launch configuration",
+						"description": "A new configuration for debugging an .ewp project on the emulator.",
+						"body": {
+							"type": "cspy",
+							"request": "launch",
+							"name": "${1:Debug with C-SPY Emulator}",
+							"target": "rl78",
+							"program": "${workspaceFolder}/Debug/Exe/${2:ewproj.out}",
+							"stopOnSymbol": "main",
+							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
+							"projectPath": "^\"\\${command:iar-config.project-file}\"",
+							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
+							"driver": "${3:Renesas E2}",
+							"driverOptions": [
+								"--core",
+								"${4:s2}",
+								"--near_const_location",
+								"ram",
+								"--near_const_start",
+								"0xF2000",
+								"--near_const_size",
+								"0.000",
+								"-p",
+								"^\"\\${command:iar-config.toolchain}/rl78/config/debugger/${5:io5f10968.ddf}\"",
+								"--double=32",
+								"-d",
+								"e2"
+							]
+						}
+					},
+					{
+						"label": "C-SPY RX: Simulator launch configuration",
+						"description": "A new configuration for debugging an .ewp project with the simulator.",
+						"body": {
+							"type": "cspy",
+							"request": "launch",
+							"name": "${1:Debug with C-SPY Simulator}",
+							"target": "rx",
+							"program": "${workspaceFolder}/Debug/Exe/${2:ewproj.out}",
+							"stopOnSymbol": "main",
+							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
+							"projectPath": "^\"\\${command:iar-config.project-file}\"",
+							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
+							"driver": "Simulator",
+							"driverOptions": [
+								"-p",
+								"^\"\\${command:iar-config.toolchain}/rx/config/debugger/${3:ior5f56107.ddf}\"",
+								"--endian",
+								"l",
+								"--double",
+								"32",
+								"--core",
+								"${4:rxv1}",
+								"--int",
+								"32",
+								"--fpu",
+								"none"
+							]
+						}
+					},
+					{
+						"label": "C-SPY RX: E1/E20 Emulator launch configuration",
+						"description": "A new configuration for debugging an .ewp project on the emulator.",
+						"body": {
+							"type": "cspy",
+							"request": "launch",
+							"name": "${1:Debug with C-SPY Emulator}",
+							"target": "rx",
+							"program": "${workspaceFolder}/Debug/Exe/${2:ewproj.out}",
+							"stopOnSymbol": "main",
+							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
+							"projectPath": "^\"\\${command:iar-config.project-file}\"",
+							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
+							"driver": "${3:Renesas E20}",
+							"driverOptions": [
+								"-p",
+								"^\"\\${command:iar-config.toolchain}/rx/config/debugger/${4:ior5f56107.ddf}\"",
+								"--endian",
+								"l",
+								"--double",
+								"32",
+								"--core",
+								"${5:rxv1}",
+								"--int",
+								"32",
+								"--fpu",
+								"none",
+								"-d",
+								"emue20",
+								"--drv_mode",
+								"debugging"
+							]
+						}
 					}
 				]
 			}
