@@ -833,7 +833,7 @@
 								"--LPD1_baud",
 								"0",
 								"--cspybat_inifile",
-								"${workspaceFolder}/settings/${7:MyProjectName}.dnx"
+								"^\"\\${workspaceFolder}/settings/${7:MyProjectName}.dnx\""
 							]
 						}
 					},
@@ -930,7 +930,7 @@
 						}
 					},
 					{
-						"label": "C-SPY RX: E1/E20 Emulator launch configuration",
+						"label": "C-SPY RX: E2 Emulator launch configuration",
 						"description": "A new configuration for debugging an .ewp project on the emulator.",
 						"body": {
 							"type": "cspy",
@@ -942,24 +942,26 @@
 							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
 							"projectPath": "^\"\\${command:iar-config.project-file}\"",
 							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
-							"driver": "${3:Renesas E20}",
+							"driver": "${3:E2 Lite / EZ-CUBE2}",
 							"driverOptions": [
 								"-p",
-								"^\"\\${command:iar-config.toolchain}/rx/config/debugger/${4:ior5f56107.ddf}\"",
+								"^\"\\${command:iar-config.toolchain}/rx/config/debugger/${4:ior5f526tf.ddf}\"",
 								"--endian",
 								"l",
 								"--double",
 								"32",
 								"--core",
-								"${5:rxv1}",
+								"${5:rxv3}",
 								"--int",
 								"32",
 								"--fpu",
-								"none",
+								"32",
 								"-d",
-								"emue20",
+								"e2lite",
 								"--drv_mode",
-								"debugging"
+								"debugging",
+								"--cspybat_inifile",
+								"^\"\\${workspaceFolder}/settings/${6:MyProjectName}.dnx\""
 							]
 						}
 					}
