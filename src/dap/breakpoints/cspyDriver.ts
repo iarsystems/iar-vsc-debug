@@ -137,7 +137,7 @@ class RxEmuDriver implements CSpyDriver {
 export namespace CSpyDriver {
     /**
      * Driver display names.
-     * ! make sure these names match the "driver" enum in package.json
+     * ! make sure these names match the "driver" enums in package.json
      */
     export enum DriverNames {
         SIMULATOR = "Simulator",
@@ -155,6 +155,8 @@ export namespace CSpyDriver {
         E1 = "Renesas E1",
         E2 = "Renesas E2",
         E20 = "Renesas E20",
+        E1E20 = "E1 / E20",
+        E2LITEEZCUBE = "E2 Lite / EZ-CUBE2",
         E2LITE = "Renesas E2 Lite / E2 On-board",
         EZCUBE = "EZ-CUBE",
         EZCUBE2 = "EZ-CUBE2",
@@ -196,11 +198,9 @@ export namespace CSpyDriver {
         { name: DriverNames.E1,            driver: new Rl78EmuDriver(["ocd"]), targets: ["rl78"], driverArgument: "e1" },
         { name: DriverNames.E2,            driver: new Rl78EmuDriver(["ocd"]), targets: ["rl78"], driverArgument: "e2" },
         { name: DriverNames.E20,           driver: new Rl78EmuDriver(["ocd"]), targets: ["rl78"], driverArgument: "e20" },
-        { name: DriverNames.E1,            driver: new RxEmuDriver(["e1e20"]), targets: ["rx"] },
-        { name: DriverNames.E20,           driver: new RxEmuDriver(["e1e20"]), targets: ["rx"] },
+        { name: DriverNames.E1E20,         driver: new RxEmuDriver(["e1e20"]), targets: ["rx"] },
         { name: DriverNames.E2,            driver: new RxEmuDriver(["e2e2l"]), targets: ["rx"], driverArgument: "e2" },
-        { name: DriverNames.E2LITE,        driver: new RxEmuDriver(["e2e2l"]), targets: ["rx"], driverArgument: "e2lite"},
-        { name: DriverNames.EZCUBE2,       driver: new RxEmuDriver(["e2e2l"]), targets: ["rx"], driverArgument: "e2lite"},
+        { name: DriverNames.E2LITEEZCUBE,  driver: new RxEmuDriver(["e2e2l"]), targets: ["rx"], driverArgument: "e2lite"},
         { name: DriverNames.JLINK,         driver: new RxEmuDriver(["jlink", "jlink2"]), targets: ["rx"] },
         { name: DriverNames.E2LITE,        driver: new Rl78EmuDriver(["ocd"]), driverArgument: "e2lite" },
         { name: DriverNames.EZCUBE,        driver: new Rl78EmuDriver(["ocd"]), driverArgument: "ezcube" },

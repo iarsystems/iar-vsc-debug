@@ -59,9 +59,11 @@ export namespace ConfigResolutionCommon {
             CSpyDriver.DriverNames.E1,
             CSpyDriver.DriverNames.E2,
             CSpyDriver.DriverNames.E20,
+            CSpyDriver.DriverNames.E1E20,
             CSpyDriver.DriverNames.E2LITE,
             CSpyDriver.DriverNames.EZCUBE,
             CSpyDriver.DriverNames.EZCUBE2,
+            CSpyDriver.DriverNames.E2LITEEZCUBE,
             CSpyDriver.DriverNames.IECUBE,
             CSpyDriver.DriverNames.TK,
         ];
