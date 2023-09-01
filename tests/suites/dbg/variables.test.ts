@@ -198,6 +198,44 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
         ]);
     });
 
+    // VSC-424
+    test("Supports anonymous siblings", () => {
+        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
+        dbgConfigCopy.stopOnSymbol = false;
+        return Promise.all([
+            dc().configurationSequence(),
+            dc().launch(dbgConfigCopy),
+            dc().waitForEvent("stopped").then(async() => {
+                const stack = await dc().stackTraceRequest({ threadId: 0});
+                const scopes = await dc().scopesRequest({frameId: stack.body.stackFrames[0]!.id});
+
+                const statics = (await dc().variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
+                const struct = statics.find(variable => variable.name === "anon_siblings <Fibonacci\\anon_siblings>");
+                Assert(struct !== undefined);
+                Assert.strictEqual(struct.value, "<struct>");
+                Assert(struct.variablesReference > 0);
+                const structContents = (await dc().variablesRequest({variablesReference: struct.variablesReference})).body.variables;
+                Assert.strictEqual(structContents.length, 2);
+
+                // Check first anonymous union
+                const firstAnonUnion = structContents[0]!;
+                Assert.strictEqual(firstAnonUnion.name, "");
+                Assert(firstAnonUnion.variablesReference > 0);
+                const firstAnonUnionContents = (await dc().variablesRequest({variablesReference: firstAnonUnion.variablesReference})).body.variables;
+                Assert.strictEqual(firstAnonUnionContents.length, 1);
+                Assert.strictEqual(firstAnonUnionContents[0]!.name, "a");
+
+                // Check the second one, it should be different
+                const secondAnonUnion = structContents[1]!;
+                Assert.strictEqual(secondAnonUnion.name, "");
+                Assert(secondAnonUnion.variablesReference > 0);
+                const secondAnonUnionContents = (await dc().variablesRequest({variablesReference: secondAnonUnion.variablesReference})).body.variables;
+                Assert.strictEqual(secondAnonUnionContents.length, 1);
+                Assert.strictEqual(secondAnonUnionContents[0]!.name, "b");
+            }),
+        ]);
+    });
+
     test("Supports setting variable values", () => {
         return Promise.all([
             dc().launch(dbgConfig()),
