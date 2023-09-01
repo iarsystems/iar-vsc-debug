@@ -46,5 +46,15 @@ int *pointer;
 char buf[12];
 int scan_to_me;
 
+struct anonymous_siblings {
+	struct {
+		int a;
+	};
+	struct {
+		int b;
+	};
+};
+struct anonymous_siblings anon_siblings;
+
 
 #endif

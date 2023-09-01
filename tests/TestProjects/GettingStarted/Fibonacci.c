@@ -54,6 +54,7 @@ int32_t main(void)
   nested_struct.un.a = 42; // prevent nested_struct from being optimized away
   nested_struct2.un.a = 0; // prevent nested_struct2 from being optimized away
   references_self.a = 42; // prevent references_self from being optimized away
+  anon_siblings.a = 42; // prevent anon_siblings from being optimized away
   pointer = (int*)0x1337;
   scanf("%d", &scan_to_me);
   scanf("%11s", &buf);

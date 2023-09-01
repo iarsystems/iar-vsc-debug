@@ -57,7 +57,7 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
         varTypeColumn: number,
         varLocationColumn: number): Promise<ListWindowVariablesProvider> {
 
-        const windowClient = await ListWindowClient.instantiate(serviceMgr, windowServiceId, varNameColumn);
+        const windowClient = await ListWindowClient.instantiate(serviceMgr, windowServiceId, [varNameColumn, varTypeColumn]);
         return new ListWindowVariablesProvider(windowClient, varNameColumn, varValueColumn, varTypeColumn, varLocationColumn);
     }
 

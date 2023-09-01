@@ -19,7 +19,7 @@ export interface Cell {
 export interface ListWindowRowReference {
     cells: Cell[];
     hasChildren: boolean;
-    parentIds: string[];
+    parentIds: string[][];
 }
 
 /**
@@ -40,14 +40,20 @@ export class ListWindowClient implements Disposable.Disposable {
      * Starts a new ListWindowClient and connects it to the provided backend.
      * @param serviceMgr The service manager to use to start the service and connect to the backend
      * @param serviceId The name of the backend service
-     * @param idColumn The index of a column that uniquely distinguishes a row from its siblings. If there is no such row for a window, this class cannot be used for that window
+     * @param idColumns The indices of a column or set of columns that uniquely distinguish a row from its siblings. If there is no such set of columns for a window, this class cannot be used for that window
      */
-    static async instantiate(serviceMgr: ThriftServiceManager, serviceId: string, idColumn: number): Promise<ListWindowClient> {
+    static async instantiate(serviceMgr: ThriftServiceManager, serviceId: string, idColumns: number | number[]): Promise<ListWindowClient> {
         const backend = await serviceMgr.findService(serviceId, ListWindowBackend.Client);
         if (await backend.service.isSliding()) {
             throw new Error("ListWindowClient does not support sliding windows.");
         }
-        const windowClient = new ListWindowClient(backend, idColumn);
+        if (typeof idColumns === "number") {
+            idColumns = [idColumns];
+        }
+        if (idColumns.length === 0) {
+            throw new Error("ListWindowClient requires at least one id column");
+        }
+        const windowClient = new ListWindowClient(backend, idColumns);
         const loc = await serviceMgr.startService(serviceId + ".frontend", ListWindowFrontend, windowClient);
         await backend.service.connect(loc);
         await backend.service.show(true);
@@ -59,7 +65,9 @@ export class ListWindowClient implements Disposable.Disposable {
     private currentUpdate: Q.Promise<unknown> | undefined;
     private oneshotChangeHandlers: Array<() => void> = [];
 
-    private constructor(private readonly backend: ThriftClient<ListWindowBackend.Client>, private readonly idColumn: number) {
+    private constructor(
+        private readonly backend: ThriftClient<ListWindowBackend.Client>,
+        private readonly idColumns: number[]) {
         this.currentUpdate = Q.resolve([]);
     }
 
@@ -83,13 +91,13 @@ export class ListWindowClient implements Disposable.Disposable {
         }
         const rowIndex = await this.getRowIndex(parent);
         if (rowIndex === undefined) {
-            throw new Error("Cannot find row in the window matching: " + parent.cells[this.idColumn]?.value);
+            throw new Error("Cannot find row in the window matching: " + this.getIdForCells(parent.cells).join(","));
         }
         this.expandRow(rowIndex);
         const rows = await this.getRows();
         const row = rows[rowIndex];
         if (row === undefined) {
-            throw new Error("Cannot find row in the window matching: " + parent.cells[this.idColumn]?.value);
+            throw new Error("Cannot find row in the window matching: " + this.getIdForCells(parent.cells).join(","));
         }
 
         // How deep in a structure of subvariables are we?
@@ -106,8 +114,7 @@ export class ListWindowClient implements Disposable.Disposable {
                 break;
             }
         }
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const parentIds = parent.parentIds.concat([parent.cells[this.idColumn]!.value]);
+        const parentIds = parent.parentIds.concat([this.getIdForCells(parent.cells)]);
         return children.map(row => this.createRowReference(row, parentIds));
     }
 
@@ -121,7 +128,7 @@ export class ListWindowClient implements Disposable.Disposable {
     async setValueOf(reference: ListWindowRowReference, column: number, value: string) {
         const rowIndex = await this.getRowIndex(reference);
         if (rowIndex === undefined) {
-            throw new Error("Cannot find row in the window matching: " + reference.cells[this.idColumn]?.value);
+            throw new Error("Cannot find row in the window matching: " + this.getIdForCells(reference.cells).join(","));
         }
         // Wait for any updates to finish so that when we wait again below, we know that any updates we see are
         // because of the setValue call, not some old update that hadn't finished.
@@ -267,7 +274,7 @@ export class ListWindowClient implements Disposable.Disposable {
     }
 
     // converts from internal (thrift) row class to the class used outwards
-    private createRowReference(row: Row, parentIds: string[]): ListWindowRowReference {
+    private createRowReference(row: Row, parentIds: string[][]): ListWindowRowReference {
         return {
             cells: row.cells.map(cell => {
                 return { value: cell.text, isEditable: cell.format.editable };
@@ -279,13 +286,14 @@ export class ListWindowClient implements Disposable.Disposable {
 
     private async getRowIndex(reference: ListWindowRowReference): Promise<number | undefined> {
         const rows = await this.getRows();
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const path = reference.parentIds.concat([reference.cells[this.idColumn]!.value]);
+        const path = reference.parentIds.concat([this.getIdForCells(reference.cells)]);
         return this.getRowIndexRecursive(path, rows, 0);
     }
-    private getRowIndexRecursive(ids: string[], candidates: Row[], depth: number): number | undefined {
+    private getRowIndexRecursive(ids: string[][], candidates: Row[], depth: number): number | undefined {
         const id = ids.shift();
-        const found = candidates.findIndex(row => row.cells[this.idColumn]?.text === id && TreeInfoUtils.getDepth(row.treeinfo) === depth);
+        const found = candidates.findIndex(row =>
+            JSON.stringify(this.getIdForRow(row)) === JSON.stringify(id) &&
+            TreeInfoUtils.getDepth(row.treeinfo) === depth);
         if (found === -1) {
             return undefined;
         }
@@ -302,6 +310,15 @@ export class ListWindowClient implements Disposable.Disposable {
         }
         const subIndex = this.getRowIndexRecursive(ids, newCandidates, depth + 1);
         return subIndex !== undefined ? found + 1 + subIndex : undefined;
+    }
+
+    private getIdForCells(cells: Cell[]): string[] {
+        return this.idColumns.map(idc => cells[idc]?.value).
+            filter((value): value is string => value !== undefined);
+    }
+    private getIdForRow(row: Row): string[] {
+        return this.idColumns.map(idc => row.cells[idc]?.text).
+            filter((value): value is string => value !== undefined);
     }
 }
 
