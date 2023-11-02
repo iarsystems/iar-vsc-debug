@@ -46,12 +46,18 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
         }
 
         const partialValues = await this.resolveLaunchArgumentsPartial(launchArguments);
-        const libsupportPath = IarOsUtils.resolveTargetLibrary(launchArguments.workbenchPath, partialValues.target, "LibSupportEclipse");
-        if (libsupportPath !== undefined) {
-            partialValues.plugins.push(libsupportPath);
+        const libsupportUniversalPath = IarOsUtils.resolveTargetLibrary(launchArguments.workbenchPath, partialValues.target, "LibSupportUniversal");
+        // Older workbenches have a cspyserver-specific libsupport plugin
+        const libsupportEclipsePath = IarOsUtils.resolveTargetLibrary(launchArguments.workbenchPath, partialValues.target, "LibSupportEclipse");
+        if (libsupportUniversalPath !== undefined) {
+            logger.verbose("Using LibSupportUniversal");
+            partialValues.plugins.push(libsupportUniversalPath);
+        } else if (libsupportEclipsePath !== undefined) {
+            logger.verbose("Using LibSupportEclipse");
+            partialValues.plugins.push(libsupportEclipsePath);
         } else {
             // Don't abort here: we can still launch the session, but e.g. terminal i/o won't work
-            logger.error("LibSupportEclipse is missing from " + launchArguments.workbenchPath);
+            logger.error("Compatible LibSupport plugin is missing from " + launchArguments.workbenchPath);
         }
 
         // Do the work on the project path which may be an ewp-file or a directory.
