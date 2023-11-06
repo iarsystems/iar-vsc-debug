@@ -5,8 +5,8 @@
 	"publisher": "iarsystems",
 	"icon": "images/logo.png",
 	"galleryBanner": {
-		"color": "#ffe000",
-		"theme": "light"
+		"color": "#242424",
+		"theme": "dark"
 	},
 	"description": "Debug embedded applications using the IAR C-SPY debugger.",
 	"repository": {
