@@ -9,6 +9,7 @@ import { LocEtcDescriptor } from "./descriptors/locEtcDescriptor";
 import { LocOnlyDescriptor } from "./descriptors/locOnlyDescriptor";
 import { EmulDataBreakpointDescriptor } from "./descriptors/emulDataBreakpointDescriptor";
 import { LogDescriptor } from "./descriptors/logDescriptor";
+import { EmulDataBreakBreakpointDescriptor } from "./descriptors/emulDataBreakBreakpointDescriptor";
 
 /**
  * Creates code breakpoint descriptors. Does not registers them in the cspy backend.
@@ -105,6 +106,13 @@ export class EmulDataBreakpointDescriptorFactory extends DataBreakpointDescripto
 
     override createOnUle(ule: string, access: AccessType): LocOnlyDescriptor {
         return new EmulDataBreakpointDescriptor([BreakpointCategory.EMUL_DATA, ule, access]);
+    }
+}
+
+export class EmulDataBreakBreakpointDescriptorFactory extends DataBreakpointDescriptorFactory {
+
+    override createOnUle(ule: string, access: AccessType): LocOnlyDescriptor {
+        return new EmulDataBreakBreakpointDescriptor([BreakpointCategory.EMUL_DATA_BREAK, ule, access]);
     }
 }
 

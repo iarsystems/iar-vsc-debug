@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-import { CodeBreakpointDescriptorFactory, DataBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory, EmulDataBreakpointDescriptorFactory, HwCodeBreakpointDescriptorFactory, LogBreakpointDescriptorFactory, StdCode2BreakpointDescriptorFactory, StdData2BreakpointDescriptorFactory, StdLog2BreakpointDescriptorFactory, EmuHwCodeBreakpointDescriptorFactory, EmuSwCodeBreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
+import { CodeBreakpointDescriptorFactory, DataBreakpointDescriptorFactory, EmulCodeBreakpointDescriptorFactory, EmulDataBreakpointDescriptorFactory, HwCodeBreakpointDescriptorFactory, LogBreakpointDescriptorFactory, StdCode2BreakpointDescriptorFactory, StdData2BreakpointDescriptorFactory, StdLog2BreakpointDescriptorFactory, EmuHwCodeBreakpointDescriptorFactory, EmuSwCodeBreakpointDescriptorFactory, EmulDataBreakBreakpointDescriptorFactory } from "./breakpointDescriptorFactory";
 import { logger } from "@vscode/debugadapter/lib/logger";
 import { BreakpointType } from "./cspyBreakpointService";
 
@@ -118,7 +118,7 @@ class AvrEmuDriver implements CSpyDriver {
 
 class RxEmuDriver implements CSpyDriver {
     readonly codeBreakpointFactories: ReadonlyMap<BreakpointType, CodeBreakpointDescriptorFactory>;
-    readonly dataBreakpointFactory = new StdData2BreakpointDescriptorFactory();
+    readonly dataBreakpointFactory = new EmulDataBreakBreakpointDescriptorFactory();
     readonly logBreakpointFactory = new StdLog2BreakpointDescriptorFactory();
 
     constructor(public readonly libraryBaseNames: string[]) {

@@ -16,6 +16,7 @@ export enum BreakpointCategory {
     // Data breakpoints
     STD_DATA2 = "STD_DATA2",
     EMUL_DATA = "EMUL_DATA",
+    EMUL_DATA_BREAK = "EMUL_DATA_BREAK", //RX
     // Log breakpoints
     STD_LOG2 = "STD_LOG2",
 }
