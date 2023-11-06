@@ -6,6 +6,7 @@ import { LaunchArgumentConfigurationResolver } from "../../../src/dap/configreso
 import { CSpyLaunchRequestArguments } from "../../../src/dap/cspyDebug";
 import * as assert from "assert";
 import * as path from "path";
+import * as fs from "fs";
 import { OsUtils } from "iar-vsc-common/osUtils";
 import { TestUtils } from "../testUtils";
 import { BreakpointType } from "../../../src/dap/breakpoints/cspyBreakpointService";
@@ -75,8 +76,12 @@ suite("Configuration resolution tests", () => {
         await argRes.resolveLaunchArguments(cspyArgs).then((config)=>{
             assert.deepStrictEqual(config["projectName"], path.basename(existantDir), "Wrong project name");
             assert.deepStrictEqual(config["projectDir"], existantDir, "Wrong project directory");
+
             const plugins = config["plugins"];
-            assert.deepStrictEqual(plugins[plugins.length - 1], getLibName("armLibSupportEclipse"), "LibSupportEclipse is missing");
+            const hasLibsupportUniversal = fs.readdirSync(path.join(workbench, "arm/bin")).
+                some(file => /libsupportuniversal/i.test(file));
+            const libName = getLibName("armLib" + (hasLibsupportUniversal ? "supportUniversal" : "SupportEclipse"));
+            assert.deepStrictEqual(plugins[plugins.length - 1], libName, "LibSupport is missing");
         }, ()=>{
             assert.fail("Failed to resolve arguments");
         });
