@@ -113,7 +113,7 @@ export namespace ConfigResolutionCommon {
 
         // Remove libsupport plugin(s), since we use our own, and e.g armbat
         parts.plugins = parts.plugins.filter(plugin => {
-            return !/libsupport.(dll|so)$/.test(plugin) && !/bat.(dll|so)$/.test(plugin);
+            return !/libsupport\w*\.(dll|so)$/i.test(plugin) && !/bat.(dll|so)$/.test(plugin);
         });
         if (parts.plugins.length > 0) {
             config.plugins = parts.plugins.map(basename);
