@@ -2,7 +2,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import * as path from "path";
-import { OsUtils } from "iar-vsc-common/osUtils";
 import { runTestsIn} from "iar-vsc-common/testutils/testRunner";
 import { TestConfiguration } from "./suites/testConfiguration";
 
@@ -19,7 +18,7 @@ async function main() {
     console.log("------Running sim2 tests------");
     await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", {...cmdlineEnvs, ...armsimEnvs},
         undefined, label ? `${label}.Sim2` : "Sim2");
-    if (!doSmokeTests && OsUtils.OsType.Windows === OsUtils.detectOsType()) {
+    if (!doSmokeTests) {
         console.log("------Running imperas tests------");
         await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", {...cmdlineEnvs, ...armimperasEnvs},
             undefined, label ? `${label}.Imperas` : "Imperas");
