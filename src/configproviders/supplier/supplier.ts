@@ -101,7 +101,7 @@ export namespace CSpyConfigurationSupplier {
         try {
             const configs = await buildExtension.getProjectConfigurations(project);
             if (configs) {
-                result = await Promise.all(configs.map(async(conf) => {
+                const generated = await Promise.allSettled(configs.map(async(conf) => {
                     const cmds = await buildExtension.getCSpyCommandline(project, conf.name);
                     if (!cmds) {
                         throw new Error("Could not get C-SPY cmdline");
@@ -113,6 +113,13 @@ export namespace CSpyConfigurationSupplier {
                         workspaceFolder?.uri.fsPath,
                         workbenchPath);
                 }));
+                generated.forEach(res => {
+                    if (res.status === "fulfilled") {
+                        result.push(res.value);
+                    } else {
+                        logger.debug(`Failed to generate config from build extension: ` + res.reason);
+                    }
+                });
             }
         } catch (e) {
             logger.debug("Failed to generate config from build extension: " + e);
