@@ -121,7 +121,13 @@ export class CSpyRunControlService implements Disposable.Disposable {
                 this.expectedStoppingReason.set(i, "breakpoint");
             }
             return this.coresService.performOnAllCores(async() => {
-                await this.dbgr.service.multiGo(-1);
+                // 'go' has better compatibility with older EW versions, so
+                // prefer that if we don't need a 'multiGo' (VSC-436)
+                if (this.nCores === 1) {
+                    await this.dbgr.service.go();
+                } else {
+                    await this.dbgr.service.multiGo(-1);
+                }
             });
         }
     }
