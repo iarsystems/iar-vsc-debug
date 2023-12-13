@@ -18,21 +18,13 @@ import { spawn } from "child_process";
 // NOTE: These tests should be run with a release-flavored EW, otherwise they can take a lot of time
 debugAdapterSuite("SVD generator tests", function(dc, dbgConfig)  {
 
-    suiteSetup(() => {
-        // Find a workbench to build with
-        const installDirs = TestUtils.getEwPaths();
-        // For now just use the first entry, and assume it points directly to a top-level ew directory
-        const workbench = installDirs[0];
-        Assert(workbench, "No workbench found to use for debugging");
-    });
-
     test("Returns SVD for configured device", () => {
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfig()),
             dc().waitForEvent("stopped").then(async() => {
                 const svdResponse: CustomRequest.RegistersResponse = (await dc().customRequest(CustomRequest.Names.REGISTERS)).body;
-                if (TestConfiguration.getConfiguration().expectPeriphals) {
+                if (TestConfiguration.getConfiguration().registers.expectPeripherals) {
                     Assert(svdResponse.svdContent !== undefined);
                     Assert(svdResponse.svdContent.length > 0);
                 } else {
@@ -49,7 +41,7 @@ suite("Specific device SVD Tests", () => {
         console.log("\n==========================================================" + this.currentTest!.title + "==========================================================\n");
     });
     test("STM32F401CB", async function() {
-        if (JSON.stringify(TestConfiguration.getConfiguration()) !== JSON.stringify(TestConfiguration.ARMSIM2_CONFIG)
+        if (JSON.stringify(TestConfiguration.getConfiguration()) !== JSON.stringify(TestConfiguration.TEST_CONFIGURATIONS["armSim2"])
             || TestConfiguration.getConfiguration().smokeTestsOnly) {
             this.skip();
             return;
@@ -61,9 +53,7 @@ suite("Specific device SVD Tests", () => {
         const project = Path.join(projectDir, Path.basename(targetProject));
         const program = Path.join(Path.dirname(project), "Debug/Exe", Path.basename(project, ".ewp") + ".out");
 
-        const installDirs = TestUtils.getEwPaths();
-        // For now just use the first entry, and assume it points directly to a top-level ew directory
-        const workbench = installDirs[0];
+        const workbench = TestUtils.getEwPath();
         Assert(workbench, "No workbench found to use for debugging");
 
         TestUtils.buildProject(workbench, project, "Debug");

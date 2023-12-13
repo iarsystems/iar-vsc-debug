@@ -59,27 +59,32 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                 }
 
                 { // Check registers
+                    const regConfig = TestConfiguration.getConfiguration().registers;
                     const groups = (await dc().variablesRequest({variablesReference: scopes.body.scopes[2]!.variablesReference})).body.variables;
                     {
-                        const cpuRegisters = groups.find(group => group.name === "Current CPU Registers" && group.variablesReference > 0);
-                        Assert(cpuRegisters, "Found no register group called 'Current CPU Registers'");
+                        const cpuRegisters = groups.find(group => group.name === regConfig.cpuRegisters.groupName && group.variablesReference > 0);
+                        Assert(cpuRegisters, `Found no register group called '${regConfig.cpuRegisters.groupName}'`);
                         const cpuRegContents = await dc().variablesRequest({variablesReference: cpuRegisters.variablesReference});
 
                         const registers = cpuRegContents.body.variables;
-                        Assert(registers.some(reg => reg.name === "R4" || reg.name === "X4"));
-                        Assert(registers.some(reg => reg.name === "SP"));
-                        Assert(registers.some(reg => reg.name === "PC"));
-                        Assert(registers.some(reg => (reg.name === "APSR" || reg.name === "PSTATE") && reg.variablesReference > 0)); // Should be nested
+                        regConfig.cpuRegisters.registers.forEach(toFind => {
+                            const found = registers.find(reg => reg.name === toFind.name);
+                            Assert(found, `Found no register named ${toFind.name}`);
+                            Assert.strictEqual(found.variablesReference > 0, toFind.hasChildren, `For register: ${found.name}`);
+                        });
 
                     }
-                    if (TestConfiguration.getConfiguration().hasFPU) {
-                        const floatRegisters = groups.find(group => ["Floating-point Extension registers", "Floating-point registers"].includes(group.name) && group.variablesReference > 0);
-                        Assert(floatRegisters, `Found no register group called 'Floating-point Extension registers' or 'Floating-point registers', found '${groups.map(g => g.name).join(", ")}'`);
+                    if (regConfig.fpuRegisters) {
+                        const floatRegisters = groups.find(group => group.name === regConfig.fpuRegisters!.groupName && group.variablesReference > 0);
+                        Assert(floatRegisters, `Found no register group called '${regConfig.fpuRegisters.groupName}', found '${groups.map(g => g.name).join(", ")}'`);
                         const fpRegContents = await dc().variablesRequest({variablesReference: floatRegisters.variablesReference});
 
                         const registers = fpRegContents.body.variables;
-                        Assert(registers.some(reg => reg.name.toLowerCase() === "s6" && reg.variablesReference > 0)); // Should be nested
-                        Assert(registers.some(reg => reg.name.toLowerCase() === "d12"));
+                        regConfig.fpuRegisters.registers.forEach(toFind => {
+                            const found = registers.find(reg => reg.name === toFind.name);
+                            Assert(found, `Found no register named ${toFind.name}`);
+                            Assert.strictEqual(found.variablesReference > 0, toFind.hasChildren, `For register: ${found.name}`);
+                        });
                     }
                 }
             }),
@@ -313,41 +318,24 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
             dc().configurationSequence(),
             dc().launch(dbgConfig()),
             dc().waitForEvent("stopped").then(async() => {
+                const regConfig = TestConfiguration.getConfiguration().registers;
+
                 const stack = await dc().stackTraceRequest({ threadId: 0});
                 const scopes = await dc().scopesRequest({frameId: stack.body.stackFrames[0]!.id});
                 const registersScope = scopes.body.scopes[2]!;
                 const registerGroups = (await dc().variablesRequest({ variablesReference: registersScope.variablesReference })).body.variables;
-                const cpuRegisters = registerGroups.find(group => group.name === "Current CPU Registers");
+                const cpuRegisters = registerGroups.find(group => group.name === regConfig.cpuRegisters.groupName);
                 Assert(cpuRegisters);
 
-                const isAArch64 = registerGroups.some(group => group.name.startsWith("AArch64"));
-                // First set new values
-                const regName =  isAArch64 ? "X8" : "R8";
-                const regVal = isAArch64 ?  "0xDEADBEEFDEADBEEF" : "0xDEADBEEF";
+                // First set new value
+                const regName = regConfig.cpuRegisters.registers[0]!.name;
+                const regVal = regConfig.cpuRegisters.size === 64 ?  "0xDEADBEEFDEADBEEF" : "0xDEADBEEF";
                 dc().setVariableRequest({name: regName, value: regVal, variablesReference: cpuRegisters.variablesReference});
-                const statusRegName = isAArch64 ? "PSTATE" : "APSR";
-                {
-                    const regs = (await dc().variablesRequest({variablesReference: cpuRegisters.variablesReference})).body.variables;
-                    const statusReg = regs.find(reg => reg.name === statusRegName);
-                    Assert(statusReg !== undefined);
-                    Assert(statusReg.variablesReference > 0);
-                    const res = await dc().setVariableRequest({ name: "V", value: "0b1", variablesReference: statusReg.variablesReference});
-                    Assert.strictEqual(res.body.value, "1");
-                }
 
                 // Now check that the values changed
                 const regs = (await dc().variablesRequest({variablesReference: cpuRegisters.variablesReference})).body.variables;
                 Assert(regs.some(reg => reg.name === regName && reg.value.replace(/'/g, "") === regVal.toLowerCase()), JSON.stringify(regs));
-                {
-                    const statusReg = regs.find(reg => reg.name === statusRegName);
-                    Assert(statusReg !== undefined);
-                    Assert(statusReg.variablesReference > 0);
-                    const apsrContents = (await dc().variablesRequest({variablesReference: statusReg.variablesReference})).body.variables;
-                    const v = apsrContents.find(reg => reg.name === "V");
-                    Assert(v !== undefined);
-                    Assert.strictEqual(v.value, "1");
-                }
-            })
+            }),
         ]);
     });
 

@@ -53,10 +53,14 @@ async function main() {
             binaryPath: cspyArgs[2]!,
             sourceDir: cmdlineEnvs["source-dir"],
         },
-        expectPeriphals: true,
-        hasFPU: !cspyArgs.includes("--fpu=None"),
+        registers: {
+            ...TestConfiguration.TEST_CONFIGURATIONS["armSim2"]!.registers,
+        },
         dataBreakpointsAreUnreliable: true
     };
+    if (cspyArgs.includes("--fpu=None")) {
+        config.registers.fpuRegisters = undefined;
+    }
     const configEnvs = TestConfiguration.asEnvVars(config);
     await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", {...cmdlineEnvs, ...configEnvs}, undefined, "Sim2");
 }

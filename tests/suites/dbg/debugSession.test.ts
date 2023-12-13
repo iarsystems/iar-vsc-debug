@@ -1,7 +1,6 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-import * as Assert from "assert";
 import * as vscode from "vscode";
 import { TestUtils } from "../testUtils";
 
@@ -28,13 +27,7 @@ suite("New tests", () =>{
     });
 
     suiteSetup(() => {
-        // Find a workbench to build with
-        const installDirs = TestUtils.getEwPaths();
-        // For now just use the first entry, and assume it points directly to a top-level ew directory
-        const workbench = installDirs[0];
-        Assert(workbench, "No workbench found to use for debugging");
-
-        dbgConfig = TestUtils.doSetup(workbench);
+        dbgConfig = TestUtils.doSetup();
     });
 
     setup(async function() {

@@ -10,6 +10,7 @@ import { TestSandbox } from "iar-vsc-common/testutils/testSandbox";
 import { CSpyLaunchRequestArguments } from "../../src/dap/cspyDebug";
 import { TestConfiguration } from "./testConfiguration";
 import { DebugClient } from "@vscode/debugadapter-testsupport";
+import { Workbench } from "iar-vsc-common/workbench";
 
 /**
  *  Class contaning utility methods for the tests.
@@ -24,7 +25,9 @@ export namespace TestUtils {
      * * Builds the project
      * * Returns a launch config using the determined project and driver
      */
-    export function doSetup(workbenchPath: string): vscode.DebugConfiguration & CSpyLaunchRequestArguments {
+    export function doSetup(): vscode.DebugConfiguration & CSpyLaunchRequestArguments {
+        const workbench = getEwPath();
+        assert(workbench, "Found no workbench to build with");
         const parameters = TestConfiguration.getConfiguration();
 
         let program: string;
@@ -38,7 +41,7 @@ export namespace TestUtils {
             const project = Path.join(projectDir, Path.basename(targetProject));
             configuration = parameters.testProgram.projectConfiguration;
             program = Path.join(Path.dirname(project), configuration, "Exe", Path.basename(project, ".ewp") + ".out");
-            buildProject(workbenchPath, project, configuration);
+            buildProject(workbench, project, configuration);
         } else { // use a prebuilt binary
             projectDir = parameters.testProgram.sourceDir;
             program = parameters.testProgram.binaryPath;
@@ -53,14 +56,14 @@ export namespace TestUtils {
             projectPath: projectDir,
             projectConfiguration: configuration,
             program: program,
-            workbenchPath: workbenchPath,
+            workbenchPath: workbench,
             multicoreLockstepModeEnabled: true,
             trace: true,
         };
     }
 
     // Gets a list of paths to available ews, either from user settings or from an env variable set by the test runner
-    export function getEwPaths(): string[] {
+    function getEwPaths(): string[] {
         if (process.env["ewPaths"]) {
             return JSON.parse(process.env["ewPaths"]);
         }
@@ -69,6 +72,15 @@ export namespace TestUtils {
             return installDirs;
         }
         return [];
+    }
+
+    // Finds a workbench to test with, compatible with the current test configuration
+    export function getEwPath(): string | undefined {
+        const installDirs = getEwPaths();
+        const targetId = TestConfiguration.getConfiguration().debugConfiguration.target;
+        // Assumes each entry points directly to a top-level ew directory
+        return installDirs.find(wbPath =>
+            Workbench.create(wbPath)?.targetIds.includes(targetId));
     }
 
     export function assertCurrentLineIs(session: vscode.DebugSession, _path: string, line: number, column: number) {
