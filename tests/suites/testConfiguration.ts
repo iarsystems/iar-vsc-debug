@@ -151,10 +151,10 @@ export namespace TestConfiguration {
                     size: 32,
                 },
                 fpuRegisters: {
-                    groupName: "Floating-point registers",
+                    groupName: "Floating-point Extension registers",
                     registers: [
-                        { name: "s6", hasChildren: true },
-                        { name: "d12", hasChildren: false },
+                        { name: "S6", hasChildren: true },
+                        { name: "D12", hasChildren: true },
                     ],
                 },
             },
@@ -176,7 +176,7 @@ export namespace TestConfiguration {
                 cpuRegisters: {
                     groupName: "Current CPU Registers",
                     registers: [
-                        { name: "X4", hasChildren: false },
+                        { name: "X4", hasChildren: true },
                         { name: "SP", hasChildren: false },
                         { name: "PC", hasChildren: false },
                         { name: "PSTATE", hasChildren: true },
@@ -184,10 +184,10 @@ export namespace TestConfiguration {
                     size: 64,
                 },
                 fpuRegisters: {
-                    groupName: "Floating-point Extension registers",
+                    groupName: "Floating-point registers",
                     registers: [
                         { name: "s6", hasChildren: true },
-                        { name: "d12", hasChildren: false },
+                        { name: "d12", hasChildren: true },
                     ],
                 },
             },
