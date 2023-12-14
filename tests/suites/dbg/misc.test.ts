@@ -72,8 +72,8 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
-            // The name of the frame is *usually* __exit_0, but it varies between devices
-            TestUtils.assertStoppedLocation(dc(), "exit", 0, undefined, /__exit|__iar_get_ttio_0/),
+            // The name of the frame is *usually* __exit_0, but it varies between devices and targets
+            TestUtils.assertStoppedLocation(dc(), "exit", 0, undefined, /__exit|__iar_get_ttio_0|__DebugBreak/),
         ]);
     });
 

@@ -6,23 +6,25 @@ import { runTestsIn} from "iar-vsc-common/testutils/testRunner";
 import { TestConfiguration } from "./suites/testConfiguration";
 
 async function main() {
-    const armsimEnvs = TestConfiguration.asEnvVars(TestConfiguration.ARMSIM2_CONFIG);
-    const armimperasEnvs = TestConfiguration.asEnvVars(TestConfiguration.ARMIMPERAS_CONFIG);
-    const cmdlineEnvs = getEnvs();
-    const doSmokeTests = !!cmdlineEnvs["smoke-tests"];
-    const label = cmdlineEnvs["label"];
-    // Configuration tests are not driver-dependent, so running it with only one config is fine
-    await runTestsIn(path.resolve(__dirname), "../../", "./suites/config/index", {...cmdlineEnvs, ...armsimEnvs}, "../../tests/TestProjects/ConfigTests");
+    const envs = getEnvs();
 
-    // Run debugger tests with both 32-bit and 64-bit simulator
-    console.log("------Running sim2 tests------");
-    await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", {...cmdlineEnvs, ...armsimEnvs},
-        undefined, label ? `${label}.Sim2` : "Sim2");
-    if (!doSmokeTests) {
-        console.log("------Running imperas tests------");
-        await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", {...cmdlineEnvs, ...armimperasEnvs},
-            undefined, label ? `${label}.Imperas` : "Imperas");
+    const testConfigurationName = envs["test-configuration"];
+    if (testConfigurationName) {
+        envs[TestConfiguration.ENV_KEY_NAME] = testConfigurationName;
+        if (TestConfiguration.TEST_CONFIGURATIONS[testConfigurationName]) {
+            TestConfiguration.setParameters(TestConfiguration.TEST_CONFIGURATIONS[testConfigurationName]!);
+        }
     }
+    const label = envs["label"];
+    const suite = envs["suite"];
+    if (suite === "configuration") {
+        await runTestsIn(path.resolve(__dirname), "../../", "./suites/config/index", envs,
+            "../../tests/TestProjects/ConfigTests", label);
+    } else if (suite === "debugger") {
+        await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", envs,
+            undefined, label);
+    }
+
 }
 
 /**

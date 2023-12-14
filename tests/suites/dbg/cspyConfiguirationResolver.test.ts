@@ -10,6 +10,7 @@ import * as fs from "fs";
 import { OsUtils } from "iar-vsc-common/osUtils";
 import { TestUtils } from "../testUtils";
 import { BreakpointType } from "../../../src/dap/breakpoints/cspyBreakpointService";
+import { TestConfiguration } from "../testConfiguration";
 
 suite("Configuration resolution tests", () => {
 
@@ -33,12 +34,13 @@ suite("Configuration resolution tests", () => {
         return path.join(workbench, cspyArgs["target"], "bin", libname);
     }
 
-    suiteSetup(() => {
-        // Find a workbench to build with
-        const installDirs = TestUtils.getEwPaths();
-        assert(installDirs[0], "No workbench found to use for debugging");
-        // For now just use the first entry, and assume it points directly to a top-level ew directory
-        workbench = installDirs[0];
+    suiteSetup(function() {
+        if (TestConfiguration.getConfiguration().debugConfiguration.target !== "arm") {
+            this.skip();
+        }
+        const installDir = TestUtils.getEwPath();
+        assert(installDir, "No workbench found to use for debugging");
+        workbench = installDir;
     });
 
     setup(()=>{
