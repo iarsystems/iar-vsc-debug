@@ -141,7 +141,7 @@ export class CspyDisassemblyService implements Disposable.Disposable {
                     const addressStr = "0x" + dloc.location.address.toOctetString();
                     // Picks out all interesting parts of a disasm instruction. Adapted from the corresponding eclipse code.
                     // label(s) (group #1), address (group #4), opcodes (group #5), instruction (group #7)
-                    const instrMatch = instr.match(/(((.+):\n)*)\s*([\w|']+):\s+((0x[\w|']+\s+)*)([\s\S]*)/m);
+                    const instrMatch = instr.match(/^\s*(((.+):\n)*)\s*([\w|']+):?\s+(((?:0x)?[0-9a-fA-F']+\s)*)([\s\S]*)/m);
                     if (instrMatch === null || instrMatch[7] === undefined) {
                         logger.error("Failed to parse instruction: " + instr);
                         return [{
@@ -151,8 +151,13 @@ export class CspyDisassemblyService implements Disposable.Disposable {
                     }
                     try {
                         // Skip instruction if address is invalid (eclipse does this)
-                        BigInt(instrMatch[4]?.replace("'", "") ?? "error");
+                        let addrMatch = instrMatch[4];
+                        if (!addrMatch?.startsWith("0x")) {
+                            addrMatch = "0x" + addrMatch;
+                        }
+                        BigInt(addrMatch.replace("'", ""));
                     } catch {
+                        logger.error("Invalid address for " + instr);
                         return [];
                     }
 
@@ -169,7 +174,7 @@ export class CspyDisassemblyService implements Disposable.Disposable {
 
                     // The actual instruction
                     const di: DebugProtocol.DisassembledInstruction = {
-                        instruction: instrMatch[7],
+                        instruction: instrMatch[7].trim(),
                         address: addressStr,
                         instructionBytes: instrMatch[5]?.trim()
                     };
