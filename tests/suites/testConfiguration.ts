@@ -229,5 +229,46 @@ export namespace TestConfiguration {
             },
             dataBreakpointsAreUnreliable: false,
         },
+        rh850Sim: {
+            debugConfiguration: {
+                target: "rh850",
+                driver: "Simulator",
+                driverOptions: [
+                    "--core",
+                    "g3m",
+                    "-p",
+                    "$TOOLKIT_DIR$/config/debugger/iorh850_g3m.ddf",
+                    "--double=64",
+                    "-d",
+                    "sim",
+                    "--multicore_nr_of_cores=1",
+                ],
+            },
+            testProgram: {
+                project: Path.join(__dirname, "../../../tests/TestProjects/GettingStarted/rh850.ewp"),
+                projectConfiguration: "Debug",
+                variant: "doBuild",
+            },
+            registers: {
+                expectPeripherals: true,
+                cpuRegisters: {
+                    groupName: "CPU registers",
+                    registers: [
+                        { name: "R1", hasChildren: false },
+                        { name: "PC", hasChildren: false },
+                        { name: "PSW", hasChildren: true },
+                    ],
+                    size: 32,
+                },
+                fpuRegisters: {
+                    groupName: "FPU registers",
+                    registers: [
+                        { name: "FPSR", hasChildren: true },
+                        { name: "FPEPC", hasChildren: false },
+                    ],
+                },
+            },
+            dataBreakpointsAreUnreliable: false,
+        },
     };
 }
