@@ -129,7 +129,7 @@ export namespace TestConfiguration {
                     "--device=Zynq 7020",
                     "--semihosting",
                     "-p",
-                    "$TOOLKIT_DIR$/config/debugger/Xilinx/Zynq 7020.ddf",
+                    "$TOOLKIT_DIR$/config/debugger/AMD/Zynq 7020.ddf",
                 ],
             },
             testProgram: {
