@@ -9,13 +9,15 @@ import DbuTimelineChannelAvailableNotification = ttypes.DbuTimelineChannelAvaila
 import DbuTimelineChannelRemovedNotification = ttypes.DbuTimelineChannelRemovedNotification
 import DbuTimelineCpuClockChangedNotification = ttypes.DbuTimelineCpuClockChangedNotification
 import DbuTimelineEnablementChangedNotification = ttypes.DbuTimelineEnablementChangedNotification
+import * as TimelineFrontend from "iar-vsc-common/thrift/bindings/TimelineFrontend";
+import { ThriftServiceHandler } from "iar-vsc-common/thrift/thriftUtils";
 
 /**
  * A mock implementation of the timeline window frontend service, which simply discards any messages received.
  * This is needed because some versions of cspyserver become extremely slow to set up sessions when no timeline
  * frontend is available (see VSC-309).
  */
-export class TimelineFrontendHandler {
+export class TimelineFrontendHandler implements ThriftServiceHandler<TimelineFrontend.Client> {
     dataAvailable(_note: DbuTimelineDataAvailableNotification, _partnerNamespace: string): Q.Promise<void> {
         return Q.resolve();
     }

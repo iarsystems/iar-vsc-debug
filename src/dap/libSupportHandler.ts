@@ -4,12 +4,14 @@
 
 
 import { logger } from "@vscode/debugadapter/lib/logger";
+import * as LibSupportService2 from "iar-vsc-common/thrift/bindings/LibSupportService2";
+import { ThriftServiceHandler } from "iar-vsc-common/thrift/thriftUtils";
 import * as Q from "q";
 
 /**
  * Implements the LibSupport thrift service.
  */
-export class LibSupportHandler {
+export class LibSupportHandler implements ThriftServiceHandler<LibSupportService2.Client> {
     private readonly outputCallbacks: Array<(data: string) => void> = [];
     private readonly exitCallbacks: Array<(code: number) => void> = [];
 
@@ -113,5 +115,14 @@ export class LibSupportHandler {
     reportAssert(_file: string, _line: string, _message: string): Q.Promise<void> {
         // No need to implement this for now, since it triggers a logevent anyway
         return Q.resolve();
+    }
+
+    requestInput(_len: number): Q.Promise<string> {
+        //ignored
+        return Q.reject("Not supported");
+    }
+    printOutput(_data: string) {
+        //ignored
+        return Q.resolve<void>();
     }
 }

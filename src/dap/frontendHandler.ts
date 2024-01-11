@@ -5,13 +5,16 @@
 
 import * as Thrift from "thrift";
 import * as Path from "path";
-import * as Frontend from "iar-vsc-common/thrift/bindings/frontend_types";
+import * as FrontendTypes from "iar-vsc-common/thrift/bindings/frontend_types";
+import * as Frontend from "iar-vsc-common/thrift/bindings/Frontend";
 import { SourceLocation } from "iar-vsc-common/thrift/bindings/shared_types";
 import * as Q from "q";
 import { CustomEvent, CustomRequest } from "./customRequest";
 import { Event, logger } from "@vscode/debugadapter";
 import { CommandRegistry } from "./commandRegistry";
 import {DapEventSink, Utils} from "./utils";
+import { ThriftServiceHandler } from "iar-vsc-common/thrift/thriftUtils";
+import { ColorSchema } from "iar-vsc-common/thrift/bindings/themes_types";
 
 /**
  * A (handler for a) thrift service that provides various types dialogs to C-SPY. These may be used e.g. to display
@@ -20,11 +23,11 @@ import {DapEventSink, Utils} from "./utils";
  * This is communicated to the DAP client (i.e. VS Code) using custom DAP events and requests, with numeric id:s to
  * identify each dialog instance.
  */
-export class FrontendHandler {
+export class FrontendHandler implements ThriftServiceHandler<Frontend.Client> {
     private nextId = 0;
 
     // Stores promise resolution functions for open UI elements
-    private readonly openMessageBoxes: Map<number, (result: Frontend.MsgResult) => void> = new Map();
+    private readonly openMessageBoxes: Map<number, (result: FrontendTypes.MsgResult) => void> = new Map();
     private readonly openOpenDialogs: Map<number, (paths: string[]) => void> = new Map();
     private readonly openSaveDialogs: Map<number, (paths: string[]) => void> = new Map();
     private readonly openElementSelectionDialogs: Map<number, (choice: number) => void> = new Map();
@@ -76,7 +79,7 @@ export class FrontendHandler {
             });
     }
 
-    messageBox(msg: string, caption: string, icon: Frontend.MsgIcon, kind: Frontend.MsgKind, _dontAskMgrKey: string): Q.Promise<Frontend.MsgResult> {
+    messageBox(msg: string, caption: string, icon: FrontendTypes.MsgIcon, kind: FrontendTypes.MsgKind, _dontAskMgrKey: string): Q.Promise<FrontendTypes.MsgResult> {
         const id = this.nextId++;
         return Q.Promise((resolve, _) => {
             this.openMessageBoxes.set(id, resolve);
@@ -91,13 +94,13 @@ export class FrontendHandler {
         });
     }
 
-    messageBoxAsync(msg: string, caption: string, icon: Frontend.MsgIcon, _dontAskMgrKey: string): Q.Promise<void> {
+    messageBoxAsync(msg: string, caption: string, icon: FrontendTypes.MsgIcon, _dontAskMgrKey: string): Q.Promise<void> {
         const id = this.nextId++;
         const body: CustomEvent.MessageBoxCreatedData = {
             id,
             title: caption || "C-SPY Debugger",
             message: msg,
-            kind: Frontend.MsgKind.kMsgOk,
+            kind: FrontendTypes.MsgKind.kMsgOk,
             icon,
         };
         this.eventSink.sendEvent(new Event(CustomEvent.Names.MESSAGE_BOX_CREATED, body));
@@ -150,18 +153,18 @@ export class FrontendHandler {
         });
     }
 
-    openIHostFileDialog(title: string, type: Frontend.FileDialogType, returnType: Frontend.FileDialogReturnType, filters: Frontend.FileDialogFilter[], options: Frontend.FileDialogOptions[], startdir: string, defaultName: string): Q.Promise<string[]> {
+    openIHostFileDialog(title: string, type: FrontendTypes.FileDialogType, returnType: FrontendTypes.FileDialogReturnType, filters: FrontendTypes.FileDialogFilter[], options: FrontendTypes.FileDialogOptions[], startdir: string, defaultName: string): Q.Promise<string[]> {
         // Redirect directory queries to the directory dialog.
-        if (returnType === Frontend.FileDialogReturnType.kDirectory) {
-            return this.openDirectoryDialog(title, options.includes(Frontend.FileDialogOptions.kPathMustExist), startdir);
+        if (returnType === FrontendTypes.FileDialogReturnType.kDirectory) {
+            return this.openDirectoryDialog(title, options.includes(FrontendTypes.FileDialogOptions.kPathMustExist), startdir);
         }
 
         // Generate the windows style filter.
         const windowsFilter = Utils.createFilterString(filters);
 
-        if (type === Frontend.FileDialogType.kOpen) {
-            const allowMultipleFiles = returnType === Frontend.FileDialogReturnType.kExistingFiles;
-            return this.openFileDialog(title, startdir, windowsFilter, allowMultipleFiles, options.includes(Frontend.FileDialogOptions.kFileMustExist));
+        if (type === FrontendTypes.FileDialogType.kOpen) {
+            const allowMultipleFiles = returnType === FrontendTypes.FileDialogReturnType.kExistingFiles;
+            return this.openFileDialog(title, startdir, windowsFilter, allowMultipleFiles, options.includes(FrontendTypes.FileDialogOptions.kFileMustExist));
         }
 
         return this.openSaveDialog(title, defaultName, "", startdir, windowsFilter);
@@ -255,5 +258,9 @@ export class FrontendHandler {
 
     openFileExplorer(_filePath: string): Q.Promise<void> {
         return Q.resolve();
+    }
+
+    getActiveTheme(): Q.Promise<{ [k: number]: ColorSchema }> {
+        return Q.resolve({});
     }
 }

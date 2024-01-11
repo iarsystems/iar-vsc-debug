@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import { DebugEvent, LogEvent, InspectionContextChangedEvent, BaseContextChangedEvent, DkNotifyConstant } from "iar-vsc-common/thrift/bindings/cspy_types";
+import { ThriftServiceHandler } from "iar-vsc-common/thrift/thriftUtils";
+import * as DebugEventListener from "iar-vsc-common/thrift/bindings/DebugEventListener";
 import * as Q from "q";
 
 type EventCallback<T> = (event: T) => void;
@@ -10,7 +12,7 @@ type EventCallback<T> = (event: T) => void;
  * Implements the DebugEventListener thrift service,
  * and provides ways for others to listen for specific events
  */
-export class DebugEventListenerHandler {
+export class DebugEventListenerHandler implements ThriftServiceHandler<DebugEventListener.Client> {
     private readonly debugEventCallbacks: Map<DkNotifyConstant, EventCallback<DebugEvent>[]> = new Map();
     private readonly logEventCallbacks: EventCallback<LogEvent>[] = [];
 
