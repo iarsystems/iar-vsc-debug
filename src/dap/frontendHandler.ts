@@ -261,6 +261,6 @@ export class FrontendHandler implements ThriftServiceHandler<Frontend.Client> {
     }
 
     getActiveTheme(): Q.Promise<{ [k: number]: ColorSchema }> {
-        return Q.resolve({});
+        return Q.reject(new Error("Not supported"));
     }
 }
