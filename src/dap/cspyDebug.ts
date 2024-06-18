@@ -11,7 +11,7 @@ import * as LibSupportService2 from "iar-vsc-common/thrift/bindings/LibSupportSe
 import * as Frontend from "iar-vsc-common/thrift/bindings/Frontend";
 import * as TimelineFrontend from "iar-vsc-common/thrift/bindings/TimelineFrontend";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
-import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, SessionConfiguration, ModuleLoadingOptions } from "iar-vsc-common/thrift/bindings/cspy_types";
+import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, SessionConfiguration, ModuleLoadingOptions, DkNotifyConstant } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
 import { CSpyContextService } from "./contexts/cspyContextService";
 import { BreakpointType, CSpyBreakpointService } from "./breakpoints/cspyBreakpointService";
@@ -247,6 +247,14 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 }
                 this.sendEvent(new OutputEvent(event.text));
             });
+            this.cspyEventHandler.observeDebugEvents(DkNotifyConstant.kDkFatalError, async() => {
+                await this.endSession();
+                this.sendEvent(new TerminatedEvent());
+            });
+            this.cspyEventHandler.observeDebugEvents(DkNotifyConstant.kDkSilentFatalError, async() => {
+                await this.endSession();
+                this.sendEvent(new TerminatedEvent());
+            });
 
             this.libSupportHandler.observeOutput(data => {
                 this.sendEvent(new OutputEvent(data, "stdout"));
@@ -261,6 +269,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             serviceManager.startService(LIBSUPPORT_SERVICE, LibSupportService2, this.libSupportHandler);
 
             const frontendHandler = new FrontendHandler(this, args.sourceFileMap ?? {}, this.customRequestRegistry);
+            this.teardown.pushDisposable(frontendHandler);
             serviceManager.startService(FRONTEND_SERVICE, Frontend, frontendHandler);
             const timelineFrontendHandler = new TimelineFrontendHandler();
             serviceManager.startService(TIMELINE_FRONTEND_SERVICE, TimelineFrontend, timelineFrontendHandler);
@@ -369,6 +378,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.teardown.pushFunction(() => this.services = undefined);
 
         } catch (e) {
+            await this.endSession();
             response.success = false;
             if (typeof e === "string" || e instanceof Error) {
                 response.message = e.toString();
@@ -377,7 +387,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 response.message += ` (${e.culprit})`;
             }
             this.sendResponse(response);
-            await this.endSession();
             return;
         }
 
