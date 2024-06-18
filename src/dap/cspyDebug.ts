@@ -11,7 +11,7 @@ import * as LibSupportService2 from "iar-vsc-common/thrift/bindings/LibSupportSe
 import * as Frontend from "iar-vsc-common/thrift/bindings/Frontend";
 import * as TimelineFrontend from "iar-vsc-common/thrift/bindings/TimelineFrontend";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
-import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, SessionConfiguration, ModuleLoadingOptions } from "iar-vsc-common/thrift/bindings/cspy_types";
+import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, SessionConfiguration, ModuleLoadingOptions, DkNotifyConstant } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
 import { CSpyContextService } from "./contexts/cspyContextService";
 import { BreakpointType, CSpyBreakpointService } from "./breakpoints/cspyBreakpointService";
@@ -246,6 +246,14 @@ export class CSpyDebugSession extends LoggingDebugSession {
                     event.text += "\n";
                 }
                 this.sendEvent(new OutputEvent(event.text));
+            });
+            this.cspyEventHandler.observeDebugEvents(DkNotifyConstant.kDkFatalError, async() => {
+                await this.endSession();
+                this.sendEvent(new TerminatedEvent());
+            });
+            this.cspyEventHandler.observeDebugEvents(DkNotifyConstant.kDkSilentFatalError, async() => {
+                await this.endSession();
+                this.sendEvent(new TerminatedEvent());
             });
 
             this.libSupportHandler.observeOutput(data => {
