@@ -269,6 +269,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             serviceManager.startService(LIBSUPPORT_SERVICE, LibSupportService2, this.libSupportHandler);
 
             const frontendHandler = new FrontendHandler(this, args.sourceFileMap ?? {}, this.customRequestRegistry);
+            this.teardown.pushDisposable(frontendHandler);
             serviceManager.startService(FRONTEND_SERVICE, Frontend, frontendHandler);
             const timelineFrontendHandler = new TimelineFrontendHandler();
             serviceManager.startService(TIMELINE_FRONTEND_SERVICE, TimelineFrontend, timelineFrontendHandler);
@@ -377,6 +378,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.teardown.pushFunction(() => this.services = undefined);
 
         } catch (e) {
+            await this.endSession();
             response.success = false;
             if (typeof e === "string" || e instanceof Error) {
                 response.message = e.toString();
@@ -385,7 +387,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 response.message += ` (${e.culprit})`;
             }
             this.sendResponse(response);
-            await this.endSession();
             return;
         }
 

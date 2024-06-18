@@ -12,7 +12,7 @@ import * as Q from "q";
 import { CustomEvent, CustomRequest } from "./customRequest";
 import { Event, logger } from "@vscode/debugadapter";
 import { CommandRegistry } from "./commandRegistry";
-import {DapEventSink, Utils} from "./utils";
+import {DapEventSink, Disposable, Utils} from "./utils";
 import { ThriftServiceHandler } from "iar-vsc-common/thrift/thriftUtils";
 import { ColorSchema } from "iar-vsc-common/thrift/bindings/themes_types";
 
@@ -23,7 +23,7 @@ import { ColorSchema } from "iar-vsc-common/thrift/bindings/themes_types";
  * This is communicated to the DAP client (i.e. VS Code) using custom DAP events and requests, with numeric id:s to
  * identify each dialog instance.
  */
-export class FrontendHandler implements ThriftServiceHandler<Frontend.Client> {
+export class FrontendHandler implements ThriftServiceHandler<Frontend.Client>, Disposable.Disposable {
     private nextId = 0;
 
     // Stores promise resolution functions for open UI elements
@@ -77,6 +77,16 @@ export class FrontendHandler implements ThriftServiceHandler<Frontend.Client> {
                 this.openMultiElementSelectionDialogs.get(args.id)?.(args.selectedIndices);
                 this.openMultiElementSelectionDialogs.delete(args.id);
             });
+    }
+
+    dispose(): void | Promise<void> {
+        // If we abort the session e.g. in the middle of a download, we may have
+        // open progress bars that should be closed
+        for (const progressBar of this.openProgressBars.keys()) {
+            const body: CustomEvent.ProgressBarClosedData = { id: progressBar };
+            this.eventSink.sendEvent(new Event(CustomEvent.Names.PROGRESS_BAR_CLOSED, body));
+        }
+        this.openProgressBars.clear();
     }
 
     messageBox(msg: string, caption: string, icon: FrontendTypes.MsgIcon, kind: FrontendTypes.MsgKind, _dontAskMgrKey: string): Q.Promise<FrontendTypes.MsgResult> {
