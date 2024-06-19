@@ -34,8 +34,9 @@ export function activate(context: vscode.ExtensionContext) {
     BreakpointTypesFrontend.initialize(context, sessionTracker);
 
     // Generate and locate an svd for the session, so that the register view is populated
-    vscode.debug.onDidStartDebugSession(async(session) => {
-        if (session.type === "cspy") {
+    vscode.debug.onDidChangeActiveDebugSession(async(session) => {
+        if (session?.type === "cspy") {
+
             const ext = vscode.extensions.getExtension("ms-vscode.vscode-embedded-tools");
             if (!ext) {
                 return;
