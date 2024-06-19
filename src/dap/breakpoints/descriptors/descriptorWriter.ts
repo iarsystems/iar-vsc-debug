@@ -30,14 +30,14 @@ export class DescriptorWriter {
         str = str.replace(/%/g, "%%");
 
         // Double quotes and other special characters
-        str = str.replace("\x07", "%a");// "\a", bell
-        str = str.replace("\b", "%b");
-        str = str.replace("\f", "%f");
-        str = str.replace("\n", "%n");
-        str = str.replace("\r", "%r");
-        str = str.replace("\t", "%t");
-        str = str.replace("\u000b", "%v");// "\v", vertical tab
-        str = str.replace("\"", "%\"");
+        str = str.replace(/\cG/g, "%a");// "\a", bell
+        str = str.replace(/[\b]/g, "%b");
+        str = str.replace(/\f/g, "%f");
+        str = str.replace(/\n/g, "%n");
+        str = str.replace(/\r/g, "%r");
+        str = str.replace(/\t/g, "%t");
+        str = str.replace(/\v/g, "%v");// "\v", vertical tab
+        str = str.replace(/"/g, "%\"");
 
         // A percent at the end produces an extra space. This is to avoid
         // "escaping" the closing quote of the string as a special char.
