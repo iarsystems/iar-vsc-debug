@@ -24,10 +24,6 @@
         "noUncheckedIndexedAccess": true, /* Add 'undefined' to the type returned from indexed accesses */
         "isolatedModules": true, /* Recommended when using bundlers */
     },
-    "include": [
-        "src/**/*",
-        "tests/**/*"
-    ],
     "exclude": [
         "out/**/*",
         "node_modules",
