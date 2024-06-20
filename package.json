@@ -188,6 +188,16 @@
 				}
 			}
 		],
+		"views": {
+			"debug": [
+				{
+					"id": "iar-live-watch",
+					"name": "Live Watch",
+					"type": "webview",
+					"when": "debugType == cspy"
+				}
+			]
+		},
 		"breakpoints": [
 			{
 				"language": "c"

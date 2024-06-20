@@ -1,4 +1,38 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-export {};
+
+import { ExtensionMessage, RenderParameters, ViewMessage } from "./protocol";
+
+const vscode = acquireVsCodeApi<RenderParameters>();
+
+window.addEventListener("load", main);
+
+function postMessage(msg: ViewMessage) {
+    vscode.postMessage(msg);
+}
+
+function main() {
+    const appElement = document.getElementById("app");
+    if (!appElement) {
+        return;
+    }
+
+    appElement.textContent = "Loaded!";
+
+    window.addEventListener("message", event => {
+        const message: ExtensionMessage = event.data;
+        switch (message.subject) {
+        case "render":
+            console.log(message.params);
+            break;
+        default:
+        {
+            // Checks that all subject variants are handled
+            const _exhaustiveCheck: never = message.subject;
+            throw _exhaustiveCheck;
+        }
+        }
+    });
+    postMessage({ subject: "loaded" });
+}
