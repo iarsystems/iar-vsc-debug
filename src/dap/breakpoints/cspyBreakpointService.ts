@@ -345,24 +345,24 @@ export class CSpyBreakpointService implements Disposable.Disposable {
 
     private static dapAccessTypeToThriftAccessType(dapAccessType: DebugProtocol.DataBreakpointAccessType): AccessType {
         switch (dapAccessType) {
-        case "read":
-            return AccessType.Read;
-        case "write":
-            return AccessType.Write;
-        case "readWrite":
-            return AccessType.ReadWrite;
+            case "read":
+                return AccessType.Read;
+            case "write":
+                return AccessType.Write;
+            case "readWrite":
+                return AccessType.ReadWrite;
         }
         logger.warn("Dap to cspy access mapping is not exhaustive!");
         return AccessType.ReadWrite;
     }
     private static thriftAccessTypeToDapAccessType(thriftAccessType: AccessType): DebugProtocol.DataBreakpointAccessType {
         switch (thriftAccessType) {
-        case AccessType.Read:
-            return "read";
-        case AccessType.Write:
-            return "write";
-        case AccessType.ReadWrite:
-            return "readWrite";
+            case AccessType.Read:
+                return "read";
+            case AccessType.Write:
+                return "write";
+            case AccessType.ReadWrite:
+                return "readWrite";
         }
         logger.warn("Cspy to dap access mapping is not exhaustive!");
         return "readWrite";

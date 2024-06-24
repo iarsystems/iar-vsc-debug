@@ -47,139 +47,231 @@ class DialogServiceInstance implements vscode.Disposable {
 
     async handleEvent(ev: vscode.DebugSessionCustomEvent) {
         switch (ev.event) {
-        case CustomEvent.Names.MESSAGE_BOX_CREATED: {
-            const body = ev.body as CustomEvent.MessageBoxCreatedData;
-            let options = [];
-            switch (body.kind) {
-            case MsgKind.kMsgOk:
-                options = [this.OPTION_OK];
-                break;
-            case MsgKind.kMsgOkCancel:
-                options = [this.OPTION_OK, this.OPTION_CANCEL];
-                break;
-            case MsgKind.kMsgYesNo:
-                options = [this.OPTION_YES, this.OPTION_NO];
-                break;
-            case MsgKind.kMsgYesNoCancel:
-                options = [this.OPTION_YES, this.OPTION_NO, this.OPTION_CANCEL];
-                break;
-            }
-            options = options.map(opt => {
-                return { title: opt, isCloseAffordance: false };
-            });
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            options[options.length - 1]!.isCloseAffordance = true;
-            let result: vscode.MessageItem | undefined = undefined;
-            switch (body.icon) {
-            case MsgIcon.kMsgIconInfo:
-            case MsgIcon.kMsgIconQuestion:
-                result = await vscode.window.showInformationMessage(body.title, { modal: true, detail: body.message }, ...options);
-                break;
-            case MsgIcon.kMsgIconExclaim:
-                result = await vscode.window.showWarningMessage(body.title, { modal: true, detail: body.message }, ...options);
-                break;
-            case MsgIcon.kMsgIconStop:
-            default:
-                result = await vscode.window.showErrorMessage(body.title, { modal: true, detail: body.message }, ...options);
-                break;
-            }
-            const resultEnum = this.OPTIONS_MAP[result?.title ?? ""] ?? MsgResult.kMsgResCancel;
-            const args: CustomRequest.MessageBoxClosedArgs = { id: body.id, result: resultEnum };
-            ev.session.customRequest(CustomRequest.Names.MESSAGE_BOX_CLOSED, args);
-            break;
-        }
-        case CustomEvent.Names.OPEN_DIALOG_CREATED: {
-            const body = ev.body as CustomEvent.OpenDialogCreatedData;
-            const result = await vscode.window.showOpenDialog({
-                title: body.title,
-                defaultUri: vscode.Uri.file(body.startDir),
-                canSelectFiles: body.type === "files",
-                canSelectFolders: body.type === "folder",
-                canSelectMany: body.allowMultiple,
-                filters: DialogServiceInstance.convertFilterToVsCodeFormat(body.filter),
-            }) ?? [];
-            const args: CustomRequest.OpenDialogClosedArgs = { id: body.id, paths: result.map(uri => uri.fsPath) };
-            ev.session.customRequest(CustomRequest.Names.OPEN_DIALOG_CLOSED, args);
-            break;
-        }
-        case CustomEvent.Names.SAVE_DIALOG_CREATED: {
-            const body = ev.body as CustomEvent.SaveDialogCreatedData;
-            const result = await vscode.window.showSaveDialog({
-                title: body.title,
-                defaultUri: vscode.Uri.file(body.startPath),
-                filters: DialogServiceInstance.convertFilterToVsCodeFormat(body.filter),
-            });
-            const args: CustomRequest.SaveDialogClosedArgs = { id: body.id, path: result?.fsPath };
-            ev.session.customRequest(CustomRequest.Names.SAVE_DIALOG_CLOSED, args);
-            break;
-        }
-        case CustomEvent.Names.PROGRESS_BAR_CREATED: {
-            const body = ev.body as CustomEvent.ProgressBarCreatedData;
-            vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: body.title, cancellable: body.canCancel }, (progress, cancelToken) => {
-                return new Promise<void>((resolve, _) => {
-                    progress.report({ message: body.initialMessage });
-                    cancelToken.onCancellationRequested(() => {
-                        const args: CustomRequest.ProgressBarCanceledArgs = { id: body.id };
-                        ev.session.customRequest(CustomRequest.Names.PROGRESS_BAR_CANCELED, args);
-                    });
-                    this.progressBars.set(body.id,
-                        {
-                            close: resolve,
-                            progress: progress,
-                            message: body.initialMessage,
-                            lastValue: body.minValue,
-                            valueRange: body.valueRange,
-                        });
+            case CustomEvent.Names.MESSAGE_BOX_CREATED: {
+                const body = ev.body as CustomEvent.MessageBoxCreatedData;
+                let options = [];
+                switch (body.kind) {
+                    case MsgKind.kMsgOk:
+                        options = [this.OPTION_OK];
+                        break;
+                    case MsgKind.kMsgOkCancel:
+                        options = [this.OPTION_OK, this.OPTION_CANCEL];
+                        break;
+                    case MsgKind.kMsgYesNo:
+                        options = [this.OPTION_YES, this.OPTION_NO];
+                        break;
+                    case MsgKind.kMsgYesNoCancel:
+                        options = [
+                            this.OPTION_YES,
+                            this.OPTION_NO,
+                            this.OPTION_CANCEL,
+                        ];
+                        break;
+                }
+                options = options.map(opt => {
+                    return { title: opt, isCloseAffordance: false };
                 });
-            });
-            break;
-        }
-        case CustomEvent.Names.PROGRESS_BAR_CLOSED: {
-            const body = ev.body as CustomEvent.ProgressBarClosedData;
-            this.progressBars.get(body.id)?.close();
-            this.progressBars.delete(body.id);
-            break;
-        }
-        case CustomEvent.Names.PROGRESS_BAR_UPDATED: {
-            const body = ev.body as CustomEvent.ProgressBarUpdatedData;
-            const bar = this.progressBars.get(body.id);
-            if (bar) {
-                if (body.message) {
-                    bar.message = body.message;
-                    bar.progress.report({ message: body.message });
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                options[options.length - 1]!.isCloseAffordance = true;
+                let result: vscode.MessageItem | undefined = undefined;
+                switch (body.icon) {
+                    case MsgIcon.kMsgIconInfo:
+                    case MsgIcon.kMsgIconQuestion:
+                        result = await vscode.window.showInformationMessage(
+                            body.title,
+                            { modal: true, detail: body.message },
+                            ...options,
+                        );
+                        break;
+                    case MsgIcon.kMsgIconExclaim:
+                        result = await vscode.window.showWarningMessage(
+                            body.title,
+                            { modal: true, detail: body.message },
+                            ...options,
+                        );
+                        break;
+                    case MsgIcon.kMsgIconStop:
+                    default:
+                        result = await vscode.window.showErrorMessage(
+                            body.title,
+                            { modal: true, detail: body.message },
+                            ...options,
+                        );
+                        break;
                 }
-                if (body.value !== undefined && body.value >= 0) {
-                    const increment = (body.value - bar.lastValue) / bar.valueRange;
-                    bar.progress.report({ increment, message: bar.message });
-                }
+                const resultEnum =
+                    this.OPTIONS_MAP[result?.title ?? ""] ??
+                    MsgResult.kMsgResCancel;
+                const args: CustomRequest.MessageBoxClosedArgs = {
+                    id: body.id,
+                    result: resultEnum,
+                };
+                ev.session.customRequest(
+                    CustomRequest.Names.MESSAGE_BOX_CLOSED,
+                    args,
+                );
+                break;
             }
-            break;
-        }
-        case CustomEvent.Names.ELEMENT_SELECT_CREATED: {
-            const body = ev.body as CustomEvent.ElementSelectCreatedData;
-            vscode.window.showQuickPick(body.elements, { canPickMany: false, title: `${body.title}: ${body.message}` }).then(selected => {
-                const selectedIndex = selected === undefined ? -1 : body.elements.indexOf(selected);
-                const args: CustomRequest.ElementSelectedArgs = { id: body.id, selectedIndex };
-                ev.session.customRequest(CustomRequest.Names.ELEMENT_SELECTED, args);
-            });
-            break;
-        }
-        case CustomEvent.Names.MULTIELEMENT_SELECT_CREATED: {
-            const body = ev.body as CustomEvent.MultiElementSelectCreatedData;
-            vscode.window.showQuickPick(body.elements, { canPickMany: true, title: `${body.title}: ${body.message}` }).then(selected => {
-                const selectedIndices = selected === undefined ? [] : selected.map(elem => body.elements.indexOf(elem));
-                const args: CustomRequest.MultiElementSelectedArgs = { id: body.id, selectedIndices };
-                ev.session.customRequest(CustomRequest.Names.MULTIELEMENT_SELECTED, args);
-            });
-            break;
-        }
-        case CustomEvent.Names.FILE_OPENED: {
-            const body = ev.body as CustomEvent.FileOpenedData;
-            await vscode.commands.executeCommand("vscode.open", vscode.Uri.file(body.path).with({ fragment: `L${body.line},${body.col}` }));
-            break;
-        }
-        default:
-            break;
+            case CustomEvent.Names.OPEN_DIALOG_CREATED: {
+                const body = ev.body as CustomEvent.OpenDialogCreatedData;
+                const result =
+                    (await vscode.window.showOpenDialog({
+                        title: body.title,
+                        defaultUri: vscode.Uri.file(body.startDir),
+                        canSelectFiles: body.type === "files",
+                        canSelectFolders: body.type === "folder",
+                        canSelectMany: body.allowMultiple,
+                        filters:
+                            DialogServiceInstance.convertFilterToVsCodeFormat(
+                                body.filter,
+                            ),
+                    })) ?? [];
+                const args: CustomRequest.OpenDialogClosedArgs = {
+                    id: body.id,
+                    paths: result.map(uri => uri.fsPath),
+                };
+                ev.session.customRequest(
+                    CustomRequest.Names.OPEN_DIALOG_CLOSED,
+                    args,
+                );
+                break;
+            }
+            case CustomEvent.Names.SAVE_DIALOG_CREATED: {
+                const body = ev.body as CustomEvent.SaveDialogCreatedData;
+                const result = await vscode.window.showSaveDialog({
+                    title: body.title,
+                    defaultUri: vscode.Uri.file(body.startPath),
+                    filters: DialogServiceInstance.convertFilterToVsCodeFormat(
+                        body.filter,
+                    ),
+                });
+                const args: CustomRequest.SaveDialogClosedArgs = {
+                    id: body.id,
+                    path: result?.fsPath,
+                };
+                ev.session.customRequest(
+                    CustomRequest.Names.SAVE_DIALOG_CLOSED,
+                    args,
+                );
+                break;
+            }
+            case CustomEvent.Names.PROGRESS_BAR_CREATED: {
+                const body = ev.body as CustomEvent.ProgressBarCreatedData;
+                vscode.window.withProgress(
+                    {
+                        location: vscode.ProgressLocation.Notification,
+                        title: body.title,
+                        cancellable: body.canCancel,
+                    },
+                    (progress, cancelToken) => {
+                        return new Promise<void>((resolve, _) => {
+                            progress.report({ message: body.initialMessage });
+                            cancelToken.onCancellationRequested(() => {
+                                const args: CustomRequest.ProgressBarCanceledArgs =
+                                    { id: body.id };
+                                ev.session.customRequest(
+                                    CustomRequest.Names.PROGRESS_BAR_CANCELED,
+                                    args,
+                                );
+                            });
+                            this.progressBars.set(body.id, {
+                                close: resolve,
+                                progress: progress,
+                                message: body.initialMessage,
+                                lastValue: body.minValue,
+                                valueRange: body.valueRange,
+                            });
+                        });
+                    },
+                );
+                break;
+            }
+            case CustomEvent.Names.PROGRESS_BAR_CLOSED: {
+                const body = ev.body as CustomEvent.ProgressBarClosedData;
+                this.progressBars.get(body.id)?.close();
+                this.progressBars.delete(body.id);
+                break;
+            }
+            case CustomEvent.Names.PROGRESS_BAR_UPDATED: {
+                const body = ev.body as CustomEvent.ProgressBarUpdatedData;
+                const bar = this.progressBars.get(body.id);
+                if (bar) {
+                    if (body.message) {
+                        bar.message = body.message;
+                        bar.progress.report({ message: body.message });
+                    }
+                    if (body.value !== undefined && body.value >= 0) {
+                        const increment =
+                            (body.value - bar.lastValue) / bar.valueRange;
+                        bar.progress.report({
+                            increment,
+                            message: bar.message,
+                        });
+                    }
+                }
+                break;
+            }
+            case CustomEvent.Names.ELEMENT_SELECT_CREATED: {
+                const body = ev.body as CustomEvent.ElementSelectCreatedData;
+                vscode.window.
+                    showQuickPick(body.elements, {
+                        canPickMany: false,
+                        title: `${body.title}: ${body.message}`,
+                    }).
+                    then(selected => {
+                        const selectedIndex =
+                            selected === undefined
+                                ? -1
+                                : body.elements.indexOf(selected);
+                        const args: CustomRequest.ElementSelectedArgs = {
+                            id: body.id,
+                            selectedIndex,
+                        };
+                        ev.session.customRequest(
+                            CustomRequest.Names.ELEMENT_SELECTED,
+                            args,
+                        );
+                    });
+                break;
+            }
+            case CustomEvent.Names.MULTIELEMENT_SELECT_CREATED: {
+                const body =
+                    ev.body as CustomEvent.MultiElementSelectCreatedData;
+                vscode.window.
+                    showQuickPick(body.elements, {
+                        canPickMany: true,
+                        title: `${body.title}: ${body.message}`,
+                    }).
+                    then(selected => {
+                        const selectedIndices =
+                            selected === undefined
+                                ? []
+                                : selected.map(elem =>
+                                    body.elements.indexOf(elem),
+                                );
+                        const args: CustomRequest.MultiElementSelectedArgs = {
+                            id: body.id,
+                            selectedIndices,
+                        };
+                        ev.session.customRequest(
+                            CustomRequest.Names.MULTIELEMENT_SELECTED,
+                            args,
+                        );
+                    });
+                break;
+            }
+            case CustomEvent.Names.FILE_OPENED: {
+                const body = ev.body as CustomEvent.FileOpenedData;
+                await vscode.commands.executeCommand(
+                    "vscode.open",
+                    vscode.Uri.file(body.path).with({
+                        fragment: `L${body.line},${body.col}`,
+                    }),
+                );
+                break;
+            }
+            default:
+                break;
         }
     }
 

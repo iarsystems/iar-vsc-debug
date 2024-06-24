@@ -24,27 +24,27 @@ function main() {
     window.addEventListener("message", event => {
         const message: ExtensionMessage = event.data;
         switch (message.subject) {
-        case "render":
-        {
-            for (const row of message.params.rows) {
-                for (const cell of row.cells) {
-                    const cellElem = new CellElement();
-                    cellElem.cell = cell;
-                    appElement.appendChild(cellElem);
+            case "render": {
+                for (const row of message.params.rows) {
+                    for (const cell of row.cells) {
+                        const cellElem = new CellElement();
+                        cellElem.cell = cell;
+                        appElement.appendChild(cellElem);
+                    }
                 }
-
+                break;
             }
-            break;
-        }
-        case "dumpHTML":
-            postMessage({ subject: "HTMLDump", html: appElement.outerHTML });
-            break;
-        default:
-        {
-            // Checks that all message variants are handled
-            const _exhaustiveCheck: never = message;
-            throw _exhaustiveCheck;
-        }
+            case "dumpHTML":
+                postMessage({
+                    subject: "HTMLDump",
+                    html: appElement.outerHTML,
+                });
+                break;
+            default: {
+                // Checks that all message variants are handled
+                const _exhaustiveCheck: never = message;
+                throw _exhaustiveCheck;
+            }
         }
     });
     postMessage({ subject: "loaded" });

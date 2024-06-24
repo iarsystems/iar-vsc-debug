@@ -53,15 +53,17 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
             logger.debug(`Message from ${this.viewId}: ${JSON.stringify(message)}`);
 
             switch (message.subject) {
-            case "loaded":
-                onViewLoaded?.();
-                break;
-            default:
-            {
-                // Checks that all subject variants are handled
-                const _exhaustiveCheck: never = message.subject;
-                throw _exhaustiveCheck;
-            }
+                case "loaded":
+                    onViewLoaded?.();
+                    break;
+                case "HTMLDump":
+                    // ignore for now, only used for testing
+                    break;
+                default: {
+                    // Checks that all message variants are handled
+                    const _exhaustiveCheck: never = message;
+                    throw _exhaustiveCheck;
+                }
             }
         });
         this.view.webview.html = Rendering.getWebviewContent(

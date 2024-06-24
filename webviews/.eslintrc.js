@@ -1,24 +1,27 @@
-{
-    "env": {
-        "browser": true
+const config = {
+    env: {
+        browser: true
     },
-    "parserOptions": {
-        "project": "webviews/tsconfig.json"
+    parserOptions: {
+        project: "./tsconfig.json",
+        tsconfigRootDir: __dirname
     },
-    "rules": {
+    rules: {
         // Workaround for a bug in decorator indentation, see:
         // https://github.com/typescript-eslint/typescript-eslint/issues/1824#issuecomment-957559729
-        "indent": "off",
+        indent: "off",
         "@typescript-eslint/indent": [
               "warn",
               4,
               {
-                "ignoredNodes": [
+                ignoredNodes: [
                   "FunctionExpression > .params[decorators.length > 0]",
                   "FunctionExpression > .params > :matches(Decorator, :not(:first-child))",
                   "ClassBody.body > PropertyDefinition[decorators.length > 0] > .key"
-                ]
+                ],
+                SwitchCase: 1,
               }
         ]
     }
-}
+};
+module.exports = config;
