@@ -1,7 +1,6 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-/* eslint-disable @typescript-eslint/consistent-type-definitions */
 
 import { Column, DragDropFeedback, ListSpec, Row, SelRange } from "iar-vsc-common/thrift/bindings/listwindow_types";
 
@@ -27,10 +26,12 @@ export interface RenderParameters {
  * A message from the extension to the listwindow view
  */
 export type ExtensionMessage =
-  { subject: "render", params: RenderParameters }; // Render the given data
+  | { subject: "render", params: RenderParameters } // Render the given data
+  | { subject: "dumpHTML" }; // Send a message back with the current full HTML of the view (useful for testing)
 
 /**
  * A message from the listwindow view to the extension
  */
 export type ViewMessage =
-  { subject: "loaded" }; // Sent when the view has been initialized
+  | { subject: "loaded" } // Sent when the view has been initialized
+  | { subject: "HTMLDump", html: string }; // Response to a dumpHTML message, contains the full HTML of the view

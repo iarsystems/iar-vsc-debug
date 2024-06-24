@@ -3,6 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { ExtensionMessage, RenderParameters, ViewMessage } from "./protocol";
+import { CellElement } from "./rendering/cell";
 
 const vscode = acquireVsCodeApi<RenderParameters>();
 
@@ -18,18 +19,30 @@ function main() {
         return;
     }
 
-    appElement.textContent = "Loaded!";
+    appElement.innerHTML = `<p>Loaded!</p>`;
 
     window.addEventListener("message", event => {
         const message: ExtensionMessage = event.data;
         switch (message.subject) {
         case "render":
-            console.log(message.params);
+        {
+            for (const row of message.params.rows) {
+                for (const cell of row.cells) {
+                    const cellElem = new CellElement();
+                    cellElem.cell = cell;
+                    appElement.appendChild(cellElem);
+                }
+
+            }
+            break;
+        }
+        case "dumpHTML":
+            postMessage({ subject: "HTMLDump", html: appElement.outerHTML });
             break;
         default:
         {
-            // Checks that all subject variants are handled
-            const _exhaustiveCheck: never = message.subject;
+            // Checks that all message variants are handled
+            const _exhaustiveCheck: never = message;
             throw _exhaustiveCheck;
         }
         }
