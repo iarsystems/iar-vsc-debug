@@ -13,6 +13,7 @@ import { Column, DragDropFeedback, ListSpec, Row, SelRange } from "iar-vsc-commo
 /**
  * Everything needed to render a listwindow
  */
+// TODO: The thrift types are not fully serializable (e.g. Int64 is problematic)
 export interface RenderParameters {
     rows: Row[];
     listSpec: ListSpec;

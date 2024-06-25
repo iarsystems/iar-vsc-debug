@@ -4,7 +4,8 @@
 import * as vscode from "vscode";
 import { logger } from "iar-vsc-common/logger";
 import { ViewMessage, ExtensionMessage, RenderParameters } from "../../webviews/listwindow/protocol";
-import { DragDropFeedback, ListSpec, SelRange } from "iar-vsc-common/thrift/bindings/listwindow_types";
+import { Cell, Column, DragDropFeedback, Format, ListSpec, Row, SelRange, Target } from "iar-vsc-common/thrift/bindings/listwindow_types";
+import Int64 = require("node-int64");
 
 /**
  * Instantiates a webview that renders a listwindow, and handles all
@@ -43,7 +44,6 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
             enableScripts: true,
             localResourceRoots: [
                 vscode.Uri.joinPath(this.extensionUri, "dist/webviews"),
-                vscode.Uri.joinPath(this.extensionUri, "node_modules"),
             ]
         };
         let onViewLoaded: (() => void) | undefined = undefined;
@@ -80,13 +80,69 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
         await this.viewLoaded;
 
         const params: RenderParameters = {
-            rows: [],
-            columnInfo: [],
+            rows: [
+                new Row({
+                    cells: [
+                        new Cell({
+                            text: "callCount",
+                            format: new Format(),
+                            drop: Target.kNoTarget,
+                        }),
+                        new Cell({
+                            text: "10",
+                            format: new Format(),
+                            drop: Target.kNoTarget,
+                        }),
+                    ],
+                    isChecked: false,
+                    treeinfo: "",
+                }),
+            ],
+            columnInfo: [
+                new Column({
+                    title: "Symbol",
+                    width: 100,
+                    fixed: false,
+                    hideSelection: false,
+                    defaultFormat: new Format(),
+                }),
+                new Column({
+                    title: "Value",
+                    width: 150,
+                    fixed: true,
+                    hideSelection: false,
+                    defaultFormat: new Format(),
+                }),
+            ],
             dropFeedback: new DragDropFeedback(),
             listSpec: new ListSpec(),
             selectedColumn: -1,
             selection: new SelRange(),
         };
+        params.listSpec.showHeader = true;
+        params.listSpec.showGrid = true;
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        params.rows.push(params.rows[0]!);
+        params.rows.push(
+            new Row({
+                cells: [
+                    new Cell({
+                        text: "<click to add>",
+                        format: new Format(),
+                        drop: Target.kNoTarget,
+                    }),
+                    new Cell({
+                        text: "",
+                        format: new Format(),
+                        drop: Target.kNoTarget,
+                    }),
+                ],
+                isChecked: false,
+                treeinfo: ""
+            }),
+        );
+        params.selection.first = new Int64(1);
+        params.selection.last = new Int64(1);
 
         this.postMessageToView({
             subject: "render",
@@ -112,11 +168,12 @@ namespace Rendering {
     ) {
         // load npm packages for standardized UI components and icons
         //! NOTE: ALL files you load here (even indirectly) must be explicitly included in .vscodeignore, so that they are packaged in the .vsix. Webpack will not find these files.
-        const toolkitUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "node_modules", "@vscode", "webview-ui-toolkit", "dist", "toolkit.js"));
-        const codiconsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "node_modules", "@vscode/codicons", "dist", "codicon.css"));
+        // const toolkitUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "node_modules", "@vscode", "webview-ui-toolkit", "dist", "toolkit.js"));
         // load css and js for the view
         const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "dist", "webviews", "listwindow", "styles.css"));
         const jsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "dist", "webviews", "listwindow.js"));
+
+        const nonce = getNonce();
 
         // install the es6-string-html extension for syntax highlighting here
         return /*html*/`<!DOCTYPE html>
@@ -127,13 +184,11 @@ namespace Rendering {
                     font-src ${webview.cspSource};
                     img-src ${webview.cspSource};
                     frame-src ${webview.cspSource};
-                    script-src ${webview.cspSource};
+                    script-src ${webview.cspSource} 'nonce-${nonce}';
                     style-src ${webview.cspSource};">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <script type="module" src="${toolkitUri}"></script>
-        <link href="${codiconsUri}" rel="stylesheet" />
         <link rel="stylesheet" href="${cssUri}">
-        <script src="${jsUri}"></script>
+        <script src="${jsUri}" nonce="${nonce}"></script>
         <title>Listwindow</title>
     </head>
     <body>
@@ -143,4 +198,14 @@ namespace Rendering {
     </body>
     </html>`;
     }
+}
+
+function getNonce() {
+    let text = "";
+    const possible =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    for (let i = 0; i < 32; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
 }

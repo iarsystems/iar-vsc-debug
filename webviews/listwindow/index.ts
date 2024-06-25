@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { ExtensionMessage, RenderParameters, ViewMessage } from "./protocol";
-import { CellElement } from "./rendering/cell";
+import { GridElement } from "./rendering/grid";
 
 const vscode = acquireVsCodeApi<RenderParameters>();
 
@@ -25,13 +25,9 @@ function main() {
         const message: ExtensionMessage = event.data;
         switch (message.subject) {
             case "render": {
-                for (const row of message.params.rows) {
-                    for (const cell of row.cells) {
-                        const cellElem = new CellElement();
-                        cellElem.cell = cell;
-                        appElement.appendChild(cellElem);
-                    }
-                }
+                const grid = new GridElement();
+                grid.data = message.params;
+                appElement.replaceChildren(grid);
                 break;
             }
             case "dumpHTML":
