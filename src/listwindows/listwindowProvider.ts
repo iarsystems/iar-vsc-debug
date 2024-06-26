@@ -4,7 +4,7 @@
 import * as vscode from "vscode";
 import { logger } from "iar-vsc-common/logger";
 import { ViewMessage, ExtensionMessage, RenderParameters } from "../../webviews/listwindow/protocol";
-import { Cell, Column, DragDropFeedback, Format, ListSpec, Row, SelRange, Target } from "iar-vsc-common/thrift/bindings/listwindow_types";
+import { Alignment, Cell, Column, DragDropFeedback, Format, ListSpec, Row, SelRange, Target, TextStyle } from "iar-vsc-common/thrift/bindings/listwindow_types";
 import Int64 = require("node-int64");
 
 /**
@@ -79,74 +79,9 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
         }
         await this.viewLoaded;
 
-        const params: RenderParameters = {
-            rows: [
-                new Row({
-                    cells: [
-                        new Cell({
-                            text: "callCount",
-                            format: new Format(),
-                            drop: Target.kNoTarget,
-                        }),
-                        new Cell({
-                            text: "10",
-                            format: new Format(),
-                            drop: Target.kNoTarget,
-                        }),
-                    ],
-                    isChecked: false,
-                    treeinfo: "",
-                }),
-            ],
-            columnInfo: [
-                new Column({
-                    title: "Symbol",
-                    width: 100,
-                    fixed: false,
-                    hideSelection: false,
-                    defaultFormat: new Format(),
-                }),
-                new Column({
-                    title: "Value",
-                    width: 150,
-                    fixed: true,
-                    hideSelection: false,
-                    defaultFormat: new Format(),
-                }),
-            ],
-            dropFeedback: new DragDropFeedback(),
-            listSpec: new ListSpec(),
-            selectedColumn: -1,
-            selection: new SelRange(),
-        };
-        params.listSpec.showHeader = true;
-        params.listSpec.showGrid = true;
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        params.rows.push(params.rows[0]!);
-        params.rows.push(
-            new Row({
-                cells: [
-                    new Cell({
-                        text: "<click to add>",
-                        format: new Format(),
-                        drop: Target.kNoTarget,
-                    }),
-                    new Cell({
-                        text: "",
-                        format: new Format(),
-                        drop: Target.kNoTarget,
-                    }),
-                ],
-                isChecked: false,
-                treeinfo: ""
-            }),
-        );
-        params.selection.first = new Int64(1);
-        params.selection.last = new Int64(1);
-
         this.postMessageToView({
             subject: "render",
-            params: params,
+            params: getMockRenderParams(),
         });
     }
 
@@ -208,4 +143,119 @@ function getNonce() {
         text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
     return text;
+}
+
+function getMockRenderParams() {
+    const format = new Format();
+    format.align = Alignment.kLeft;
+    format.style = TextStyle.kProportionalPlain;
+    const memFormat = new Format();
+    memFormat.align = Alignment.kRight;
+    memFormat.style = TextStyle.kFixedPlain;
+
+    const params: RenderParameters = {
+        rows: [
+            new Row({
+                cells: [
+                    new Cell({
+                        text: "callCount",
+                        format,
+                        drop: Target.kNoTarget,
+                    }),
+                    new Cell({
+                        text: "10",
+                        format,
+                        drop: Target.kNoTarget,
+                    }),
+                    new Cell({
+                        text: "0x2000'0030",
+                        format: memFormat,
+                        drop: Target.kNoTarget,
+                    }),
+                    new Cell({
+                        text: "uint32_t",
+                        format,
+                        drop: Target.kNoTarget,
+                    }),
+                ],
+                isChecked: false,
+                treeinfo: "",
+            }),
+        ],
+        columnInfo: [
+            new Column({
+                title: "Symbol",
+                width: 100,
+                fixed: false,
+                hideSelection: false,
+                defaultFormat: format,
+            }),
+            new Column({
+                title: "Value",
+                width: 150,
+                fixed: true,
+                hideSelection: false,
+                defaultFormat: format,
+            }),
+            new Column({
+                title: "Location",
+                width: 100,
+                fixed: false,
+                hideSelection: false,
+                defaultFormat: memFormat,
+            }),
+            new Column({
+                title: "Type",
+                width: 150,
+                fixed: false,
+                hideSelection: false,
+                defaultFormat: format,
+            }),
+        ],
+        dropFeedback: new DragDropFeedback(),
+        listSpec: new ListSpec(),
+        selectedColumn: -1,
+        selection: new SelRange(),
+    };
+    params.listSpec.showHeader = true;
+    params.listSpec.showGrid = true;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    params.rows.push(params.rows[0]!);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    params.rows[1]!.cells[0]!.format = JSON.parse(JSON.stringify(format));
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    params.rows[1]!.cells[0]!.format.style = TextStyle.kProportionalBoldItalic;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    params.rows[1]!.cells[0]!.format.editable = true;
+    params.rows.push(
+        new Row({
+            cells: [
+                new Cell({
+                    text: "<click to add>",
+                    format,
+                    drop: Target.kNoTarget,
+                }),
+                new Cell({
+                    text: "",
+                    format,
+                    drop: Target.kNoTarget,
+                }),
+                new Cell({
+                    text: "",
+                    format,
+                    drop: Target.kNoTarget,
+                }),
+                new Cell({
+                    text: "",
+                    format,
+                    drop: Target.kNoTarget,
+                }),
+            ],
+            isChecked: false,
+            treeinfo: ""
+        }),
+    );
+    params.selection.first = new Int64(1);
+    params.selection.last = new Int64(1);
+    return params;
 }
