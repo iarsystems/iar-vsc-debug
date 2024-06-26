@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { Column } from "iar-vsc-common/thrift/bindings/listwindow_types";
+import { Column } from "../thrift/listwindow_types";
 import { css } from "lit";
 import { CLASS_GRID_ELEMENT } from "./sharedStyles";
 

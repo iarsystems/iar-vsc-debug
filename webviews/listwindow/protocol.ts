@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { Column, DragDropFeedback, ListSpec, Row, SelRange } from "iar-vsc-common/thrift/bindings/listwindow_types";
+import { Column, DragDropFeedback, ListSpec, Row, SelRange } from "./thrift/listwindow_types";
 
 /**
  * This file defines the "protocol" used between a listwindow and the view

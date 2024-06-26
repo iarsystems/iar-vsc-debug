@@ -49,7 +49,7 @@ runAndGetStdout("git diff --cached --name-only --diff-filter=ACMR", function(cha
 
     const filesArray = changedFiles.trim().split("\n");
     // Check that all typescript files have the mpl preamble
-    const res = filesArray.filter(file => file.endsWith(".ts")).map(file => {
+    const res = filesArray.filter(file => file.endsWith(".ts") && !file.endsWith(".d.ts")).map(file => {
         const contents = readFileSync(file).toString().replace(/\r\n/g, "\n");
         if (!contents.startsWith(MPLv2_header)) {
             console.log("Missing or malformed MPLv2 license header in file: " + file);

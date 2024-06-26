@@ -23,3 +23,14 @@ component uses a shadow DOM, meaning most global styles are not applied to it.
 
 Instead, most styles are defined as a static variable inside the `GridElement`
 component class, and are injected into the component by *lit*.
+
+## Thrift bindings
+
+Listwindow code should use the thrift bindings in the local `thrift/` folder,
+instead of the ones in `iar-vsc-common`. These are generated for the browser,
+(with `-gen js:ts,commonjs` instead of `-gen js:ts,node`) and do not import any
+Node libraries (which would be unavailable in a webview).
+
+Note that we don't load the javascript support library yet
+([text](https://github.com/apache/thrift/blob/master/lib/js/src/thrift.js)), so
+we can't *call* the thrift code, but we can use its type definitions.
