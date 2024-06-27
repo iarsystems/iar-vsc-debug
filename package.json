@@ -197,7 +197,7 @@
 					"id": "iar-live-watch",
 					"name": "Live Watch",
 					"type": "webview",
-					"when": "debugType == cspy"
+					"when": "inDebugMode && debugType == cspy"
 				}
 			]
 		},
