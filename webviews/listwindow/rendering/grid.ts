@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { css, html, LitElement } from "lit";
-import { property, customElement } from "lit/decorators.js";
+import { property, customElement, state } from "lit/decorators.js";
 import { RenderParameters } from "../protocol";
 import { HeaderElement } from "./header";
 import { RowElement } from "./row";
@@ -25,11 +25,15 @@ export class GridElement extends LitElement {
                 padding-bottom: 1em;
             }
             table {
-                width: 100%;
+                // width: 100%;
                 border-spacing: 0px;
             }
-            td, th div {
-                padding: 4px 12px
+            td,
+            th div {
+                padding: 4px 12px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                user-select: none;
             }
         `,
         HeaderElement.STYLES,
@@ -41,19 +45,30 @@ export class GridElement extends LitElement {
     @property({ type: Object })
     data?: RenderParameters = undefined;
 
+    @state()
+    private header: HeaderElement | undefined = undefined;
+    @property({ type: Array })
+    private initialColumnWidths: number[] | undefined = undefined;
+
     override render() {
         if (!this.data) {
             // TODO: render some placeholder
             return "";
         }
-
-        let header: HeaderElement | undefined = undefined;
-        if (this.data.listSpec.showHeader) {
-            header = new HeaderElement();
-            header.columns = this.data.columnInfo;
-            header.showGrid = this.data.listSpec.showGrid;
+        if (this.initialColumnWidths === undefined) {
+            this.initialColumnWidths = this.data.columnInfo.map(col => col.width);
         }
 
+        // Create header
+        if (this.data.listSpec.showHeader) {
+            this.header = new HeaderElement();
+            this.header.columns = this.data.columnInfo;
+            this.header.columnWidths = this.initialColumnWidths;
+            this.header.showGrid = this.data.listSpec.showGrid;
+            this.header.clickable = this.data.listSpec.canClickColumns;
+        }
+
+        // Create body
         const rows: HTMLElement[] = [];
         for (const [i, row] of this.data.rows.entries()) {
             const rowElem = new RowElement();
@@ -72,16 +87,19 @@ export class GridElement extends LitElement {
             rows.push(rowElem);
         }
 
-        function onBackdropClicked(): void {
-            // TODO: send selection for row '-1'
-            console.log("backdrop clicked");
-        }
+        const onBackdropClicked = (ev: MouseEvent) => {
+            if (ev.target === this.shadowRoot?.querySelector("#backdrop")) {
+                // TODO: send selection for row '-1'
+                console.log("backdrop clicked");
+            }
+        };
+        console.log(this.shadowRoot?.querySelector("table"));
 
         return html`
             <div @click=${onBackdropClicked} id="backdrop">
                 <table>
                     <thead>
-                        ${header}
+                        ${this.header}
                     </thead>
                     <tbody>
                         ${rows}

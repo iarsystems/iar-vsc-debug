@@ -31,6 +31,7 @@ const config = {
     "@typescript-eslint/no-namespace": "off",
     "@typescript-eslint/prefer-readonly": "error",
     "@typescript-eslint/consistent-type-definitions": "error",  // Prefer 'interface' over 'type'
+    "@typescript-eslint/no-empty-interface": "off",
     "no-empty": "off",                                          // Empty catch blocks can be useful
     "no-inner-declarations": "off",                             // Seems to break when using TS namespaces
     "eqeqeq": "error",                                          // == can be obscure/unintuitive, so use ===

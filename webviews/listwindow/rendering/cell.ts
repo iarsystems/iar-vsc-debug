@@ -14,11 +14,15 @@ export class CellElement extends HTMLTableCellElement {
     static readonly STYLES = css`
         td {
             cursor: default;
+            white-space: nowrap;
+            word-break: keep-all;
+            max-width: 0; // always overflow rather than taking up space
         }
         td.selected {
             background-color: var(--vscode-list-activeSelectionBackground);
-            border-top: 1px solid var(--vscode-focusBorder);
-            border-bottom: 1px solid var(--vscode-focusBorder);
+            color: var(--vscode-list-activeSelectionForeground);
+            border-top: 1px solid var(--vscode-list-focusOutline);
+            border-bottom: 1px solid var(--vscode-list-focusOutline);
             border-right: none !important;
         }
         td.editable {
