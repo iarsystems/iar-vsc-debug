@@ -102,6 +102,11 @@
 		"configuration": {
 			"title": "IAR C-SPY Debug",
 			"properties": {
+				"iar-debug.fitContentToViewWidth": {
+					"default": true,
+					"description": "Automatically resize the contents of IAR debug views to fit the width of the view. When disabled, the width of the content stays the same when the view is resized, and a scrollbar appears if the content is wider than the view.",
+					"type": "boolean"
+				},
 				"iar-debug.breakpointType": {
 					"default": "Auto",
 					"description": "Whether to set hardware- or software breakpoints. This only affects drivers that support it. Changing this setting will not affect already installed breakpoints in active sessions.",

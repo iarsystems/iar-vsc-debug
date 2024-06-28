@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { RenderParameters } from "../protocol";
+import { ColumnResizeMode, RenderParameters } from "../protocol";
 import { HeaderElement } from "./header";
 import { RowElement } from "./row";
 import { CellElement } from "./cell";
@@ -21,10 +21,11 @@ export class GridElement extends HTMLElement {
                 height: "100%",
                 // Always add some space below the table that we can press to
                 // deselect everything
-                "padding-bottom": "1em",
+                // "padding-bottom": "1em",
             },
             table: {
                 "border-spacing": "0px",
+                "table-layout": "fixed",
             },
             "td, th div": {
                 padding: "4px 12px",
@@ -45,8 +46,15 @@ export class GridElement extends HTMLElement {
             "border-bottom": "1px solid var(--vscode-widget-border)",
         },
     };
+    // Styles to apply if resizeMode is "fit"
+    private static readonly STYLE_RESIZEMODE_FIT: Styles.StyleRules = {
+        ":host, table": {
+            width: "100%",
+        },
+    };
 
     data?: RenderParameters = undefined;
+    resizeMode: ColumnResizeMode = "fixed";
 
     private header: HeaderElement | undefined = undefined;
     private initialColumnWidths: number[] | undefined = undefined;
@@ -55,7 +63,14 @@ export class GridElement extends HTMLElement {
         const shadow = this.attachShadow({ mode: "closed" });
         shadow.adoptedStyleSheets.push(Styles.toCss(GridElement.STYLES));
         if (this.data?.listSpec.showGrid) {
-            shadow.adoptedStyleSheets.push(Styles.toCss(GridElement.STYLE_GRID_CELL));
+            shadow.adoptedStyleSheets.push(
+                Styles.toCss(GridElement.STYLE_GRID_CELL),
+            );
+        }
+        if (this.resizeMode === "fit") {
+            shadow.adoptedStyleSheets.push(
+                Styles.toCss(GridElement.STYLE_RESIZEMODE_FIT),
+            );
         }
 
         if (!this.data) {
@@ -84,8 +99,9 @@ export class GridElement extends HTMLElement {
         if (this.data.listSpec.showHeader) {
             this.header = new HeaderElement();
             this.header.columns = this.data.columnInfo;
-            this.header.columnWidths = this.initialColumnWidths;
+            this.header.initialColumnWidths = this.initialColumnWidths;
             this.header.clickable = this.data.listSpec.canClickColumns;
+            this.header.resizeMode = this.resizeMode;
 
             const thead = document.createElement("thead");
             thead.appendChild(this.header);

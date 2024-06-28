@@ -3,7 +3,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import {
-    ResizeHandleDroppedEvent,
+    ResizeHandleDragBeginEvent,
+    ResizeHandleDragEndEvent,
     ResizeHandleMovedEvent,
 } from "./rendering/resizeHandle";
 
@@ -12,8 +13,9 @@ import {
  * with a name and the type of the event's `detail` field.
  */
 interface CustomEventTypeMap {
+    "resize-handle-drag-begin": ResizeHandleDragBeginEvent.Detail;
+    "resize-handle-drag-end": ResizeHandleDragEndEvent.Detail;
     "resize-handle-moved": ResizeHandleMovedEvent.Detail;
-    "resize-handle-dropped": ResizeHandleDroppedEvent.Detail;
 }
 
 type CustomEventMap = {

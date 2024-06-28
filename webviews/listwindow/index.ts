@@ -2,7 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { ExtensionMessage, RenderParameters, ViewMessage } from "./protocol";
+import {
+    ColumnResizeMode,
+    ExtensionMessage,
+    RenderParameters,
+    ViewMessage,
+} from "./protocol";
 import { GridElement } from "./rendering/grid";
 
 const vscode = acquireVsCodeApi<RenderParameters>();
@@ -19,17 +24,23 @@ function main() {
         return;
     }
 
-    appElement.innerHTML = `<p>Loaded!</p>`;
+    let resizeMode: ColumnResizeMode = "fixed";
+    let lastRenderParams: RenderParameters | undefined = undefined;
 
     window.addEventListener("message", event => {
         const message: ExtensionMessage = event.data;
         switch (message.subject) {
             case "render": {
-                const grid = new GridElement();
-                grid.data = message.params;
-                appElement.replaceChildren(grid);
+                lastRenderParams = message.params;
+                render(appElement, message.params, resizeMode);
                 break;
             }
+            case "setResizeMode":
+                resizeMode = message.mode;
+                if (lastRenderParams) {
+                    render(appElement, lastRenderParams, resizeMode);
+                }
+                break;
             case "dumpHTML":
                 postMessage({
                     subject: "HTMLDump",
@@ -44,4 +55,15 @@ function main() {
         }
     });
     postMessage({ subject: "loaded" });
+}
+
+function render(
+    root: HTMLElement,
+    params: RenderParameters,
+    resizeMode: ColumnResizeMode,
+) {
+    const grid = new GridElement();
+    grid.data = params;
+    grid.resizeMode = resizeMode;
+    root.replaceChildren(grid);
 }

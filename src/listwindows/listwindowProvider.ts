@@ -3,9 +3,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import * as vscode from "vscode";
 import { logger } from "iar-vsc-common/logger";
-import { ViewMessage, ExtensionMessage, RenderParameters } from "../../webviews/listwindow/protocol";
+import { ViewMessage, ExtensionMessage, RenderParameters, ColumnResizeMode } from "../../webviews/listwindow/protocol";
 import { Alignment, Cell, Column, DragDropFeedback, Format, ListSpec, Row, SelRange, Target, TextStyle } from "iar-vsc-common/thrift/bindings/listwindow_types";
 import Int64 = require("node-int64");
+import { SettingsConstants } from "../settingsConstants";
 
 /**
  * Instantiates a webview that renders a listwindow, and handles all
@@ -27,7 +28,17 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
     constructor(private readonly extensionUri: vscode.Uri,
         private readonly viewId: string,
     ) {
-
+        vscode.workspace.onDidChangeConfiguration(e => {
+            if (
+                e.affectsConfiguration(
+                    SettingsConstants.MAIN_SECTION +
+                        "." +
+                        SettingsConstants.FIT_CONTENT_TO_VIEW,
+                )
+            ) {
+                this.applyResizeMode();
+            }
+        });
     }
 
     // Called by vscode before the view is shown
@@ -70,7 +81,8 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
             this.view.webview,
             this.extensionUri
         );
-        this.updateView();
+
+        this.applyResizeMode().then(() => this.updateView());
     }
 
     private async updateView() {
@@ -88,6 +100,17 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
     private async postMessageToView(msg: ExtensionMessage) {
         await this.viewLoaded;
         return this.view?.webview.postMessage(msg);
+    }
+
+    private async applyResizeMode() {
+        const fitContentWidth = vscode.workspace.
+            getConfiguration(SettingsConstants.MAIN_SECTION).
+            get<boolean>(SettingsConstants.FIT_CONTENT_TO_VIEW);
+        const mode: ColumnResizeMode = fitContentWidth ? "fit" : "fixed";
+        await this.postMessageToView({
+            subject: "setResizeMode",
+            mode,
+        });
     }
 }
 

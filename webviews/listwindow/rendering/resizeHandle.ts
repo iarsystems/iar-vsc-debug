@@ -7,22 +7,29 @@ import { Styles } from "./styles";
 import { customElement } from "./utils";
 
 /**
- * Emitted when the resize handle is moved/dragged
+ * Emitted when the user starts dragging the resize handle
  */
-export type ResizeHandleMovedEvent = CustomEvent<ResizeHandleDroppedEvent.Detail>;
-export namespace ResizeHandleMovedEvent {
-    export interface Detail {
-        // The number of pixels moved on the X axis
-        readonly deltaX: number,
-    }
+export type ResizeHandleDragBeginEvent = CustomEvent<ResizeHandleDragBeginEvent.Detail>;
+export namespace ResizeHandleDragBeginEvent {
+    export interface Detail { }
 }
-
 /**
  * Emitted when the resize handle is dropped (by releasing the mouse)
  */
-export type ResizeHandleDroppedEvent = CustomEvent<ResizeHandleDroppedEvent.Detail>;
-export namespace ResizeHandleDroppedEvent {
+export type ResizeHandleDragEndEvent = CustomEvent<ResizeHandleDragEndEvent.Detail>;
+export namespace ResizeHandleDragEndEvent {
     export interface Detail { }
+}
+
+/**
+ * Emitted while the resize handle is being moved/dragged
+ */
+export type ResizeHandleMovedEvent = CustomEvent<ResizeHandleMovedEvent.Detail>;
+export namespace ResizeHandleMovedEvent {
+    export interface Detail {
+        // The number of pixels moved on the X axis since the beginning of the drag
+        readonly deltaX: number,
+    }
 }
 
 @customElement("listwindow-resize-handle")
@@ -43,51 +50,58 @@ export class ResizeHandleElement extends HTMLElement {
             transition: "border-right .1s ease-out",
             "user-select": "none",
         },
-        "div:hover": {
+        "div:hover, div.being-moved": {
             "border-right": "2px solid var(--vscode-sash-hoverBorder)",
         },
     };
+
+    private handle: HTMLElement | undefined = undefined;
 
     connectedCallback() {
         const shadow = this.attachShadow({ mode: "closed" });
         shadow.adoptedStyleSheets.push(Styles.toCss(ResizeHandleElement.STYLES));
 
-        const handle = document.createElement("div");
-        shadow.appendChild(handle);
+        this.handle = document.createElement("div");
+        shadow.appendChild(this.handle);
 
         const startDrag = (downEv: MouseEvent) => {
             if (downEv.button !== 0) {
                 return;
             }
-            let lastX = downEv.x;
+            this.handle?.classList.add("being-moved");
+
+            this.dispatchEvent(createCustomEvent("resize-handle-drag-begin", {
+                detail: {},
+                bubbles: true,
+                composed: true,
+            }));
+
             const onMove = (ev: MouseEvent) => {
-                const distance = ev.x - lastX;
-                lastX = ev.x;
-                const event = createCustomEvent("resize-handle-moved", {
+                const distance = ev.x - downEv.x;
+                this.dispatchEvent(createCustomEvent("resize-handle-moved", {
                     detail: {
                         deltaX: distance,
                     },
                     bubbles: true,
                     composed: true,
-                });
-                this.dispatchEvent(event);
+                }));
             };
             document.addEventListener("mousemove", onMove);
 
             const onMouseUp = () => {
+                this.handle?.classList.remove("being-moved");
                 document.removeEventListener("mousemove", onMove);
                 document.removeEventListener("mouseup", onMouseUp);
 
-                const event = createCustomEvent("resize-handle-dropped", {
+                this.dispatchEvent(createCustomEvent("resize-handle-drag-end", {
                     detail: {},
                     bubbles: true,
                     composed: true,
-                });
-                this.dispatchEvent(event);
+                }));
             };
             document.addEventListener("mouseup", onMouseUp);
         };
 
-        handle.onmousedown = startDrag;
+        this.handle.onmousedown = startDrag;
     }
 }
