@@ -2,74 +2,99 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { css, html, LitElement } from "lit";
-import { property, customElement, state } from "lit/decorators.js";
 import { RenderParameters } from "../protocol";
 import { HeaderElement } from "./header";
 import { RowElement } from "./row";
 import { CellElement } from "./cell";
-import { SHARED_STYLES } from "./sharedStyles";
+import { Styles } from "./styles";
+import { customElement } from "./utils";
 
 /**
  * A full listwindow grid, including headers but excluding any toolbar
  */
 @customElement("listwindow-grid")
-export class GridElement extends LitElement {
-    static override styles = [
-        css`
-            #backdrop {
-                width: 100%;
-                height: 100%;
+export class GridElement extends HTMLElement {
+    private static readonly STYLES: Styles.StyleRules[] = [
+        {
+            "#backdrop": {
+                width: "100%",
+                height: "100%",
                 // Always add some space below the table that we can press to
                 // deselect everything
-                padding-bottom: 1em;
+                "padding-bottom": "1em",
+            },
+            table: {
+                "border-spacing": "0px",
+            },
+            "td, th div": {
+                padding: "4px 12px",
+                overflow: "hidden",
+                "text-overflow": "ellipsis",
+                "user-select": "none",
             }
-            table {
-                // width: 100%;
-                border-spacing: 0px;
-            }
-            td,
-            th div {
-                padding: 4px 12px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                user-select: none;
-            }
-        `,
+        },
         HeaderElement.STYLES,
         RowElement.STYLES,
         CellElement.STYLES,
-        SHARED_STYLES,
+        ...Styles.SHARED_STYLES,
     ];
+    // Styles to apply if ListSpec.showGrid is set
+    private static readonly STYLE_GRID_CELL: Styles.StyleRules = {
+        "th, td": {
+            "border-right": "1px solid var(--vscode-widget-border)",
+            "border-bottom": "1px solid var(--vscode-widget-border)",
+        },
+    };
 
-    @property({ type: Object })
     data?: RenderParameters = undefined;
 
-    @state()
     private header: HeaderElement | undefined = undefined;
-    @property({ type: Array })
     private initialColumnWidths: number[] | undefined = undefined;
 
-    override render() {
+    connectedCallback() {
+        const shadow = this.attachShadow({ mode: "closed" });
+        shadow.adoptedStyleSheets.push(Styles.toCss(GridElement.STYLES));
+        if (this.data?.listSpec.showGrid) {
+            shadow.adoptedStyleSheets.push(Styles.toCss(GridElement.STYLE_GRID_CELL));
+        }
+
         if (!this.data) {
             // TODO: render some placeholder
-            return "";
+            return;
         }
+
         if (this.initialColumnWidths === undefined) {
             this.initialColumnWidths = this.data.columnInfo.map(col => col.width);
         }
+
+        const backdrop = document.createElement("div");
+        backdrop.id = "backdrop";
+        backdrop.onclick = (ev: MouseEvent) => {
+            if (ev.target === this.shadowRoot?.querySelector("#backdrop")) {
+                // TODO: send selection for row '-1'
+                console.log("backdrop clicked");
+            }
+        };
+        shadow.appendChild(backdrop);
+
+        const table = document.createElement("table");
+        backdrop.appendChild(table);
 
         // Create header
         if (this.data.listSpec.showHeader) {
             this.header = new HeaderElement();
             this.header.columns = this.data.columnInfo;
             this.header.columnWidths = this.initialColumnWidths;
-            this.header.showGrid = this.data.listSpec.showGrid;
             this.header.clickable = this.data.listSpec.canClickColumns;
+
+            const thead = document.createElement("thead");
+            thead.appendChild(this.header);
+            table.appendChild(thead);
         }
 
         // Create body
-        const rows: HTMLElement[] = [];
+        const tbody = document.createElement("tbody");
+        table.appendChild(tbody);
         for (const [i, row] of this.data.rows.entries()) {
             const rowElem = new RowElement();
             rowElem.row = row;
@@ -83,29 +108,7 @@ export class GridElement extends LitElement {
                 // @ts-ignore
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 this.data.selection.last.buffer.data[7]! >= i;
-            rowElem.showGrid = this.data.listSpec.showGrid;
-            rows.push(rowElem);
+            tbody.appendChild(rowElem);
         }
-
-        const onBackdropClicked = (ev: MouseEvent) => {
-            if (ev.target === this.shadowRoot?.querySelector("#backdrop")) {
-                // TODO: send selection for row '-1'
-                console.log("backdrop clicked");
-            }
-        };
-        console.log(this.shadowRoot?.querySelector("table"));
-
-        return html`
-            <div @click=${onBackdropClicked} id="backdrop">
-                <table>
-                    <thead>
-                        ${this.header}
-                    </thead>
-                    <tbody>
-                        ${rows}
-                    </tbody>
-                </table>
-            </div>
-        `;
     }
 }

@@ -2,9 +2,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { LitElement, css, html } from "lit";
-import { customElement } from "lit/decorators.js";
 import { createCustomEvent } from "../events";
+import { Styles } from "./styles";
+import { customElement } from "./utils";
 
 /**
  * Emitted when the resize handle is moved/dragged
@@ -26,29 +26,35 @@ export namespace ResizeHandleDroppedEvent {
 }
 
 @customElement("listwindow-resize-handle")
-export class ResizeHandleElement extends LitElement {
-    static override styles = css`
-        :host {
-            position: absolute;
-            right: 0;
-            top: 4px;
-            bottom: 4px;
-            width: 6px;
-        }
-        div {
-            width: 100%;
-            height: 100%;
-            cursor: ew-resize;
-            border-right: 1px solid var(--vscode-editor-inactiveSelectionBackground);
-            transition: border-right .1s ease-out;
-            user-select: none;
-        }
-        div:hover {
-            border-right: 2px solid var(--vscode-sash-hoverBorder);
-        }
-    `;
+export class ResizeHandleElement extends HTMLElement {
+    private static readonly STYLES: Styles.StyleRules = {
+        ":host": {
+            position: "absolute",
+            right: 0,
+            top: "4px",
+            bottom: "4px",
+            width: "6px",
+        },
+        div: {
+            width: "100%",
+            height: "100%",
+            cursor: "ew-resize",
+            "border-right": "1px solid var(--vscode-editor-inactiveSelectionBackground)",
+            transition: "border-right .1s ease-out",
+            "user-select": "none",
+        },
+        "div:hover": {
+            "border-right": "2px solid var(--vscode-sash-hoverBorder)",
+        },
+    };
 
-    override render() {
+    connectedCallback() {
+        const shadow = this.attachShadow({ mode: "closed" });
+        shadow.adoptedStyleSheets.push(Styles.toCss(ResizeHandleElement.STYLES));
+
+        const handle = document.createElement("div");
+        shadow.appendChild(handle);
+
         const startDrag = (downEv: MouseEvent) => {
             if (downEv.button !== 0) {
                 return;
@@ -82,6 +88,6 @@ export class ResizeHandleElement extends LitElement {
             document.addEventListener("mouseup", onMouseUp);
         };
 
-        return html`<div @mousedown=${startDrag}></div>`;
+        handle.onmousedown = startDrag;
     }
 }

@@ -4,22 +4,24 @@
 
 import { Row } from "../thrift/listwindow_types";
 import { CellElement } from "./cell";
-import { css } from "lit";
+import { Styles } from "./styles";
+import { customElement } from "./utils";
 
 /**
  * A non-header row in a listwindow
  */
+@customElement("listwindow-row", { extends: "tr" })
 export class RowElement extends HTMLTableRowElement {
-    // These styles are injected into the grid element's shadow DOM
-    static readonly STYLES = css`
-        tbody tr:hover:not(.selected) {
-            background-color: var(--vscode-list-hoverBackground);
-        }
-    `;
+    // These styles are injected into the grid element's shadow DOM, since this
+    // element has no shadow DOM of its own
+    static readonly STYLES: Styles.StyleRules = {
+        "tbody tr:hover:not(.selected)": {
+            "background-color": "var(--vscode-list-hoverBackground)",
+        },
+    };
 
     row?: Row = undefined;
     selected = false;
-    showGrid = false;
 
     constructor() {
         super();
@@ -34,14 +36,13 @@ export class RowElement extends HTMLTableRowElement {
             const cellElem = new CellElement();
             cellElem.cell = cell;
             cellElem.selected = this.selected;
-            cellElem.showGrid = this.showGrid;
-            cellElem.onclick = (ev => {
+            cellElem.onclick = ev => {
                 if (ev.detail === 1) {
                     console.log("Single click");
                 } else if (ev.detail === 2) {
                     console.log("Double click");
                 }
-            });
+            };
 
             this.appendChild(cellElem);
         }
@@ -51,6 +52,3 @@ export class RowElement extends HTMLTableRowElement {
         }
     }
 }
-customElements.define("listwindow-row", RowElement, {
-    extends: "tr",
-});
