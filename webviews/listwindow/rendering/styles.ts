@@ -49,14 +49,11 @@ export namespace Styles {
     // Classes and related styles that are shared across components. Make sure to
     // export all styles at the bottom of the file.
 
-    // A cell in the grid with "showGrid" enabled
-    // export const CLASS_GRID_ELEMENT = "grid-element";
-    // const STYLE_GRID_ELEMENT: StyleRules = {
-    //     ["." + CLASS_GRID_ELEMENT]: {
-    //         "border-right": "1px solid var(--vscode-widget-border)",
-    //         "border-bottom": "1px solid var(--vscode-widget-border)",
-    //     },
-    // };
+    /**
+     *  Class set on the table element when the listwindow has focus (to allow
+     *  child elements to style themselves accordingly).
+     */
+    export const CLASS_VIEW_FOCUSED = "view-has-focus";
 
     /**
      * Classes corresponding to the thrift {@link Alignment}s, that describe how to

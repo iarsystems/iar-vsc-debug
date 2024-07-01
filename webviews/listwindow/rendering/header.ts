@@ -37,7 +37,7 @@ export class HeaderElement extends HTMLTableRowElement {
             "padding-bottom": "4px",
             "padding-top": "4px",
         },
-        "th div.clickable:hover": {
+        "th.clickable:hover": {
             "background-color": "var(--vscode-list-hoverBackground)",
         },
     };
@@ -57,6 +57,9 @@ export class HeaderElement extends HTMLTableRowElement {
         for (const [i, column] of this.columns.entries()) {
             const th = document.createElement("th");
             this.columnHeaders.push(th);
+            if (this.clickable) {
+                th.classList.add("clickable");
+            }
 
             const width = this.initialColumnWidths[i];
             if (width !== undefined) {
@@ -70,9 +73,6 @@ export class HeaderElement extends HTMLTableRowElement {
             div.classList.add(
                 Styles.alignmentToClass(column.defaultFormat.align),
             );
-            if (this.clickable) {
-                div.classList.add("clickable");
-            }
 
             th.appendChild(div);
 

@@ -42,8 +42,8 @@ export class GridElement extends HTMLElement {
     // Styles to apply if ListSpec.showGrid is set
     private static readonly STYLE_GRID_CELL: Styles.StyleRules = {
         "th, td": {
-            "border-right": "1px solid var(--vscode-widget-border)",
-            "border-bottom": "1px solid var(--vscode-widget-border)",
+            "border-right": "1px solid var(--vscode-widget-border, rgba(0, 0, 0, 0))",
+            "border-bottom": "1px solid var(--vscode-widget-border, rgba(0, 0, 0, 0))",
         },
     };
     // Styles to apply if resizeMode is "fit"
@@ -93,6 +93,12 @@ export class GridElement extends HTMLElement {
         shadow.appendChild(backdrop);
 
         const table = document.createElement("table");
+        window.addEventListener("focus", () => {
+            table.classList.add(Styles.CLASS_VIEW_FOCUSED);
+        });
+        window.addEventListener("blur", () => {
+            table.classList.remove(Styles.CLASS_VIEW_FOCUSED);
+        });
         backdrop.appendChild(table);
 
         // Create header

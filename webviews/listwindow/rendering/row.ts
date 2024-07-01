@@ -15,8 +15,22 @@ export class RowElement extends HTMLTableRowElement {
     // These styles are injected into the grid element's shadow DOM, since this
     // element has no shadow DOM of its own
     static readonly STYLES: Styles.StyleRules = {
+        "tbody tr": {
+            "box-sizing": "border-box",
+            "outline-offset": "-1px",
+            "outline-width": "1px"
+        },
+        "tbody tr.selected": {
+            "outline-style": "solid",
+            "outline-color": "var(--vscode-contrastActiveBorder, var(--vscode-list-inactiveFocusOutline, rgba(0, 0, 0, 0)))",
+        },
+        [`.${Styles.CLASS_VIEW_FOCUSED} tbody tr.selected`]: {
+            "outline-color": "var(--vscode-list-focusOutline)",
+        },
         "tbody tr:hover:not(.selected)": {
             "background-color": "var(--vscode-list-hoverBackground)",
+            "outline-style": "dotted",
+            "outline-color": "var(--vscode-contrastActiveBorder, rgba(0, 0, 0, 0))",
         },
     };
 

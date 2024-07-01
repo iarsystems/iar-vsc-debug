@@ -20,15 +20,18 @@ export class CellElement extends HTMLTableCellElement {
             "word-break": "keep-all",
             "max-width": 0, // always overflow rather than taking up space
         },
-        "td.selected": {
-            "background-color": "var(--vscode-list-activeSelectionBackground)",
-            color: "var(--vscode-list-activeSelectionForeground)",
-            "border-top": "1px solid var(--vscode-list-focusOutline)",
-            "border-bottom": "1px solid var(--vscode-list-focusOutline)",
-            "border-right": "none !important",
-        },
         "td.editable": {
             cursor: "pointer",
+        },
+
+        "td.selected": {
+            "border-right": "none !important",
+            "background-color": "var(--vscode-list-inactiveSelectionBackground)",
+            color: "var(--vscode-list-inactiveSelectionForeground)",
+        },
+        [`.${Styles.CLASS_VIEW_FOCUSED} td.selected`]: {
+            "background-color": "var(--vscode-list-activeSelectionBackground)",
+            color: "var(--vscode-list-activeSelectionForeground)",
         },
 
         ".text-style-fixed": {
