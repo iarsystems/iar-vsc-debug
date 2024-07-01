@@ -27,6 +27,12 @@ export class GridElement extends HTMLElement {
                 "border-spacing": "0px",
                 "table-layout": "fixed",
             },
+            // The header should be fixed at the top, regardless of scroll position
+            thead: {
+                position: "sticky",
+                top: 0,
+                background: "var(--vscode-sideBar-background)",
+            },
             "td, th div": {
                 padding: "4px 12px",
                 overflow: "hidden",
