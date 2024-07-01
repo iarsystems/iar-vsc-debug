@@ -35,6 +35,7 @@ export class RowElement extends HTMLTableRowElement {
     };
 
     row?: Row = undefined;
+    index = -1;
     selected = false;
 
     constructor() {
@@ -46,17 +47,11 @@ export class RowElement extends HTMLTableRowElement {
             // TODO: render an empty row?
             return;
         }
-        for (const cell of this.row.cells) {
+        for (const [x, cell] of this.row.cells.entries()) {
             const cellElem = new CellElement();
             cellElem.cell = cell;
             cellElem.selected = this.selected;
-            cellElem.onclick = ev => {
-                if (ev.detail === 1) {
-                    console.log("Single click");
-                } else if (ev.detail === 2) {
-                    console.log("Double click");
-                }
-            };
+            cellElem.position = { col: x, row: this.index };
 
             this.appendChild(cellElem);
         }

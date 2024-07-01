@@ -10,6 +10,7 @@ import {
 } from "./protocol";
 import { GridElement } from "./rendering/grid";
 import { PersistedState } from "./state";
+import { SelectionFlags } from "./thrift/listwindow_types";
 
 const vscode = acquireVsCodeApi<PersistedState>();
 
@@ -50,6 +51,9 @@ function main() {
                     html: appElement.outerHTML,
                 });
                 break;
+            case "contextMenuReply":
+                // Not supported yet
+                break;
             default: {
                 // Checks that all message variants are handled
                 const _exhaustiveCheck: never = message;
@@ -74,6 +78,11 @@ function render(
 
     attachEventListeners(grid);
     root.replaceChildren(grid);
+
+    document.addEventListener("contextmenu", ev => {
+        // Never allow VS Code to open its own context menu
+        ev.stopPropagation();
+    });
 }
 
 /**
@@ -84,5 +93,35 @@ function attachEventListeners(grid: GridElement) {
     grid.addEventListener("columns-resized", ev => {
         persistedState.columnWidths = ev.detail.newColumnWidths;
         vscode.setState(persistedState);
+    });
+
+    grid.addEventListener("cell-clicked", ev => {
+        if (ev.detail.isDoubleClick) {
+            postMessage({
+                subject: "cellDoubleClicked",
+                col: ev.detail.col,
+                row: ev.detail.row,
+            });
+        } else {
+            let flags = SelectionFlags.kReplace;
+            if (ev.detail.ctrlPressed) {
+                flags = SelectionFlags.kAdd;
+            } else if (ev.detail.shiftPressed) {
+                flags = SelectionFlags.kRange;
+            }
+            postMessage({
+                subject: "cellLeftClicked",
+                col: ev.detail.col,
+                row: ev.detail.row,
+                flags,
+            });
+        }
+    });
+    grid.addEventListener("cell-right-clicked", ev => {
+        postMessage({
+            subject: "getContextMenu",
+            col: ev.detail.col,
+            row: ev.detail.row,
+        });
     });
 }

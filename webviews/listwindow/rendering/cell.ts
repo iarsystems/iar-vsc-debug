@@ -2,9 +2,37 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
+import { createCustomEvent } from "../events";
 import { Cell, TextStyle } from "../thrift/listwindow_types";
 import { Styles } from "./styles";
 import { customElement } from "./utils";
+
+export interface CellPosition {
+    col: number;
+    row: number;
+}
+
+/** Emitted when the the user left clicks a cell */
+export type CellClickedEvent = CustomEvent<CellClickedEvent.Detail>;
+export namespace CellClickedEvent {
+    export interface Detail extends CellPosition {
+        isDoubleClick: boolean;
+        ctrlPressed: boolean;
+        shiftPressed: boolean;
+    }
+}
+
+/** Emitted when the the user left clicks a cell */
+export type CellRightClickedEvent = CustomEvent<CellRightClickedEvent.Detail>;
+export namespace CellRightClickedEvent {
+    export interface Detail extends CellPosition {
+        /** The position that was clicked, relative to the viewport */
+        clickPosition: {
+            x: number,
+            y: number,
+        }
+    }
+}
 
 /**
  * A single cell in a listwindow
@@ -49,6 +77,7 @@ export class CellElement extends HTMLTableCellElement {
     };
 
     cell?: Cell = undefined;
+    position: CellPosition = { col: -1, row: -1 };
     selected = false;
 
     connectedCallback() {
@@ -57,11 +86,44 @@ export class CellElement extends HTMLTableCellElement {
         }
 
         this.innerText = this.cell.text;
+
+        // Add event handlers
+        this.addEventListener("click", ev => {
+            if (ev.button === 0) {
+                const event = createCustomEvent("cell-clicked", {
+                    detail: {
+                        ...this.position,
+                        isDoubleClick: ev.detail === 2,
+                        ctrlPressed: ev.ctrlKey,
+                        shiftPressed: ev.shiftKey,
+                    },
+                    bubbles: true,
+                    composed: true,
+                });
+                this.dispatchEvent(event);
+            } else if (ev.button === 2) {
+            }
+        });
+        this.addEventListener("contextmenu", ev => {
+            const event = createCustomEvent("cell-right-clicked", {
+                detail: {
+                    ...this.position,
+                    clickPosition: {
+                        x: ev.clientX,
+                        y: ev.clientY,
+                    }
+                },
+                bubbles: true,
+                composed: true,
+            });
+            this.dispatchEvent(event);
+        });
+
+        // Add styles
         if (this.selected) {
             this.classList.add("selected");
         }
 
-        // Add styles for the text format
         if (this.cell.format.editable) {
             this.classList.add("editable");
         }

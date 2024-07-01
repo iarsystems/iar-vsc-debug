@@ -8,6 +8,7 @@ import { RowElement } from "./row";
 import { CellElement } from "./cell";
 import { Styles } from "./styles";
 import { customElement } from "./utils";
+import { createCustomEvent } from "../events";
 
 /**
  * A full listwindow grid, including headers but excluding any toolbar
@@ -92,13 +93,27 @@ export class GridElement extends HTMLElement {
         backdrop.id = "backdrop";
         backdrop.onclick = (ev: MouseEvent) => {
             if (ev.target === this.shadowRoot?.querySelector("#backdrop")) {
-                // TODO: send selection for row '-1'
-                console.log("backdrop clicked");
+                this.dispatchEvent(
+                    createCustomEvent("cell-clicked", {
+                        detail: {
+                            col: -1,
+                            row: -1,
+                            isDoubleClick: ev.detail === 2,
+                            ctrlPressed: false,
+                            shiftPressed: false,
+                        },
+                        bubbles: true,
+                        composed: true,
+                    }),
+                );
             }
         };
         shadow.appendChild(backdrop);
 
         const table = document.createElement("table");
+        if (document.hasFocus()) {
+            table.classList.add(Styles.CLASS_VIEW_FOCUSED);
+        }
         window.addEventListener("focus", () => {
             table.classList.add(Styles.CLASS_VIEW_FOCUSED);
         });
@@ -123,19 +138,20 @@ export class GridElement extends HTMLElement {
         // Create body
         const tbody = document.createElement("tbody");
         table.appendChild(tbody);
-        for (const [i, row] of this.data.rows.entries()) {
+        for (const [y, row] of this.data.rows.entries()) {
             const rowElem = new RowElement();
             rowElem.row = row;
+            rowElem.index = y;
             // TODO: fix
             rowElem.selected =
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                this.data.selection.first.buffer.data[7]! <= i &&
+                this.data.selection.first.buffer.data[7]! <= y &&
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                this.data.selection.last.buffer.data[7]! >= i;
+                this.data.selection.last.buffer.data[7]! >= y;
             tbody.appendChild(rowElem);
         }
     }

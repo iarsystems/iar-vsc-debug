@@ -7,6 +7,7 @@ import { ViewMessage, ExtensionMessage, RenderParameters, ColumnResizeMode } fro
 import { Alignment, Cell, Column, DragDropFeedback, Format, ListSpec, Row, SelRange, Target, TextStyle } from "iar-vsc-common/thrift/bindings/listwindow_types";
 import Int64 = require("node-int64");
 import { SettingsConstants } from "../settingsConstants";
+import { MenuItem } from "../../webviews/listwindow/thrift/listwindow_types";
 
 /**
  * Instantiates a webview that renders a listwindow, and handles all
@@ -69,6 +70,32 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
                     break;
                 case "HTMLDump":
                     // ignore for now, only used for testing
+                    break;
+                case "cellLeftClicked":
+                    // TODO: send this to the backend
+                    // for now we fake the backend
+                    this.postMessageToView({
+                        subject: "render",
+                        params: getMockRenderParams(message.row),
+                    });
+                    break;
+                case "cellDoubleClicked":
+                    // TODO: send this to the backend
+                    break;
+                case "getContextMenu":
+                    // TODO: request the menu from the backend
+                    // for now we fake the backend
+                    this.postMessageToView({
+                        subject: "contextMenuReply",
+                        menu: [
+                            new MenuItem({
+                                text: "Hello context menu",
+                                command: 0,
+                                enabled: true,
+                                checked: false,
+                            }),
+                        ],
+                    });
                     break;
                 default: {
                     // Checks that all message variants are handled
@@ -175,7 +202,7 @@ function getNonce() {
     return text;
 }
 
-function getMockRenderParams() {
+function getMockRenderParams(selectedRow = 1) {
     const format = new Format();
     format.align = Alignment.kLeft;
     format.style = TextStyle.kProportionalPlain;
@@ -286,7 +313,7 @@ function getMockRenderParams() {
             treeinfo: ""
         }),
     );
-    params.selection.first = new Int64(1);
-    params.selection.last = new Int64(1);
+    params.selection.first = new Int64(selectedRow);
+    params.selection.last = new Int64(selectedRow);
     return params;
 }
