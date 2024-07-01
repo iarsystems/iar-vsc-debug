@@ -54,10 +54,10 @@ export class GridElement extends HTMLElement {
     };
 
     data?: RenderParameters = undefined;
+    initialColumnWidths: number[] | undefined = undefined;
     resizeMode: ColumnResizeMode = "fixed";
 
     private header: HeaderElement | undefined = undefined;
-    private initialColumnWidths: number[] | undefined = undefined;
 
     connectedCallback() {
         const shadow = this.attachShadow({ mode: "closed" });

@@ -82,6 +82,14 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
             this.extensionUri
         );
 
+        this.view.onDidChangeVisibility(() => {
+            // Webview state is destroyed when the view is made invisible, so we
+            // need to resend the latest state when it becomes visible again
+            if (this.view?.visible) {
+                this.applyResizeMode().then(() => this.updateView());
+            }
+        });
+
         this.applyResizeMode().then(() => this.updateView());
     }
 
@@ -151,7 +159,6 @@ namespace Rendering {
     </head>
     <body>
         <div id="app">
-            <p>Loading...</p>
         </div>
     </body>
     </html>`;
@@ -216,7 +223,7 @@ function getMockRenderParams() {
             new Column({
                 title: "Value",
                 width: 150,
-                fixed: true,
+                fixed: false,
                 hideSelection: false,
                 defaultFormat: format,
             }),
@@ -242,12 +249,13 @@ function getMockRenderParams() {
     };
     params.listSpec.showHeader = true;
     params.listSpec.showGrid = true;
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    params.rows.push(params.rows[0]!);
+    params.listSpec.canClickColumns = true;
+    for (let i = 0; i < 10; i++) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        params.rows.push(params.rows[0]!);
+    }
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     params.rows[1]!.cells[0]!.format = JSON.parse(JSON.stringify(format));
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    params.rows[1]!.cells[0]!.format.style = TextStyle.kProportionalBoldItalic;
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     params.rows[1]!.cells[0]!.format.editable = true;
     params.rows.push(

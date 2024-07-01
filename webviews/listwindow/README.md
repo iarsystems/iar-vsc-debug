@@ -55,6 +55,7 @@ we can't *call* the thrift code, but we can use its type definitions.
 ## Functional features
 
 * Resizable columns
+* Save/restore column widths
 
 ### Functional Todo
 
@@ -66,7 +67,6 @@ we can't *call* the thrift code, but we can use its type definitions.
 * Multiple selection (but no support in model yet)
 * Tooltips (e.g. physical breakpoints)
 * Cell editing
-* Save/restore column widths
 * Save/restore state
 * Toolbars
 * Drag-n-drop

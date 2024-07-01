@@ -2,11 +2,23 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
+import { createCustomEvent } from "../events";
 import { ColumnResizeMode } from "../protocol";
 import { Column } from "../thrift/listwindow_types";
 import { ResizeHandleElement, ResizeHandleMovedEvent } from "./resizeHandle";
 import { Styles } from "./styles";
 import { customElement } from "./utils";
+
+/**
+ * Emitted when the the user has resized a column
+ */
+export type ColumnsResizedEvent = CustomEvent<ColumnsResizedEvent.Detail>;
+export namespace ColumnsResizedEvent {
+    export interface Detail {
+        /** The new column widths in pixels. */
+        newColumnWidths: number[]
+    }
+}
 
 /**
  * A header row in a listwindow. These cells determine the width of each column,
@@ -83,7 +95,12 @@ export class HeaderElement extends HTMLTableRowElement {
                     // *actual* width became and store that for when we
                     // re-render
                     requestAnimationFrame(() => {
-                        // TODO: store the widths for future sessions/renders
+                        const widths = this.columnHeaders.map(th => th.offsetWidth);
+                        this.dispatchEvent(createCustomEvent("columns-resized", {
+                            detail: { newColumnWidths: widths },
+                            bubbles: true,
+                            composed: true,
+                        }));
                     });
                 });
                 th.appendChild(handle);

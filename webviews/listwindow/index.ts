@@ -9,10 +9,13 @@ import {
     ViewMessage,
 } from "./protocol";
 import { GridElement } from "./rendering/grid";
+import { PersistedState } from "./state";
 
-const vscode = acquireVsCodeApi<RenderParameters>();
+const vscode = acquireVsCodeApi<PersistedState>();
 
 window.addEventListener("load", main);
+
+const persistedState = vscode.getState() ?? {};
 
 function postMessage(msg: ViewMessage) {
     vscode.postMessage(msg);
@@ -65,5 +68,21 @@ function render(
     const grid = new GridElement();
     grid.data = params;
     grid.resizeMode = resizeMode;
+    if (persistedState.columnWidths) {
+        grid.initialColumnWidths = persistedState.columnWidths;
+    }
+
+    attachEventListeners(grid);
     root.replaceChildren(grid);
+}
+
+/**
+ * Attach listeners for user interaction. We handle most user input here, where
+ * we have access to the vscode api object.
+ */
+function attachEventListeners(grid: GridElement) {
+    grid.addEventListener("columns-resized", ev => {
+        persistedState.columnWidths = ev.detail.newColumnWidths;
+        vscode.setState(persistedState);
+    });
 }
