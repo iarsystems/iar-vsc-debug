@@ -37,7 +37,8 @@ export type ExtensionMessage =
   | { subject: "render", params: RenderParameters } // Render the given data
   | { subject: "setResizeMode", mode: ColumnResizeMode }
   | { subject: "dumpHTML" } // Send a message back with the current full HTML of the view (useful for testing)
-  | { subject: "contextMenuReply", menu: MenuItem[] };
+  | { subject: "contextMenuReply", menu: MenuItem[] }
+  | { subject: "tooltipReply", text?: string };
 
 /**
  * A message from the listwindow view to the extension
@@ -47,4 +48,5 @@ export type ViewMessage =
   | { subject: "HTMLDump", html: string } // Response to a dumpHTML message, contains the full HTML of the view
   | { subject: "cellLeftClicked", col: number, row: number, flags: SelectionFlags }
   | { subject: "cellDoubleClicked", col: number, row: number }
-  | { subject: "getContextMenu", col: number, row: number }; // The user right-clicked a cell. The extension should reply with "context-menu-reply"
+  | { subject: "getContextMenu", col: number, row: number } // The user right-clicked a cell. The extension should reply with "context-menu-reply"
+  | { subject: "getTooltip", col: number, row: number }; // The user is hovering a cell. The extension should reply with "hover-reply"

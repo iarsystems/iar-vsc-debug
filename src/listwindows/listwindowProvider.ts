@@ -97,10 +97,28 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
                         ],
                     });
                     break;
+                case "getTooltip":
+                    {
+                        // TODO: request the tooltip from the backend
+                        // for now we fake the backend
+                        const text = message.col !== 2 ? `BASEPRI_MAX
+    ReadWrite
+    bits [15:8]
+    Base priority mask raise
+    Right-click for more registers and options` : undefined;
+                        this.postMessageToView({
+                            subject: "tooltipReply",
+                            text,
+                        });
+                    }
+                    break;
                 default: {
-                    // Checks that all message variants are handled
+                    // Makes TS check that all message variants are handled
                     const _exhaustiveCheck: never = message;
-                    throw _exhaustiveCheck;
+                    throw new Error(
+                        "Unhandled message: " +
+                            JSON.stringify(_exhaustiveCheck),
+                    );
                 }
             }
         });

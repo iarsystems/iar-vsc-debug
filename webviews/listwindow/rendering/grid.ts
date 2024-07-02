@@ -7,8 +7,9 @@ import { HeaderElement } from "./header";
 import { RowElement } from "./row";
 import { CellElement } from "./cell";
 import { Styles } from "./styles";
-import { customElement } from "./utils";
+import { HoverService } from "./hoverService";
 import { createCustomEvent } from "../events";
+import { customElement } from "./utils";
 
 /**
  * A full listwindow grid, including headers but excluding any toolbar
@@ -63,6 +64,8 @@ export class GridElement extends HTMLElement {
     data?: RenderParameters = undefined;
     initialColumnWidths: number[] | undefined = undefined;
     resizeMode: ColumnResizeMode = "fixed";
+
+    hoverService: HoverService | undefined = undefined;
 
     private header: HeaderElement | undefined = undefined;
 
@@ -152,6 +155,7 @@ export class GridElement extends HTMLElement {
                 // @ts-ignore
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 this.data.selection.last.buffer.data[7]! >= y;
+            rowElem.hoverService = this.hoverService;
             tbody.appendChild(rowElem);
         }
     }

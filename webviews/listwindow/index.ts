@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
+import { WebviewApi } from "vscode-webview";
 import {
     ColumnResizeMode,
     ExtensionMessage,
@@ -9,119 +10,145 @@ import {
     ViewMessage,
 } from "./protocol";
 import { GridElement } from "./rendering/grid";
+import { TooltipService } from "./rendering/tooltipService";
 import { PersistedState } from "./state";
 import { SelectionFlags } from "./thrift/listwindow_types";
+import { HoverService } from "./rendering/hoverService";
 
-const vscode = acquireVsCodeApi<PersistedState>();
+/**
+ * The main class, which orchestrates rendering, input handling etc.
+ */
+class ListwindowController {
+    private readonly persistedState: PersistedState;
+    private renderParams: RenderParameters | undefined = undefined;
+    private resizeMode: ColumnResizeMode = "fixed";
+    private readonly tooltipProvider = new TooltipService();
+    private readonly hoverService = new HoverService();
 
-window.addEventListener("load", main);
-
-const persistedState = vscode.getState() ?? {};
-
-function postMessage(msg: ViewMessage) {
-    vscode.postMessage(msg);
-}
-
-function main() {
-    const appElement = document.getElementById("app");
-    if (!appElement) {
-        return;
+    constructor(
+        private readonly appElement: HTMLElement,
+        private readonly vscode: WebviewApi<PersistedState.Data>,
+    ) {
+        this.persistedState = new PersistedState(vscode);
+        this.sendMessage({ subject: "loaded" });
     }
 
-    let resizeMode: ColumnResizeMode = "fixed";
-    let lastRenderParams: RenderParameters | undefined = undefined;
-
-    window.addEventListener("message", event => {
-        const message: ExtensionMessage = event.data;
-        switch (message.subject) {
+    /** Handle a message from the view provider in the extension code */
+    handleMessage(msg: ExtensionMessage) {
+        switch (msg.subject) {
             case "render": {
-                lastRenderParams = message.params;
-                render(appElement, message.params, resizeMode);
+                this.renderParams = msg.params;
+                this.render();
                 break;
             }
             case "setResizeMode":
-                resizeMode = message.mode;
-                if (lastRenderParams) {
-                    render(appElement, lastRenderParams, resizeMode);
+                this.resizeMode = msg.mode;
+                if (this.renderParams) {
+                    this.render();
                 }
                 break;
             case "dumpHTML":
-                postMessage({
+                this.sendMessage({
                     subject: "HTMLDump",
-                    html: appElement.outerHTML,
+                    html: this.appElement.outerHTML,
                 });
                 break;
             case "contextMenuReply":
                 // Not supported yet
                 break;
+            case "tooltipReply":
+                this.tooltipProvider.setTextForPendingTooltip(msg.text);
+                break;
             default: {
-                // Checks that all message variants are handled
-                const _exhaustiveCheck: never = message;
-                throw _exhaustiveCheck;
+                // Makes TS check that all message variants are handled
+                const _exhaustiveCheck: never = msg;
+                throw new Error(
+                    "Unhandled message: " + JSON.stringify(_exhaustiveCheck),
+                );
             }
         }
-    });
-    postMessage({ subject: "loaded" });
-}
-
-function render(
-    root: HTMLElement,
-    params: RenderParameters,
-    resizeMode: ColumnResizeMode,
-) {
-    const grid = new GridElement();
-    grid.data = params;
-    grid.resizeMode = resizeMode;
-    if (persistedState.columnWidths) {
-        grid.initialColumnWidths = persistedState.columnWidths;
     }
 
-    attachEventListeners(grid);
-    root.replaceChildren(grid);
+    /** Posts a message to the view provider in the extension code */
+    private sendMessage(msg: ViewMessage) {
+        this.vscode.postMessage(msg);
+    }
 
+    private render() {
+        // Replace all contents of the appElement
+        const grid = new GridElement();
+        grid.data = this.renderParams;
+        grid.resizeMode = this.resizeMode;
+        if (this.persistedState.columnWidths) {
+            grid.initialColumnWidths = this.persistedState.columnWidths;
+        }
+        grid.hoverService = this.hoverService;
+
+        this.appElement.replaceChildren(grid);
+
+        // Attach event listeners to the new elements
+        grid.addEventListener("columns-resized", ev => {
+            this.persistedState.columnWidths = ev.detail.newColumnWidths;
+        });
+
+        grid.addEventListener("cell-clicked", ev => {
+            if (ev.detail.isDoubleClick) {
+                this.sendMessage({
+                    subject: "cellDoubleClicked",
+                    col: ev.detail.col,
+                    row: ev.detail.row,
+                });
+            } else {
+                let flags = SelectionFlags.kReplace;
+                if (ev.detail.ctrlPressed) {
+                    flags = SelectionFlags.kAdd;
+                } else if (ev.detail.shiftPressed) {
+                    flags = SelectionFlags.kRange;
+                }
+                this.sendMessage({
+                    subject: "cellLeftClicked",
+                    col: ev.detail.col,
+                    row: ev.detail.row,
+                    flags,
+                });
+            }
+        });
+        grid.addEventListener("cell-right-clicked", ev => {
+            this.sendMessage({
+                subject: "getContextMenu",
+                col: ev.detail.col,
+                row: ev.detail.row,
+            });
+        });
+        grid.addEventListener("cell-hovered", ev => {
+            this.tooltipProvider.setPendingTooltip(ev);
+            this.sendMessage({
+                subject: "getTooltip",
+                col: ev.detail.col,
+                row: ev.detail.row,
+            });
+        });
+    }
+}
+
+window.addEventListener("load", () => {
     document.addEventListener("contextmenu", ev => {
         // Never allow VS Code to open its own context menu
         ev.stopPropagation();
     });
-}
 
-/**
- * Attach listeners for user interaction. We handle most user input here, where
- * we have access to the vscode api object.
- */
-function attachEventListeners(grid: GridElement) {
-    grid.addEventListener("columns-resized", ev => {
-        persistedState.columnWidths = ev.detail.newColumnWidths;
-        vscode.setState(persistedState);
-    });
+    const appElement = document.getElementById("app");
+    if (!appElement) {
+        return;
+    }
+    const vscode = acquireVsCodeApi<PersistedState.Data>();
 
-    grid.addEventListener("cell-clicked", ev => {
-        if (ev.detail.isDoubleClick) {
-            postMessage({
-                subject: "cellDoubleClicked",
-                col: ev.detail.col,
-                row: ev.detail.row,
-            });
-        } else {
-            let flags = SelectionFlags.kReplace;
-            if (ev.detail.ctrlPressed) {
-                flags = SelectionFlags.kAdd;
-            } else if (ev.detail.shiftPressed) {
-                flags = SelectionFlags.kRange;
-            }
-            postMessage({
-                subject: "cellLeftClicked",
-                col: ev.detail.col,
-                row: ev.detail.row,
-                flags,
-            });
+    const controller = new ListwindowController(appElement, vscode);
+
+    window.addEventListener("message", ev => {
+        if ("subject" in ev.data) {
+            const message = ev.data as ExtensionMessage;
+            controller.handleMessage(message);
         }
     });
-    grid.addEventListener("cell-right-clicked", ev => {
-        postMessage({
-            subject: "getContextMenu",
-            col: ev.detail.col,
-            row: ev.detail.row,
-        });
-    });
-}
+});

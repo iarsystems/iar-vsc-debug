@@ -4,6 +4,7 @@
 
 import { createCustomEvent } from "../events";
 import { Cell, TextStyle } from "../thrift/listwindow_types";
+import { HoverService } from "./hoverService";
 import { Styles } from "./styles";
 import { customElement } from "./utils";
 
@@ -31,6 +32,23 @@ export namespace CellRightClickedEvent {
             x: number,
             y: number,
         }
+    }
+}
+
+/** Emitted when the the user left clicks a cell */
+export type CellHoveredEvent = CustomEvent<CellHoveredEvent.Detail>;
+export namespace CellHoveredEvent {
+    export interface Detail extends CellPosition {
+        /** The position the mouse is in */
+        hoverPosition: {
+            x: number,
+            y: number,
+        },
+        cellContent: {
+            text?: string,
+            /** Whether the text is cut off because it does not fit in the cell */
+            isTruncated: boolean,
+        },
     }
 }
 
@@ -80,6 +98,8 @@ export class CellElement extends HTMLTableCellElement {
     position: CellPosition = { col: -1, row: -1 };
     selected = false;
 
+    hoverService: HoverService | undefined = undefined;
+
     connectedCallback() {
         if (!this.cell) {
             return;
@@ -117,6 +137,24 @@ export class CellElement extends HTMLTableCellElement {
                 composed: true,
             });
             this.dispatchEvent(event);
+        });
+        const cellId = `${this.position.col},${this.position.row}`;
+        this.hoverService?.registerHoverElement(this, cellId, pos => {
+            this.dispatchEvent(createCustomEvent("cell-hovered", {
+                detail: {
+                    ...this.position,
+                    hoverPosition: {
+                        x: pos.clientX,
+                        y: pos.clientY,
+                    },
+                    cellContent: {
+                        text: this.cell?.text,
+                        isTruncated: this.scrollWidth > this.clientWidth,
+                    },
+                },
+                bubbles: true,
+                composed: true,
+            }));
         });
 
         // Add styles

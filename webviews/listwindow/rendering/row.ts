@@ -38,6 +38,8 @@ export class RowElement extends HTMLTableRowElement {
     index = -1;
     selected = false;
 
+    hoverService: HoverService | undefined = undefined;
+
     constructor() {
         super();
     }
@@ -52,6 +54,7 @@ export class RowElement extends HTMLTableRowElement {
             cellElem.cell = cell;
             cellElem.selected = this.selected;
             cellElem.position = { col: x, row: this.index };
+            cellElem.hoverService = this.hoverService;
 
             this.appendChild(cellElem);
         }
