@@ -5,7 +5,8 @@
 import { createCustomEvent } from "../events";
 import { Cell, TextStyle } from "../thrift/listwindow_types";
 import { HoverService } from "./hoverService";
-import { Styles } from "./styles";
+import { createCss } from "./styles/createCss";
+import { SharedStyles } from "./styles/sharedStyles";
 import { customElement } from "./utils";
 
 export interface CellPosition {
@@ -57,7 +58,7 @@ export namespace CellHoveredEvent {
  */
 @customElement("listwindow-cell", { extends: "td" })
 export class CellElement extends HTMLTableCellElement {
-    private static readonly STYLES: CSSStyleSheet = Styles.toCss({
+    private static readonly STYLES: CSSStyleSheet = createCss({
         td: {
             cursor: "default",
             "white-space": "nowrap",
@@ -163,7 +164,8 @@ export class CellElement extends HTMLTableCellElement {
         if (this.cell.format.editable) {
             this.classList.add("editable");
         }
-        this.classList.add(Styles.alignmentToClass(this.cell.format.align));
+
+        this.classList.add(SharedStyles.alignmentToClass(this.cell.format.align));
 
         if (
             [

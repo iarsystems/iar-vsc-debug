@@ -2,9 +2,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { createCustomEvent } from "../events";
-import { Styles } from "./styles";
-import { customElement } from "./utils";
+import { createCustomEvent } from "../../events";
+import { createCss } from "../styles/createCss";
+import { customElement } from "../utils";
 
 /**
  * Emitted when the user starts dragging the resize handle
@@ -34,7 +34,7 @@ export namespace ResizeHandleMovedEvent {
 
 @customElement("listwindow-resize-handle")
 export class ResizeHandleElement extends HTMLElement {
-    private static readonly STYLES: CSSStyleSheet = Styles.toCss({
+    private static readonly STYLES: CSSStyleSheet = createCss({
         ":host": {
             position: "absolute",
             right: 0,

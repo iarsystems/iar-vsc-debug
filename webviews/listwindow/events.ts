@@ -3,12 +3,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { CellClickedEvent, CellHoveredEvent, CellRightClickedEvent } from "./rendering/cell";
-import { ColumnsResizedEvent } from "./rendering/header";
+import { ColumnsResizedEvent } from "./rendering/header/header";
 import {
     ResizeHandleDragBeginEvent,
     ResizeHandleDragEndEvent,
     ResizeHandleMovedEvent,
-} from "./rendering/resizeHandle";
+} from "./rendering/header/resizeHandle";
 
 /**
  * Defines custom DOM events ({@link CustomEvent})s available in the view, each

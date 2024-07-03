@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { CellHoveredEvent } from "./cell";
-import { Styles } from "./styles";
+import { createCss } from "./styles/createCss";
 import { customElement } from "./utils";
 import * as FloatingUi from "@floating-ui/dom";
 
@@ -66,7 +66,7 @@ export class TooltipService {
 
 @customElement("listwindow-tooltip")
 class TooltipElement extends HTMLElement {
-    private static readonly STYLES: CSSStyleSheet = Styles.toCss({
+    private static readonly STYLES: CSSStyleSheet = createCss({
         ":host": {
             position: "absolute",
             top: 0,

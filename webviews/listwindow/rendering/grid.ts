@@ -3,12 +3,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { ColumnResizeMode, RenderParameters } from "../protocol";
-import { HeaderElement } from "./header";
+import { HeaderElement } from "./header/header";
 import { RowElement } from "./row";
-import { Styles } from "./styles";
 import { HoverService } from "./hoverService";
 import { createCustomEvent } from "../events";
 import { customElement } from "./utils";
+import { createCss } from "./styles/createCss";
+import { SharedStyles } from "./styles/sharedStyles";
 
 /**
  * A full listwindow grid, including headers but excluding any toolbar
@@ -16,7 +17,7 @@ import { customElement } from "./utils";
 @customElement("listwindow-grid")
 export class GridElement extends HTMLElement {
     private static readonly STYLES: CSSStyleSheet[] = [
-        Styles.toCss({
+        createCss({
             "#backdrop": {
                 width: "100%",
                 height: "100%",
@@ -40,17 +41,17 @@ export class GridElement extends HTMLElement {
         }),
         HeaderElement.STYLES,
         RowElement.STYLES,
-        ...Styles.SHARED_STYLES,
+        ...SharedStyles.STYLES,
     ];
     // Styles to apply if ListSpec.showGrid is set
-    private static readonly STYLE_GRID_CELL: CSSStyleSheet = Styles.toCss({
+    private static readonly STYLE_GRID_CELL: CSSStyleSheet = createCss({
         "th, td": {
             "border-right": "1px solid var(--vscode-widget-border, rgba(0, 0, 0, 0))",
             "border-bottom": "1px solid var(--vscode-widget-border, rgba(0, 0, 0, 0))",
         },
     });
     // Styles to apply if resizeMode is "fit"
-    private static readonly STYLE_RESIZEMODE_FIT: CSSStyleSheet = Styles.toCss({
+    private static readonly STYLE_RESIZEMODE_FIT: CSSStyleSheet = createCss({
         ":host, table": {
             width: "100%",
         },
@@ -68,12 +69,10 @@ export class GridElement extends HTMLElement {
         const shadow = this.attachShadow({ mode: "closed" });
         shadow.adoptedStyleSheets.push(...GridElement.STYLES);
 
-        if (this.data?.listSpec.showGrid) {
-            shadow.adoptedStyleSheets.push(GridElement.STYLE_GRID_CELL);
-        }
-        if (this.resizeMode === "fit") {
-            shadow.adoptedStyleSheets.push(GridElement.STYLE_RESIZEMODE_FIT);
-        }
+        shadow.adoptedStyleSheets.push(GridElement.STYLE_GRID_CELL);
+        GridElement.STYLE_GRID_CELL.disabled = !(this.data?.listSpec.showGrid);
+        shadow.adoptedStyleSheets.push(GridElement.STYLE_RESIZEMODE_FIT);
+        GridElement.STYLE_RESIZEMODE_FIT.disabled = this.resizeMode !== "fit";
 
         if (!this.data) {
             // TODO: render some placeholder
@@ -106,15 +105,6 @@ export class GridElement extends HTMLElement {
         shadow.appendChild(backdrop);
 
         const table = document.createElement("table");
-        if (document.hasFocus()) {
-            table.classList.add(Styles.CLASS_VIEW_FOCUSED);
-        }
-        window.addEventListener("focus", () => {
-            table.classList.add(Styles.CLASS_VIEW_FOCUSED);
-        });
-        window.addEventListener("blur", () => {
-            table.classList.remove(Styles.CLASS_VIEW_FOCUSED);
-        });
         backdrop.appendChild(table);
 
         // Create header

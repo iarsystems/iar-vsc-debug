@@ -2,12 +2,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { createCustomEvent } from "../events";
-import { ColumnResizeMode } from "../protocol";
-import { Column } from "../thrift/listwindow_types";
+import { createCustomEvent } from "../../events";
+import { ColumnResizeMode } from "../../protocol";
+import { Column } from "../../thrift/listwindow_types";
 import { ResizeHandleElement } from "./resizeHandle";
-import { Styles } from "./styles";
-import { customElement } from "./utils";
+import { createCss } from "../styles/createCss";
+import { customElement } from "../utils";
+import { SharedStyles } from "../styles/sharedStyles";
 
 /**
  * Emitted when the the user has resized a column
@@ -27,7 +28,7 @@ export namespace ColumnsResizedEvent {
 @customElement("listwindow-header", { extends: "tr" })
 export class HeaderElement extends HTMLTableRowElement {
     // These styles are injected into the grid element's shadow DOM
-    static readonly STYLES: CSSStyleSheet = Styles.toCss({
+    static readonly STYLES: CSSStyleSheet = createCss({
         th: {
             position: "relative",
             cursor: "default",
@@ -76,7 +77,7 @@ export class HeaderElement extends HTMLTableRowElement {
             div.innerText = column.title;
 
             div.classList.add(
-                Styles.alignmentToClass(column.defaultFormat.align),
+                SharedStyles.alignmentToClass(column.defaultFormat.align),
             );
 
             th.appendChild(div);

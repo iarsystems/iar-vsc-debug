@@ -5,7 +5,7 @@
 import { Row } from "../thrift/listwindow_types";
 import { CellElement } from "./cell";
 import { HoverService } from "./hoverService";
-import { Styles } from "./styles";
+import { createCss } from "./styles/createCss";
 import { customElement } from "./utils";
 
 /**
@@ -15,7 +15,7 @@ import { customElement } from "./utils";
 export class RowElement extends HTMLTableRowElement {
     // These styles are injected into the grid element's shadow DOM, since this
     // element has no shadow DOM of its own
-    static readonly STYLES: CSSStyleSheet = Styles.toCss({
+    static readonly STYLES: CSSStyleSheet = createCss({
         "tbody tr": {
             "box-sizing": "border-box",
             "outline-offset": "-1px",
@@ -25,7 +25,7 @@ export class RowElement extends HTMLTableRowElement {
             "outline-style": "solid",
             "outline-color": "var(--vscode-contrastActiveBorder, var(--vscode-list-inactiveFocusOutline, rgba(0, 0, 0, 0)))",
         },
-        [`.${Styles.CLASS_VIEW_FOCUSED} tbody tr.selected`]: {
+        [`.${"TODO"} tbody tr.selected`]: {
             "outline-color": "var(--vscode-list-focusOutline)",
         },
         "tbody tr:hover:not(.selected)": {
