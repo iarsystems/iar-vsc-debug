@@ -34,7 +34,7 @@ export namespace ResizeHandleMovedEvent {
 
 @customElement("listwindow-resize-handle")
 export class ResizeHandleElement extends HTMLElement {
-    private static readonly STYLES: Styles.StyleRules = {
+    private static readonly STYLES: CSSStyleSheet = Styles.toCss({
         ":host": {
             position: "absolute",
             right: 0,
@@ -53,18 +53,18 @@ export class ResizeHandleElement extends HTMLElement {
         "div:hover, div.being-moved": {
             "border-right": "2px solid var(--vscode-sash-hoverBorder)",
         },
-    };
+    });
 
     private handle: HTMLElement | undefined = undefined;
 
     connectedCallback() {
         const shadow = this.attachShadow({ mode: "closed" });
-        shadow.adoptedStyleSheets.push(Styles.toCss(ResizeHandleElement.STYLES));
+        shadow.adoptedStyleSheets.push(ResizeHandleElement.STYLES);
 
         this.handle = document.createElement("div");
         shadow.appendChild(this.handle);
 
-        const startDrag = (downEv: MouseEvent) => {
+        this.handle.onmousedown = (downEv: MouseEvent) => {
             if (downEv.button !== 0) {
                 return;
             }
@@ -76,32 +76,44 @@ export class ResizeHandleElement extends HTMLElement {
                 composed: true,
             }));
 
-            const onMove = (ev: MouseEvent) => {
-                const distance = ev.x - downEv.x;
-                this.dispatchEvent(createCustomEvent("resize-handle-moved", {
-                    detail: {
-                        deltaX: distance,
-                    },
-                    bubbles: true,
-                    composed: true,
-                }));
-            };
-            document.addEventListener("mousemove", onMove);
+            // Using this when registering event handlers lets us remove them
+            // all at once when we're done.
+            const aborter = new AbortController();
 
-            const onMouseUp = () => {
-                this.handle?.classList.remove("being-moved");
-                document.removeEventListener("mousemove", onMove);
-                document.removeEventListener("mouseup", onMouseUp);
+            document.addEventListener(
+                "mousemove",
+                ev => {
+                    const distance = ev.x - downEv.x;
+                    this.dispatchEvent(
+                        createCustomEvent("resize-handle-moved", {
+                            detail: {
+                                deltaX: distance,
+                            },
+                            bubbles: true,
+                            composed: true,
+                        }),
+                    );
+                },
+                { signal: aborter.signal },
+            );
 
-                this.dispatchEvent(createCustomEvent("resize-handle-drag-end", {
-                    detail: {},
-                    bubbles: true,
-                    composed: true,
-                }));
-            };
-            document.addEventListener("mouseup", onMouseUp);
+            document.addEventListener(
+                "mouseup",
+                () => {
+                    this.handle?.classList.remove("being-moved");
+                    // Removes all event handlers
+                    aborter.abort();
+
+                    this.dispatchEvent(
+                        createCustomEvent("resize-handle-drag-end", {
+                            detail: {},
+                            bubbles: true,
+                            composed: true,
+                        }),
+                    );
+                },
+                { signal: aborter.signal },
+            );
         };
-
-        this.handle.onmousedown = startDrag;
     }
 }

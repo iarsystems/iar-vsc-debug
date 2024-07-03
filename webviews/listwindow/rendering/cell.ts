@@ -57,9 +57,7 @@ export namespace CellHoveredEvent {
  */
 @customElement("listwindow-cell", { extends: "td" })
 export class CellElement extends HTMLTableCellElement {
-    // These styles are injected into the grid element's shadow DOM, since this
-    // element has no shadow DOM of its own
-    static readonly STYLES: Styles.StyleRules = {
+    private static readonly STYLES: CSSStyleSheet = Styles.toCss({
         td: {
             cursor: "default",
             "white-space": "nowrap",
@@ -92,7 +90,7 @@ export class CellElement extends HTMLTableCellElement {
         ".text-style-italic": {
             "font-style": "italic",
         },
-    };
+    });
 
     cell?: Cell = undefined;
     position: CellPosition = { col: -1, row: -1 };

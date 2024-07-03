@@ -5,7 +5,7 @@
 import { createCustomEvent } from "../events";
 import { ColumnResizeMode } from "../protocol";
 import { Column } from "../thrift/listwindow_types";
-import { ResizeHandleElement, ResizeHandleMovedEvent } from "./resizeHandle";
+import { ResizeHandleElement } from "./resizeHandle";
 import { Styles } from "./styles";
 import { customElement } from "./utils";
 
@@ -27,7 +27,7 @@ export namespace ColumnsResizedEvent {
 @customElement("listwindow-header", { extends: "tr" })
 export class HeaderElement extends HTMLTableRowElement {
     // These styles are injected into the grid element's shadow DOM
-    static readonly STYLES: Styles.StyleRules = {
+    static readonly STYLES: CSSStyleSheet = Styles.toCss({
         th: {
             position: "relative",
             cursor: "default",
@@ -40,7 +40,12 @@ export class HeaderElement extends HTMLTableRowElement {
         "th.clickable:hover": {
             "background-color": "var(--vscode-list-hoverBackground)",
         },
-    };
+        "th>div": {
+            overflow: "hidden",
+            "text-overflow": "ellipsis",
+            padding: "4px 12px",
+        }
+    });
 
     private static readonly MIN_COL_WIDTH = 25;
 
@@ -140,22 +145,27 @@ export class HeaderElement extends HTMLTableRowElement {
         }
         const originalWidth = headerBeingResized.offsetWidth;
 
+        // Use this aborter signal when registering event handlers that should
+        // be automatically removed once when we're done.
+        const aborter = new AbortController();
+        headerBeingResized.addEventListener(
+            "resize-handle-drag-end",
+            () => aborter.abort(),
+            { signal: aborter.signal },
+        );
+
         if (this.resizeMode === "fixed") {
-            const onMove = (ev: ResizeHandleMovedEvent) => {
-                const newWidth = Math.max(
-                    originalWidth + ev.detail.deltaX,
-                    HeaderElement.MIN_COL_WIDTH,
-                );
-                applyWidth(headerBeingResized, newWidth + "px");
-            };
-            headerBeingResized.addEventListener("resize-handle-moved", onMove);
-
-            const onEnd = () => {
-                headerBeingResized.removeEventListener("resize-handle-moved", onMove);
-                headerBeingResized.removeEventListener("resize-handle-drag-end", onEnd);
-            };
-            headerBeingResized.addEventListener("resize-handle-drag-end", onEnd);
-
+            headerBeingResized.addEventListener(
+                "resize-handle-moved",
+                ev => {
+                    const newWidth = Math.max(
+                        originalWidth + ev.detail.deltaX,
+                        HeaderElement.MIN_COL_WIDTH,
+                    );
+                    applyWidth(headerBeingResized, newWidth + "px");
+                },
+                { signal: aborter.signal },
+            );
         } else if (this.resizeMode === "fit") {
             // We will take/give width from/to the header to the right of the
             // one being resized, preserving the overall width
@@ -169,36 +179,39 @@ export class HeaderElement extends HTMLTableRowElement {
             // precise control over it.
             this.applyRenderedWidthsToStyleAsPixels();
 
-            const onMove = (ev: ResizeHandleMovedEvent) => {
-                let newWidth = Math.max(
-                    originalWidth + ev.detail.deltaX,
-                    HeaderElement.MIN_COL_WIDTH,
-                );
-                let neighborNewWidth =
-                    neighborOriginalWidth - (newWidth - originalWidth);
-                if (neighborNewWidth < HeaderElement.MIN_COL_WIDTH) {
-                    newWidth -= HeaderElement.MIN_COL_WIDTH - neighborNewWidth;
-                    neighborNewWidth = HeaderElement.MIN_COL_WIDTH;
-                }
-                if (
-                    newWidth >= HeaderElement.MIN_COL_WIDTH &&
-                    neighborNewWidth >= HeaderElement.MIN_COL_WIDTH
-                ) {
-                    applyWidth(headerBeingResized, newWidth + "px");
-                    applyWidth(neighborHeader, neighborNewWidth + "px");
-                }
-            };
-            headerBeingResized.addEventListener("resize-handle-moved", onMove);
+            headerBeingResized.addEventListener(
+                "resize-handle-drag-end",
+                () => {
+                    // Go back to percentage-based sizing, so things scale nicely
+                    this.applyRenderedWidthsToStyleAsPercentages();
+                },
+                { signal: aborter.signal },
+            );
 
-            const onEnd = () => {
-                // Now we can go back to percentage-based sizing, so things
-                // scale nicely
-                this.applyRenderedWidthsToStyleAsPercentages();
-
-                headerBeingResized.removeEventListener("resize-handle-moved", onMove);
-                headerBeingResized.removeEventListener("resize-handle-drag-end", onEnd);
-            };
-            headerBeingResized.addEventListener("resize-handle-drag-end", onEnd);
+            headerBeingResized.addEventListener(
+                "resize-handle-moved",
+                ev => {
+                    let newWidth = Math.max(
+                        originalWidth + ev.detail.deltaX,
+                        HeaderElement.MIN_COL_WIDTH,
+                    );
+                    let neighborNewWidth =
+                        neighborOriginalWidth - (newWidth - originalWidth);
+                    if (neighborNewWidth < HeaderElement.MIN_COL_WIDTH) {
+                        newWidth -=
+                            HeaderElement.MIN_COL_WIDTH - neighborNewWidth;
+                        neighborNewWidth = HeaderElement.MIN_COL_WIDTH;
+                    }
+                    if (
+                        newWidth >= HeaderElement.MIN_COL_WIDTH &&
+                        neighborNewWidth >= HeaderElement.MIN_COL_WIDTH
+                    ) {
+                        applyWidth(headerBeingResized, newWidth + "px");
+                        applyWidth(neighborHeader, neighborNewWidth + "px");
+                    }
+                },
+                { signal: aborter.signal },
+            );
         }
     }
 

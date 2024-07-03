@@ -5,7 +5,6 @@
 import { ColumnResizeMode, RenderParameters } from "../protocol";
 import { HeaderElement } from "./header";
 import { RowElement } from "./row";
-import { CellElement } from "./cell";
 import { Styles } from "./styles";
 import { HoverService } from "./hoverService";
 import { createCustomEvent } from "../events";
@@ -16,8 +15,8 @@ import { customElement } from "./utils";
  */
 @customElement("listwindow-grid")
 export class GridElement extends HTMLElement {
-    private static readonly STYLES: Styles.StyleRules[] = [
-        {
+    private static readonly STYLES: CSSStyleSheet[] = [
+        Styles.toCss({
             "#backdrop": {
                 width: "100%",
                 height: "100%",
@@ -35,31 +34,27 @@ export class GridElement extends HTMLElement {
                 top: 0,
                 background: "var(--vscode-sideBar-background)",
             },
-            "td, th div": {
-                padding: "4px 12px",
-                overflow: "hidden",
-                "text-overflow": "ellipsis",
+            "td, th": {
                 "user-select": "none",
             }
-        },
+        }),
         HeaderElement.STYLES,
         RowElement.STYLES,
-        CellElement.STYLES,
         ...Styles.SHARED_STYLES,
     ];
     // Styles to apply if ListSpec.showGrid is set
-    private static readonly STYLE_GRID_CELL: Styles.StyleRules = {
+    private static readonly STYLE_GRID_CELL: CSSStyleSheet = Styles.toCss({
         "th, td": {
             "border-right": "1px solid var(--vscode-widget-border, rgba(0, 0, 0, 0))",
             "border-bottom": "1px solid var(--vscode-widget-border, rgba(0, 0, 0, 0))",
         },
-    };
+    });
     // Styles to apply if resizeMode is "fit"
-    private static readonly STYLE_RESIZEMODE_FIT: Styles.StyleRules = {
+    private static readonly STYLE_RESIZEMODE_FIT: CSSStyleSheet = Styles.toCss({
         ":host, table": {
             width: "100%",
         },
-    };
+    });
 
     data?: RenderParameters = undefined;
     initialColumnWidths: number[] | undefined = undefined;
@@ -71,16 +66,13 @@ export class GridElement extends HTMLElement {
 
     connectedCallback() {
         const shadow = this.attachShadow({ mode: "closed" });
-        shadow.adoptedStyleSheets.push(Styles.toCss(GridElement.STYLES));
+        shadow.adoptedStyleSheets.push(...GridElement.STYLES);
+
         if (this.data?.listSpec.showGrid) {
-            shadow.adoptedStyleSheets.push(
-                Styles.toCss(GridElement.STYLE_GRID_CELL),
-            );
+            shadow.adoptedStyleSheets.push(GridElement.STYLE_GRID_CELL);
         }
         if (this.resizeMode === "fit") {
-            shadow.adoptedStyleSheets.push(
-                Styles.toCss(GridElement.STYLE_RESIZEMODE_FIT),
-            );
+            shadow.adoptedStyleSheets.push(GridElement.STYLE_RESIZEMODE_FIT);
         }
 
         if (!this.data) {

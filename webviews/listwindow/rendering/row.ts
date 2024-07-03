@@ -4,6 +4,7 @@
 
 import { Row } from "../thrift/listwindow_types";
 import { CellElement } from "./cell";
+import { HoverService } from "./hoverService";
 import { Styles } from "./styles";
 import { customElement } from "./utils";
 
@@ -14,7 +15,7 @@ import { customElement } from "./utils";
 export class RowElement extends HTMLTableRowElement {
     // These styles are injected into the grid element's shadow DOM, since this
     // element has no shadow DOM of its own
-    static readonly STYLES: Styles.StyleRules = {
+    static readonly STYLES: CSSStyleSheet = Styles.toCss({
         "tbody tr": {
             "box-sizing": "border-box",
             "outline-offset": "-1px",
@@ -32,7 +33,7 @@ export class RowElement extends HTMLTableRowElement {
             "outline-style": "dotted",
             "outline-color": "var(--vscode-contrastActiveBorder, rgba(0, 0, 0, 0))",
         },
-    };
+    });
 
     row?: Row = undefined;
     index = -1;
