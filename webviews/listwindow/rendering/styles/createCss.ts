@@ -17,11 +17,8 @@ export interface StyleRules {
  * be added as an adopted style sheet to 'document' or a shadow DOM.
  */
 export function createCss(
-    styles: StyleRules | StyleRules[],
+    ...styles: StyleRules[]
 ): CSSStyleSheet {
-    if (!Array.isArray(styles)) {
-        styles = [styles];
-    }
     // We need to convert the styles to css so that they can be parsed by the CSSStyleSheet
     let css = "";
     for (const style of styles) {

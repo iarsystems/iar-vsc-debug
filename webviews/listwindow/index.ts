@@ -14,6 +14,7 @@ import { TooltipService } from "./rendering/tooltipService";
 import { PersistedState } from "./state";
 import { SelectionFlags } from "./thrift/listwindow_types";
 import { HoverService } from "./rendering/hoverService";
+import { Theming } from "./rendering/styles/theming";
 
 /**
  * The main class, which orchestrates rendering, input handling etc.
@@ -30,6 +31,13 @@ class ListwindowController {
         private readonly vscode: WebviewApi<PersistedState.Data>,
     ) {
         this.persistedState = new PersistedState(vscode);
+
+        Theming.initialize();
+        Theming.setViewHasFocus(document.hasFocus());
+        window.addEventListener("focus", () => Theming.setViewHasFocus(true));
+        window.addEventListener("blur", () => Theming.setViewHasFocus(false));
+
+
         this.sendMessage({ subject: "loaded" });
     }
 

@@ -7,6 +7,7 @@ import { Cell, TextStyle } from "../thrift/listwindow_types";
 import { HoverService } from "./hoverService";
 import { createCss } from "./styles/createCss";
 import { SharedStyles } from "./styles/sharedStyles";
+import { Theming } from "./styles/theming";
 import { customElement } from "./utils";
 
 export interface CellPosition {
@@ -58,25 +59,32 @@ export namespace CellHoveredEvent {
  */
 @customElement("listwindow-cell", { extends: "td" })
 export class CellElement extends HTMLTableCellElement {
+    // Styles that need to be applied to the td itself. These are injected into
+    // the grid element's shadow DOM
+    static readonly TD_STYLES: CSSStyleSheet = createCss({
+        "td": {
+            padding: 0,
+        },
+        "td.selected": {
+            "border-right": "none !important",
+            "background-color": `var(${Theming.Variables.ListSelectionBg})`,
+            color: `var(${Theming.Variables.ListSelectionFg})`,
+        }
+    });
+
     private static readonly STYLES: CSSStyleSheet = createCss({
-        td: {
-            cursor: "default",
-            "white-space": "nowrap",
-            "word-break": "keep-all",
-            "max-width": 0, // always overflow rather than taking up space
+        ":host": {
+            padding: 0,
         },
         "td.editable": {
             cursor: "pointer",
         },
-
-        "td.selected": {
-            "border-right": "none !important",
-            "background-color": "var(--vscode-list-inactiveSelectionBackground)",
-            color: "var(--vscode-list-inactiveSelectionForeground)",
-        },
-        [`.${Styles.CLASS_VIEW_FOCUSED} td.selected`]: {
-            "background-color": "var(--vscode-list-activeSelectionBackground)",
-            color: "var(--vscode-list-activeSelectionForeground)",
+        "#text": {
+            overflow: "hidden",
+            "text-overflow": "ellipsis",
+            padding: "4px 12px",
+            "white-space": "nowrap",
+            "word-break": "keep-all",
         },
 
         ".text-style-fixed": {

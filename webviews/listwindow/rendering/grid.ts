@@ -10,6 +10,7 @@ import { createCustomEvent } from "../events";
 import { customElement } from "./utils";
 import { createCss } from "./styles/createCss";
 import { SharedStyles } from "./styles/sharedStyles";
+import { CellElement } from "./cell";
 
 /**
  * A full listwindow grid, including headers but excluding any toolbar
@@ -41,6 +42,7 @@ export class GridElement extends HTMLElement {
         }),
         HeaderElement.STYLES,
         RowElement.STYLES,
+        CellElement.TD_STYLES,
         ...SharedStyles.STYLES,
     ];
     // Styles to apply if ListSpec.showGrid is set

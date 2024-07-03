@@ -6,6 +6,7 @@ import { Row } from "../thrift/listwindow_types";
 import { CellElement } from "./cell";
 import { HoverService } from "./hoverService";
 import { createCss } from "./styles/createCss";
+import { Theming } from "./styles/theming";
 import { customElement } from "./utils";
 
 /**
@@ -23,10 +24,7 @@ export class RowElement extends HTMLTableRowElement {
         },
         "tbody tr.selected": {
             "outline-style": "solid",
-            "outline-color": "var(--vscode-contrastActiveBorder, var(--vscode-list-inactiveFocusOutline, rgba(0, 0, 0, 0)))",
-        },
-        [`.${"TODO"} tbody tr.selected`]: {
-            "outline-color": "var(--vscode-list-focusOutline)",
+            "outline-color": `var(${Theming.Variables.ListSelectionOutline})`,
         },
         "tbody tr:hover:not(.selected)": {
             "background-color": "var(--vscode-list-hoverBackground)",
