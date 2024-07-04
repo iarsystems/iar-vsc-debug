@@ -49,4 +49,5 @@ export type ViewMessage =
   | { subject: "cellLeftClicked", col: number, row: number, flags: SelectionFlags }
   | { subject: "cellDoubleClicked", col: number, row: number }
   | { subject: "getContextMenu", col: number, row: number } // The user right-clicked a cell. The extension should reply with "context-menu-reply"
-  | { subject: "getTooltip", col: number, row: number }; // The user is hovering a cell. The extension should reply with "hover-reply"
+  | { subject: "getTooltip", col: number, row: number } // The user is hovering a cell. The extension should reply with "hover-reply"
+  | { subject: "rowExpansionToggled", row: number }; // The user pressed an 'expand' or 'collapse' button

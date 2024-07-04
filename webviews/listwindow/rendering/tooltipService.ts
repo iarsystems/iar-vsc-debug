@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { CellHoveredEvent } from "./cell";
+import { CellHoveredEvent } from "./cell/cell";
 import { createCss } from "./styles/createCss";
 import { customElement } from "./utils";
 import * as FloatingUi from "@floating-ui/dom";

@@ -17,7 +17,8 @@ import { HoverService } from "./rendering/hoverService";
 import { Theming } from "./rendering/styles/theming";
 
 /**
- * The main class, which orchestrates rendering, input handling etc.
+ * The main class, which orchestrates rendering and is the final destination
+ * of most input events.
  */
 class ListwindowController {
     private readonly persistedState: PersistedState;
@@ -133,6 +134,12 @@ class ListwindowController {
             this.sendMessage({
                 subject: "getTooltip",
                 col: ev.detail.col,
+                row: ev.detail.row,
+            });
+        });
+        grid.addEventListener("row-expansion-toggled", ev => {
+            this.sendMessage({
+                subject: "rowExpansionToggled",
                 row: ev.detail.row,
             });
         });

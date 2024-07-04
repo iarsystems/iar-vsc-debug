@@ -56,6 +56,7 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
             enableScripts: true,
             localResourceRoots: [
                 vscode.Uri.joinPath(this.extensionUri, "dist/webviews"),
+                vscode.Uri.joinPath(this.extensionUri, "node_modules/@vscode/codicons"),
             ]
         };
         let onViewLoaded: (() => void) | undefined = undefined;
@@ -111,6 +112,9 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
                             text,
                         });
                     }
+                    break;
+                case "rowExpansionToggled":
+                    // TODO: do something
                     break;
                 default: {
                     // Makes TS check that all message variants are handled
@@ -179,10 +183,10 @@ namespace Rendering {
     ) {
         // load npm packages for standardized UI components and icons
         //! NOTE: ALL files you load here (even indirectly) must be explicitly included in .vscodeignore, so that they are packaged in the .vsix. Webpack will not find these files.
-        // const toolkitUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "node_modules", "@vscode", "webview-ui-toolkit", "dist", "toolkit.js"));
         // load css and js for the view
         const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "dist", "webviews", "listwindow", "styles.css"));
         const jsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "dist", "webviews", "listwindow.js"));
+        const codiconsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "node_modules", "@vscode/codicons", "dist", "codicon.css"));
 
         const nonce = getNonce();
 
@@ -199,6 +203,7 @@ namespace Rendering {
                     style-src ${webview.cspSource};">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" href="${cssUri}">
+        <link rel="stylesheet" href="${codiconsUri}">
         <script src="${jsUri}" nonce="${nonce}"></script>
         <title>Listwindow</title>
     </head>
@@ -233,12 +238,12 @@ function getMockRenderParams(selectedRow = 1) {
             new Row({
                 cells: [
                     new Cell({
-                        text: "callCount",
+                        text: "Fib",
                         format,
                         drop: Target.kNoTarget,
                     }),
                     new Cell({
-                        text: "10",
+                        text: "<array>",
                         format,
                         drop: Target.kNoTarget,
                     }),
@@ -248,13 +253,13 @@ function getMockRenderParams(selectedRow = 1) {
                         drop: Target.kNoTarget,
                     }),
                     new Cell({
-                        text: "uint32_t",
+                        text: "uint32_t[10]",
                         format,
                         drop: Target.kNoTarget,
                     }),
                 ],
                 isChecked: false,
-                treeinfo: "",
+                treeinfo: "-",
             }),
         ],
         columnInfo: [
@@ -297,12 +302,23 @@ function getMockRenderParams(selectedRow = 1) {
     params.listSpec.canClickColumns = true;
     for (let i = 0; i < 10; i++) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        params.rows.push(params.rows[0]!);
+        params.rows.push(new Row({
+            cells: [
+                new Cell({ text: `[${i}]`, format, drop: Target.kNoTarget}),
+                new Cell({ text: String(i), format, drop: Target.kNoTarget}),
+                new Cell({ text: "0x2000'0030", format: memFormat, drop: Target.kNoTarget}),
+                new Cell({ text: "uint32_t", format, drop: Target.kNoTarget}),
+            ],
+            isChecked: false,
+            treeinfo: "T.",
+        }));
     }
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    params.rows[1]!.cells[0]!.format = JSON.parse(JSON.stringify(format));
+    params.rows[params.rows.length - 1]!.treeinfo = "L+";
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    params.rows[1]!.cells[0]!.format.editable = true;
+    params.rows[0]!.cells[0]!.format = JSON.parse(JSON.stringify(format));
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    params.rows[0]!.cells[0]!.format.editable = true;
     params.rows.push(
         new Row({
             cells: [
@@ -328,7 +344,7 @@ function getMockRenderParams(selectedRow = 1) {
                 }),
             ],
             isChecked: false,
-            treeinfo: ""
+            treeinfo: "."
         }),
     );
     params.selection.first = new Int64(selectedRow);

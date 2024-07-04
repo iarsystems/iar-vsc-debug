@@ -16,7 +16,9 @@ export namespace Theming {
     export enum Variables {
         ListSelectionBg = "--list-selection-background",
         ListSelectionFg = "--list-selection-color",
-        ListSelectionOutline = "--list-selection-outline",
+        ListSelectionOutlineColor = "--list-selection-outline-color",
+        ListSelectionOutlineStyle = "--list-selection-outline-style",
+        IndentGuideColor = "--indent-guide-color",
     }
 
     const BASE_STYLES = createCssFromVars<Required<VariableDefinitions>>({
@@ -24,16 +26,24 @@ export namespace Theming {
             "var(--vscode-list-activeSelectionBackground)",
         [Variables.ListSelectionFg]:
             "var(--vscode-list-activeSelectionForeground)",
-        [Variables.ListSelectionOutline]:
+        [Variables.ListSelectionOutlineColor]:
             "var(--vscode-list-focusOutline)",
+        [Variables.ListSelectionOutlineStyle]:
+            "solid",
+        [Variables.IndentGuideColor]:
+            "var(--vscode-tree-indentGuidesStroke)",
     });
     const UNFOCUSED_STYLES = createCssFromVars({
         [Variables.ListSelectionBg]:
             "var(--vscode-list-inactiveSelectionBackground)",
         [Variables.ListSelectionFg]:
             "var(--vscode-list-inactiveSelectionForeground)",
-        [Variables.ListSelectionOutline]:
+        [Variables.ListSelectionOutlineColor]:
             "var(--vscode-contrastActiveBorder, var(--vscode-list-inactiveFocusOutline, rgba(0, 0, 0, 0)))",
+        [Variables.ListSelectionOutlineStyle]:
+            "dotted",
+        [Variables.IndentGuideColor]:
+            "var(--vscode-tree-inactiveIndentGuidesStroke)",
     });
 
     export function initialize() {

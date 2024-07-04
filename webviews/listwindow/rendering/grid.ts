@@ -10,7 +10,7 @@ import { createCustomEvent } from "../events";
 import { customElement } from "./utils";
 import { createCss } from "./styles/createCss";
 import { SharedStyles } from "./styles/sharedStyles";
-import { CellElement } from "./cell";
+import { CellElement } from "./cell/cell";
 
 /**
  * A full listwindow grid, including headers but excluding any toolbar
@@ -46,14 +46,16 @@ export class GridElement extends HTMLElement {
         ...SharedStyles.STYLES,
     ];
     // Styles to apply if ListSpec.showGrid is set
-    private static readonly STYLE_GRID_CELL: CSSStyleSheet = createCss({
+    private static readonly STYLE_GRID_CELL = createCss({
         "th, td": {
             "border-right": "1px solid var(--vscode-widget-border, rgba(0, 0, 0, 0))",
-            "border-bottom": "1px solid var(--vscode-widget-border, rgba(0, 0, 0, 0))",
+            // This is equivalent to a border-bottom, except it doesn't take up
+            // any extra space.
+            "box-shadow": "0 1px 0 var(--vscode-widget-border, rgba(0, 0, 0, 0))",
         },
     });
     // Styles to apply if resizeMode is "fit"
-    private static readonly STYLE_RESIZEMODE_FIT: CSSStyleSheet = createCss({
+    private static readonly STYLE_RESIZEMODE_FIT = createCss({
         ":host, table": {
             width: "100%",
         },

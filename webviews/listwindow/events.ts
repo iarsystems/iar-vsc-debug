@@ -2,7 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { CellClickedEvent, CellHoveredEvent, CellRightClickedEvent } from "./rendering/cell";
+import { CellClickedEvent, CellHoveredEvent, CellRightClickedEvent } from "./rendering/cell/cell";
+import { RowExpansionToggledEvent } from "./rendering/cell/treeInfo";
 import { ColumnsResizedEvent } from "./rendering/header/header";
 import {
     ResizeHandleDragBeginEvent,
@@ -22,6 +23,7 @@ interface CustomEventTypeMap {
     "cell-clicked": CellClickedEvent.Detail;
     "cell-right-clicked": CellRightClickedEvent.Detail;
     "cell-hovered": CellHoveredEvent.Detail;
+    "row-expansion-toggled": RowExpansionToggledEvent.Detail;
 }
 
 type CustomEventMap = {

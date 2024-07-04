@@ -50,7 +50,8 @@
 		"await-notify": "1.0.1",
 		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#fbe3aae9",
 		"thrift": "^0.12.0",
-		"xmlbuilder2": "^3.0.2"
+		"xmlbuilder2": "^3.0.2",
+		"@vscode/codicons": "^0.0.36"
 	},
 	"devDependencies": {
 		"@types/jsdom": "^16.2.14",

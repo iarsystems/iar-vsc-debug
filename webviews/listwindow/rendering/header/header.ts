@@ -17,7 +17,7 @@ export type ColumnsResizedEvent = CustomEvent<ColumnsResizedEvent.Detail>;
 export namespace ColumnsResizedEvent {
     export interface Detail {
         /** The new column widths in pixels. */
-        newColumnWidths: number[]
+        newColumnWidths: number[];
     }
 }
 
@@ -28,15 +28,17 @@ export namespace ColumnsResizedEvent {
 @customElement("listwindow-header", { extends: "tr" })
 export class HeaderElement extends HTMLTableRowElement {
     // These styles are injected into the grid element's shadow DOM
-    static readonly STYLES: CSSStyleSheet = createCss({
+    static readonly STYLES = createCss({
         th: {
             position: "relative",
             cursor: "default",
             "box-sizing": "border-box",
             // Make header cells a bit bigger than normal ones
-            "font-size": "1.1em",
-            "padding-bottom": "4px",
-            "padding-top": "4px",
+            "line-height": "27px",
+            padding: "2px 0px",
+            "font-weight": "normal",
+            "text-transform": "uppercase",
+            "font-size": "11px",
         },
         "th.clickable:hover": {
             "background-color": "var(--vscode-list-hoverBackground)",
@@ -44,7 +46,7 @@ export class HeaderElement extends HTMLTableRowElement {
         "th>div": {
             overflow: "hidden",
             "text-overflow": "ellipsis",
-            padding: "4px 12px",
+            padding: "0px 12px",
         }
     });
 
@@ -151,7 +153,11 @@ export class HeaderElement extends HTMLTableRowElement {
         const aborter = new AbortController();
         headerBeingResized.addEventListener(
             "resize-handle-drag-end",
-            () => aborter.abort(),
+            () => {
+                requestIdleCallback(() => {
+                    aborter.abort();
+                });
+            },
             { signal: aborter.signal },
         );
 

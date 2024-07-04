@@ -34,7 +34,7 @@ export namespace ResizeHandleMovedEvent {
 
 @customElement("listwindow-resize-handle")
 export class ResizeHandleElement extends HTMLElement {
-    private static readonly STYLES: CSSStyleSheet = createCss({
+    private static readonly STYLES = createCss({
         ":host": {
             position: "absolute",
             right: 0,

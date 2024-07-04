@@ -2,13 +2,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { createCustomEvent } from "../events";
-import { Cell, TextStyle } from "../thrift/listwindow_types";
-import { HoverService } from "./hoverService";
-import { createCss } from "./styles/createCss";
-import { SharedStyles } from "./styles/sharedStyles";
-import { Theming } from "./styles/theming";
-import { customElement } from "./utils";
+import { createCustomEvent } from "../../events";
+import { Cell, TextStyle } from "../../thrift/listwindow_types";
+import { HoverService } from "../hoverService";
+import { createCss } from "../styles/createCss";
+import { SharedStyles } from "../styles/sharedStyles";
+import { Theming } from "../styles/theming";
+import { customElement } from "../utils";
+import { TreeInfoElement } from "./treeInfo";
 
 export interface CellPosition {
     col: number;
@@ -59,9 +60,9 @@ export namespace CellHoveredEvent {
  */
 @customElement("listwindow-cell", { extends: "td" })
 export class CellElement extends HTMLTableCellElement {
-    // Styles that need to be applied to the td itself. These are injected into
-    // the grid element's shadow DOM
-    static readonly TD_STYLES: CSSStyleSheet = createCss({
+    // Styles that need to be applied to the td itself, outside its shadow root.
+    // These are injected into the grid element's shadow DOM
+    static readonly TD_STYLES = createCss({
         "td": {
             padding: 0,
         },
@@ -69,22 +70,36 @@ export class CellElement extends HTMLTableCellElement {
             "border-right": "none !important",
             "background-color": `var(${Theming.Variables.ListSelectionBg})`,
             color: `var(${Theming.Variables.ListSelectionFg})`,
-        }
+        },
     });
 
-    private static readonly STYLES: CSSStyleSheet = createCss({
+    private static readonly STYLES = createCss({
         ":host": {
             padding: 0,
+            height: "100%",
         },
-        "td.editable": {
-            cursor: "pointer",
+        "#inner-root": {
+            height: "22px",
+            "line-height": "22px",
+            // We use 'grid' to allow a checkbox or expand/collapse button at
+            // the start, with the text taking up the rest of the space.
+            display: "grid",
+            "grid-template-columns": "max-content auto",
+            "align-items": "center",
         },
         "#text": {
+            "grid-column": 2,
+            padding: "0px 12px",
             overflow: "hidden",
             "text-overflow": "ellipsis",
-            padding: "4px 12px",
             "white-space": "nowrap",
             "word-break": "keep-all",
+        },
+        "#text:not(:first-child)": {
+            "padding-left": "3px",
+        },
+        ".editable": {
+            cursor: "pointer",
         },
 
         ".text-style-fixed": {
@@ -102,6 +117,8 @@ export class CellElement extends HTMLTableCellElement {
     });
 
     cell?: Cell = undefined;
+    /** Should be set on the first cell of a row to render indentation and expand/collapse icon */
+    treeinfo: string | undefined = undefined;
     position: CellPosition = { col: -1, row: -1 };
     selected = false;
 
@@ -112,10 +129,34 @@ export class CellElement extends HTMLTableCellElement {
             return;
         }
 
-        this.innerText = this.cell.text;
+        // We can't attach a shadow DOM to a <td>, so we need an inner div
+        const outerRoot = document.createElement("div");
+        outerRoot.style.padding = "0";
+        this.appendChild(outerRoot);
+
+        const shadow = outerRoot.attachShadow({ mode: "closed" });
+        shadow.adoptedStyleSheets.push(CellElement.STYLES);
+        shadow.adoptedStyleSheets.push(...SharedStyles.STYLES);
+
+        // Add content
+        const innerRoot = document.createElement("div");
+        innerRoot.id = "inner-root";
+        shadow.appendChild(innerRoot);
+
+        if (this.treeinfo) {
+            const treeInfoElem = new TreeInfoElement();
+            treeInfoElem.treeinfo = this.treeinfo;
+            treeInfoElem.row = this.position.row;
+            innerRoot.appendChild(treeInfoElem);
+        }
+
+        const text = document.createElement("div");
+        text.id = "text";
+        text.innerText = this.cell?.text;
+        innerRoot.appendChild(text);
 
         // Add event handlers
-        this.addEventListener("click", ev => {
+        this.onclick = ev => {
             if (ev.button === 0) {
                 const event = createCustomEvent("cell-clicked", {
                     detail: {
@@ -128,10 +169,9 @@ export class CellElement extends HTMLTableCellElement {
                     composed: true,
                 });
                 this.dispatchEvent(event);
-            } else if (ev.button === 2) {
             }
-        });
-        this.addEventListener("contextmenu", ev => {
+        };
+        this.oncontextmenu = ev => {
             const event = createCustomEvent("cell-right-clicked", {
                 detail: {
                     ...this.position,
@@ -144,7 +184,7 @@ export class CellElement extends HTMLTableCellElement {
                 composed: true,
             });
             this.dispatchEvent(event);
-        });
+        };
         const cellId = `${this.position.col},${this.position.row}`;
         this.hoverService?.registerHoverElement(this, cellId, pos => {
             this.dispatchEvent(createCustomEvent("cell-hovered", {
@@ -165,15 +205,20 @@ export class CellElement extends HTMLTableCellElement {
         });
 
         // Add styles
+        if (this.treeinfo) {
+            // const indentLevel = TreeInfoUtils.getDepth(this.treeinfo);
+            // this.style.paddingLeft = (16 * indentLevel) + "px";
+        }
+
         if (this.selected) {
             this.classList.add("selected");
         }
 
         if (this.cell.format.editable) {
-            this.classList.add("editable");
+            innerRoot.classList.add("editable");
         }
 
-        this.classList.add(SharedStyles.alignmentToClass(this.cell.format.align));
+        text.classList.add(SharedStyles.alignmentToClass(this.cell.format.align));
 
         if (
             [
@@ -183,9 +228,9 @@ export class CellElement extends HTMLTableCellElement {
                 TextStyle.kFixedItalic,
             ].includes(this.cell.format.style)
         ) {
-            this.classList.add("text-style-fixed");
+            text.classList.add("text-style-fixed");
         } else {
-            this.classList.add("text-style-proportional");
+            text.classList.add("text-style-proportional");
         }
         if (
             [
@@ -195,7 +240,7 @@ export class CellElement extends HTMLTableCellElement {
                 TextStyle.kProportionalBoldItalic,
             ].includes(this.cell.format.style)
         ) {
-            this.classList.add("text-style-bold");
+            text.classList.add("text-style-bold");
         }
         if (
             [
@@ -205,7 +250,7 @@ export class CellElement extends HTMLTableCellElement {
                 TextStyle.kProportionalBoldItalic,
             ].includes(this.cell.format.style)
         ) {
-            this.classList.add("text-style-italic");
+            text.classList.add("text-style-italic");
         }
     }
 }

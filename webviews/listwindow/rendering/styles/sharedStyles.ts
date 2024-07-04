@@ -31,7 +31,7 @@ export namespace SharedStyles {
                 return AlignmentClass.Center;
         }
     }
-    export const STYLE_THRIFT_ALIGNMENT: CSSStyleSheet = createCss({
+    const STYLE_THRIFT_ALIGNMENT = createCss({
         ["." + AlignmentClass.Left]: {
             "text-align": "left",
         },
@@ -43,5 +43,25 @@ export namespace SharedStyles {
         },
     });
 
-    export const STYLES = [STYLE_THRIFT_ALIGNMENT];
+    // The style sheet for the "codicons" icon package:
+    // https://github.com/microsoft/vscode-codicons
+    // This must be adopted into shadow DOMs wherever we need the icons
+    let codiconsCss: CSSStyleSheet | undefined = undefined;
+    for (const styleSheet of document.styleSheets) {
+        if (styleSheet.href?.endsWith("codicon.css")) {
+            let css = "";
+            for (const rule of styleSheet.cssRules) {
+                css += rule.cssText;
+            }
+            const copy = new CSSStyleSheet();
+            copy.replaceSync(css);
+            codiconsCss = copy;
+            break;
+        }
+    }
+
+    export const STYLES: CSSStyleSheet[] = [STYLE_THRIFT_ALIGNMENT];
+    if (codiconsCss) {
+        STYLES.push(codiconsCss);
+    }
 }

@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { Row } from "../thrift/listwindow_types";
-import { CellElement } from "./cell";
+import { CellElement } from "./cell/cell";
 import { HoverService } from "./hoverService";
 import { createCss } from "./styles/createCss";
 import { Theming } from "./styles/theming";
@@ -16,15 +16,15 @@ import { customElement } from "./utils";
 export class RowElement extends HTMLTableRowElement {
     // These styles are injected into the grid element's shadow DOM, since this
     // element has no shadow DOM of its own
-    static readonly STYLES: CSSStyleSheet = createCss({
+    static readonly STYLES = createCss({
         "tbody tr": {
             "box-sizing": "border-box",
             "outline-offset": "-1px",
-            "outline-width": "1px"
+            "outline-width": "1px",
         },
         "tbody tr.selected": {
-            "outline-style": "solid",
-            "outline-color": `var(${Theming.Variables.ListSelectionOutline})`,
+            "outline-style": `var(${Theming.Variables.ListSelectionOutlineStyle})`,
+            "outline-color": `var(${Theming.Variables.ListSelectionOutlineColor})`,
         },
         "tbody tr:hover:not(.selected)": {
             "background-color": "var(--vscode-list-hoverBackground)",
@@ -51,6 +51,9 @@ export class RowElement extends HTMLTableRowElement {
         for (const [x, cell] of this.row.cells.entries()) {
             const cellElem = new CellElement();
             cellElem.cell = cell;
+            if (x === 0) {
+                cellElem.treeinfo = this.row.treeinfo;
+            }
             cellElem.selected = this.selected;
             cellElem.position = { col: x, row: this.index };
             cellElem.hoverService = this.hoverService;
