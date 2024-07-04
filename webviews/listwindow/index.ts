@@ -84,6 +84,9 @@ class ListwindowController {
     }
 
     private render() {
+        const scrollX = window.scrollX;
+        const scrollY = window.scrollY;
+
         // Replace all contents of the appElement
         const grid = new GridElement();
         grid.data = this.renderParams;
@@ -143,6 +146,8 @@ class ListwindowController {
                 row: ev.detail.row,
             });
         });
+
+        window.scrollTo(scrollX, scrollY);
     }
 }
 
