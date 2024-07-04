@@ -9,9 +9,10 @@ elements](https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_
 (no UI frameworks involved).
 
 The main component is a `GridElement`, which renders all rows and columns,
-including the headers. The `GridElement` component is based on the standard
-`<table>` element, and contains `RowElement`s (`<tr>`), which contain
-`CellElement`s (`<td>`s).
+including the headers. The `GridElement` component is based on the CSS `grid`
+feature, which gives us great control over the size and scaling of individual
+columns. The `GridElement` in turn is made up of `RowElement`s which are made up
+of `CellElement`s.
 
 ### Styling
 

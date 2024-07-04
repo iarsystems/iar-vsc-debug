@@ -13,6 +13,11 @@ export namespace SharedStyles {
     //! NOTE: Make sure to export all styles at the bottom of the file.
 
     /**
+     * CSS class for a column header OR cell in the grid.
+     */
+    export const CLASS_GRID_ITEM = "grid-item";
+
+    /**
      * Classes corresponding to the thrift {@link Alignment}s, that describe how to
      * align cell text.
      */

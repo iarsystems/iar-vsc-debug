@@ -74,6 +74,7 @@ class TooltipElement extends HTMLElement {
             width: "max-content",
             transition: "opacity 0.1s ease-in-out",
             opacity: 0,
+            "z-index": 30,
         },
         div: {
             background: "var(--vscode-editorHoverWidget-background)",

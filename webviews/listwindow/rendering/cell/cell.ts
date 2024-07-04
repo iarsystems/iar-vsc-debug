@@ -58,18 +58,53 @@ export namespace CellHoveredEvent {
 /**
  * A single cell in a listwindow
  */
-@customElement("listwindow-cell", { extends: "td" })
-export class CellElement extends HTMLTableCellElement {
+@customElement("listwindow-cell")
+export class CellElement extends HTMLElement {
     // Styles that need to be applied to the td itself, outside its shadow root.
     // These are injected into the grid element's shadow DOM
     static readonly TD_STYLES = createCss({
-        "td": {
+        "listwindow-cell": {
             padding: 0,
+            overflow: "hidden",
         },
-        "td.selected": {
-            "border-right": "none !important",
+        // The margins and transforms here are a hacky way to negate the space the
+        // borders take up, so that hovering/selection doesn't affect the size
+        // of the cell
+        "listwindow-cell.selected": {
+            "border-right": "none",
             "background-color": `var(${Theming.Variables.ListSelectionBg})`,
             color: `var(${Theming.Variables.ListSelectionFg})`,
+            "border-top": `1px var(${Theming.Variables.ListSelectionOutlineStyle}) var(${Theming.Variables.ListSelectionOutlineColor})`,
+            "margin-top": "-1px",
+            "border-bottom": `1px var(${Theming.Variables.ListSelectionOutlineStyle}) var(${Theming.Variables.ListSelectionOutlineColor})`,
+            "margin-bottom": "-1px",
+            "z-index": 10,
+        },
+        "listwindow-cell.selected:first-child": {
+            "border-left": `1px var(${Theming.Variables.ListSelectionOutlineStyle}) var(${Theming.Variables.ListSelectionOutlineColor})`,
+        },
+        "listwindow-cell.selected:first-child>*": {
+            transform: "translate(-1px)",
+        },
+        "listwindow-cell.selected:last-child": {
+            "border-right": `1px var(${Theming.Variables.ListSelectionOutlineStyle}) var(${Theming.Variables.ListSelectionOutlineColor})`,
+        },
+
+        ":hover>listwindow-cell:not(.selected)": {
+            "background-color": "var(--vscode-list-hoverBackground)",
+            "border-top": "1px dotted var(--vscode-contrastActiveBorder, rgba(0, 0, 0, 0))",
+            "margin-top": "-1px",
+            "border-bottom": "1px dotted var(--vscode-contrastActiveBorder, rgba(0, 0, 0, 0))",
+            "margin-bottom": "-1px",
+        },
+        ":hover>listwindow-cell:not(.selected):first-child": {
+            "border-left": "1px dotted var(--vscode-contrastActiveBorder, rgba(0, 0, 0, 0))",
+        },
+        ":hover:not(.selected)>listwindow-cell:not(.selected):first-child>*": {
+            transform: "translate(-1px)",
+        },
+        ":hover>listwindow-cell:not(.selected):last-child": {
+            "border-right": "1px dotted var(--vscode-contrastActiveBorder, rgba(0, 0, 0, 0))",
         },
     });
 
@@ -77,6 +112,9 @@ export class CellElement extends HTMLTableCellElement {
         ":host": {
             padding: 0,
             height: "100%",
+        },
+        "#text::before": {
+            "content": "aa",
         },
         "#inner-root": {
             height: "22px",
@@ -129,11 +167,8 @@ export class CellElement extends HTMLTableCellElement {
             return;
         }
 
-        // We can't attach a shadow DOM to a <td>, so we need an inner div
         const outerRoot = document.createElement("div");
-        outerRoot.style.padding = "0";
         this.appendChild(outerRoot);
-
         const shadow = outerRoot.attachShadow({ mode: "closed" });
         shadow.adoptedStyleSheets.push(CellElement.STYLES);
         shadow.adoptedStyleSheets.push(...SharedStyles.STYLES);
@@ -178,7 +213,7 @@ export class CellElement extends HTMLTableCellElement {
                     clickPosition: {
                         x: ev.clientX,
                         y: ev.clientY,
-                    }
+                    },
                 },
                 bubbles: true,
                 composed: true,
@@ -187,28 +222,27 @@ export class CellElement extends HTMLTableCellElement {
         };
         const cellId = `${this.position.col},${this.position.row}`;
         this.hoverService?.registerHoverElement(this, cellId, pos => {
-            this.dispatchEvent(createCustomEvent("cell-hovered", {
-                detail: {
-                    ...this.position,
-                    hoverPosition: {
-                        x: pos.clientX,
-                        y: pos.clientY,
+            this.dispatchEvent(
+                createCustomEvent("cell-hovered", {
+                    detail: {
+                        ...this.position,
+                        hoverPosition: {
+                            x: pos.clientX,
+                            y: pos.clientY,
+                        },
+                        cellContent: {
+                            text: this.cell?.text,
+                            isTruncated: this.scrollWidth > this.clientWidth,
+                        },
                     },
-                    cellContent: {
-                        text: this.cell?.text,
-                        isTruncated: this.scrollWidth > this.clientWidth,
-                    },
-                },
-                bubbles: true,
-                composed: true,
-            }));
+                    bubbles: true,
+                    composed: true,
+                }),
+            );
         });
 
         // Add styles
-        if (this.treeinfo) {
-            // const indentLevel = TreeInfoUtils.getDepth(this.treeinfo);
-            // this.style.paddingLeft = (16 * indentLevel) + "px";
-        }
+        this.classList.add(SharedStyles.CLASS_GRID_ITEM);
 
         if (this.selected) {
             this.classList.add("selected");
@@ -218,7 +252,9 @@ export class CellElement extends HTMLTableCellElement {
             innerRoot.classList.add("editable");
         }
 
-        text.classList.add(SharedStyles.alignmentToClass(this.cell.format.align));
+        text.classList.add(
+            SharedStyles.alignmentToClass(this.cell.format.align),
+        );
 
         if (
             [

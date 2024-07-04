@@ -4,10 +4,10 @@
 
 import { createCustomEvent } from "../../events";
 import { ColumnResizeMode } from "../../protocol";
-import { Column } from "../../thrift/listwindow_types";
 import { ResizeHandleElement } from "./resizeHandle";
 import { createCss } from "../styles/createCss";
 import { customElement } from "../utils";
+import { Column } from "../../thrift/listwindow_types";
 import { SharedStyles } from "../styles/sharedStyles";
 
 /**
@@ -22,28 +22,35 @@ export namespace ColumnsResizedEvent {
 }
 
 /**
- * A header row in a listwindow. These cells determine the width of each column,
- * and can be resizeable.
+ * A header row in a listwindow. Handles resizing of columns.
  */
-@customElement("listwindow-header", { extends: "tr" })
-export class HeaderElement extends HTMLTableRowElement {
+@customElement("listwindow-header")
+export class HeaderElement extends HTMLElement {
     // These styles are injected into the grid element's shadow DOM
     static readonly STYLES = createCss({
-        th: {
-            position: "relative",
-            cursor: "default",
-            "box-sizing": "border-box",
+        "listwindow-header": {
+            display: "contents",
+            padding: "2px 0px",
             // Make header cells a bit bigger than normal ones
             "line-height": "27px",
-            padding: "2px 0px",
             "font-weight": "normal",
             "text-transform": "uppercase",
             "font-size": "11px",
         },
-        "th.clickable:hover": {
+        "listwindow-header>.clickable:hover": {
             "background-color": "var(--vscode-list-hoverBackground)",
+            cursor: "pointer"
         },
-        "th>div": {
+        "listwindow-header>*": {
+            position: "sticky",
+            top: 0,
+            "z-index": 20,
+            width: "100%",
+            overflow: "hidden",
+            background: "var(--vscode-sideBar-background)",
+            "box-sizing": "border-box",
+        },
+        ".header-title": {
             overflow: "hidden",
             "text-overflow": "ellipsis",
             padding: "0px 12px",
@@ -52,53 +59,51 @@ export class HeaderElement extends HTMLTableRowElement {
 
     private static readonly MIN_COL_WIDTH = 25;
 
-    columns: Column[] = [];
-    initialColumnWidths: number[] = [];
+    columns: Array<Column> = [];
+    columnWidths: number[] = [];
     clickable = false;
     resizeMode: ColumnResizeMode = "fixed";
 
-    private columnHeaders: HTMLTableCellElement[] = [];
+    private columnHeaders: HTMLElement[] = [];
 
     connectedCallback() {
         this.columnHeaders = [];
 
         for (const [i, column] of this.columns.entries()) {
-            const th = document.createElement("th");
-            this.columnHeaders.push(th);
+            const colHeader = document.createElement("span");
+            this.columnHeaders.push(colHeader);
+            colHeader.classList.add(SharedStyles.CLASS_GRID_ITEM);
             if (this.clickable) {
-                th.classList.add("clickable");
+                colHeader.classList.add("clickable");
             }
+            this.appendChild(colHeader);
 
-            const width = this.initialColumnWidths[i];
-            if (width !== undefined) {
-                applyWidth(th, width + "px");
-            }
-            this.appendChild(th);
+            const text = document.createElement("span");
+            text.classList.add("header-title");
+            text.innerText = column.title;
+            colHeader.appendChild(text);
 
-            const div = document.createElement("div");
-            div.innerText = column.title;
-
-            div.classList.add(
+            colHeader.classList.add(
                 SharedStyles.alignmentToClass(column.defaultFormat.align),
             );
 
-            th.appendChild(div);
 
             let addHandle = true;
-            if (this.resizeMode === "fit" && i === this.columns.length - 1) {
+            if (this.resizeMode === "fit" && this.getResizeTarget(i) === undefined) {
                 // In 'fit' mode it doesn't make sense to have a resize handle
-                // at the rightmost edge of the table
+                // at the rightmost non-fixed-width column
                 addHandle = false;
-            } else if (column.fixed) {
+            }
+            if (column.fixed) {
                 addHandle = false;
             }
 
             if (addHandle) {
                 const handle = new ResizeHandleElement();
-                th.addEventListener("resize-handle-drag-begin", () => {
+                colHeader.addEventListener("resize-handle-drag-begin", () => {
                     this.beginResizeColumn(i);
                 });
-                th.addEventListener("resize-handle-drag-end", () => {
+                colHeader.addEventListener("resize-handle-drag-end", () => {
                     // When we're finished resizing, we should check what the
                     // *actual* width became and store that for when we
                     // re-render
@@ -111,33 +116,41 @@ export class HeaderElement extends HTMLTableRowElement {
                         }));
                     });
                 });
-                th.appendChild(handle);
+                colHeader.appendChild(handle);
             }
         }
 
+        this.applyColumnWidths(this.columnWidths);
+
         if (this.resizeMode === "fit") {
-            // The 'fit' mode uses percentages so that columns scale
-            // proportionally.
-            this.applyRenderedWidthsToStyleAsPercentages();
+            this.applyRenderedWidthsAsFractions();
         }
     }
 
-    // Make sure the widths set on each header represents the rendered
-    // width in pixels. This is only really a concern for resizeMode 'fit'.
-    private applyRenderedWidthsToStyleAsPixels() {
-        for (const th of this.columnHeaders) {
-            const width = th.offsetWidth;
-            applyWidth(th, width + "px");
+    // Set the width of each column to exactly match 'widthsInPixels'
+    private applyColumnWidths(widthsInPixels: number[]) {
+        let columnWidths = "";
+        for (const width of widthsInPixels) {
+            columnWidths += width + "px ";
+        }
+        if (this.parentElement) {
+            this.parentElement.style.gridTemplateColumns = columnWidths;
         }
     }
-    private applyRenderedWidthsToStyleAsPercentages() {
-        const totalWidth = this.columnHeaders.reduce(
-            (sum, th) => sum + th.offsetWidth,
-            0,
-        );
-        for (const th of this.columnHeaders) {
-            const percentage = th.offsetWidth / totalWidth * 100;
-            applyWidth(th, percentage + "%");
+
+    // Changes the width of each (non-fixed-width) to be specified as a
+    // "fraction" based on its current rendered width. This makes the columns
+    // scale proportionally to their fraction value.
+    private applyRenderedWidthsAsFractions() {
+        let columnWidths = "";
+        for (const [i, header] of this.columnHeaders.entries()) {
+            const width = header.offsetWidth;
+            const unit = this.columns[i]?.fixed ? "px" : "fr";
+            columnWidths += width + unit;
+            columnWidths += " ";
+        }
+        if (this.parentElement) {
+            this.parentElement.style.gridTemplateColumns = columnWidths;
         }
     }
 
@@ -169,28 +182,34 @@ export class HeaderElement extends HTMLTableRowElement {
                         originalWidth + ev.detail.deltaX,
                         HeaderElement.MIN_COL_WIDTH,
                     );
-                    applyWidth(headerBeingResized, newWidth + "px");
+                    this.columnWidths[index] = newWidth;
+                    this.applyColumnWidths(this.columnWidths);
                 },
                 { signal: aborter.signal },
             );
         } else if (this.resizeMode === "fit") {
-            // We will take/give width from/to the header to the right of the
-            // one being resized, preserving the overall width
-            const neighborHeader = this.columnHeaders[index + 1];
+            // We will take/give width from/to the first non-fixed header to the
+            // right of the one being resized, preserving the overall width
+            const neighborIndex = this.getResizeTarget(index);
+            if (neighborIndex === undefined) {
+                return;
+            }
+            const neighborHeader = this.columnHeaders[neighborIndex];
             if (neighborHeader === undefined) {
                 return;
             }
             const neighborOriginalWidth = neighborHeader.offsetWidth;
 
-            // While resizing, we want to specify widths in pixels, so we have
-            // precise control over it.
-            this.applyRenderedWidthsToStyleAsPixels();
+            // While resizing, we temporarily switch to specifying all column
+            // widths in pixels, so we have precise control over them.
+            this.columnWidths = this.columnHeaders.map(header => header.offsetWidth);
+            this.applyColumnWidths(this.columnWidths);
 
             headerBeingResized.addEventListener(
                 "resize-handle-drag-end",
                 () => {
-                    // Go back to percentage-based sizing, so things scale nicely
-                    this.applyRenderedWidthsToStyleAsPercentages();
+                    // Go back to fraction-based sizing, so things scale nicely
+                    this.applyRenderedWidthsAsFractions();
                 },
                 { signal: aborter.signal },
             );
@@ -213,8 +232,9 @@ export class HeaderElement extends HTMLTableRowElement {
                         newWidth >= HeaderElement.MIN_COL_WIDTH &&
                         neighborNewWidth >= HeaderElement.MIN_COL_WIDTH
                     ) {
-                        applyWidth(headerBeingResized, newWidth + "px");
-                        applyWidth(neighborHeader, neighborNewWidth + "px");
+                        this.columnWidths[index] = newWidth;
+                        this.columnWidths[neighborIndex] = neighborNewWidth;
+                        this.applyColumnWidths(this.columnWidths);
                     }
                 },
                 { signal: aborter.signal },
@@ -222,12 +242,15 @@ export class HeaderElement extends HTMLTableRowElement {
         }
     }
 
-}
-
-function applyWidth(elem: HTMLElement, width: string) {
-    elem.style.width = width;
-    // For some reason table cells need minWidth and maxWidth too, otherwise it
-    // sizes up to fit the content...
-    elem.style.minWidth = width;
-    elem.style.maxWidth = width;
+    // When in resize mode 'fit', get the column to take/give space from when resizing
+    // column 'columnIndex'. Usually, this is simply the one to the right of it,
+    // but we must skip columns that have fixed width.
+    private getResizeTarget(columnIndex: number): number | undefined {
+        for (let i = columnIndex + 1; i < this.columns.length; i++) {
+            if (!this.columns[i]?.fixed) {
+                return i;
+            }
+        }
+        return undefined;
+    }
 }

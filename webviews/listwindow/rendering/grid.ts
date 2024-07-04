@@ -26,17 +26,11 @@ export class GridElement extends HTMLElement {
                 // deselect everything
                 // "padding-bottom": "1em",
             },
-            table: {
-                "border-spacing": "0px",
-                "table-layout": "fixed",
+            "#grid": {
+                // The grid-template-columns are set by the header element
+                display: "grid",
             },
-            // The header should be fixed at the top, regardless of scroll position
-            thead: {
-                position: "sticky",
-                top: 0,
-                background: "var(--vscode-sideBar-background)",
-            },
-            "td, th": {
+            [`.${SharedStyles.CLASS_GRID_ITEM}`]: {
                 "user-select": "none",
             }
         }),
@@ -46,12 +40,11 @@ export class GridElement extends HTMLElement {
         ...SharedStyles.STYLES,
     ];
     // Styles to apply if ListSpec.showGrid is set
-    private static readonly STYLE_GRID_CELL = createCss({
-        "th, td": {
+    private static readonly STYLE_SHOW_GRID = createCss({
+        [`.${SharedStyles.CLASS_GRID_ITEM}`]: {
             "border-right": "1px solid var(--vscode-widget-border, rgba(0, 0, 0, 0))",
-            // This is equivalent to a border-bottom, except it doesn't take up
-            // any extra space.
-            "box-shadow": "0 1px 0 var(--vscode-widget-border, rgba(0, 0, 0, 0))",
+            "border-bottom": "1px solid var(--vscode-widget-border, rgba(0, 0, 0, 0))",
+            "margin-bottom": "-1px",
         },
     });
     // Styles to apply if resizeMode is "fit"
@@ -67,14 +60,12 @@ export class GridElement extends HTMLElement {
 
     hoverService: HoverService | undefined = undefined;
 
-    private header: HeaderElement | undefined = undefined;
-
     connectedCallback() {
         const shadow = this.attachShadow({ mode: "closed" });
         shadow.adoptedStyleSheets.push(...GridElement.STYLES);
 
-        shadow.adoptedStyleSheets.push(GridElement.STYLE_GRID_CELL);
-        GridElement.STYLE_GRID_CELL.disabled = !(this.data?.listSpec.showGrid);
+        shadow.adoptedStyleSheets.push(GridElement.STYLE_SHOW_GRID);
+        GridElement.STYLE_SHOW_GRID.disabled = !(this.data?.listSpec.showGrid);
         shadow.adoptedStyleSheets.push(GridElement.STYLE_RESIZEMODE_FIT);
         GridElement.STYLE_RESIZEMODE_FIT.disabled = this.resizeMode !== "fit";
 
@@ -108,25 +99,22 @@ export class GridElement extends HTMLElement {
         };
         shadow.appendChild(backdrop);
 
-        const table = document.createElement("table");
-        backdrop.appendChild(table);
+        const grid = document.createElement("div");
+        grid.id = "grid";
+        backdrop.appendChild(grid);
 
         // Create header
         if (this.data.listSpec.showHeader) {
-            this.header = new HeaderElement();
-            this.header.columns = this.data.columnInfo;
-            this.header.initialColumnWidths = this.initialColumnWidths;
-            this.header.clickable = this.data.listSpec.canClickColumns;
-            this.header.resizeMode = this.resizeMode;
+            const header = new HeaderElement();
+            header.columns = this.data.columnInfo;
+            header.columnWidths = this.initialColumnWidths;
+            header.clickable = this.data.listSpec.canClickColumns;
+            header.resizeMode = this.resizeMode;
 
-            const thead = document.createElement("thead");
-            thead.appendChild(this.header);
-            table.appendChild(thead);
+            grid.appendChild(header);
         }
 
         // Create body
-        const tbody = document.createElement("tbody");
-        table.appendChild(tbody);
         for (const [y, row] of this.data.rows.entries()) {
             const rowElem = new RowElement();
             rowElem.row = row;
@@ -142,7 +130,7 @@ export class GridElement extends HTMLElement {
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 this.data.selection.last.buffer.data[7]! >= y;
             rowElem.hoverService = this.hoverService;
-            tbody.appendChild(rowElem);
+            grid.appendChild(rowElem);
         }
     }
 }

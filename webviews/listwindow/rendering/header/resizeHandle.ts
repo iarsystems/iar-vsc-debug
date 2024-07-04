@@ -49,6 +49,7 @@ export class ResizeHandleElement extends HTMLElement {
             "border-right": "1px solid var(--vscode-editor-inactiveSelectionBackground)",
             transition: "border-right .1s ease-out",
             "user-select": "none",
+            "box-sizing": "border-box",
         },
         "div:hover, div.being-moved": {
             "border-right": "2px solid var(--vscode-sash-hoverBorder)",

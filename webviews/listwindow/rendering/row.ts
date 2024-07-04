@@ -6,30 +6,19 @@ import { Row } from "../thrift/listwindow_types";
 import { CellElement } from "./cell/cell";
 import { HoverService } from "./hoverService";
 import { createCss } from "./styles/createCss";
-import { Theming } from "./styles/theming";
 import { customElement } from "./utils";
 
 /**
  * A non-header row in a listwindow
  */
-@customElement("listwindow-row", { extends: "tr" })
-export class RowElement extends HTMLTableRowElement {
+@customElement("listwindow-row")
+export class RowElement extends HTMLElement {
     // These styles are injected into the grid element's shadow DOM, since this
     // element has no shadow DOM of its own
     static readonly STYLES = createCss({
-        "tbody tr": {
+        "listwindow-row": {
+            display: "contents",
             "box-sizing": "border-box",
-            "outline-offset": "-1px",
-            "outline-width": "1px",
-        },
-        "tbody tr.selected": {
-            "outline-style": `var(${Theming.Variables.ListSelectionOutlineStyle})`,
-            "outline-color": `var(${Theming.Variables.ListSelectionOutlineColor})`,
-        },
-        "tbody tr:hover:not(.selected)": {
-            "background-color": "var(--vscode-list-hoverBackground)",
-            "outline-style": "dotted",
-            "outline-color": "var(--vscode-contrastActiveBorder, rgba(0, 0, 0, 0))",
         },
     });
 
@@ -59,10 +48,6 @@ export class RowElement extends HTMLTableRowElement {
             cellElem.hoverService = this.hoverService;
 
             this.appendChild(cellElem);
-        }
-
-        if (this.selected) {
-            this.classList.add("selected");
         }
     }
 }
