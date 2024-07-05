@@ -38,7 +38,8 @@ export type ExtensionMessage =
   | { subject: "setResizeMode", mode: ColumnResizeMode }
   | { subject: "dumpHTML" } // Send a message back with the current full HTML of the view (useful for testing)
   | { subject: "contextMenuReply", menu: MenuItem[] }
-  | { subject: "tooltipReply", text?: string };
+  | { subject: "tooltipReply", text?: string }
+  | { subject: "editableStringReply", text: string, col: number, row: number };
 
 /**
  * A message from the listwindow view to the extension
@@ -48,6 +49,9 @@ export type ViewMessage =
   | { subject: "HTMLDump", html: string } // Response to a dumpHTML message, contains the full HTML of the view
   | { subject: "cellLeftClicked", col: number, row: number, flags: SelectionFlags }
   | { subject: "cellDoubleClicked", col: number, row: number }
-  | { subject: "getContextMenu", col: number, row: number } // The user right-clicked a cell. The extension should reply with "context-menu-reply"
-  | { subject: "getTooltip", col: number, row: number } // The user is hovering a cell. The extension should reply with "hover-reply"
-  | { subject: "rowExpansionToggled", row: number }; // The user pressed an 'expand' or 'collapse' button
+  | { subject: "getContextMenu", col: number, row: number } // The user right-clicked a cell. The extension should reply with "contextMenuReply"
+  | { subject: "getTooltip", col: number, row: number } // The user is hovering a cell. The extension should reply with "tooltipReply"
+  | { subject: "rowExpansionToggled", row: number } // The user pressed an 'expand' or 'collapse' button
+  // The user wants to edit a cell, reply with "editableStringReply" using the value that should be shown in the text field
+  | { subject: "getEditableString", col: number, row: number }
+  | { subject: "cellEdited", col: number, row: number, newValue: string }; // The user has changed the value of a cell

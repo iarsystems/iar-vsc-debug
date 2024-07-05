@@ -46,6 +46,7 @@
 		"@floating-ui/dom": "^1.6.7",
 		"@vscode/debugadapter": "^1.57.0",
 		"@vscode/debugprotocol": "^1.57.0",
+		"@vscode/webview-ui-toolkit": "^1.4.0",
 		"async-mutex": "^0.3.2",
 		"await-notify": "1.0.1",
 		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#fbe3aae9",

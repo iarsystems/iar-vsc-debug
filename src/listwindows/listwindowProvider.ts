@@ -21,6 +21,7 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
 
     private view?: vscode.WebviewView;
     private viewLoaded: Promise<void> | undefined = undefined;
+    private onViewLoaded: (() => void) | undefined = undefined;
 
     /**
      * Creates a new view. The caller is responsible for registering it.
@@ -59,72 +60,12 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
                 vscode.Uri.joinPath(this.extensionUri, "node_modules/@vscode/codicons"),
             ]
         };
-        let onViewLoaded: (() => void) | undefined = undefined;
-        this.viewLoaded = new Promise(resolve => onViewLoaded = resolve);
+        this.viewLoaded = new Promise(resolve => this.onViewLoaded = resolve);
 
         this.view.webview.onDidReceiveMessage((message: ViewMessage) => {
             logger.debug(`Message from ${this.viewId}: ${JSON.stringify(message)}`);
+            this.handleMessageFromView(message);
 
-            switch (message.subject) {
-                case "loaded":
-                    onViewLoaded?.();
-                    break;
-                case "HTMLDump":
-                    // ignore for now, only used for testing
-                    break;
-                case "cellLeftClicked":
-                    // TODO: send this to the backend
-                    // for now we fake the backend
-                    this.postMessageToView({
-                        subject: "render",
-                        params: getMockRenderParams(message.row),
-                    });
-                    break;
-                case "cellDoubleClicked":
-                    // TODO: send this to the backend
-                    break;
-                case "getContextMenu":
-                    // TODO: request the menu from the backend
-                    // for now we fake the backend
-                    this.postMessageToView({
-                        subject: "contextMenuReply",
-                        menu: [
-                            new MenuItem({
-                                text: "Hello context menu",
-                                command: 0,
-                                enabled: true,
-                                checked: false,
-                            }),
-                        ],
-                    });
-                    break;
-                case "getTooltip":
-                    {
-                        // TODO: request the tooltip from the backend
-                        // for now we fake the backend
-                        const text = message.col !== 2 ? `BASEPRI_MAX
-    ReadWrite
-    bits [15:8]
-    Base priority mask raise
-    Right-click for more registers and options` : undefined;
-                        this.postMessageToView({
-                            subject: "tooltipReply",
-                            text,
-                        });
-                    }
-                    break;
-                case "rowExpansionToggled":
-                    // TODO: do something
-                    break;
-                default: {
-                    // Makes TS check that all message variants are handled
-                    const _exhaustiveCheck: never = message;
-                    throw new Error(
-                        "Unhandled message: " +
-                            JSON.stringify(_exhaustiveCheck),
-                    );
-                }
-            }
         });
         this.view.webview.html = Rendering.getWebviewContent(
             this.view.webview,
@@ -157,6 +98,82 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
     private async postMessageToView(msg: ExtensionMessage) {
         await this.viewLoaded;
         return this.view?.webview.postMessage(msg);
+    }
+
+    private handleMessageFromView(msg: ViewMessage) {
+        switch (msg.subject) {
+            case "loaded":
+                this.onViewLoaded?.();
+                break;
+            case "HTMLDump":
+                // ignore for now, only used for testing
+                break;
+            case "cellLeftClicked":
+                // TODO: send this to the backend
+                // for now we fake the backend
+                this.postMessageToView({
+                    subject: "render",
+                    params: getMockRenderParams(msg.row),
+                });
+                break;
+            case "cellDoubleClicked":
+                // TODO: send this to the backend
+                break;
+            case "getContextMenu":
+                // TODO: request the menu from the backend
+                // for now we fake the backend
+                this.postMessageToView({
+                    subject: "contextMenuReply",
+                    menu: [
+                        new MenuItem({
+                            text: "Hello context menu",
+                            command: 0,
+                            enabled: true,
+                            checked: false,
+                        }),
+                    ],
+                });
+                break;
+            case "getTooltip":
+                {
+                    // TODO: request the tooltip from the backend
+                    // for now we fake the backend
+                    const text = msg.col !== 2 ? `BASEPRI_MAX
+    ReadWrite
+    bits [15:8]
+    Base priority mask raise
+    Right-click for more registers and options` : undefined;
+                    this.postMessageToView({
+                        subject: "tooltipReply",
+                        text,
+                    });
+                }
+                break;
+            case "rowExpansionToggled":
+                // TODO: do something
+                break;
+            case "getEditableString":
+                // TODO: request the string from the backend
+                // for now we fake the backend
+                this.postMessageToView({
+                    subject: "editableStringReply",
+                    text: "Hello Edit",
+                    col: msg.col,
+                    row: msg.row,
+                });
+                break;
+            case "cellEdited":
+                // TODO: do something
+                break;
+            default: {
+                // Makes TS check that all message variants are handled
+                const _exhaustiveCheck: never = msg;
+                throw new Error(
+                    "Unhandled message: " +
+                        JSON.stringify(_exhaustiveCheck),
+                );
+            }
+        }
     }
 
     private async applyResizeMode() {
@@ -229,6 +246,10 @@ function getMockRenderParams(selectedRow = 1) {
     const format = new Format();
     format.align = Alignment.kLeft;
     format.style = TextStyle.kProportionalPlain;
+    const editableFormat = new Format();
+    editableFormat.align = Alignment.kLeft;
+    editableFormat.style = TextStyle.kProportionalPlain;
+    editableFormat.editable = true;
     const memFormat = new Format();
     memFormat.align = Alignment.kRight;
     memFormat.style = TextStyle.kFixedPlain;
@@ -239,7 +260,7 @@ function getMockRenderParams(selectedRow = 1) {
                 cells: [
                     new Cell({
                         text: "Fib",
-                        format,
+                        format: editableFormat,
                         drop: Target.kNoTarget,
                     }),
                     new Cell({
@@ -264,18 +285,18 @@ function getMockRenderParams(selectedRow = 1) {
         ],
         columnInfo: [
             new Column({
-                title: "Symbol",
+                title: "Expression",
                 width: 100,
                 fixed: false,
                 hideSelection: false,
-                defaultFormat: format,
+                defaultFormat: editableFormat,
             }),
             new Column({
                 title: "Value",
                 width: 150,
                 fixed: false,
                 hideSelection: false,
-                defaultFormat: format,
+                defaultFormat: editableFormat,
             }),
             new Column({
                 title: "Location",
@@ -305,7 +326,7 @@ function getMockRenderParams(selectedRow = 1) {
         params.rows.push(new Row({
             cells: [
                 new Cell({ text: `[${i}]`, format, drop: Target.kNoTarget}),
-                new Cell({ text: String(i), format, drop: Target.kNoTarget}),
+                new Cell({ text: String(i), format: editableFormat, drop: Target.kNoTarget}),
                 new Cell({ text: "0x2000'0030", format: memFormat, drop: Target.kNoTarget}),
                 new Cell({ text: "uint32_t", format, drop: Target.kNoTarget}),
             ],
@@ -315,16 +336,12 @@ function getMockRenderParams(selectedRow = 1) {
     }
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     params.rows[params.rows.length - 1]!.treeinfo = "L+";
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    params.rows[0]!.cells[0]!.format = JSON.parse(JSON.stringify(format));
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    params.rows[0]!.cells[0]!.format.editable = true;
     params.rows.push(
         new Row({
             cells: [
                 new Cell({
                     text: "<click to add>",
-                    format,
+                    format: editableFormat,
                     drop: Target.kNoTarget,
                 }),
                 new Cell({

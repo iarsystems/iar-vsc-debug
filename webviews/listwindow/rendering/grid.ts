@@ -36,7 +36,7 @@ export class GridElement extends HTMLElement {
         }),
         HeaderElement.STYLES,
         RowElement.STYLES,
-        CellElement.TD_STYLES,
+        CellElement.OUTER_STYLES,
         ...SharedStyles.STYLES,
     ];
     // Styles to apply if ListSpec.showGrid is set

@@ -55,14 +55,23 @@ export namespace CellHoveredEvent {
     }
 }
 
+/** Emitted when the the user left clicks an editable cell */
+export type CellEditRequestedEvent = CustomEvent<CellEditRequestedEvent.Detail>;
+export namespace CellEditRequestedEvent {
+    export interface Detail extends CellPosition {
+        /**The bounding box of the cell to edit (as returned from getBoundingClientRect) */
+        cellBounds: DOMRect;
+    }
+}
+
 /**
  * A single cell in a listwindow
  */
 @customElement("listwindow-cell")
 export class CellElement extends HTMLElement {
-    // Styles that need to be applied to the td itself, outside its shadow root.
-    // These are injected into the grid element's shadow DOM
-    static readonly TD_STYLES = createCss({
+    // Styles that need to be applied to the element itself, outside its shadow
+    // root. These are injected into the grid element's shadow DOM
+    static readonly OUTER_STYLES = createCss({
         "listwindow-cell": {
             padding: 0,
             overflow: "hidden",
@@ -193,7 +202,20 @@ export class CellElement extends HTMLElement {
         // Add event handlers
         this.onclick = ev => {
             if (ev.button === 0) {
-                const event = createCustomEvent("cell-clicked", {
+                if (this.cell?.format.editable) {
+                    console.log(this.getBoundingClientRect());
+                    console.log(innerRoot.getBoundingClientRect());
+                    this.dispatchEvent(createCustomEvent("cell-edit-requested", {
+                        detail: {
+                            ...this.position,
+                            cellBounds: innerRoot.getBoundingClientRect(),
+                        },
+                        bubbles: true,
+                        composed: true,
+                    }));
+                    return;
+                }
+                this.dispatchEvent(createCustomEvent("cell-clicked", {
                     detail: {
                         ...this.position,
                         isDoubleClick: ev.detail === 2,
@@ -202,8 +224,7 @@ export class CellElement extends HTMLElement {
                     },
                     bubbles: true,
                     composed: true,
-                });
-                this.dispatchEvent(event);
+                }));
             }
         };
         this.oncontextmenu = ev => {

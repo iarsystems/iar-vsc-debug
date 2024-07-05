@@ -15,6 +15,10 @@ import { PersistedState } from "./state";
 import { SelectionFlags } from "./thrift/listwindow_types";
 import { HoverService } from "./rendering/hoverService";
 import { Theming } from "./rendering/styles/theming";
+import { provideVSCodeDesignSystem, vsCodeTextField } from "@vscode/webview-ui-toolkit";
+import { CellEditService } from "./rendering/cell/cellEditService";
+
+provideVSCodeDesignSystem().register(vsCodeTextField());
 
 /**
  * The main class, which orchestrates rendering and is the final destination
@@ -26,6 +30,7 @@ class ListwindowController {
     private resizeMode: ColumnResizeMode = "fixed";
     private readonly tooltipProvider = new TooltipService();
     private readonly hoverService = new HoverService();
+    private readonly cellEditService = new CellEditService();
 
     constructor(
         private readonly appElement: HTMLElement,
@@ -38,6 +43,9 @@ class ListwindowController {
         window.addEventListener("focus", () => Theming.setViewHasFocus(true));
         window.addEventListener("blur", () => Theming.setViewHasFocus(false));
 
+        this.cellEditService.onCellEditSubmitted = (position, newValue) => {
+            this.sendMessage({ subject: "cellEdited", ...position, newValue });
+        };
 
         this.sendMessage({ subject: "loaded" });
     }
@@ -67,6 +75,12 @@ class ListwindowController {
                 break;
             case "tooltipReply":
                 this.tooltipProvider.setTextForPendingTooltip(msg.text);
+                break;
+            case "editableStringReply":
+                this.cellEditService.setEditableStringForPendingEdit(msg.text, {
+                    col: msg.col,
+                    row: msg.row,
+                });
                 break;
             default: {
                 // Makes TS check that all message variants are handled
@@ -146,6 +160,15 @@ class ListwindowController {
                 row: ev.detail.row,
             });
         });
+        grid.addEventListener("cell-edit-requested", ev => {
+            this.cellEditService.setPendingCellInput(ev);
+            this.sendMessage({
+                subject: "getEditableString",
+                col: ev.detail.col,
+                row: ev.detail.row,
+            });
+        });
+
 
         window.scrollTo(scrollX, scrollY);
     }
