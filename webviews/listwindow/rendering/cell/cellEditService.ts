@@ -37,13 +37,16 @@ export class CellEditService {
         textField.defaultValue = text;
 
         const rect = this.pendingEdit.detail.cellBounds;
-        textField.width = rect.width;
-        textField.height = rect.height;
+
         textField.style.position = "absolute";
-        textField.style.left = rect.left + "px";
-        textField.style.top = rect.top + "px";
+        // The cell bounds are in client (i.e. "viewport") coordinates, but we
+        // want them in page coordinates.
+        textField.style.left = (rect.left + window.scrollX) + "px";
+        textField.style.top = (rect.top + window.scrollY) + "px";
         textField.style.width = rect.width + "px";
         textField.style.height = rect.height + "px";
+        textField.width = rect.width;
+        textField.height = rect.height;
 
         document.body.appendChild(textField);
 

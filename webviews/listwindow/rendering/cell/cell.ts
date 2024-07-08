@@ -165,8 +165,6 @@ export class CellElement extends HTMLElement {
         this.onclick = ev => {
             if (ev.button === 0) {
                 if (this.cell?.format.editable) {
-                    console.log(this.getBoundingClientRect());
-                    console.log(innerRoot.getBoundingClientRect());
                     this.dispatchEvent(createCustomEvent("cell-edit-requested", {
                         detail: {
                             ...this.position,
