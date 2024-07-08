@@ -4,3 +4,14 @@
 
 // Get the VS Code webview API typings globally (e.g. acquireVsCodeApi)
 import "vscode-webview";
+
+declare module 'csstype' {
+    interface PropertiesHyphen {
+      // Allow CSS variables
+      [index: `--${string}`]: any;
+      "border-top-style"?: Property.BorderTopStyle | `var(${string})`;
+      "border-right-style"?: Property.BorderRightStyle | `var(${string})`;
+      "border-bottom-style"?: Property.BorderBottomStyle | `var(${string})`;
+      "border-left-style"?: Property.BorderLeftStyle | `var(${string})`;
+    }
+  }

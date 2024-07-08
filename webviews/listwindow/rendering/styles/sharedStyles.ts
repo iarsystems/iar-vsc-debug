@@ -12,10 +12,12 @@ import { createCss } from "./createCss";
 export namespace SharedStyles {
     //! NOTE: Make sure to export all styles at the bottom of the file.
 
-    /**
-     * CSS class for a column header OR cell in the grid.
-     */
-    export const CLASS_GRID_ITEM = "grid-item";
+    // "z-index" values used by various elements. By defining them in one place,
+    // it's easier to get an overview of how the elements stack.
+    export enum ZIndices {
+        GridHeader = 1,
+        Tooltip = 2,
+    }
 
     /**
      * Classes corresponding to the thrift {@link Alignment}s, that describe how to

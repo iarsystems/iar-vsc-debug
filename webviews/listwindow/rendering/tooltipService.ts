@@ -4,6 +4,7 @@
 
 import { CellHoveredEvent } from "./cell/cell";
 import { createCss } from "./styles/createCss";
+import { SharedStyles } from "./styles/sharedStyles";
 import { customElement } from "./utils";
 import * as FloatingUi from "@floating-ui/dom";
 
@@ -74,7 +75,7 @@ class TooltipElement extends HTMLElement {
             width: "max-content",
             transition: "opacity 0.1s ease-in-out",
             opacity: 0,
-            "z-index": 30,
+            "z-index": SharedStyles.ZIndices.Tooltip,
         },
         div: {
             background: "var(--vscode-editorHoverWidget-background)",

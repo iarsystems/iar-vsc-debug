@@ -7,8 +7,8 @@ import { Cell, TextStyle } from "../../thrift/listwindow_types";
 import { HoverService } from "../hoverService";
 import { createCss } from "../styles/createCss";
 import { SharedStyles } from "../styles/sharedStyles";
-import { Theming } from "../styles/theming";
 import { customElement } from "../utils";
+import { CellBordersElement } from "./cellBorders";
 import { TreeInfoElement } from "./treeInfo";
 
 export interface CellPosition {
@@ -74,46 +74,8 @@ export class CellElement extends HTMLElement {
     static readonly OUTER_STYLES = createCss({
         "listwindow-cell": {
             padding: 0,
+            position: "relative",
             overflow: "hidden",
-        },
-        // The margins and transforms here are a hacky way to negate the space the
-        // borders take up, so that hovering/selection doesn't affect the size
-        // of the cell
-        "listwindow-cell.selected": {
-            "border-right": "none",
-            "background-color": `var(${Theming.Variables.ListSelectionBg})`,
-            color: `var(${Theming.Variables.ListSelectionFg})`,
-            "border-top": `1px var(${Theming.Variables.ListSelectionOutlineStyle}) var(${Theming.Variables.ListSelectionOutlineColor})`,
-            "margin-top": "-1px",
-            "border-bottom": `1px var(${Theming.Variables.ListSelectionOutlineStyle}) var(${Theming.Variables.ListSelectionOutlineColor})`,
-            "margin-bottom": "-1px",
-            "z-index": 10,
-        },
-        "listwindow-cell.selected:first-child": {
-            "border-left": `1px var(${Theming.Variables.ListSelectionOutlineStyle}) var(${Theming.Variables.ListSelectionOutlineColor})`,
-        },
-        "listwindow-cell.selected:first-child>*": {
-            transform: "translate(-1px)",
-        },
-        "listwindow-cell.selected:last-child": {
-            "border-right": `1px var(${Theming.Variables.ListSelectionOutlineStyle}) var(${Theming.Variables.ListSelectionOutlineColor})`,
-        },
-
-        ":hover>listwindow-cell:not(.selected)": {
-            "background-color": "var(--vscode-list-hoverBackground)",
-            "border-top": "1px dotted var(--vscode-contrastActiveBorder, rgba(0, 0, 0, 0))",
-            "margin-top": "-1px",
-            "border-bottom": "1px dotted var(--vscode-contrastActiveBorder, rgba(0, 0, 0, 0))",
-            "margin-bottom": "-1px",
-        },
-        ":hover>listwindow-cell:not(.selected):first-child": {
-            "border-left": "1px dotted var(--vscode-contrastActiveBorder, rgba(0, 0, 0, 0))",
-        },
-        ":hover:not(.selected)>listwindow-cell:not(.selected):first-child>*": {
-            transform: "translate(-1px)",
-        },
-        ":hover>listwindow-cell:not(.selected):last-child": {
-            "border-right": "1px dotted var(--vscode-contrastActiveBorder, rgba(0, 0, 0, 0))",
         },
     });
 
@@ -121,9 +83,6 @@ export class CellElement extends HTMLElement {
         ":host": {
             padding: 0,
             height: "100%",
-        },
-        "#text::before": {
-            "content": "aa",
         },
         "#inner-root": {
             height: "22px",
@@ -133,6 +92,7 @@ export class CellElement extends HTMLElement {
             display: "grid",
             "grid-template-columns": "max-content auto",
             "align-items": "center",
+            "user-select": "none",
         },
         "#text": {
             "grid-column": 2,
@@ -199,6 +159,8 @@ export class CellElement extends HTMLElement {
         text.innerText = this.cell?.text;
         innerRoot.appendChild(text);
 
+        this.appendChild(new CellBordersElement);
+
         // Add event handlers
         this.onclick = ev => {
             if (ev.button === 0) {
@@ -263,8 +225,6 @@ export class CellElement extends HTMLElement {
         });
 
         // Add styles
-        this.classList.add(SharedStyles.CLASS_GRID_ITEM);
-
         if (this.selected) {
             this.classList.add("selected");
         }

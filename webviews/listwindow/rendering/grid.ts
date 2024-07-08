@@ -30,23 +30,12 @@ export class GridElement extends HTMLElement {
                 // The grid-template-columns are set by the header element
                 display: "grid",
             },
-            [`.${SharedStyles.CLASS_GRID_ITEM}`]: {
-                "user-select": "none",
-            }
         }),
         HeaderElement.STYLES,
         RowElement.STYLES,
         CellElement.OUTER_STYLES,
         ...SharedStyles.STYLES,
     ];
-    // Styles to apply if ListSpec.showGrid is set
-    private static readonly STYLE_SHOW_GRID = createCss({
-        [`.${SharedStyles.CLASS_GRID_ITEM}`]: {
-            "border-right": "1px solid var(--vscode-widget-border, rgba(0, 0, 0, 0))",
-            "border-bottom": "1px solid var(--vscode-widget-border, rgba(0, 0, 0, 0))",
-            "margin-bottom": "-1px",
-        },
-    });
     // Styles to apply if resizeMode is "fit"
     private static readonly STYLE_RESIZEMODE_FIT = createCss({
         ":host, table": {
@@ -64,8 +53,6 @@ export class GridElement extends HTMLElement {
         const shadow = this.attachShadow({ mode: "closed" });
         shadow.adoptedStyleSheets.push(...GridElement.STYLES);
 
-        shadow.adoptedStyleSheets.push(GridElement.STYLE_SHOW_GRID);
-        GridElement.STYLE_SHOW_GRID.disabled = !(this.data?.listSpec.showGrid);
         shadow.adoptedStyleSheets.push(GridElement.STYLE_RESIZEMODE_FIT);
         GridElement.STYLE_RESIZEMODE_FIT.disabled = this.resizeMode !== "fit";
 

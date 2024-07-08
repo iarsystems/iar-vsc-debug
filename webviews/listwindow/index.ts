@@ -169,6 +169,7 @@ class ListwindowController {
             });
         });
 
+        Theming.setGridLinesVisible(!!this.renderParams?.listSpec.showGrid);
 
         window.scrollTo(scrollX, scrollY);
     }

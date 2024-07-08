@@ -4,8 +4,10 @@
 
 import { Row } from "../thrift/listwindow_types";
 import { CellElement } from "./cell/cell";
+import { CellBorderVariables } from "./cell/cellBorders";
 import { HoverService } from "./hoverService";
 import { createCss } from "./styles/createCss";
+import { Theming } from "./styles/theming";
 import { customElement } from "./utils";
 
 /**
@@ -19,6 +21,64 @@ export class RowElement extends HTMLElement {
         "listwindow-row": {
             display: "contents",
             "box-sizing": "border-box",
+        },
+        "listwindow-row>*": {
+            "border-bottom": `1px var(${Theming.Variables.GridLineStyle}) var(${Theming.Variables.GridLineColor})`,
+            "border-right": `1px var(${Theming.Variables.GridLineStyle}) var(${Theming.Variables.GridLineColor})`,
+        },
+
+        // Highlight selected row(s)
+        "listwindow-row.selected>*": {
+            "border-right-color": "rgba(0, 0, 0, 0)",
+            "background-color": `var(${Theming.Variables.ListSelectionBg})`,
+            color: `var(${Theming.Variables.ListSelectionFg})`,
+
+            [`${CellBorderVariables.Style}`]: `var(${Theming.Variables.ListSelectionOutlineStyle})`,
+            [`${CellBorderVariables.ColorTop}`]: `var(${Theming.Variables.ListSelectionOutlineColor})`,
+            [`${CellBorderVariables.ColorBottom}`]: `var(${Theming.Variables.ListSelectionOutlineColor})`,
+            [`${CellBorderVariables.StyleLeft}`]: "none",
+            [`${CellBorderVariables.StyleRight}`]: "none",
+        },
+        "listwindow-row.selected>:first-child": {
+            [`${CellBorderVariables.StyleLeft}`]: `var(${Theming.Variables.ListSelectionOutlineStyle})`,
+            [`${CellBorderVariables.ColorLeft}`]: `var(${Theming.Variables.ListSelectionOutlineColor}, var(${Theming.Variables.ListSelectionBg}))`,
+        },
+        "listwindow-row.selected>:last-child": {
+            [`${CellBorderVariables.StyleRight}`]: `var(${Theming.Variables.ListSelectionOutlineStyle})`,
+            [`${CellBorderVariables.ColorRight}`]: `var(${Theming.Variables.ListSelectionOutlineColor}, var(${Theming.Variables.ListSelectionBg}))`,
+        },
+        // Remove adjacent borders of non-selected rows
+        "listwindow-row:not(.selected):has(+listwindow-row.selected)>*": {
+            [`${CellBorderVariables.StyleBottom}`]: "none",
+        },
+        ":is(listwindow-row.selected)+listwindow-row:not(.selected)>*": {
+            [`${CellBorderVariables.StyleTop}`]: "none",
+        },
+
+        // Highlight hovered row(s)
+        "listwindow-row:hover:not(.selected)>*": {
+            "background-color": "var(--vscode-list-hoverBackground)",
+            [`${CellBorderVariables.StyleTop}`]: "dotted",
+            [`${CellBorderVariables.ColorTop}`]: `var(--vscode-contrastActiveBorder, rgba(0, 0, 0, 0))`,
+            [`${CellBorderVariables.StyleBottom}`]: "dotted",
+            [`${CellBorderVariables.ColorBottom}`]: `var(--vscode-contrastActiveBorder, rgba(0, 0, 0, 0))`,
+            [`${CellBorderVariables.ColorLeft}`]: "rgba(0, 0, 0, 0)",
+            [`${CellBorderVariables.ColorRight}`]: `var(--vscode-list-hoverBackground)`,
+        },
+        "listwindow-row:hover:not(.selected)>:first-child": {
+            [`${CellBorderVariables.StyleLeft}`]: "dotted",
+            [`${CellBorderVariables.ColorLeft}`]: `var(--vscode-contrastActiveBorder, rgba(0, 0, 0, 0))`,
+        },
+        "listwindow-row:hover:not(.selected)>:last-child": {
+            [`${CellBorderVariables.StyleRight}`]: "dotted",
+            [`${CellBorderVariables.ColorRight}`]: `var(--vscode-contrastActiveBorder, rgba(0, 0, 0, 0))`,
+        },
+        // Remove adjacent borders of non-hovered, non-selected rows
+        "listwindow-row:not(.selected):has(+listwindow-row:hover)>*": {
+            [`${CellBorderVariables.StyleBottom}`]: "none",
+        },
+        ":is(listwindow-row:hover)+listwindow-row:not(.selected)>*": {
+            [`${CellBorderVariables.StyleTop}`]: "none",
         },
     });
 
@@ -48,6 +108,10 @@ export class RowElement extends HTMLElement {
             cellElem.hoverService = this.hoverService;
 
             this.appendChild(cellElem);
+        }
+
+        if (this.selected) {
+            this.classList.add("selected");
         }
     }
 }

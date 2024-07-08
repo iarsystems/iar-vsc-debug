@@ -81,7 +81,6 @@ class TextFieldElement extends HTMLElement {
     private isDone = false;
 
     connectedCallback() {
-        this.style.zIndex = "15";
         // These are special variables used by vscode-text-field to set its size
         if (this.width) {
             this.style.setProperty("--input-min-width", String(this.width));

@@ -19,6 +19,8 @@ export namespace Theming {
         ListSelectionOutlineColor = "--list-selection-outline-color",
         ListSelectionOutlineStyle = "--list-selection-outline-style",
         IndentGuideColor = "--indent-guide-color",
+        GridLineColor = "--grid-line-color",
+        GridLineStyle = "--grid-line-style",
     }
 
     const BASE_STYLES = createCssFromVars<Required<VariableDefinitions>>({
@@ -32,7 +34,13 @@ export namespace Theming {
             "solid",
         [Variables.IndentGuideColor]:
             "var(--vscode-tree-indentGuidesStroke)",
+        [Variables.GridLineColor]:
+            "rgba(0, 0, 0, 0)",
+        [Variables.GridLineStyle]:
+            "none",
     });
+
+    // Applied when the view is not in focus
     const UNFOCUSED_STYLES = createCssFromVars({
         [Variables.ListSelectionBg]:
             "var(--vscode-list-inactiveSelectionBackground)",
@@ -46,13 +54,26 @@ export namespace Theming {
             "var(--vscode-tree-inactiveIndentGuidesStroke)",
     });
 
+    // Applied when 'showGrid' is enabled in the ListSpec
+    const GRID_LINES_VISIBLE_STYLES = createCssFromVars({
+        [Variables.GridLineColor]:
+            "var(--vscode-widget-border)",
+        [Variables.GridLineStyle]:
+            "solid",
+    });
+
     export function initialize() {
         document.adoptedStyleSheets.push(BASE_STYLES);
         document.adoptedStyleSheets.push(UNFOCUSED_STYLES);
+        document.adoptedStyleSheets.push(GRID_LINES_VISIBLE_STYLES);
     }
 
     export function setViewHasFocus(hasFocus: boolean) {
         UNFOCUSED_STYLES.disabled = hasFocus;
+    }
+
+    export function setGridLinesVisible(visible: boolean) {
+        GRID_LINES_VISIBLE_STYLES.disabled = !visible;
     }
 
     type VariableDefinitions = { [K in Variables]?: string };

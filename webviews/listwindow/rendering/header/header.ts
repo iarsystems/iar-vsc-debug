@@ -9,6 +9,7 @@ import { createCss } from "../styles/createCss";
 import { customElement } from "../utils";
 import { Column } from "../../thrift/listwindow_types";
 import { SharedStyles } from "../styles/sharedStyles";
+import { Theming } from "../styles/theming";
 
 /**
  * Emitted when the the user has resized a column
@@ -44,16 +45,21 @@ export class HeaderElement extends HTMLElement {
         "listwindow-header>*": {
             position: "sticky",
             top: 0,
-            "z-index": 20,
+            "z-index": SharedStyles.ZIndices.GridHeader,
             width: "100%",
+            "user-select": "none",
             overflow: "hidden",
             background: "var(--vscode-sideBar-background)",
             "box-sizing": "border-box",
+            "border-bottom": `1px var(${Theming.Variables.GridLineStyle}) var(${Theming.Variables.GridLineColor})`,
+            "border-right": `1px var(${Theming.Variables.GridLineStyle}) var(${Theming.Variables.GridLineColor})`,
         },
         ".header-title": {
             overflow: "hidden",
             "text-overflow": "ellipsis",
             padding: "0px 12px",
+            "box-sizing": "border-box",
+            "max-width": "100%",
         }
     });
 
@@ -72,13 +78,12 @@ export class HeaderElement extends HTMLElement {
         for (const [i, column] of this.columns.entries()) {
             const colHeader = document.createElement("span");
             this.columnHeaders.push(colHeader);
-            colHeader.classList.add(SharedStyles.CLASS_GRID_ITEM);
             if (this.clickable) {
                 colHeader.classList.add("clickable");
             }
             this.appendChild(colHeader);
 
-            const text = document.createElement("span");
+            const text = document.createElement("div");
             text.classList.add("header-title");
             text.innerText = column.title;
             colHeader.appendChild(text);
