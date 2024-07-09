@@ -78,6 +78,9 @@ export class HoverService {
             // Other parts of VS Code don't show hovers after a click, so let's not either.
             this.cancelTimer();
         });
+        element.addEventListener("dragstart", () => {
+            this.cancelTimer();
+        });
 
         if (this.pendingHover?.elementId === elementId) {
             // A previous instance of this element has a pending hover. We can let

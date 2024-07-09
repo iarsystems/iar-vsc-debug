@@ -69,7 +69,8 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
         });
         this.view.webview.html = Rendering.getWebviewContent(
             this.view.webview,
-            this.extensionUri
+            this.extensionUri,
+            this.viewId,
         );
 
         this.view.onDidChangeVisibility(() => {
@@ -165,6 +166,12 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
             case "cellEdited":
                 // TODO: do something
                 break;
+            case "localDrop":
+                // TODO: do something
+                break;
+            case "externalDrop":
+                // TODO: do something
+                break;
             default: {
                 // Makes TS check that all message variants are handled
                 const _exhaustiveCheck: never = msg;
@@ -197,6 +204,7 @@ namespace Rendering {
     export function getWebviewContent(
         webview: vscode.Webview,
         extensionUri: vscode.Uri,
+        viewId: string,
     ) {
         // load npm packages for standardized UI components and icons
         //! NOTE: ALL files you load here (even indirectly) must be explicitly included in .vscodeignore, so that they are packaged in the .vsix. Webpack will not find these files.
@@ -225,7 +233,8 @@ namespace Rendering {
         <title>Listwindow</title>
     </head>
     <body>
-        <div id="app">
+        <!-- This is used to identify drag-and-drop operations, must be unique! -->
+        <div id="app" viewId="${viewId}">
         </div>
     </body>
     </html>`;
@@ -261,22 +270,22 @@ function getMockRenderParams(selectedRow = 1) {
                     new Cell({
                         text: "Fib",
                         format: editableFormat,
-                        drop: Target.kNoTarget,
+                        drop: Target.kTargetRow,
                     }),
                     new Cell({
                         text: "<array>",
                         format,
-                        drop: Target.kNoTarget,
+                        drop: Target.kTargetRow,
                     }),
                     new Cell({
                         text: "0x2000'0030",
                         format: memFormat,
-                        drop: Target.kNoTarget,
+                        drop: Target.kTargetRow,
                     }),
                     new Cell({
                         text: "uint32_t[10]",
                         format,
-                        drop: Target.kNoTarget,
+                        drop: Target.kTargetRow,
                     }),
                 ],
                 isChecked: false,
@@ -325,10 +334,10 @@ function getMockRenderParams(selectedRow = 1) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         params.rows.push(new Row({
             cells: [
-                new Cell({ text: `[${i}]`, format, drop: Target.kNoTarget}),
-                new Cell({ text: String(i), format: editableFormat, drop: Target.kNoTarget}),
-                new Cell({ text: "0x2000'0030", format: memFormat, drop: Target.kNoTarget}),
-                new Cell({ text: "uint32_t", format, drop: Target.kNoTarget}),
+                new Cell({ text: `[${i}]`, format, drop: Target.kTargetRow}),
+                new Cell({ text: String(i), format: editableFormat, drop: Target.kTargetRow}),
+                new Cell({ text: "0x2000'0030", format: memFormat, drop: Target.kTargetRow}),
+                new Cell({ text: "uint32_t", format, drop: Target.kTargetColumn}),
             ],
             isChecked: false,
             treeinfo: "T.",
@@ -342,17 +351,17 @@ function getMockRenderParams(selectedRow = 1) {
                 new Cell({
                     text: "<click to add>",
                     format: editableFormat,
-                    drop: Target.kNoTarget,
+                    drop: Target.kTargetCell,
                 }),
                 new Cell({
                     text: "",
                     format,
-                    drop: Target.kNoTarget,
+                    drop: Target.kTargetRow,
                 }),
                 new Cell({
                     text: "",
                     format,
-                    drop: Target.kNoTarget,
+                    drop: Target.kTargetRow,
                 }),
                 new Cell({
                     text: "",

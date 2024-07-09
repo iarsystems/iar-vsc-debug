@@ -4,6 +4,7 @@
 
 import { createCustomEvent } from "../../events";
 import { Cell, TextStyle } from "../../thrift/listwindow_types";
+import { DragDropService } from "../dragDropService";
 import { HoverService } from "../hoverService";
 import { createCss } from "../styles/createCss";
 import { SharedStyles } from "../styles/sharedStyles";
@@ -130,6 +131,9 @@ export class CellElement extends HTMLElement {
     selected = false;
 
     hoverService: HoverService | undefined = undefined;
+    dragDropService: DragDropService | undefined = undefined;
+
+    private innerRoot: HTMLElement | undefined = undefined;
 
     connectedCallback() {
         if (!this.cell) {
@@ -143,64 +147,25 @@ export class CellElement extends HTMLElement {
         shadow.adoptedStyleSheets.push(...SharedStyles.STYLES);
 
         // Add content
-        const innerRoot = document.createElement("div");
-        innerRoot.id = "inner-root";
-        shadow.appendChild(innerRoot);
+        this.innerRoot = document.createElement("div");
+        this.innerRoot.id = "inner-root";
+        shadow.appendChild(this.innerRoot);
 
         if (this.treeinfo) {
             const treeInfoElem = new TreeInfoElement();
             treeInfoElem.treeinfo = this.treeinfo;
             treeInfoElem.row = this.position.row;
-            innerRoot.appendChild(treeInfoElem);
+            this.innerRoot.appendChild(treeInfoElem);
         }
 
         const text = document.createElement("div");
         text.id = "text";
         text.innerText = this.cell?.text;
-        innerRoot.appendChild(text);
+        this.innerRoot.appendChild(text);
 
         this.appendChild(new CellBordersElement);
 
         // Add event handlers
-        this.onclick = ev => {
-            if (ev.button === 0) {
-                if (this.cell?.format.editable) {
-                    this.dispatchEvent(createCustomEvent("cell-edit-requested", {
-                        detail: {
-                            ...this.position,
-                            cellBounds: innerRoot.getBoundingClientRect(),
-                        },
-                        bubbles: true,
-                        composed: true,
-                    }));
-                    return;
-                }
-                this.dispatchEvent(createCustomEvent("cell-clicked", {
-                    detail: {
-                        ...this.position,
-                        isDoubleClick: ev.detail === 2,
-                        ctrlPressed: ev.ctrlKey,
-                        shiftPressed: ev.shiftKey,
-                    },
-                    bubbles: true,
-                    composed: true,
-                }));
-            }
-        };
-        this.oncontextmenu = ev => {
-            const event = createCustomEvent("cell-right-clicked", {
-                detail: {
-                    ...this.position,
-                    clickPosition: {
-                        x: ev.clientX,
-                        y: ev.clientY,
-                    },
-                },
-                bubbles: true,
-                composed: true,
-            });
-            this.dispatchEvent(event);
-        };
         const cellId = `${this.position.col},${this.position.row}`;
         this.hoverService?.registerHoverElement(this, cellId, pos => {
             this.dispatchEvent(
@@ -222,13 +187,20 @@ export class CellElement extends HTMLElement {
             );
         });
 
+        this.dragDropService?.registerDraggableCell(this);
+        this.dragDropService?.registerDropTarget(
+            this,
+            this.position,
+            this.cell.drop,
+        );
+
         // Add styles
         if (this.selected) {
             this.classList.add("selected");
         }
 
         if (this.cell.format.editable) {
-            innerRoot.classList.add("editable");
+            this.innerRoot.classList.add("editable");
         }
 
         text.classList.add(
@@ -268,4 +240,51 @@ export class CellElement extends HTMLElement {
             text.classList.add("text-style-italic");
         }
     }
+
+    override onclick = (ev: MouseEvent) => {
+        if (ev.button === 0) {
+            if (this.cell?.format.editable && this.innerRoot) {
+                this.dispatchEvent(
+                    createCustomEvent("cell-edit-requested", {
+                        detail: {
+                            ...this.position,
+                            cellBounds: this.innerRoot.getBoundingClientRect(),
+                        },
+                        bubbles: true,
+                        composed: true,
+                    }),
+                );
+                return;
+            }
+            this.dispatchEvent(
+                createCustomEvent("cell-clicked", {
+                    detail: {
+                        ...this.position,
+                        isDoubleClick: ev.detail === 2,
+                        ctrlPressed: ev.ctrlKey,
+                        shiftPressed: ev.shiftKey,
+                    },
+                    bubbles: true,
+                    composed: true,
+                }),
+            );
+        }
+        return null;
+    };
+
+    override oncontextmenu = (ev: MouseEvent) => {
+        const event = createCustomEvent("cell-right-clicked", {
+            detail: {
+                ...this.position,
+                clickPosition: {
+                    x: ev.clientX,
+                    y: ev.clientY,
+                },
+            },
+            bubbles: true,
+            composed: true,
+        });
+        this.dispatchEvent(event);
+    };
+
 }

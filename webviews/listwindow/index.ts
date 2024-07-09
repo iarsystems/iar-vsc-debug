@@ -17,6 +17,7 @@ import { HoverService } from "./rendering/hoverService";
 import { Theming } from "./rendering/styles/theming";
 import { provideVSCodeDesignSystem, vsCodeTextField } from "@vscode/webview-ui-toolkit";
 import { CellEditService } from "./rendering/cell/cellEditService";
+import { DragDropService } from "./rendering/dragDropService";
 
 provideVSCodeDesignSystem().register(vsCodeTextField());
 
@@ -31,6 +32,7 @@ class ListwindowController {
     private readonly tooltipProvider = new TooltipService();
     private readonly hoverService = new HoverService();
     private readonly cellEditService = new CellEditService();
+    private readonly dragDropService: DragDropService;
 
     constructor(
         private readonly appElement: HTMLElement,
@@ -46,6 +48,27 @@ class ListwindowController {
         this.cellEditService.onCellEditSubmitted = (position, newValue) => {
             this.sendMessage({ subject: "cellEdited", ...position, newValue });
         };
+
+        const viewId = appElement.getAttribute("viewId") ?? "unknown";
+        this.dragDropService = new DragDropService(viewId);
+        this.dragDropService.onLocalDrop = (destination, origin) => {
+            this.sendMessage({
+                subject: "localDrop",
+                srcCol: origin.col,
+                srcRow: origin.row,
+                dstCol: destination.col,
+                dstRow: destination.row,
+            });
+        };
+        this.dragDropService.onExternalDrop = (destination, text) => {
+            this.sendMessage({
+                subject: "externalDrop",
+                col: destination.col,
+                row: destination.row,
+                droppedText: text,
+            });
+        };
+        this.dragDropService.onFeedbackChanged = () => this.render();
 
         this.sendMessage({ subject: "loaded" });
     }
@@ -109,6 +132,7 @@ class ListwindowController {
             grid.initialColumnWidths = this.persistedState.columnWidths;
         }
         grid.hoverService = this.hoverService;
+        grid.dragDropService = this.dragDropService;
 
         this.appElement.replaceChildren(grid);
 

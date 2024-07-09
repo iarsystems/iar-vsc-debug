@@ -54,4 +54,6 @@ export type ViewMessage =
   | { subject: "rowExpansionToggled", row: number } // The user pressed an 'expand' or 'collapse' button
   // The user wants to edit a cell, reply with "editableStringReply" using the value that should be shown in the text field
   | { subject: "getEditableString", col: number, row: number }
-  | { subject: "cellEdited", col: number, row: number, newValue: string }; // The user has changed the value of a cell
+  | { subject: "cellEdited", col: number, row: number, newValue: string } // The user has changed the value of a cell
+  | { subject: "localDrop", srcCol: number, srcRow: number, dstCol: number, dstRow: number } // The user dropped the cell srcCol/srcRow at dstCol/dstRow
+  | { subject: "externalDrop", col: number, row: number, droppedText: string }; // The user dropped some text at the given position

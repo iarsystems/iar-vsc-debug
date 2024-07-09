@@ -2,16 +2,18 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { Row } from "../thrift/listwindow_types";
+import { Row, Target } from "../thrift/listwindow_types";
 import { CellElement } from "./cell/cell";
 import { CellBorderVariables } from "./cell/cellBorders";
+import { DragDropService } from "./dragDropService";
 import { HoverService } from "./hoverService";
 import { createCss } from "./styles/createCss";
 import { Theming } from "./styles/theming";
 import { customElement } from "./utils";
 
 /**
- * A non-header row in a listwindow
+ * A non-header row in a listwindow. This handles setting outlines and
+ * backgrounds of cells.
  */
 @customElement("listwindow-row")
 export class RowElement extends HTMLElement {
@@ -25,6 +27,12 @@ export class RowElement extends HTMLElement {
         "listwindow-row>*": {
             "border-bottom": `1px var(${Theming.Variables.GridLineStyle}) var(${Theming.Variables.GridLineColor})`,
             "border-right": `1px var(${Theming.Variables.GridLineStyle}) var(${Theming.Variables.GridLineColor})`,
+        },
+
+
+        "listwindow-row>.drop-target": {
+            background: "var(--vscode-list-dropBackground) !important",
+            color: "inherit !important",
         },
 
         // Highlight selected row(s)
@@ -85,6 +93,7 @@ export class RowElement extends HTMLElement {
     row?: Row = undefined;
     index = -1;
     selected = false;
+    dragDropService: DragDropService | undefined = undefined;
 
     hoverService: HoverService | undefined = undefined;
 
@@ -106,12 +115,32 @@ export class RowElement extends HTMLElement {
             cellElem.selected = this.selected;
             cellElem.position = { col: x, row: this.index };
             cellElem.hoverService = this.hoverService;
+            cellElem.dragDropService = this.dragDropService;
 
             this.appendChild(cellElem);
         }
 
         if (this.selected) {
             this.classList.add("selected");
+        }
+
+        const dragFeedback = this.dragDropService?.currentFeedback;
+        if (dragFeedback?.target === Target.kTargetCell) {
+            if (dragFeedback.row === this.index) {
+                this.children[dragFeedback.col]?.classList.add(
+                    "drop-target",
+                );
+            }
+        } else if (dragFeedback?.target === Target.kTargetRow) {
+            if (dragFeedback.row === this.index) {
+                for (const child of this.children) {
+                    child.classList.add("drop-target");
+                }
+            }
+        } else if (dragFeedback?.target === Target.kTargetColumn) {
+            this.children[dragFeedback.col]?.classList.add(
+                "drop-target",
+            );
         }
     }
 }

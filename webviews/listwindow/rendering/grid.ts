@@ -11,6 +11,8 @@ import { customElement } from "./utils";
 import { createCss } from "./styles/createCss";
 import { SharedStyles } from "./styles/sharedStyles";
 import { CellElement } from "./cell/cell";
+import { DragDropService } from "./dragDropService";
+import { Target } from "../thrift/listwindow_types";
 
 /**
  * A full listwindow grid, including headers but excluding any toolbar
@@ -24,7 +26,12 @@ export class GridElement extends HTMLElement {
                 height: "100%",
                 // Always add some space below the table that we can press to
                 // deselect everything
-                // "padding-bottom": "1em",
+                "padding-bottom": "10px",
+                "box-sizing": "border-box",
+                "overflow-y": "auto",
+            },
+            "#backdrop.drop-target": {
+                background: "var(--vscode-list-dropBackground)",
             },
             "#grid": {
                 // The grid-template-columns are set by the header element
@@ -48,6 +55,7 @@ export class GridElement extends HTMLElement {
     resizeMode: ColumnResizeMode = "fixed";
 
     hoverService: HoverService | undefined = undefined;
+    dragDropService: DragDropService | undefined = undefined;
 
     connectedCallback() {
         const shadow = this.attachShadow({ mode: "closed" });
@@ -68,7 +76,7 @@ export class GridElement extends HTMLElement {
         const backdrop = document.createElement("div");
         backdrop.id = "backdrop";
         backdrop.onclick = (ev: MouseEvent) => {
-            if (ev.target === this.shadowRoot?.querySelector("#backdrop")) {
+            if (ev.target === backdrop) {
                 this.dispatchEvent(
                     createCustomEvent("cell-clicked", {
                         detail: {
@@ -84,6 +92,14 @@ export class GridElement extends HTMLElement {
                 );
             }
         };
+        this.dragDropService?.registerDropTarget(
+            backdrop,
+            { col: -1, row: -1 },
+            Target.kTargetAll,
+        );
+        if (this.dragDropService?.currentFeedback.target === Target.kTargetAll) {
+            backdrop.classList.add("drop-target");
+        }
         shadow.appendChild(backdrop);
 
         const grid = document.createElement("div");
@@ -117,6 +133,7 @@ export class GridElement extends HTMLElement {
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 this.data.selection.last.buffer.data[7]! >= y;
             rowElem.hoverService = this.hoverService;
+            rowElem.dragDropService = this.dragDropService;
             grid.appendChild(rowElem);
         }
     }

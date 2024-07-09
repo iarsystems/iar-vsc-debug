@@ -42,13 +42,13 @@ we can't *call* the thrift code, but we can use its type definitions.
 * Show/hide header row
 * Show/hide grid
 * Dim selection when losing focus
+* Drag-n-drop feedback
 
 ### Rendering Todo
 
 * Text color & background color
 * Dim display when frozen
 * Checkboxes
-* Drag-n-drop feedback
 * Icons
 * Progress-bars inside cells
 * Draw "filler" cells to the right and below
@@ -59,6 +59,9 @@ we can't *call* the thrift code, but we can use its type definitions.
 * Save/restore column widths
 * Tooltips (e.g. physical breakpoints)
 * Mouse (single-click, double-click)
+* Cell editing
+* Drag-n-drop
+* Drop-target feedback
 
 ### Functional Todo
 
@@ -67,12 +70,8 @@ we can't *call* the thrift code, but we can use its type definitions.
 * Ensure visible
 * Context menu
 * Multiple selection (but no support in model yet)
-* Cell editing
 * Save/restore state
 * Toolbars
-* Drag-n-drop
-* Drop-target feedback
-* Generic drag-n-drop using the Drop() call
 * Delay display-dimming on frozen to avoid flickering.
 * Partial selection when editing cells (which models do this?)
 * Sliding listmodels
