@@ -242,6 +242,7 @@ export class CellElement extends HTMLElement {
     }
 
     override onclick = (ev: MouseEvent) => {
+        ev.stopPropagation();
         if (ev.button === 0) {
             if (this.cell?.format.editable && this.innerRoot) {
                 this.dispatchEvent(

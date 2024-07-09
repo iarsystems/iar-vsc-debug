@@ -26,9 +26,6 @@ export class GridElement extends HTMLElement {
                 height: "100%",
                 // Always add some space below the table that we can press to
                 // deselect everything
-                "padding-bottom": "10px",
-                "box-sizing": "border-box",
-                "overflow-y": "auto",
             },
             "#backdrop.drop-target": {
                 background: "var(--vscode-list-dropBackground)",
@@ -36,6 +33,7 @@ export class GridElement extends HTMLElement {
             "#grid": {
                 // The grid-template-columns are set by the header element
                 display: "grid",
+                "padding-bottom": "10px",
             },
         }),
         HeaderElement.STYLES,
@@ -76,21 +74,19 @@ export class GridElement extends HTMLElement {
         const backdrop = document.createElement("div");
         backdrop.id = "backdrop";
         backdrop.onclick = (ev: MouseEvent) => {
-            if (ev.target === backdrop) {
-                this.dispatchEvent(
-                    createCustomEvent("cell-clicked", {
-                        detail: {
-                            col: -1,
-                            row: -1,
-                            isDoubleClick: ev.detail === 2,
-                            ctrlPressed: false,
-                            shiftPressed: false,
-                        },
-                        bubbles: true,
-                        composed: true,
-                    }),
-                );
-            }
+            this.dispatchEvent(
+                createCustomEvent("cell-clicked", {
+                    detail: {
+                        col: -1,
+                        row: -1,
+                        isDoubleClick: ev.detail === 2,
+                        ctrlPressed: false,
+                        shiftPressed: false,
+                    },
+                    bubbles: true,
+                    composed: true,
+                }),
+            );
         };
         this.dragDropService?.registerDropTarget(
             backdrop,
