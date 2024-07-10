@@ -242,7 +242,6 @@ export class CellElement extends HTMLElement {
     }
 
     override onclick = (ev: MouseEvent) => {
-        ev.stopPropagation();
         if (ev.button === 0) {
             if (this.cell?.format.editable && this.innerRoot) {
                 this.dispatchEvent(
@@ -274,6 +273,7 @@ export class CellElement extends HTMLElement {
     };
 
     override oncontextmenu = (ev: MouseEvent) => {
+        ev.stopPropagation();
         const event = createCustomEvent("cell-right-clicked", {
             detail: {
                 ...this.position,

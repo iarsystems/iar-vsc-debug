@@ -60,15 +60,15 @@ we can't *call* the thrift code, but we can use its type definitions.
 * Tooltips (e.g. physical breakpoints)
 * Mouse (single-click, double-click)
 * Cell editing
-* Drag-n-drop
+* Drag-n-drop within a listwindow
 * Drop-target feedback
+* Context menu
 
 ### Functional Todo
 
 * Scrolling/navigation (keys, scrollbar, mousewheel, horizontal)
 * Selection update (key navigation)
 * Ensure visible
-* Context menu
 * Multiple selection (but no support in model yet)
 * Save/restore state
 * Toolbars
@@ -76,3 +76,4 @@ we can't *call* the thrift code, but we can use its type definitions.
 * Partial selection when editing cells (which models do this?)
 * Sliding listmodels
 * Clickable columns
+* Drag-n-drop between different listwindows

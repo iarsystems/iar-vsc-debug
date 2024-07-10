@@ -17,6 +17,7 @@ export namespace SharedStyles {
     export enum ZIndices {
         GridHeader = 1,
         Tooltip = 2,
+        ContextMenu = 2,
     }
 
     /**

@@ -6,6 +6,7 @@ import { TextField } from "@vscode/webview-ui-toolkit";
 import { createCustomEvent } from "../../events";
 import { customElement } from "../utils";
 import { CellEditRequestedEvent, CellPosition } from "./cell";
+import { MessageService } from "../../messageService";
 
 interface ActiveCellEdit {
     textField: TextFieldElement;
@@ -13,17 +14,30 @@ interface ActiveCellEdit {
 }
 
 export class CellEditService {
-    onCellEditSubmitted: ((position: CellPosition, value: string) => void) | undefined
-        = undefined;
-
     private pendingEdit: CellEditRequestedEvent | undefined = undefined;
     private activeCellEdit: ActiveCellEdit | undefined = undefined;
 
-    setPendingCellInput(event: CellEditRequestedEvent) {
-        this.pendingEdit = event;
+    constructor(private readonly messageService: MessageService) {
+        this.messageService.addMessageHandler(msg => {
+            if (msg.subject === "editableStringReply") {
+                this.setEditableStringForPendingEdit(msg.text, {
+                    col: msg.col,
+                    row: msg.row,
+                });
+            }
+        });
     }
 
-    setEditableStringForPendingEdit(text: string, position: CellPosition) {
+    requestCellEdit(event: CellEditRequestedEvent) {
+        this.pendingEdit = event;
+        this.messageService.sendMessage({
+            subject: "getEditableString",
+            col: event.detail.col,
+            row: event.detail.row,
+        });
+    }
+
+    private setEditableStringForPendingEdit(text: string, position: CellPosition) {
         if (
             position.col !== this.pendingEdit?.detail.col ||
             position.row !== this.pendingEdit?.detail.row
@@ -55,7 +69,13 @@ export class CellEditService {
         );
         textField.addEventListener("cell-edit-submitted", ev => {
             if (this.activeCellEdit) {
-                this.onCellEditSubmitted?.(this.activeCellEdit.origin.detail, ev.detail);
+                this.messageService.sendMessage({
+                    subject: "cellEdited",
+                    col: this.activeCellEdit.origin.detail.col,
+                    row: this.activeCellEdit.origin.detail.row,
+                    newValue: ev.detail,
+
+                });
             }
             this.cancelCellInput();
         });

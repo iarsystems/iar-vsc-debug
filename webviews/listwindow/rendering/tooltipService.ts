@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
+import { MessageService } from "../messageService";
 import { CellHoveredEvent } from "./cell/cell";
 import { createCss } from "./styles/createCss";
 import { SharedStyles } from "./styles/sharedStyles";
@@ -23,7 +24,15 @@ export class TooltipService {
     private element: TooltipElement | undefined = undefined;
     private pendingTooltip: PendingTooltip | undefined = undefined;
 
-    setPendingTooltip(event: CellHoveredEvent) {
+    constructor(private readonly messageService: MessageService) {
+        messageService.addMessageHandler(reply => {
+            if (reply.subject === "tooltipReply") {
+                this.setTextForPendingTooltip(reply.text);
+            }
+        });
+    }
+
+    requestTooltip(event: CellHoveredEvent) {
         const fallbackText = event.detail.cellContent.isTruncated
             ? event.detail.cellContent.text
             : undefined;
@@ -32,9 +41,14 @@ export class TooltipService {
             fallbackText,
         };
         document.addEventListener("mousemove", this.clearTooltip);
+        this.messageService.sendMessage({
+            subject: "getTooltip",
+            col: event.detail.col,
+            row: event.detail.row,
+        });
     }
 
-    setTextForPendingTooltip(text: string | undefined) {
+    private setTextForPendingTooltip(text: string | undefined) {
         if (this.element) {
             document.body.removeChild(this.element);
             this.element = undefined;

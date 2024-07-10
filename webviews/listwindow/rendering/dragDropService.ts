@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
+import { MessageService } from "../messageService";
 import { Target } from "../thrift/listwindow_types";
 import { CellElement, CellPosition } from "./cell/cell";
 
@@ -33,16 +34,6 @@ const DRAG_SOURCE_FORMAT = "application/listwindow-source";
 export class DragDropService {
 
     /**
-     * Called when a cell from this window is dropped in this window.
-     */
-    onLocalDrop: ((destination: CellPosition, origin: CellPosition) => void) | undefined
-        = undefined;
-    /**
-     * Called when something other than a cell from this window is dropped in this window.
-     */
-    onExternalDrop: ((destination: CellPosition, text: string) => void) | undefined
-        = undefined;
-    /**
      * Called when {@link currentFeedback} changes
      */
     onFeedbackChanged: (() => void) | undefined
@@ -54,7 +45,10 @@ export class DragDropService {
     /**
      * @param windowId A unique identifier for this listwindow. Used to identify where a drop came from.
     */
-    constructor(private readonly windowId: string) {}
+    constructor(
+        private readonly windowId: string,
+        private readonly messageService: MessageService
+    ) {}
 
     /**
      * Make the given cell draggable.
@@ -128,7 +122,13 @@ export class DragDropService {
                         ev.dataTransfer?.getData(DRAG_SOURCE_FORMAT),
                     );
                     if (source.windowId === this.windowId) {
-                        this.onLocalDrop?.(position, source);
+                        this.messageService.sendMessage({
+                            subject: "localDrop",
+                            srcCol: source.col,
+                            srcRow: source.row,
+                            dstCol: position.col,
+                            dstRow: position.row,
+                        });
                         return;
                     } else {
                         console.error(
@@ -138,7 +138,12 @@ export class DragDropService {
                     }
                 }
                 if (dropText !== "") {
-                    this.onExternalDrop?.(position, dropText);
+                    this.messageService.sendMessage({
+                        subject: "externalDrop",
+                        col: position.col,
+                        row: position.row,
+                        droppedText: dropText,
+                    });
                 }
             }
         };

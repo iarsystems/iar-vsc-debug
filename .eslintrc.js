@@ -36,6 +36,7 @@ const config = {
     "no-inner-declarations": "off",                             // Seems to break when using TS namespaces
     "eqeqeq": "error",                                          // == can be obscure/unintuitive, so use ===
     "deprecation/deprecation": "warn",
+    "no-constant-condition": "off",
     // CODE FORMATTING =================
     "semi": "warn",
     "camelcase": "warn",

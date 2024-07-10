@@ -43,7 +43,7 @@ export class GridElement extends HTMLElement {
     ];
     // Styles to apply if resizeMode is "fit"
     private static readonly STYLE_RESIZEMODE_FIT = createCss({
-        ":host, table": {
+        ":host": {
             width: "100%",
         },
     });
@@ -73,21 +73,6 @@ export class GridElement extends HTMLElement {
 
         const backdrop = document.createElement("div");
         backdrop.id = "backdrop";
-        backdrop.onclick = (ev: MouseEvent) => {
-            this.dispatchEvent(
-                createCustomEvent("cell-clicked", {
-                    detail: {
-                        col: -1,
-                        row: -1,
-                        isDoubleClick: ev.detail === 2,
-                        ctrlPressed: false,
-                        shiftPressed: false,
-                    },
-                    bubbles: true,
-                    composed: true,
-                }),
-            );
-        };
         this.dragDropService?.registerDropTarget(
             backdrop,
             { col: -1, row: -1 },
@@ -101,6 +86,26 @@ export class GridElement extends HTMLElement {
         const grid = document.createElement("div");
         grid.id = "grid";
         backdrop.appendChild(grid);
+
+        backdrop.onclick = (ev: MouseEvent) => {
+            // Any click that is not on a cell/header will be on the backdrop
+            // or the grid's padding
+            if (ev.target === backdrop || ev.target === grid) {
+                this.dispatchEvent(
+                    createCustomEvent("cell-clicked", {
+                        detail: {
+                            col: -1,
+                            row: -1,
+                            isDoubleClick: ev.detail === 2,
+                            ctrlPressed: false,
+                            shiftPressed: false,
+                        },
+                        bubbles: true,
+                        composed: true,
+                    }),
+                );
+            }
+        };
 
         // Create header
         if (this.data.listSpec.showHeader) {
@@ -133,4 +138,16 @@ export class GridElement extends HTMLElement {
             grid.appendChild(rowElem);
         }
     }
+
+    override oncontextmenu = (ev: MouseEvent) => {
+        this.dispatchEvent(createCustomEvent("cell-right-clicked", {
+            detail: {
+                col: -1,
+                row: -1,
+                clickPosition: ev,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+    };
 }

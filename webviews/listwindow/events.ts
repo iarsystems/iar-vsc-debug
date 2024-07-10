@@ -9,6 +9,7 @@ import {
     CellRightClickedEvent,
 } from "./rendering/cell/cell";
 import { RowExpansionToggledEvent } from "./rendering/cell/treeInfo";
+import { ContextMenuItemClickEvent } from "./rendering/contextMenuService";
 import { ColumnsResizedEvent } from "./rendering/header/header";
 import {
     ResizeHandleDragBeginEvent,
@@ -31,6 +32,7 @@ interface CustomEventTypeMap {
     "cell-edit-requested": CellEditRequestedEvent.Detail;
     "cell-edit-submitted": string,
     "row-expansion-toggled": RowExpansionToggledEvent.Detail;
+    "context-menu-item-clicked": ContextMenuItemClickEvent.Detail;
 }
 
 type CustomEventMap = {

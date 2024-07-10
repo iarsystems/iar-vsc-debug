@@ -7,7 +7,6 @@ import {
     ColumnResizeMode,
     ExtensionMessage,
     RenderParameters,
-    ViewMessage,
 } from "./protocol";
 import { GridElement } from "./rendering/grid";
 import { TooltipService } from "./rendering/tooltipService";
@@ -18,63 +17,54 @@ import { Theming } from "./rendering/styles/theming";
 import { provideVSCodeDesignSystem, vsCodeTextField } from "@vscode/webview-ui-toolkit";
 import { CellEditService } from "./rendering/cell/cellEditService";
 import { DragDropService } from "./rendering/dragDropService";
+import { ContextMenuService } from "./rendering/contextMenuService";
+import { MessageService } from "./messageService";
 
 provideVSCodeDesignSystem().register(vsCodeTextField());
 
 /**
- * The main class, which orchestrates rendering and is the final destination
- * of most input events.
+ * The main class, which orchestrates rendering and is where we handle most
+ * input events.
  */
 class ListwindowController {
     private readonly persistedState: PersistedState;
     private renderParams: RenderParameters | undefined = undefined;
     private resizeMode: ColumnResizeMode = "fixed";
-    private readonly tooltipProvider = new TooltipService();
+    private readonly messageService: MessageService;
+    private readonly tooltipService: TooltipService;
     private readonly hoverService = new HoverService();
-    private readonly cellEditService = new CellEditService();
+    private readonly contextMenuService;
+    private readonly cellEditService: CellEditService;
     private readonly dragDropService: DragDropService;
 
     constructor(
         private readonly appElement: HTMLElement,
-        private readonly vscode: WebviewApi<PersistedState.Data>,
+        vscode: WebviewApi<PersistedState.Data>,
     ) {
         this.persistedState = new PersistedState(vscode);
+        this.messageService = new MessageService(vscode);
+        this.tooltipService = new TooltipService(this.messageService);
+        this.cellEditService = new CellEditService(this.messageService);
+        this.contextMenuService = new ContextMenuService(
+            this.appElement,
+            this.messageService,
+        );
+
+        const viewId = appElement.getAttribute("viewId") ?? "unknown";
+        this.dragDropService = new DragDropService(viewId, this.messageService);
+        this.dragDropService.onFeedbackChanged = () => this.render();
 
         Theming.initialize();
         Theming.setViewHasFocus(document.hasFocus());
         window.addEventListener("focus", () => Theming.setViewHasFocus(true));
         window.addEventListener("blur", () => Theming.setViewHasFocus(false));
 
-        this.cellEditService.onCellEditSubmitted = (position, newValue) => {
-            this.sendMessage({ subject: "cellEdited", ...position, newValue });
-        };
-
-        const viewId = appElement.getAttribute("viewId") ?? "unknown";
-        this.dragDropService = new DragDropService(viewId);
-        this.dragDropService.onLocalDrop = (destination, origin) => {
-            this.sendMessage({
-                subject: "localDrop",
-                srcCol: origin.col,
-                srcRow: origin.row,
-                dstCol: destination.col,
-                dstRow: destination.row,
-            });
-        };
-        this.dragDropService.onExternalDrop = (destination, text) => {
-            this.sendMessage({
-                subject: "externalDrop",
-                col: destination.col,
-                row: destination.row,
-                droppedText: text,
-            });
-        };
-        this.dragDropService.onFeedbackChanged = () => this.render();
-
-        this.sendMessage({ subject: "loaded" });
+        this.messageService.addMessageHandler(msg => this.handleMessage(msg));
+        this.messageService.sendMessage({ subject: "loaded" });
     }
 
     /** Handle a message from the view provider in the extension code */
-    handleMessage(msg: ExtensionMessage) {
+    private handleMessage(msg: ExtensionMessage) {
         switch (msg.subject) {
             case "render": {
                 this.renderParams = msg.params;
@@ -88,36 +78,12 @@ class ListwindowController {
                 }
                 break;
             case "dumpHTML":
-                this.sendMessage({
+                this.messageService.sendMessage({
                     subject: "HTMLDump",
                     html: this.appElement.outerHTML,
                 });
                 break;
-            case "contextMenuReply":
-                // Not supported yet
-                break;
-            case "tooltipReply":
-                this.tooltipProvider.setTextForPendingTooltip(msg.text);
-                break;
-            case "editableStringReply":
-                this.cellEditService.setEditableStringForPendingEdit(msg.text, {
-                    col: msg.col,
-                    row: msg.row,
-                });
-                break;
-            default: {
-                // Makes TS check that all message variants are handled
-                const _exhaustiveCheck: never = msg;
-                throw new Error(
-                    "Unhandled message: " + JSON.stringify(_exhaustiveCheck),
-                );
-            }
         }
-    }
-
-    /** Posts a message to the view provider in the extension code */
-    private sendMessage(msg: ViewMessage) {
-        this.vscode.postMessage(msg);
     }
 
     private render() {
@@ -143,7 +109,7 @@ class ListwindowController {
 
         grid.addEventListener("cell-clicked", ev => {
             if (ev.detail.isDoubleClick) {
-                this.sendMessage({
+                this.messageService.sendMessage({
                     subject: "cellDoubleClicked",
                     col: ev.detail.col,
                     row: ev.detail.row,
@@ -155,7 +121,7 @@ class ListwindowController {
                 } else if (ev.detail.shiftPressed) {
                     flags = SelectionFlags.kRange;
                 }
-                this.sendMessage({
+                this.messageService.sendMessage({
                     subject: "cellLeftClicked",
                     col: ev.detail.col,
                     row: ev.detail.row,
@@ -164,33 +130,19 @@ class ListwindowController {
             }
         });
         grid.addEventListener("cell-right-clicked", ev => {
-            this.sendMessage({
-                subject: "getContextMenu",
-                col: ev.detail.col,
-                row: ev.detail.row,
-            });
+            this.contextMenuService.requestContextMenu(ev);
         });
         grid.addEventListener("cell-hovered", ev => {
-            this.tooltipProvider.setPendingTooltip(ev);
-            this.sendMessage({
-                subject: "getTooltip",
-                col: ev.detail.col,
-                row: ev.detail.row,
-            });
+            this.tooltipService.requestTooltip(ev);
         });
         grid.addEventListener("row-expansion-toggled", ev => {
-            this.sendMessage({
+            this.messageService.sendMessage({
                 subject: "rowExpansionToggled",
                 row: ev.detail.row,
             });
         });
         grid.addEventListener("cell-edit-requested", ev => {
-            this.cellEditService.setPendingCellInput(ev);
-            this.sendMessage({
-                subject: "getEditableString",
-                col: ev.detail.col,
-                row: ev.detail.row,
-            });
+            this.cellEditService.requestCellEdit(ev);
         });
 
         Theming.setGridLinesVisible(!!this.renderParams?.listSpec.showGrid);
@@ -199,10 +151,11 @@ class ListwindowController {
     }
 }
 
+
 window.addEventListener("load", () => {
     document.addEventListener("contextmenu", ev => {
         // Never allow VS Code to open its own context menu
-        ev.stopPropagation();
+        ev.preventDefault();
     });
 
     const appElement = document.getElementById("app");
@@ -211,12 +164,5 @@ window.addEventListener("load", () => {
     }
     const vscode = acquireVsCodeApi<PersistedState.Data>();
 
-    const controller = new ListwindowController(appElement, vscode);
-
-    window.addEventListener("message", ev => {
-        if ("subject" in ev.data) {
-            const message = ev.data as ExtensionMessage;
-            controller.handleMessage(message);
-        }
-    });
+    new ListwindowController(appElement, vscode);
 });

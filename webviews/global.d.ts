@@ -13,5 +13,6 @@ declare module 'csstype' {
       "border-right-style"?: Property.BorderRightStyle | `var(${string})`;
       "border-bottom-style"?: Property.BorderBottomStyle | `var(${string})`;
       "border-left-style"?: Property.BorderLeftStyle | `var(${string})`;
+      "text-align"?: Property.TextAlign | `${Property.TextAlign} !important`;
     }
   }
