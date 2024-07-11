@@ -106,6 +106,12 @@ class ListwindowController {
         grid.addEventListener("columns-resized", ev => {
             this.persistedState.columnWidths = ev.detail.newColumnWidths;
         });
+        grid.addEventListener("column-clicked", ev => {
+            this.messageService.sendMessage({
+                subject: "columnClicked",
+                col: ev.detail.col,
+            });
+        });
 
         grid.addEventListener("cell-clicked", ev => {
             if (ev.detail.isDoubleClick) {

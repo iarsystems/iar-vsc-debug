@@ -23,6 +23,16 @@ export namespace ColumnsResizedEvent {
 }
 
 /**
+ * Emitted when the the user has clicked a column header
+ */
+export type ColumnClickedEvent = CustomEvent<ColumnClickedEvent.Detail>;
+export namespace ColumnClickedEvent {
+    export interface Detail {
+        col: number;
+    }
+}
+
+/**
  * A header row in a listwindow. Handles resizing of columns.
  */
 @customElement("listwindow-header")
@@ -78,15 +88,25 @@ export class HeaderElement extends HTMLElement {
         for (const [i, column] of this.columns.entries()) {
             const colHeader = document.createElement("span");
             this.columnHeaders.push(colHeader);
-            if (this.clickable) {
-                colHeader.classList.add("clickable");
-            }
             this.appendChild(colHeader);
 
             const text = document.createElement("div");
             text.classList.add("header-title");
             text.innerText = column.title;
             colHeader.appendChild(text);
+
+            if (this.clickable) {
+                colHeader.classList.add("clickable");
+                text.onclick = () => {
+                    this.dispatchEvent(
+                        createCustomEvent("column-clicked", {
+                            detail: { col: i },
+                            bubbles: true,
+                            composed: true,
+                        }),
+                    );
+                };
+            }
 
             colHeader.classList.add(
                 SharedStyles.alignmentToClass(column.defaultFormat.align),
@@ -105,10 +125,10 @@ export class HeaderElement extends HTMLElement {
 
             if (addHandle) {
                 const handle = new ResizeHandleElement();
-                colHeader.addEventListener("resize-handle-drag-begin", () => {
+                handle.addEventListener("resize-handle-drag-begin", () => {
                     this.beginResizeColumn(i);
                 });
-                colHeader.addEventListener("resize-handle-drag-end", () => {
+                handle.addEventListener("resize-handle-drag-end", () => {
                     // When we're finished resizing, we should check what the
                     // *actual* width became and store that for when we
                     // re-render

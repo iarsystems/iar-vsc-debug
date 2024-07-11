@@ -47,6 +47,7 @@ export type ExtensionMessage =
 export type ViewMessage =
   | { subject: "loaded" } // Sent when the view has been initialized
   | { subject: "HTMLDump", html: string } // Response to a dumpHTML message, contains the full HTML of the view
+  | { subject: "columnClicked", col: number }
   | { subject: "cellLeftClicked", col: number, row: number, flags: SelectionFlags }
   | { subject: "cellDoubleClicked", col: number, row: number }
   | { subject: "getContextMenu", col: number, row: number } // The user right-clicked a cell. The extension should reply with "contextMenuReply"

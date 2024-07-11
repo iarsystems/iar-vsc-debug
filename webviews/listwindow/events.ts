@@ -10,7 +10,10 @@ import {
 } from "./rendering/cell/cell";
 import { MoreLessToggledEvent, RowExpansionToggledEvent } from "./rendering/cell/treeInfo";
 import { ContextMenuItemClickEvent } from "./rendering/contextMenuService";
-import { ColumnsResizedEvent } from "./rendering/header/header";
+import {
+    ColumnsResizedEvent,
+    ColumnClickedEvent,
+} from "./rendering/header/header";
 import {
     ResizeHandleDragBeginEvent,
     ResizeHandleDragEndEvent,
@@ -26,6 +29,7 @@ interface CustomEventTypeMap {
     "resize-handle-drag-end": ResizeHandleDragEndEvent.Detail;
     "resize-handle-moved": ResizeHandleMovedEvent.Detail;
     "columns-resized": ColumnsResizedEvent.Detail;
+    "column-clicked": ColumnClickedEvent.Detail,
     "cell-clicked": CellClickedEvent.Detail;
     "cell-right-clicked": CellRightClickedEvent.Detail;
     "cell-hovered": CellHoveredEvent.Detail;

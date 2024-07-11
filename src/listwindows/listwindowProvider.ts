@@ -109,6 +109,9 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
             case "HTMLDump":
                 // ignore for now, only used for testing
                 break;
+            case "columnClicked":
+                // TODO: send this to the backend
+                break;
             case "cellLeftClicked":
                 // TODO: send this to the backend
                 // for now we fake the backend
