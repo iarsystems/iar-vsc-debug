@@ -178,7 +178,7 @@ export class CellElement extends HTMLElement {
                         },
                         cellContent: {
                             text: this.cell?.text,
-                            isTruncated: this.scrollWidth > this.clientWidth,
+                            isTruncated: text.scrollWidth > text.clientWidth,
                         },
                     },
                     bubbles: true,
