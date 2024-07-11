@@ -20,7 +20,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                 const scopes = await dc().scopesRequest({frameId: stack.body.stackFrames[0]!.id});
 
                 const statics = (await dc().variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
-                Assert(statics.length >= 9, "Expected at least 9 statics, found: " + statics.map(v => v.name).join(", "));
+                Assert(statics.length >= 10, "Expected at least 9 statics, found: " + statics.map(v => v.name).join(", "));
                 { // Check string
                     const str = statics.find(variable => variable.name === "str <Fibonacci\\str>");
                     Assert(str, "Could not find str variable");
@@ -87,6 +87,38 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                         });
                     }
                 }
+            }),
+        ]);
+    });
+    // The contents of STL containers in listwindows can be truncated, and need
+    // to be expanded by us to get the full contents. Make sure this works ok.
+    test("Supports STL containers", () => {
+        return Promise.all([
+            dc().configurationSequence(),
+            dc().launch(dbgConfig()),
+            dc().waitForEvent("stopped").then(async() => {
+                // Locals are tested in other test cases
+                const stack = await dc().stackTraceRequest({ threadId: 0});
+                const scopes = await dc().scopesRequest({frameId: stack.body.stackFrames[0]!.id});
+
+                const statics = (await dc().variablesRequest({variablesReference: scopes.body.scopes[1]!.variablesReference})).body.variables;
+                { // Check STL vector.
+                    const stlVector = statics.find(variable => variable.name === "LargeVector <Stl\\LargeVector>");
+                    Assert(stlVector !== undefined);
+                    Assert(stlVector.type !== undefined);
+                    Assert.match(stlVector.type, /std::vector<float>/);
+                    Assert(stlVector.variablesReference > 0); // Should be nested
+                    const vecContents = (await dc().variablesRequest({variablesReference: stlVector.variablesReference})).body.variables;
+                    Assert(vecContents.length >= 25, "Length: " + vecContents.length + " " + JSON.stringify(vecContents));
+                    const startIndex = vecContents.length - 25;
+                    for (let i = startIndex; i < vecContents.length; i++) {
+                        Assert.strictEqual(vecContents[i]!.name, `<${i - startIndex}>`);
+                        Assert.strictEqual(vecContents[i]!.value, "42.0");
+                        Assert.match(vecContents[i]!.type!, /float/);
+                        Assert(vecContents[i]!.evaluateName);
+                    }
+                }
+
             }),
         ]);
     });

@@ -225,6 +225,9 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
                     ],
                 });
                 break;
+            case "contextItemClicked":
+                // TODO: send this to the backend
+                break;
             case "getTooltip":
                 {
                     // TODO: request the tooltip from the backend

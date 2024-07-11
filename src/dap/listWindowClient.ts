@@ -94,7 +94,7 @@ export class ListWindowClient implements Disposable.Disposable {
             throw new Error("Cannot find row in the window matching: " + this.getIdForCells(parent.cells).join(","));
         }
         this.expandRow(rowIndex);
-        const rows = await this.getRows();
+        let rows = await this.getRows();
         const row = rows[rowIndex];
         if (row === undefined) {
             throw new Error("Cannot find row in the window matching: " + this.getIdForCells(parent.cells).join(","));
@@ -104,10 +104,18 @@ export class ListWindowClient implements Disposable.Disposable {
         const depth = TreeInfoUtils.getDepth(row.treeinfo);
         // Add rows at this indentation level until we reach the last child
         const children: Row[] = [];
-        for (let i = rowIndex + 1; i < this.rows.length; i++) {
-            const candidate = this.rows[i];
+        for (let i = rowIndex + 1; i < rows.length; i++) {
+            let candidate = rows[i];
             if (!candidate || TreeInfoUtils.getDepth(candidate.treeinfo) !== depth + 1) {
                 continue;
+            }
+            if (TreeInfoUtils.canToggleMore(candidate.treeinfo)) {
+                this.toggleMore(i);
+                rows = await this.getRows();
+                candidate = rows[i];
+                if (!candidate) {
+                    continue;
+                }
             }
             children.push(candidate);
             if (TreeInfoUtils.isLastChild(candidate.treeinfo)) {
@@ -181,15 +189,15 @@ export class ListWindowClient implements Disposable.Disposable {
     // callback from list window backend
     notify(note: Note): Q.Promise<void> {
         switch (note.what) {
-        case What.kRowUpdate:
-            return this.backend.service.getRow(note.row).then(row => {
-                this.rows[note.row.toNumber()] = row;
-            });
-        case What.kNormalUpdate:
-        case What.kFullUpdate:
-        case What.kThaw:
-            this.updateAllRows();
-            break;
+            case What.kRowUpdate:
+                return this.backend.service.getRow(note.row).then(row => {
+                    this.rows[note.row.toNumber()] = row;
+                });
+            case What.kNormalUpdate:
+            case What.kFullUpdate:
+            case What.kThaw:
+                this.updateAllRows();
+                break;
         }
         return Q.resolve();
     }
@@ -273,6 +281,38 @@ export class ListWindowClient implements Disposable.Disposable {
         this.currentUpdate = updatePromise;
     }
 
+    // Presses the 'toggle more' button for a row (to reveal more siblings) and
+    // fetches the new rows following it
+    private toggleMore(rowIndex: number) {
+        const previousUpdate = this.currentUpdate !== undefined ? this.currentUpdate : Q.resolve();
+        const updatePromise = previousUpdate.then(async() => {
+            const targetRow = this.rows[rowIndex];
+            if (!targetRow || !TreeInfoUtils.canToggleMore(targetRow.treeinfo)) {
+                return;
+            }
+            await this.backend.service.toggleMoreOrLess(new Int64(rowIndex));
+            this.rows[rowIndex] = await this.backend.service.getRow(new Int64(rowIndex));
+
+            const nRows = (await this.backend.service.getNumberOfRows()).toNumber();
+            const nNewRows = nRows - this.rows.length;
+            // Fetch and insert new rows
+            const newRows = Array.from(Array(nNewRows).keys()).map(i => {
+                return this.backend.service.getRow(new Int64(rowIndex + 1 + i));
+            });
+            this.rows.splice(rowIndex + 1, 0, ...(await Promise.all(newRows)));
+        });
+        updatePromise.then(() => {
+            if (this.currentUpdate === updatePromise) {
+                this.currentUpdate = undefined;
+                this.oneshotChangeHandlers.forEach(handler => handler());
+                this.oneshotChangeHandlers = [];
+            }
+        }).catch(err => {
+            logger.error("Error updating listwindow: " + err);
+        });
+        this.currentUpdate = updatePromise;
+    }
+
     // converts from internal (thrift) row class to the class used outwards
     private createRowReference(row: Row, parentIds: string[][]): ListWindowRowReference {
         return {
@@ -329,15 +369,17 @@ namespace TreeInfoUtils {
     // <indentation> is a number of characters equal to the subvariable level - 1, so that the children of a top-level struct
     // have 0 characters padding, children of a struct within a top-level struct have one char of padding etc.
     // <child info> For non-top-level items, is a character indicating whether this is the last child of its parent ('L') or not ('T')
+    // may also be 'v' if more siblings can be toggled, or '^' if more siblings have already been toggled.
     // <expandability info> '+' For not expanded, '-' for expanded, '.' for unexpandable (leaf)
 
     // States constituting a treeinfo, copied from IfxListModel.h
     enum TreeGraphItems {
         kLastChild  = "L",
-        kOtherChild = "T",
         kLeaf       = ".",
         kPlus       = "+",
         kMinus      = "-",
+        kMore       = "v",
+        kLess       = "^",
     }
 
     /**
@@ -347,7 +389,11 @@ namespace TreeInfoUtils {
         if (treeinfo === "") {
             return 0;
         }
-        return treeinfo.search(new RegExp(`[${TreeGraphItems.kLeaf}${TreeGraphItems.kPlus}\\${TreeGraphItems.kMinus}]`));
+        return treeinfo.search(
+            new RegExp(
+                `[${TreeGraphItems.kLeaf}${TreeGraphItems.kPlus}\\${TreeGraphItems.kMinus}]`,
+            ),
+        );
     }
 
     export function isLastChild(treeinfo: string): boolean {
@@ -359,5 +405,8 @@ namespace TreeInfoUtils {
     }
     export function isExpanded(treeinfo: string) {
         return treeinfo.endsWith(TreeGraphItems.kMinus);
+    }
+    export function canToggleMore(treeinfo: string) {
+        return treeinfo.includes(TreeGraphItems.kMore);
     }
 }
