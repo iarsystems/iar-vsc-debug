@@ -141,6 +141,12 @@ class ListwindowController {
                 row: ev.detail.row,
             });
         });
+        grid.addEventListener("more-less-toggled", ev => {
+            this.messageService.sendMessage({
+                subject: "moreLessToggled",
+                row: ev.detail.row,
+            });
+        });
         grid.addEventListener("cell-edit-requested", ev => {
             this.cellEditService.requestCellEdit(ev);
         });

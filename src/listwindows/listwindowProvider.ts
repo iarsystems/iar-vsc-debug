@@ -246,6 +246,9 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
             case "rowExpansionToggled":
                 // TODO: do something
                 break;
+            case "moreLessToggled":
+                // TODO: do something
+                break;
             case "getEditableString":
                 // TODO: request the string from the backend
                 // for now we fake the backend
@@ -437,7 +440,9 @@ function getMockRenderParams(selectedRow = 1) {
         }));
     }
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    params.rows[params.rows.length - 1]!.treeinfo = "L+";
+    params.rows[4]!.treeinfo = "^.";
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    params.rows[params.rows.length - 1]!.treeinfo = "v+";
     params.rows.push(
         new Row({
             cells: [
