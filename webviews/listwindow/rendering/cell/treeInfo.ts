@@ -58,6 +58,7 @@ export class TreeInfoElement extends HTMLElement {
             width: TreeInfoElement.BUTTON_SIZE_PX + "px",
             height: TreeInfoElement.BUTTON_SIZE_PX + "px",
             "font-size": TreeInfoElement.BUTTON_SIZE_PX + "px",
+            "box-sizing": "content-box",
         },
         "#fold-button": {
             padding: 0,

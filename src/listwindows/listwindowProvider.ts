@@ -118,6 +118,7 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
                 this.postMessageToView({
                     subject: "render",
                     params: getMockRenderParams(msg.row),
+                    ensureRowVisible: msg.row,
                 });
                 break;
             case "cellDoubleClicked":

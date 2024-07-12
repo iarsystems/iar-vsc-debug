@@ -30,6 +30,7 @@ class ListwindowController {
     private readonly persistedState: PersistedState;
     private renderParams: RenderParameters | undefined = undefined;
     private resizeMode: ColumnResizeMode = "fixed";
+
     private readonly messageService: MessageService;
     private readonly tooltipService: TooltipService;
     private readonly hoverService = new HoverService();
@@ -68,7 +69,7 @@ class ListwindowController {
         switch (msg.subject) {
             case "render": {
                 this.renderParams = msg.params;
-                this.render();
+                this.render(msg.ensureRowVisible);
                 break;
             }
             case "setResizeMode":
@@ -86,7 +87,7 @@ class ListwindowController {
         }
     }
 
-    private render() {
+    private render(ensureRowVisible?: number) {
         const scrollX = window.scrollX;
         const scrollY = window.scrollY;
 
@@ -160,6 +161,10 @@ class ListwindowController {
         Theming.setGridLinesVisible(!!this.renderParams?.listSpec.showGrid);
 
         window.scrollTo(scrollX, scrollY);
+
+        if (ensureRowVisible) {
+            grid.ensureRowVisible(ensureRowVisible);
+        }
     }
 }
 

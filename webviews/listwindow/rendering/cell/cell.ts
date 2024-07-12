@@ -70,6 +70,10 @@ export namespace CellEditRequestedEvent {
  */
 @customElement("listwindow-cell")
 export class CellElement extends HTMLElement {
+    // Attributes set on each cell with its coordinates, to enable using
+    // querySelector to lookup specific cells.
+    static readonly ATTR_COL = "column";
+    static readonly ATTR_ROW = "row";
     // Styles that need to be applied to the element itself, outside its shadow
     // root. These are injected into the grid element's shadow DOM
     static readonly OUTER_STYLES = createCss({
@@ -139,6 +143,8 @@ export class CellElement extends HTMLElement {
         if (!this.cell) {
             return;
         }
+        this.setAttribute(CellElement.ATTR_COL, this.position.col.toString());
+        this.setAttribute(CellElement.ATTR_ROW, this.position.row.toString());
 
         const outerRoot = document.createElement("div");
         this.appendChild(outerRoot);

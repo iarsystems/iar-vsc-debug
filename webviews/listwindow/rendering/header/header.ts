@@ -48,7 +48,7 @@ export class HeaderElement extends HTMLElement {
             "text-transform": "uppercase",
             "font-size": "11px",
         },
-        "listwindow-header>.clickable:hover": {
+        "listwindow-header .clickable:hover": {
             "background-color": "var(--vscode-list-hoverBackground)",
             cursor: "pointer"
         },
@@ -96,7 +96,7 @@ export class HeaderElement extends HTMLElement {
             colHeader.appendChild(text);
 
             if (this.clickable) {
-                colHeader.classList.add("clickable");
+                text.classList.add("clickable");
                 text.onclick = () => {
                     this.dispatchEvent(
                         createCustomEvent("column-clicked", {

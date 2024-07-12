@@ -21,6 +21,9 @@ import { Target } from "../thrift/listwindow_types";
 export class GridElement extends HTMLElement {
     private static readonly STYLES: CSSStyleSheet[] = [
         createCss({
+            ":host": {
+                display: "block",
+            },
             "#backdrop": {
                 width: "100%",
                 height: "100%",
@@ -56,7 +59,7 @@ export class GridElement extends HTMLElement {
     dragDropService: DragDropService | undefined = undefined;
 
     connectedCallback() {
-        const shadow = this.attachShadow({ mode: "closed" });
+        const shadow = this.attachShadow({ mode: "open" });
         shadow.adoptedStyleSheets.push(...GridElement.STYLES);
 
         shadow.adoptedStyleSheets.push(GridElement.STYLE_RESIZEMODE_FIT);
@@ -150,4 +153,36 @@ export class GridElement extends HTMLElement {
             composed: true,
         }));
     };
+
+    ensureRowVisible(row: number) {
+        if (row < 0) {
+            return;
+        }
+
+        const firstRow = this.shadowRoot?.querySelector(
+            `[${CellElement.ATTR_ROW}="0"]`,
+        );
+        const targetRow = this.shadowRoot?.querySelector(
+            `[${CellElement.ATTR_ROW}="${row}"]`,
+        );
+        if (!firstRow || !targetRow) {
+            return;
+        }
+        // When calculating scroll position, we consider anything below the
+        // start of the first row to be the "viewport" (i.e. we subtract the
+        // height of any header from the viewport).
+        const viewportY = firstRow.getBoundingClientRect().top + window.scrollY;
+        const targetBounds = targetRow.getBoundingClientRect();
+        const isVisible =
+            targetBounds.top >= viewportY &&
+            targetBounds.bottom <= document.documentElement.clientHeight;
+        if (!isVisible) {
+            // Place the target row in the middle of the viewport.
+            const rowY = targetBounds.top + window.scrollY;
+            const viewportHeight = document.documentElement.clientHeight - viewportY;
+            const targetScroll =
+                rowY - viewportY - (viewportHeight / 2 - targetBounds.height / 2);
+            window.scrollTo({ behavior: "smooth", top: targetScroll } );
+        }
+    }
 }

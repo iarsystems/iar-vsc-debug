@@ -34,7 +34,7 @@ export type ColumnResizeMode = "fit" | "fixed";
  * A message from the extension to the listwindow view
  */
 export type ExtensionMessage =
-  | { subject: "render", params: RenderParameters } // Render the given data
+  | { subject: "render", params: RenderParameters, ensureRowVisible?: number } // Render the given data
   | { subject: "setResizeMode", mode: ColumnResizeMode }
   | { subject: "dumpHTML" } // Send a message back with the current full HTML of the view (useful for testing)
   | { subject: "contextMenuReply", menu: MenuItem[] }
