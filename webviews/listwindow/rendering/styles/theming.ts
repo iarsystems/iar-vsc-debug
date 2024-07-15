@@ -33,12 +33,15 @@ export namespace Theming {
         [Variables.ListSelectionOutlineStyle]:
             "solid",
         [Variables.IndentGuideColor]:
-            "var(--vscode-tree-indentGuidesStroke)",
+            "var(--vscode-tree-inactiveIndentGuidesStroke)",
         [Variables.GridLineColor]:
             "rgba(0, 0, 0, 0)",
         [Variables.GridLineStyle]:
             "none",
     });
+    BASE_STYLES.insertRule(
+        `html:hover { ${Variables.IndentGuideColor}: var(--vscode-tree-indentGuidesStroke); }`,
+    );
 
     // Applied when the view is not in focus
     const UNFOCUSED_STYLES = createCssFromVars({
@@ -50,8 +53,6 @@ export namespace Theming {
             "var(--vscode-contrastActiveBorder, var(--vscode-list-inactiveFocusOutline, rgba(0, 0, 0, 0)))",
         [Variables.ListSelectionOutlineStyle]:
             "dotted",
-        [Variables.IndentGuideColor]:
-            "var(--vscode-tree-inactiveIndentGuidesStroke)",
     });
 
     // Applied when 'showGrid' is enabled in the ListSpec
@@ -79,7 +80,7 @@ export namespace Theming {
     type VariableDefinitions = { [K in Variables]?: string };
 
     function createCssFromVars<T extends VariableDefinitions>(vars: T): CSSStyleSheet {
-        let css = "body {";
+        let css = "html {";
         for (const key in vars) {
             const varName = key as keyof typeof vars;
             css += `${String(varName)}: ${vars[varName]};`;

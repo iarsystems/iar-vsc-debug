@@ -22,6 +22,7 @@ export class GridElement extends HTMLElement {
     private static readonly STYLES: CSSStyleSheet[] = [
         createCss({
             ":host": {
+                height: "100%",
                 display: "block",
             },
             "#backdrop": {
