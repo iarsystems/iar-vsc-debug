@@ -272,6 +272,12 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
             case "externalDrop":
                 // TODO: do something
                 break;
+            case "keyNavigationPressed":
+                // TODO: send this to the backend
+                break;
+            case "scrollOperationPressed":
+                // TODO: send this to the backend
+                break;
             default: {
                 // Makes TS check that all message variants are handled
                 const _exhaustiveCheck: never = msg;

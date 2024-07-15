@@ -19,6 +19,7 @@ import { CellEditService } from "./rendering/cell/cellEditService";
 import { DragDropService } from "./rendering/dragDropService";
 import { ContextMenuService } from "./rendering/contextMenuService";
 import { MessageService } from "./messageService";
+import { KeyboardInput } from "./keyboardInput";
 
 provideVSCodeDesignSystem().register(vsCodeTextField());
 
@@ -59,6 +60,8 @@ class ListwindowController {
         Theming.setViewHasFocus(document.hasFocus());
         window.addEventListener("focus", () => Theming.setViewHasFocus(true));
         window.addEventListener("blur", () => Theming.setViewHasFocus(false));
+
+        KeyboardInput.initialize(this.messageService);
 
         this.messageService.addMessageHandler(msg => this.handleMessage(msg));
         this.messageService.sendMessage({ subject: "loaded" });
@@ -162,7 +165,7 @@ class ListwindowController {
 
         window.scrollTo(scrollX, scrollY);
 
-        if (ensureRowVisible) {
+        if (ensureRowVisible !== undefined) {
             grid.ensureRowVisible(ensureRowVisible);
         }
     }

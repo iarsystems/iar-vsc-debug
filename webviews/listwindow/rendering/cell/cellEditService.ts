@@ -118,6 +118,8 @@ class TextFieldElement extends HTMLElement {
 
         input.onblur = () => this.onCancel();
         input.onkeydown = ev => {
+            // Don't allow this to trigger our global key handler
+            ev.stopPropagation();
             if (ev.key === "Escape") {
                 this.onCancel();
             } else if (ev.key === "Enter") {
