@@ -1051,6 +1051,6 @@
         <name>$PROJ_DIR$\Utilities.c</name>
     </file>
     <file>
-        <name>$PROJ_DIR$\Stl.c<p/name>
+        <name>$PROJ_DIR$\Stl.cpp</name>
     </file>
 </project>
