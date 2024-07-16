@@ -2,7 +2,7 @@
 
 ## Rendering
 
-Whenever a re-render is requested, the entire DOM (i.e. HTML tree) is cleared
+Whenever a re-render is requested, almost the entire DOM (i.e. HTML tree) is cleared
 and recreated. The rendering logic is divided into a number of components using
 [custom HTML
 elements](https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_custom_elements)
@@ -14,6 +14,12 @@ feature, which gives us great control over the size and scaling of individual
 columns. The `GridElement` in turn is made up of `RowElement`s which are made up
 of `CellElement`s.
 
+While the main `GridElement` is recreated for each re-render, some parts of the UI
+rely on frontend-exclusive state that needs to be kept between renders (e.g. any
+active tooltip, any cell being edited or any open context menu). These elements are
+provided by various "services" that keep track of their own state and add their own
+UI elements *outside* of the HTML tree that is replaced on each render.
+
 ### Styling
 
 Global styles can be added to `styles.css`. However, most components use a
@@ -21,7 +27,12 @@ shadow DOM to scope their content, meaning they are not affected by global
 styles. We use types provided by the `csstype` package to define style rules in
 typescript, and convert them to a `CSSStyleSheet` which is injected into a
 component's shadow DOM. This lets us define styles in the same file/class as the
-component they apply to.
+component they apply to. 
+
+Note that CSS variables *do* pierce the shadow DOM, and
+can be used to apply global styles that affect multiple component. For an example, see `src/theming.ts`, 
+which dynamically enables or disables some global style sheets depending on e.g. whether
+the view is in focus.
 
 ## Thrift bindings
 
