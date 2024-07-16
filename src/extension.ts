@@ -12,10 +12,10 @@ import { CustomRequest } from "./dap/customRequest";
 import { logger } from "iar-vsc-common/logger";
 import { DialogService } from "./dialogService";
 import { MulticoreLockstepModeFrontend } from "./multicoreLockstepModeFrontend";
-import { ListwindowViewProvider } from "./listwindows/listwindowProvider";
+import { MockListwindow } from "./listwindows/mockListwindow";
+import { LiveWatchListwindow } from "./listwindows/liveWatchListwindow";
 
 let sessionTracker: DebugSessionTracker | undefined;
-let liveWatchView: ListwindowViewProvider | undefined = undefined;
 
 export function activate(context: vscode.ExtensionContext) {
     logger.init("IAR C-SPY Debug");
@@ -31,9 +31,14 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", new CSpyConfigurationsProvider(), vscode.DebugConfigurationProviderTriggerKind.Dynamic));
     context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", new DefaultCSpyConfigurationResolver()));
 
-    liveWatchView = new ListwindowViewProvider(context.extensionUri, "iar-live-watch");
-    if (context.extensionMode === vscode.ExtensionMode.Development) {
-        vscode.window.registerWebviewViewProvider("iar-live-watch", liveWatchView);
+    context.subscriptions.push(new LiveWatchListwindow(context.extensionUri));
+    if (context.extensionMode !== vscode.ExtensionMode.Production) {
+        context.subscriptions.push(new MockListwindow(context.extensionUri));
+        vscode.commands.executeCommand(
+            "setContext",
+            "iar-debug.showMockView",
+            true,
+        );
     }
 
     sessionTracker = new DebugSessionTracker(context);

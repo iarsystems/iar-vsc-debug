@@ -3,11 +3,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import * as vscode from "vscode";
 import { logger } from "iar-vsc-common/logger";
-import { ViewMessage, ExtensionMessage, RenderParameters, ColumnResizeMode } from "../../webviews/listwindow/protocol";
-import { Alignment, Cell, Column, DragDropFeedback, Format, ListSpec, Row, SelRange, Target, TextStyle } from "iar-vsc-common/thrift/bindings/listwindow_types";
-import Int64 = require("node-int64");
+import { ViewMessage, ExtensionMessage, ColumnResizeMode } from "../../webviews/listwindow/protocol";
 import { SettingsConstants } from "../settingsConstants";
-import { MenuItem } from "../../webviews/listwindow/thrift/listwindow_types";
 
 /**
  * Instantiates a webview that renders a listwindow, and handles all
@@ -17,30 +14,39 @@ import { MenuItem } from "../../webviews/listwindow/thrift/listwindow_types";
  * For documentation on webviews, see here:
  * https://code.visualstudio.com/api/extension-guides/webview
  */
-export class ListwindowViewProvider implements vscode.WebviewViewProvider {
+export class ListwindowViewProvider implements vscode.WebviewViewProvider, vscode.Disposable {
 
     private view?: vscode.WebviewView;
     private viewLoaded: Promise<void> | undefined = undefined;
-    private onViewLoaded: (() => void) | undefined = undefined;
+    private disposables: vscode.Disposable[] = [];
+
+    onMessageReceived: ((message: ViewMessage) => void) | undefined = undefined;
 
     /**
-     * Creates a new view. The caller is responsible for registering it.
+     * Creates a new view and registers it.
      * @param extensionUri The uri of the extension's root directory
+     * @param viewId The id to register the view as. Must match the view id in package.json.
      */
     constructor(private readonly extensionUri: vscode.Uri,
         private readonly viewId: string,
     ) {
-        vscode.workspace.onDidChangeConfiguration(e => {
-            if (
-                e.affectsConfiguration(
-                    SettingsConstants.MAIN_SECTION +
-                        "." +
-                        SettingsConstants.FIT_CONTENT_TO_VIEW,
-                )
-            ) {
-                this.applyResizeMode();
-            }
-        });
+        logger.debug(`Registering listwindow '${viewId}'`);
+        this.disposables.push(
+            vscode.window.registerWebviewViewProvider(viewId, this),
+        );
+        this.disposables.push(
+            vscode.workspace.onDidChangeConfiguration(e => {
+                if (
+                    e.affectsConfiguration(
+                        SettingsConstants.MAIN_SECTION +
+                            "." +
+                            SettingsConstants.FIT_CONTENT_TO_VIEW,
+                    )
+                ) {
+                    this.applyResizeMode();
+                }
+            }),
+        );
     }
 
     // Called by vscode before the view is shown
@@ -60,234 +66,41 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider {
                 vscode.Uri.joinPath(this.extensionUri, "node_modules/@vscode/codicons"),
             ]
         };
-        this.viewLoaded = new Promise(resolve => this.onViewLoaded = resolve);
+        let resolveViewLoaded: (() => void) | undefined = undefined;
+        this.viewLoaded = new Promise(resolve => resolveViewLoaded = resolve);
 
-        this.view.webview.onDidReceiveMessage((message: ViewMessage) => {
+        this.view.webview.onDidReceiveMessage(async(message: ViewMessage) => {
             logger.debug(`Message from ${this.viewId}: ${JSON.stringify(message)}`);
-            this.handleMessageFromView(message);
-
+            if (message.subject === "loaded") {
+                resolveViewLoaded?.();
+                await this.applyResizeMode();
+            }
+            this.onMessageReceived?.(message);
         });
         this.view.webview.html = Rendering.getWebviewContent(
             this.view.webview,
             this.extensionUri,
             this.viewId,
         );
-
-        this.view.onDidChangeVisibility(() => {
-            // Webview state is destroyed when the view is made invisible, so we
-            // need to resend the latest state when it becomes visible again
-            if (this.view?.visible) {
-                this.applyResizeMode().then(() => this.updateView());
-            }
-        });
-
-        this.applyResizeMode().then(() => this.updateView());
     }
 
-    private async updateView() {
-        if (this.view === undefined) {
-            return;
+    async show() {
+        await vscode.commands.executeCommand(`${this.viewId}.focus`);
+    }
+
+    async postMessageToView(msg: ExtensionMessage) {
+        await this.viewLoaded;
+        if (!this.view) {
+            logger.warn(`Tried sending message to view '${this.viewId}' that hasn't been created yet: ${JSON.stringify(msg)}`);
         }
-        await this.viewLoaded;
-
-        this.postMessageToView({
-            subject: "render",
-            params: getMockRenderParams(),
-        });
-    }
-
-    private async postMessageToView(msg: ExtensionMessage) {
-        await this.viewLoaded;
         return this.view?.webview.postMessage(msg);
     }
 
-    private handleMessageFromView(msg: ViewMessage) {
-        switch (msg.subject) {
-            case "loaded":
-                this.onViewLoaded?.();
-                break;
-            case "HTMLDump":
-                // ignore for now, only used for testing
-                break;
-            case "columnClicked":
-                // TODO: send this to the backend
-                break;
-            case "cellLeftClicked":
-                // TODO: send this to the backend
-                // for now we fake the backend
-                this.postMessageToView({
-                    subject: "render",
-                    params: getMockRenderParams(msg.row),
-                    ensureRowVisible: msg.row,
-                });
-                break;
-            case "cellDoubleClicked":
-                // TODO: send this to the backend
-                break;
-            case "getContextMenu":
-                // TODO: request the menu from the backend
-                // for now we fake the backend
-                this.postMessageToView({
-                    subject: "contextMenuReply",
-                    menu: [
-                        new MenuItem({
-                            text: "Remove",
-                            command: 1,
-                            enabled: true,
-                            checked: false,
-                        }),
-                        new MenuItem({
-                            text: "Live Watch",
-                            command: 2,
-                            enabled: true,
-                            checked: true,
-                        }),
-                        new MenuItem({
-                            text: "",
-                            command: -1,
-                            enabled: false,
-                            checked: false,
-                        }),
-                        new MenuItem({
-                            text: "Default Format",
-                            command: -1,
-                            enabled: false,
-                            checked: true,
-                        }),
-                        new MenuItem({
-                            text: "Binary Format",
-                            command: -1,
-                            enabled: false,
-                            checked: false,
-                        }),
-                        new MenuItem({
-                            text: "",
-                            command: -1,
-                            enabled: false,
-                            checked: false,
-                        }),
-                        new MenuItem({
-                            text: ">Show As...",
-                            command: 0,
-                            enabled: true,
-                            checked: false,
-                        }),
-                        new MenuItem({
-                            text: "As Is",
-                            command: 3,
-                            enabled: true,
-                            checked: true,
-                        }),
-                        new MenuItem({
-                            text: "float",
-                            command: 4,
-                            enabled: true,
-                            checked: false,
-                        }),
-                        new MenuItem({
-                            text: ">Other...",
-                            command: 0,
-                            enabled: true,
-                            checked: false,
-                        }),
-                        new MenuItem({
-                            text: "Pointer",
-                            command: -1,
-                            enabled: false,
-                            checked: false,
-                        }),
-                        new MenuItem({
-                            text: "<",
-                            command: -1,
-                            enabled: false,
-                            checked: false,
-                        }),
-                        new MenuItem({
-                            text: "<",
-                            command: -1,
-                            enabled: false,
-                            checked: false,
-                        }),
-                        new MenuItem({
-                            text: ">Disabled submenu",
-                            command: -1,
-                            enabled: false,
-                            checked: false,
-                        }),
-                        new MenuItem({
-                            text: "Submenu item",
-                            command: 5,
-                            enabled: true,
-                            checked: false,
-                        }),
-                        new MenuItem({
-                            text: "<",
-                            command: 6,
-                            enabled: true,
-                            checked: false,
-                        }),
-                    ],
-                });
-                break;
-            case "contextItemClicked":
-                // TODO: send this to the backend
-                break;
-            case "getTooltip":
-                {
-                    // TODO: request the tooltip from the backend
-                    // for now we fake the backend
-                    const text = msg.col !== 2 ? `BASEPRI_MAX
-    ReadWrite
-    bits [15:8]
-    Base priority mask raise
-    Right-click for more registers and options` : undefined;
-                    this.postMessageToView({
-                        subject: "tooltipReply",
-                        text,
-                    });
-                }
-                break;
-            case "rowExpansionToggled":
-                // TODO: do something
-                break;
-            case "moreLessToggled":
-                // TODO: do something
-                break;
-            case "getEditableString":
-                // TODO: request the string from the backend
-                // for now we fake the backend
-                this.postMessageToView({
-                    subject: "editableStringReply",
-                    text: "Hello Edit",
-                    col: msg.col,
-                    row: msg.row,
-                });
-                break;
-            case "cellEdited":
-                // TODO: do something
-                break;
-            case "localDrop":
-                // TODO: do something
-                break;
-            case "externalDrop":
-                // TODO: do something
-                break;
-            case "keyNavigationPressed":
-                // TODO: send this to the backend
-                break;
-            case "scrollOperationPressed":
-                // TODO: send this to the backend
-                break;
-            default: {
-                // Makes TS check that all message variants are handled
-                const _exhaustiveCheck: never = msg;
-                throw new Error(
-                    "Unhandled message: " +
-                        JSON.stringify(_exhaustiveCheck),
-                );
-            }
-        }
+    dispose() {
+        this.disposables.forEach(d => d.dispose());
+        this.disposables = [];
     }
+
 
     private async applyResizeMode() {
         const fitContentWidth = vscode.workspace.
@@ -355,133 +168,4 @@ function getNonce() {
         text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
     return text;
-}
-
-function getMockRenderParams(selectedRow = 1) {
-    const format = new Format();
-    format.align = Alignment.kLeft;
-    format.style = TextStyle.kProportionalPlain;
-    const editableFormat = new Format();
-    editableFormat.align = Alignment.kLeft;
-    editableFormat.style = TextStyle.kProportionalPlain;
-    editableFormat.editable = true;
-    const memFormat = new Format();
-    memFormat.align = Alignment.kRight;
-    memFormat.style = TextStyle.kFixedPlain;
-
-    const params: RenderParameters = {
-        rows: [
-            new Row({
-                cells: [
-                    new Cell({
-                        text: "Fib",
-                        format: editableFormat,
-                        drop: Target.kTargetRow,
-                    }),
-                    new Cell({
-                        text: "<array>",
-                        format,
-                        drop: Target.kTargetRow,
-                    }),
-                    new Cell({
-                        text: "0x2000'0030",
-                        format: memFormat,
-                        drop: Target.kTargetRow,
-                    }),
-                    new Cell({
-                        text: "uint32_t[10]",
-                        format,
-                        drop: Target.kTargetRow,
-                    }),
-                ],
-                isChecked: false,
-                treeinfo: "-",
-            }),
-        ],
-        columnInfo: [
-            new Column({
-                title: "Expression",
-                width: 100,
-                fixed: false,
-                hideSelection: false,
-                defaultFormat: editableFormat,
-            }),
-            new Column({
-                title: "Value",
-                width: 150,
-                fixed: false,
-                hideSelection: false,
-                defaultFormat: editableFormat,
-            }),
-            new Column({
-                title: "Location",
-                width: 100,
-                fixed: false,
-                hideSelection: false,
-                defaultFormat: memFormat,
-            }),
-            new Column({
-                title: "Type",
-                width: 150,
-                fixed: false,
-                hideSelection: false,
-                defaultFormat: format,
-            }),
-        ],
-        dropFeedback: new DragDropFeedback(),
-        listSpec: new ListSpec(),
-        selectedColumn: -1,
-        selection: new SelRange(),
-    };
-    params.listSpec.showHeader = true;
-    params.listSpec.showGrid = true;
-    params.listSpec.canClickColumns = true;
-    for (let i = 0; i < 10; i++) {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        params.rows.push(new Row({
-            cells: [
-                new Cell({ text: `[${i}]`, format, drop: Target.kTargetRow}),
-                new Cell({ text: String(i), format: editableFormat, drop: Target.kTargetRow}),
-                new Cell({ text: "0x2000'0030", format: memFormat, drop: Target.kTargetRow}),
-                new Cell({ text: "uint32_t", format, drop: Target.kTargetColumn}),
-            ],
-            isChecked: false,
-            treeinfo: "T.",
-        }));
-    }
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    params.rows[4]!.treeinfo = "^.";
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    params.rows[params.rows.length - 1]!.treeinfo = "v+";
-    params.rows.push(
-        new Row({
-            cells: [
-                new Cell({
-                    text: "<click to add>",
-                    format: editableFormat,
-                    drop: Target.kTargetCell,
-                }),
-                new Cell({
-                    text: "",
-                    format,
-                    drop: Target.kTargetRow,
-                }),
-                new Cell({
-                    text: "",
-                    format,
-                    drop: Target.kTargetRow,
-                }),
-                new Cell({
-                    text: "",
-                    format,
-                    drop: Target.kNoTarget,
-                }),
-            ],
-            isChecked: false,
-            treeinfo: "."
-        }),
-    );
-    params.selection.first = new Int64(selectedRow);
-    params.selection.last = new Int64(selectedRow);
-    return params;
 }

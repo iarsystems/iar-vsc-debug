@@ -202,7 +202,15 @@
 		"views": {
 			"debug": [
 				{
+					"id": "iar-mock-listwindow",
+					"contextualTitle": "Mock Listwindow (dev only)",
+					"name": "Mock Listwindow (dev only)",
+					"type": "webview",
+					"when": "iar-debug.showMockView"
+				},
+				{
 					"id": "iar-live-watch",
+					"contextualTitle": "Live Watch",
 					"name": "Live Watch",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy"
