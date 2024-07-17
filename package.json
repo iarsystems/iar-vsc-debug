@@ -202,6 +202,12 @@
 		"views": {
 			"debug": [
 				{
+					"id": "iar-test-listwindow",
+					"name": "Test Listwindow (for running tests only)",
+					"type": "webview",
+					"when": "iar-debug.showTestView"
+				},
+				{
 					"id": "iar-mock-listwindow",
 					"contextualTitle": "Mock Listwindow (dev only)",
 					"name": "Mock Listwindow (dev only)",

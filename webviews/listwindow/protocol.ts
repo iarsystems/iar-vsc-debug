@@ -4,7 +4,7 @@
 
 import { KeyNavOperation, ScrollOperation } from "./thrift/listwindow_types";
 import { MenuItem } from "./thrift/listwindow_types";
-import { Column, DragDropFeedback, ListSpec, Row, SelRange, SelectionFlags } from "./thrift/listwindow_types";
+import { Column, ListSpec, Row, SelRange, SelectionFlags } from "./thrift/listwindow_types";
 
 /**
  * This file defines the "protocol" used between a listwindow and the view
@@ -21,8 +21,6 @@ export interface RenderParameters {
     listSpec: ListSpec;
     columnInfo: Column[];
     selection: SelRange;
-    selectedColumn: number;
-    dropFeedback: DragDropFeedback;
 }
 
 /**

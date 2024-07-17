@@ -2,8 +2,21 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import * as vscode from "vscode";
-import { ViewMessage, RenderParameters } from "../../webviews/listwindow/protocol";
-import { Alignment, Cell, Column, DragDropFeedback, Format, ListSpec, Row, SelRange, Target, TextStyle } from "iar-vsc-common/thrift/bindings/listwindow_types";
+import {
+    ViewMessage,
+    RenderParameters,
+} from "../../webviews/listwindow/protocol";
+import {
+    Alignment,
+    Cell,
+    Column,
+    Format,
+    ListSpec,
+    Row,
+    SelRange,
+    Target,
+    TextStyle,
+} from "iar-vsc-common/thrift/bindings/listwindow_types";
 import Int64 = require("node-int64");
 import { MenuItem } from "../../webviews/listwindow/thrift/listwindow_types";
 import { ListwindowViewProvider } from "./listwindowViewProvider";
@@ -276,9 +289,7 @@ function getMockRenderParams(selectedRow = 1) {
                 defaultFormat: format,
             }),
         ],
-        dropFeedback: new DragDropFeedback(),
         listSpec: new ListSpec(),
-        selectedColumn: -1,
         selection: new SelRange(),
     };
     params.listSpec.showHeader = true;

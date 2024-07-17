@@ -45,7 +45,23 @@
                 "group": "Tests",
             }
 		},
+		{
+			"name": "Run Webview Tests",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"--extensionTestsPath=${workspaceFolder}/out/tests/suites/listwindow/index",
+			],
+			"outFiles": [ "${workspaceFolder}/out/**/*.js" ],
+			"preLaunchTask": "npm: test-compile",
+            "presentation": {
+                "group": "Tests",
+            },
+            "env": {
+                "log-to-console": "true",
+            },
+		},
 	],
-	"compounds": [
-	]
 }
