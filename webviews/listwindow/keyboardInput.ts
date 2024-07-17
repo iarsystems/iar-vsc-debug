@@ -19,6 +19,7 @@ export namespace KeyboardInput {
                         subject: "scrollOperationPressed",
                         operation: scrollOp,
                     });
+                    ev.preventDefault();
                     return;
                 }
             }
@@ -29,13 +30,12 @@ export namespace KeyboardInput {
                     subject: "keyNavigationPressed",
                     operation: keyNavOp,
                 });
+                ev.preventDefault();
                 return;
             }
 
             // TODO: handle insert
             // TODO: handle arbitrary keypresses
-
-            ev.preventDefault();
         });
     }
 
