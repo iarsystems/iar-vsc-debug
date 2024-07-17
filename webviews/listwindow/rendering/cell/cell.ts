@@ -2,11 +2,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
+import { css } from "@emotion/css";
 import { createCustomEvent } from "../../events";
 import { Cell, TextStyle } from "../../thrift/listwindow_types";
 import { DragDropService } from "../dragDropService";
 import { HoverService } from "../hoverService";
-import { createCss } from "../styles/createCss";
 import { SharedStyles } from "../styles/sharedStyles";
 import { customElement } from "../utils";
 import { CellBordersElement } from "./cellBorders";
@@ -74,59 +74,6 @@ export class CellElement extends HTMLElement {
     // querySelector to lookup specific cells.
     static readonly ATTR_COL = "column";
     static readonly ATTR_ROW = "row";
-    // Styles that need to be applied to the element itself, outside its shadow
-    // root. These are injected into the grid element's shadow DOM
-    static readonly OUTER_STYLES = createCss({
-        "listwindow-cell": {
-            padding: 0,
-            position: "relative",
-            overflow: "hidden",
-        },
-    });
-
-    private static readonly STYLES = createCss({
-        ":host": {
-            padding: 0,
-            height: "100%",
-        },
-        "#inner-root": {
-            height: "22px",
-            "line-height": "22px",
-            // We use 'grid' to allow a checkbox or expand/collapse button at
-            // the start, with the text taking up the rest of the space.
-            display: "grid",
-            "grid-template-columns": "max-content auto",
-            "align-items": "center",
-            "user-select": "none",
-        },
-        "#text": {
-            "grid-column": 2,
-            padding: "0px 12px",
-            overflow: "hidden",
-            "text-overflow": "ellipsis",
-            "white-space": "nowrap",
-            "word-break": "keep-all",
-        },
-        "#text:not(:first-child)": {
-            "padding-left": "3px",
-        },
-        ".editable": {
-            cursor: "pointer",
-        },
-
-        ".text-style-fixed": {
-            "font-family": "var(--vscode-editor-font-family)",
-        },
-        ".text-style-proportional": {
-            "font-family": "var(--vscode-font-family)",
-        },
-        ".text-style-bold": {
-            "font-weight": "bold",
-        },
-        ".text-style-italic": {
-            "font-style": "italic",
-        },
-    });
 
     cell?: Cell = undefined;
     /** Should be set on the first cell of a row to render indentation and expand/collapse icon */
@@ -137,37 +84,33 @@ export class CellElement extends HTMLElement {
     hoverService: HoverService | undefined = undefined;
     dragDropService: DragDropService | undefined = undefined;
 
-    private innerRoot: HTMLElement | undefined = undefined;
+    private content: HTMLElement | undefined = undefined;
 
     connectedCallback() {
+        this.classList.add(Styles.self);
+
         if (!this.cell) {
             return;
         }
         this.setAttribute(CellElement.ATTR_COL, this.position.col.toString());
         this.setAttribute(CellElement.ATTR_ROW, this.position.row.toString());
 
-        const outerRoot = document.createElement("div");
-        this.appendChild(outerRoot);
-        const shadow = outerRoot.attachShadow({ mode: "closed" });
-        shadow.adoptedStyleSheets.push(CellElement.STYLES);
-        shadow.adoptedStyleSheets.push(...SharedStyles.STYLES);
-
         // Add content
-        this.innerRoot = document.createElement("div");
-        this.innerRoot.id = "inner-root";
-        shadow.appendChild(this.innerRoot);
+        this.content = document.createElement("div");
+        this.content.classList.add(Styles.content);
+        this.appendChild(this.content);
 
         if (this.treeinfo) {
             const treeInfoElem = new TreeInfoElement();
             treeInfoElem.treeinfo = this.treeinfo;
             treeInfoElem.row = this.position.row;
-            this.innerRoot.appendChild(treeInfoElem);
+            this.content.appendChild(treeInfoElem);
         }
 
-        const text = document.createElement("div");
-        text.id = "text";
-        text.innerText = this.cell?.text;
-        this.innerRoot.appendChild(text);
+        const label = document.createElement("div");
+        label.classList.add(Styles.label);
+        label.innerText = this.cell?.text;
+        this.content.appendChild(label);
 
         this.appendChild(new CellBordersElement);
 
@@ -184,11 +127,10 @@ export class CellElement extends HTMLElement {
                         },
                         cellContent: {
                             text: this.cell?.text,
-                            isTruncated: text.scrollWidth > text.clientWidth,
+                            isTruncated: label.scrollWidth > label.clientWidth,
                         },
                     },
                     bubbles: true,
-                    composed: true,
                 }),
             );
         });
@@ -200,17 +142,13 @@ export class CellElement extends HTMLElement {
             this.cell.drop,
         );
 
-        // Add styles
-        if (this.selected) {
-            this.classList.add("selected");
-        }
-
+        // Add conditional styles
         if (this.cell.format.editable) {
-            this.innerRoot.classList.add("editable");
+            this.content.classList.add(Styles.editable);
         }
 
-        text.classList.add(
-            SharedStyles.alignmentToClass(this.cell.format.align),
+        label.classList.add(
+            SharedStyles.alignmentToStyle(this.cell.format.align),
         );
 
         if (
@@ -221,9 +159,9 @@ export class CellElement extends HTMLElement {
                 TextStyle.kFixedItalic,
             ].includes(this.cell.format.style)
         ) {
-            text.classList.add("text-style-fixed");
+            label.classList.add(Styles.textStyleFixed);
         } else {
-            text.classList.add("text-style-proportional");
+            label.classList.add(Styles.textStyleProportional);
         }
         if (
             [
@@ -233,7 +171,7 @@ export class CellElement extends HTMLElement {
                 TextStyle.kProportionalBoldItalic,
             ].includes(this.cell.format.style)
         ) {
-            text.classList.add("text-style-bold");
+            label.classList.add(Styles.textStyleBold);
         }
         if (
             [
@@ -243,21 +181,20 @@ export class CellElement extends HTMLElement {
                 TextStyle.kProportionalBoldItalic,
             ].includes(this.cell.format.style)
         ) {
-            text.classList.add("text-style-italic");
+            label.classList.add(Styles.textStyleItalic);
         }
     }
 
     override onclick = (ev: MouseEvent) => {
         if (ev.button === 0) {
-            if (this.cell?.format.editable && this.innerRoot) {
+            if (this.cell?.format.editable && this.content) {
                 this.dispatchEvent(
                     createCustomEvent("cell-edit-requested", {
                         detail: {
                             ...this.position,
-                            cellBounds: this.innerRoot.getBoundingClientRect(),
+                            cellBounds: this.content.getBoundingClientRect(),
                         },
                         bubbles: true,
-                        composed: true,
                     }),
                 );
                 return;
@@ -271,7 +208,6 @@ export class CellElement extends HTMLElement {
                         shiftPressed: ev.shiftKey,
                     },
                     bubbles: true,
-                    composed: true,
                 }),
             );
         }
@@ -289,9 +225,57 @@ export class CellElement extends HTMLElement {
                 },
             },
             bubbles: true,
-            composed: true,
         });
         this.dispatchEvent(event);
     };
 
+}
+
+namespace Styles {
+    export const self = css({
+        padding: 0,
+        position: "relative",
+        overflow: "hidden",
+    });
+    export const content = css({
+        height: "22px",
+        lineHeight: "22px",
+        // We use 'grid' to allow a checkbox or expand/collapse button at
+        // the start, with the label taking up the rest of the space.
+        display: "grid",
+        gridTemplateColumns: "max-content auto",
+        alignItems: "center",
+        userSelect: "none",
+    });
+    export const label = css([
+        {
+            gridColumn: 2,
+            padding: "0px 12px",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            wordBreak: "keep-all",
+        },
+        css`
+            :not(:first-child) {
+                padding-left: 3px;
+            }
+        `,
+    ]);
+    export const editable = css({
+        cursor: "pointer",
+    });
+
+    export const textStyleFixed = css({
+        fontFamily: "var(--vscode-editor-font-family)",
+    });
+    export const textStyleProportional = css({
+        fontFamily: "var(--vscode-font-family)",
+    });
+    export const textStyleBold = css({
+        fontWeight: "bold",
+    });
+    export const textStyleItalic = css({
+        fontStyle: "italic",
+    });
 }

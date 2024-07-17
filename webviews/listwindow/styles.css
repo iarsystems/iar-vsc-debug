@@ -1,9 +1,0 @@
-html, body, #app {
-  padding: 0;
-  height: 100%;
-  color: var(--vscode-sideBar-foreground, var(--vscode-foreground));
-}
-
-html {
-  scrollbar-color: var(--vscode-scrollbarSlider-background) transparent;
-}

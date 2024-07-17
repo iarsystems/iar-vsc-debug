@@ -6,13 +6,10 @@
 import "vscode-webview";
 
 declare module 'csstype' {
-    interface PropertiesHyphen {
-      // Allow CSS variables
-      [index: `--${string}`]: any;
-      "border-top-style"?: Property.BorderTopStyle | `var(${string})`;
-      "border-right-style"?: Property.BorderRightStyle | `var(${string})`;
-      "border-bottom-style"?: Property.BorderBottomStyle | `var(${string})`;
-      "border-left-style"?: Property.BorderLeftStyle | `var(${string})`;
-      "text-align"?: Property.TextAlign | `${Property.TextAlign} !important`;
+    interface PropertiesFallback {
+      borderTopStyle?: StandardPropertiesFallback["borderTopStyle"] | `var(${string})`;
+      borderRightStyle?: StandardPropertiesFallback["borderRightStyle"] | `var(${string})`;
+      borderBottomStyle?: StandardPropertiesFallback["borderBottomStyle"] | `var(${string})`;
+      borderLeftStyle?: StandardPropertiesFallback["borderLeftStyle"] | `var(${string})`;
     }
   }

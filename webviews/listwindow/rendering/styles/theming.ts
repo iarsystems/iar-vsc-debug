@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
+import { css } from "@emotion/css";
+
 
 /**
  * Performs context-dependent theming of the view (such as changing some colors
@@ -23,40 +25,41 @@ export namespace Theming {
         GridLineStyle = "--grid-line-style",
     }
 
-    const BASE_STYLES = createCssFromVars<Required<VariableDefinitions>>({
-        [Variables.ListSelectionBg]:
-            "var(--vscode-list-activeSelectionBackground)",
-        [Variables.ListSelectionFg]:
-            "var(--vscode-list-activeSelectionForeground)",
-        [Variables.ListSelectionOutlineColor]:
-            "var(--vscode-list-focusOutline)",
-        [Variables.ListSelectionOutlineStyle]:
-            "solid",
-        [Variables.IndentGuideColor]:
-            "var(--vscode-tree-inactiveIndentGuidesStroke)",
-        [Variables.GridLineColor]:
-            "rgba(0, 0, 0, 0)",
-        [Variables.GridLineStyle]:
-            "none",
-    });
-    BASE_STYLES.insertRule(
-        `html:hover { ${Variables.IndentGuideColor}: var(--vscode-tree-indentGuidesStroke); }`,
-    );
+    const BASE_STYLES = css([
+        {
+            [Variables.ListSelectionBg]:
+                "var(--vscode-list-activeSelectionBackground)",
+            [Variables.ListSelectionFg]:
+                "var(--vscode-list-activeSelectionForeground)",
+            [Variables.ListSelectionOutlineColor]:
+                "var(--vscode-list-focusOutline)",
+            [Variables.ListSelectionOutlineStyle]: "solid",
+            [Variables.IndentGuideColor]:
+                "var(--vscode-tree-inactiveIndentGuidesStroke)",
+            [Variables.GridLineColor]: "transparent",
+            [Variables.GridLineStyle]: "none",
+        },
+        css`
+            html:hover {
+                ${Variables.IndentGuideColor}: var(--vscode-tree-indentGuidesStroke);
+            }
+        `,
+    ]);
 
     // Applied when the view is not in focus
-    const UNFOCUSED_STYLES = createCssFromVars({
+    const UNFOCUSED_STYLES = css({
         [Variables.ListSelectionBg]:
             "var(--vscode-list-inactiveSelectionBackground)",
         [Variables.ListSelectionFg]:
             "var(--vscode-list-inactiveSelectionForeground)",
         [Variables.ListSelectionOutlineColor]:
-            "var(--vscode-contrastActiveBorder, var(--vscode-list-inactiveFocusOutline, rgba(0, 0, 0, 0)))",
+            "var(--vscode-contrastActiveBorder, var(--vscode-list-inactiveFocusOutline, transparent))",
         [Variables.ListSelectionOutlineStyle]:
             "dotted",
     });
 
     // Applied when 'showGrid' is enabled in the ListSpec
-    const GRID_LINES_VISIBLE_STYLES = createCssFromVars({
+    const GRID_LINES_VISIBLE_STYLES = css({
         [Variables.GridLineColor]:
             "var(--vscode-widget-border)",
         [Variables.GridLineStyle]:
@@ -64,30 +67,22 @@ export namespace Theming {
     });
 
     export function initialize() {
-        document.adoptedStyleSheets.push(BASE_STYLES);
-        document.adoptedStyleSheets.push(UNFOCUSED_STYLES);
-        document.adoptedStyleSheets.push(GRID_LINES_VISIBLE_STYLES);
+        document.body.classList.add(BASE_STYLES);
     }
 
     export function setViewHasFocus(hasFocus: boolean) {
-        UNFOCUSED_STYLES.disabled = hasFocus;
+        if (hasFocus) {
+            document.body.classList.remove(UNFOCUSED_STYLES);
+        } else {
+            document.body.classList.add(UNFOCUSED_STYLES);
+        }
     }
 
     export function setGridLinesVisible(visible: boolean) {
-        GRID_LINES_VISIBLE_STYLES.disabled = !visible;
-    }
-
-    type VariableDefinitions = { [K in Variables]?: string };
-
-    function createCssFromVars<T extends VariableDefinitions>(vars: T): CSSStyleSheet {
-        let css = "html {";
-        for (const key in vars) {
-            const varName = key as keyof typeof vars;
-            css += `${String(varName)}: ${vars[varName]};`;
+        if (visible) {
+            document.body.classList.add(GRID_LINES_VISIBLE_STYLES);
+        } else {
+            document.body.classList.remove(GRID_LINES_VISIBLE_STYLES);
         }
-        css += "}";
-        const sheet = new CSSStyleSheet();
-        sheet.replaceSync(css);
-        return sheet;
     }
 }

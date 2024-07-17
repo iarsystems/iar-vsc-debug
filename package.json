@@ -43,7 +43,9 @@
 	],
 	"private": true,
 	"dependencies": {
+		"@emotion/css": "^11.11.2",
 		"@floating-ui/dom": "^1.6.7",
+		"@vscode/codicons": "^0.0.36",
 		"@vscode/debugadapter": "^1.57.0",
 		"@vscode/debugprotocol": "^1.57.0",
 		"@vscode/webview-ui-toolkit": "^1.4.0",
@@ -51,8 +53,7 @@
 		"await-notify": "1.0.1",
 		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#fbe3aae9",
 		"thrift": "^0.12.0",
-		"xmlbuilder2": "^3.0.2",
-		"@vscode/codicons": "^0.0.36"
+		"xmlbuilder2": "^3.0.2"
 	},
 	"devDependencies": {
 		"@types/jsdom": "^16.2.14",
@@ -66,7 +67,6 @@
 		"@typescript-eslint/parser": "^5.2.0",
 		"@typescript/lib-dom": "npm:@types/web@^0.0.69",
 		"@vscode/debugadapter-testsupport": "^1.57.0",
-		"csstype": "^3.1.3",
 		"copy-webpack-plugin": "^12.0.2",
 		"eslint": "^8.1.0",
 		"eslint-plugin-deprecation": "^1.3.2",
@@ -92,10 +92,10 @@
 		"webpack": "webpack --mode development --config-name extension --config-name webviews",
 		"webpack-watch": "webpack --mode development --watch --config-name extension --config-name webviews",
 		"package": "webpack --mode production --devtool hidden-source-map --config-name extension --config-name webviews",
-		"test-compile": "npm run webpack && tsc -p ./src",
+		"test-compile": "tsc -p ./src && npm run webpack",
 		"prepare": "husky install"
 	},
-	"main": "./dist/extension",
+	"main": "./out/src/extension.js",
 	"activationEvents": [
 		"onDebugResolve:cspy",
 		"onDebugDynamicConfigurations:cspy",

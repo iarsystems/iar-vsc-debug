@@ -5,11 +5,11 @@
 import { createCustomEvent } from "../../events";
 import { ColumnResizeMode } from "../../protocol";
 import { ResizeHandleElement } from "./resizeHandle";
-import { createCss } from "../styles/createCss";
 import { customElement } from "../utils";
 import { Column } from "../../thrift/listwindow_types";
 import { SharedStyles } from "../styles/sharedStyles";
 import { Theming } from "../styles/theming";
+import { css } from "@emotion/css";
 
 /**
  * Emitted when the the user has resized a column
@@ -37,42 +37,6 @@ export namespace ColumnClickedEvent {
  */
 @customElement("listwindow-header")
 export class HeaderElement extends HTMLElement {
-    // These styles are injected into the grid element's shadow DOM
-    static readonly STYLES = createCss({
-        "listwindow-header": {
-            display: "contents",
-            padding: "2px 0px",
-            // Make header cells a bit bigger than normal ones
-            "line-height": "27px",
-            "font-weight": "normal",
-            "text-transform": "uppercase",
-            "font-size": "11px",
-        },
-        "listwindow-header .clickable:hover": {
-            "background-color": "var(--vscode-list-hoverBackground)",
-            cursor: "pointer"
-        },
-        "listwindow-header>*": {
-            position: "sticky",
-            top: 0,
-            "z-index": SharedStyles.ZIndices.GridHeader,
-            width: "100%",
-            "user-select": "none",
-            overflow: "hidden",
-            background: "var(--vscode-sideBar-background)",
-            "box-sizing": "border-box",
-            "border-bottom": `1px var(${Theming.Variables.GridLineStyle}) var(${Theming.Variables.GridLineColor})`,
-            "border-right": `1px var(${Theming.Variables.GridLineStyle}) var(${Theming.Variables.GridLineColor})`,
-        },
-        ".header-title": {
-            overflow: "hidden",
-            "text-overflow": "ellipsis",
-            padding: "0px 12px",
-            "box-sizing": "border-box",
-            "max-width": "100%",
-        }
-    });
-
     private static readonly MIN_COL_WIDTH = 25;
 
     columns: Array<Column> = [];
@@ -83,6 +47,7 @@ export class HeaderElement extends HTMLElement {
     private columnHeaders: HTMLElement[] = [];
 
     connectedCallback() {
+        this.classList.add(Styles.self);
         this.columnHeaders = [];
 
         for (const [i, column] of this.columns.entries()) {
@@ -90,26 +55,25 @@ export class HeaderElement extends HTMLElement {
             this.columnHeaders.push(colHeader);
             this.appendChild(colHeader);
 
-            const text = document.createElement("div");
-            text.classList.add("header-title");
-            text.innerText = column.title;
-            colHeader.appendChild(text);
+            const title = document.createElement("div");
+            title.classList.add(Styles.title);
+            title.innerText = column.title;
+            colHeader.appendChild(title);
 
             if (this.clickable) {
-                text.classList.add("clickable");
-                text.onclick = () => {
+                title.classList.add(Styles.clickable);
+                title.onclick = () => {
                     this.dispatchEvent(
                         createCustomEvent("column-clicked", {
                             detail: { col: i },
                             bubbles: true,
-                            composed: true,
                         }),
                     );
                 };
             }
 
             colHeader.classList.add(
-                SharedStyles.alignmentToClass(column.defaultFormat.align),
+                SharedStyles.alignmentToStyle(column.defaultFormat.align),
             );
 
 
@@ -137,7 +101,6 @@ export class HeaderElement extends HTMLElement {
                         this.dispatchEvent(createCustomEvent("columns-resized", {
                             detail: { newColumnWidths: widths },
                             bubbles: true,
-                            composed: true,
                         }));
                     });
                 });
@@ -278,4 +241,47 @@ export class HeaderElement extends HTMLElement {
         }
         return undefined;
     }
+}
+
+namespace Styles {
+    export const self = css([
+        {
+            display: "contents",
+            padding: "2px 0px",
+            // Make header cells a bit bigger than normal ones
+            lineHeight: "27px",
+            fontWeight: "normal",
+            textTransform: "uppercase",
+            fontSize: "11px",
+        },
+        css`
+            >* {
+                position: sticky;
+                top: 0;
+                z-index: ${SharedStyles.ZIndices.GridHeader};
+                width: 100%;
+                user-select: none;
+                overflow: hidden;
+                background: var(--vscode-sideBar-background);
+                box-sizing: border-box;
+                border-bottom: 1px var(${Theming.Variables.GridLineStyle})
+                    var(${Theming.Variables.GridLineColor});
+                border-right: 1px var(${Theming.Variables.GridLineStyle})
+                    var(${Theming.Variables.GridLineColor});
+            }
+        `,
+    ]);
+    export const title = css({
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        padding: "0px 12px",
+        boxSizing: "border-box",
+        maxWidth: "100%",
+    });
+    export const clickable = css`
+        &:hover {
+            background-color: var(--vscode-list-hoverBackground);
+            cursor: pointer;
+        }
+    `;
 }

@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import * as vscode from "vscode";
-import { ListwindowViewProvider } from "./listwindowProvider";
+import { ListwindowViewProvider } from "./listwindowViewProvider";
 import { ViewMessage } from "../../webviews/listwindow/protocol";
 
 /**

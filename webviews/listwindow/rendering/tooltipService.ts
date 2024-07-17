@@ -4,9 +4,9 @@
 
 import { MessageService } from "../messageService";
 import { CellHoveredEvent } from "./cell/cell";
-import { createCss } from "./styles/createCss";
 import { SharedStyles } from "./styles/sharedStyles";
 import { customElement } from "./utils";
+import { css } from "@emotion/css";
 import * as FloatingUi from "@floating-ui/dom";
 
 interface PendingTooltip {
@@ -81,27 +81,6 @@ export class TooltipService {
 
 @customElement("listwindow-tooltip")
 class TooltipElement extends HTMLElement {
-    private static readonly STYLES: CSSStyleSheet = createCss({
-        ":host": {
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "max-content",
-            transition: "opacity 0.1s ease-in-out",
-            opacity: 0,
-            "z-index": SharedStyles.ZIndices.Tooltip,
-        },
-        div: {
-            background: "var(--vscode-editorHoverWidget-background)",
-            color: "var(--vscode-editorHoverWidget-foreground)",
-            border: "1px solid var(--vscode-editorHoverWidget-border)",
-            "box-sizing": "border-box",
-            padding: "4px 8px",
-            // Render white-space/newlines as-is
-            "white-space": "pre-wrap",
-        }
-    });
-
     tooltipText = "";
     position?: {
         x: number;
@@ -109,16 +88,13 @@ class TooltipElement extends HTMLElement {
     };
 
     connectedCallback() {
+        this.classList.add(Styles.self);
+
         if (!this.position) {
             return;
         }
 
-        const shadow = this.attachShadow({ mode: "closed" });
-        shadow.adoptedStyleSheets.push(TooltipElement.STYLES);
-
-        const div = document.createElement("div");
-        div.innerHTML = this.tooltipText;
-        shadow.appendChild(div);
+        this.innerText = this.tooltipText;
 
         // Note that we cannot render the tooltip outside the view bounds (as a
         // "floating" window). It would just create a scrollbar.
@@ -169,4 +145,23 @@ class TooltipElement extends HTMLElement {
             this.style.opacity = "1";
         });
     }
+}
+
+namespace Styles {
+    export const self = css({
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "max-content",
+        transition: "opacity 0.1s ease-in-out",
+        opacity: 0,
+        zIndex: SharedStyles.ZIndices.Tooltip,
+        background: "var(--vscode-editorHoverWidget-background)",
+        color: "var(--vscode-editorHoverWidget-foreground)",
+        border: "1px solid var(--vscode-editorHoverWidget-border)",
+        boxSizing: "border-box",
+        padding: "4px 8px",
+        // Render white-space/newlines as-is
+        whiteSpace: "pre-wrap",
+    });
 }

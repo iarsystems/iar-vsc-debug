@@ -11,7 +11,7 @@
 				"--extensionDevelopmentPath=${workspaceFolder}",
 				"${workspaceFolder}/samples/GettingStarted"
 			],
-			"outFiles": [ "${workspaceFolder}/dist/**/*.js" ],
+			"outFiles": [ "${workspaceFolder}/out/**/*" ],
 			"debugWebviews": true
 		},
 		{

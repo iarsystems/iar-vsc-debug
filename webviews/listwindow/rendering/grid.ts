@@ -8,50 +8,17 @@ import { RowElement } from "./row";
 import { HoverService } from "./hoverService";
 import { createCustomEvent } from "../events";
 import { customElement } from "./utils";
-import { createCss } from "./styles/createCss";
-import { SharedStyles } from "./styles/sharedStyles";
 import { CellElement } from "./cell/cell";
 import { DragDropService } from "./dragDropService";
 import { Target } from "../thrift/listwindow_types";
+import { css } from "@emotion/css";
+import { SharedStyles } from "./styles/sharedStyles";
 
 /**
  * A full listwindow grid, including headers but excluding any toolbar
  */
 @customElement("listwindow-grid")
 export class GridElement extends HTMLElement {
-    private static readonly STYLES: CSSStyleSheet[] = [
-        createCss({
-            ":host": {
-                height: "100%",
-                display: "block",
-            },
-            "#backdrop": {
-                width: "100%",
-                height: "100%",
-                // Always add some space below the table that we can press to
-                // deselect everything
-            },
-            "#backdrop.drop-target": {
-                background: "var(--vscode-list-dropBackground)",
-            },
-            "#grid": {
-                // The grid-template-columns are set by the header element
-                display: "grid",
-                "padding-bottom": "10px",
-            },
-        }),
-        HeaderElement.STYLES,
-        RowElement.STYLES,
-        CellElement.OUTER_STYLES,
-        ...SharedStyles.STYLES,
-    ];
-    // Styles to apply if resizeMode is "fit"
-    private static readonly STYLE_RESIZEMODE_FIT = createCss({
-        ":host": {
-            width: "100%",
-        },
-    });
-
     data?: RenderParameters = undefined;
     initialColumnWidths: number[] | undefined = undefined;
     resizeMode: ColumnResizeMode = "fixed";
@@ -60,11 +27,10 @@ export class GridElement extends HTMLElement {
     dragDropService: DragDropService | undefined = undefined;
 
     connectedCallback() {
-        const shadow = this.attachShadow({ mode: "open" });
-        shadow.adoptedStyleSheets.push(...GridElement.STYLES);
-
-        shadow.adoptedStyleSheets.push(GridElement.STYLE_RESIZEMODE_FIT);
-        GridElement.STYLE_RESIZEMODE_FIT.disabled = this.resizeMode !== "fit";
+        this.classList.add(Styles.self);
+        if (this.resizeMode === "fit") {
+            this.classList.add(Styles.fillWidth);
+        }
 
         if (!this.data) {
             // TODO: render some placeholder
@@ -76,19 +42,19 @@ export class GridElement extends HTMLElement {
         }
 
         const backdrop = document.createElement("div");
-        backdrop.id = "backdrop";
+        backdrop.classList.add(Styles.backdrop);
         this.dragDropService?.registerDropTarget(
             backdrop,
             { col: -1, row: -1 },
             Target.kTargetAll,
         );
         if (this.dragDropService?.currentFeedback.target === Target.kTargetAll) {
-            backdrop.classList.add("drop-target");
+            this.classList.add(SharedStyles.dropTarget);
         }
-        shadow.appendChild(backdrop);
+        this.appendChild(backdrop);
 
         const grid = document.createElement("div");
-        grid.id = "grid";
+        grid.classList.add(Styles.grid);
         backdrop.appendChild(grid);
 
         backdrop.onclick = (ev: MouseEvent) => {
@@ -105,7 +71,6 @@ export class GridElement extends HTMLElement {
                             shiftPressed: false,
                         },
                         bubbles: true,
-                        composed: true,
                     }),
                 );
             }
@@ -151,7 +116,6 @@ export class GridElement extends HTMLElement {
                 clickPosition: ev,
             },
             bubbles: true,
-            composed: true,
         }));
     };
 
@@ -160,10 +124,10 @@ export class GridElement extends HTMLElement {
             return;
         }
 
-        const firstRow = this.shadowRoot?.querySelector(
+        const firstRow = this.querySelector(
             `[${CellElement.ATTR_ROW}="0"]`,
         );
-        const targetRow = this.shadowRoot?.querySelector(
+        const targetRow = this.querySelector(
             `[${CellElement.ATTR_ROW}="${row}"]`,
         );
         if (!firstRow || !targetRow) {
@@ -186,4 +150,25 @@ export class GridElement extends HTMLElement {
             window.scrollTo({ behavior: "smooth", top: targetScroll } );
         }
     }
+}
+
+namespace Styles {
+    export const self = css({
+        height: "100%",
+        display: "block",
+    });
+    export const fillWidth = css({
+        width: "100%",
+    });
+    export const backdrop = css({
+        width: "100%",
+        height: "100%",
+    });
+    export const grid = css({
+        // The grid-template-columns are set by the header element
+        display: "grid",
+        // Always add some space below the table that we can press to
+        // deselect everything
+        paddingBottom: "10px",
+    });
 }

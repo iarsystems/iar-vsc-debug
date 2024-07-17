@@ -20,6 +20,7 @@ import { DragDropService } from "./rendering/dragDropService";
 import { ContextMenuService } from "./rendering/contextMenuService";
 import { MessageService } from "./messageService";
 import { KeyboardInput } from "./keyboardInput";
+import { css } from "@emotion/css";
 
 provideVSCodeDesignSystem().register(vsCodeTextField());
 
@@ -43,6 +44,17 @@ class ListwindowController {
         private readonly appElement: HTMLElement,
         vscode: WebviewApi<PersistedState.Data>,
     ) {
+        document.body.classList.add(css({
+            padding: 0,
+            height: "100%",
+            color: "var(--vscode-sideBar-foreground, var(--vscode-foreground))",
+            scrollbarColor: "var(--vscode-scrollbarSlider-background) transparent",
+        }));
+        appElement.classList.add(css({
+            padding: 0,
+            height: "100%",
+        }));
+
         this.persistedState = new PersistedState(vscode);
         this.messageService = new MessageService(vscode);
         this.tooltipService = new TooltipService(this.messageService);

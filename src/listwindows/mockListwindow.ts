@@ -6,7 +6,7 @@ import { ViewMessage, RenderParameters } from "../../webviews/listwindow/protoco
 import { Alignment, Cell, Column, DragDropFeedback, Format, ListSpec, Row, SelRange, Target, TextStyle } from "iar-vsc-common/thrift/bindings/listwindow_types";
 import Int64 = require("node-int64");
 import { MenuItem } from "../../webviews/listwindow/thrift/listwindow_types";
-import { ListwindowViewProvider } from "./listwindowProvider";
+import { ListwindowViewProvider } from "./listwindowViewProvider";
 
 /**
  * A listwindow that renders mock data and is able to fake some user interaction.

@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { createCss } from "../styles/createCss";
+import { css } from "@emotion/css";
 import { customElement } from "../utils";
 
 export enum CellBorderVariables {
@@ -27,28 +27,24 @@ export enum CellBorderVariables {
  */
 @customElement("listwindow-cell-borders")
 export class CellBordersElement extends HTMLElement {
-    private static readonly STYLES = createCss({
-        div: {
-            "pointer-events": "none",
-            position: "absolute",
-            inset: 0,
-            "border-width": "1px",
-            "border-top-color":    `var(${CellBorderVariables.ColorTop},    rgba(0, 0, 0, 0))`,
-            "border-right-color":  `var(${CellBorderVariables.ColorRight},  rgba(0, 0, 0, 0))`,
-            "border-bottom-color": `var(${CellBorderVariables.ColorBottom}, rgba(0, 0, 0, 0))`,
-            "border-left-color":   `var(${CellBorderVariables.ColorLeft},   rgba(0, 0, 0, 0))`,
-            "border-top-style":    `var(${CellBorderVariables.StyleTop},    var(${CellBorderVariables.Style}, none))`,
-            "border-right-style":  `var(${CellBorderVariables.StyleRight},  var(${CellBorderVariables.Style}, none))`,
-            "border-bottom-style": `var(${CellBorderVariables.StyleBottom}, var(${CellBorderVariables.Style}, none))`,
-            "border-left-style":   `var(${CellBorderVariables.StyleLeft},   var(${CellBorderVariables.Style}, none))`,
-        },
-    });
-
     connectedCallback() {
-        const shadow = this.attachShadow({ mode: "closed" });
-        shadow.adoptedStyleSheets.push(CellBordersElement.STYLES);
-
-        const div = document.createElement("div");
-        shadow.appendChild(div);
+        this.classList.add(Styles.self);
     }
+}
+
+namespace Styles {
+    export const self = css({
+        pointerEvents: "none",
+        position: "absolute",
+        inset: 0,
+        borderWidth: "1px",
+        borderTopColor:    `var(${CellBorderVariables.ColorTop},    rgba(0, 0, 0, 0))`,
+        borderRightColor:  `var(${CellBorderVariables.ColorRight},  rgba(0, 0, 0, 0))`,
+        borderBottomColor: `var(${CellBorderVariables.ColorBottom}, rgba(0, 0, 0, 0))`,
+        borderLeftColor:   `var(${CellBorderVariables.ColorLeft},   rgba(0, 0, 0, 0))`,
+        borderTopStyle:    `var(${CellBorderVariables.StyleTop},    var(${CellBorderVariables.Style}, none))`,
+        borderRightStyle:  `var(${CellBorderVariables.StyleRight},  var(${CellBorderVariables.Style}, none))`,
+        borderBottomStyle: `var(${CellBorderVariables.StyleBottom}, var(${CellBorderVariables.Style}, none))`,
+        borderLeftStyle:   `var(${CellBorderVariables.StyleLeft},   var(${CellBorderVariables.Style}, none))`,
+    });
 }

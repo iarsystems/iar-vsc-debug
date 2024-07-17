@@ -2,9 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
+import { css } from "@emotion/css";
 import { createCustomEvent } from "../../events";
-import { createCss } from "../styles/createCss";
-import { SharedStyles } from "../styles/sharedStyles";
 import { Theming } from "../styles/theming";
 import { customElement } from "../utils";
 
@@ -33,69 +32,22 @@ export namespace MoreLessToggledEvent {
  */
 @customElement("listwindow-tree-info")
 export class TreeInfoElement extends HTMLElement {
-    private static readonly BUTTON_SIZE_PX = 16;
-    private static readonly BUTTON_PADDING_PX = 2;
-    private static readonly INDENT_AMOUNT_PX = 8;
-    private static readonly STYLES = createCss({
-        ":host": {
-            height: "100%",
-            "padding-left": "8px",
-        },
-        "#inner-root": {
-            height: "100%",
-            display: "flex",
-            "align-items": "center",
-        },
-        "button": {
-            cursor: "pointer",
-            color: "var(--vscode-icon-foreground)",
-            background: "none",
-            padding: 0,
-            border: "none",
-        },
-        "#expand-button": {
-            padding: `0px ${TreeInfoElement.BUTTON_PADDING_PX}px`,
-            width: TreeInfoElement.BUTTON_SIZE_PX + "px",
-            height: TreeInfoElement.BUTTON_SIZE_PX + "px",
-            "font-size": TreeInfoElement.BUTTON_SIZE_PX + "px",
-            "box-sizing": "content-box",
-        },
-        "#fold-button": {
-            padding: 0,
-            width: `${TreeInfoElement.INDENT_AMOUNT_PX}px`,
-            height: "100%",
-            "font-size": `${TreeInfoElement.INDENT_AMOUNT_PX}px`,
-            display: "flex",
-            "align-items": "center",
-            transform: `translate(${TreeInfoElement.INDENT_AMOUNT_PX / 2}px, 0px)`,
-        },
-        ".indent-guide": {
-            display: "inline-block",
-            height: "100%",
-            width: `${TreeInfoElement.INDENT_AMOUNT_PX}px`,
-            "border-right": `1px solid var(${Theming.Variables.IndentGuideColor})`,
-            "box-sizing": "border-box",
-        },
-    });
-
     treeinfo = "";
     row = -1;
 
     connectedCallback() {
+        this.classList.add(Styles.self);
 
-        const shadow = this.attachShadow({ mode: "closed" });
-        shadow.adoptedStyleSheets.push(TreeInfoElement.STYLES);
-        shadow.adoptedStyleSheets.push(...SharedStyles.STYLES);
-
+        // TODO: do we need this?
         const innerRoot = document.createElement("div");
-        innerRoot.id = "inner-root";
-        shadow.appendChild(innerRoot);
+        innerRoot.classList.add(Styles.innerRoot);
+        this.appendChild(innerRoot);
 
         for (const char of this.treeinfo) {
             if (char === TreeGraphItems.kPlus || char === TreeGraphItems.kMinus) {
                 // Row expand/collapse button
                 const button = document.createElement("button");
-                button.id = "expand-button";
+                button.classList.add(Styles.button, Styles.expandButton);
                 const iconName = char === TreeGraphItems.kMinus
                     ? "codicon-chevron-down"
                     : "codicon-chevron-right";
@@ -108,7 +60,6 @@ export class TreeInfoElement extends HTMLElement {
                         this.dispatchEvent(createCustomEvent("row-expansion-toggled", {
                             detail: { row: this.row },
                             bubbles: true,
-                            composed: true,
                         }));
                         // We don't want these clicks to also trigger a cell click
                         ev.stopPropagation();
@@ -118,14 +69,12 @@ export class TreeInfoElement extends HTMLElement {
                 // No expand button for this row, create an equivalent amount of
                 // padding to keep things aligned horizontally
                 this.style.paddingRight =
-                    2 * TreeInfoElement.BUTTON_PADDING_PX +
-                    TreeInfoElement.BUTTON_SIZE_PX +
-                    "px";
+                    2 * Styles.buttonPaddingPx + Styles.buttonSizePx + "px";
             } else {
                 if (char === TreeGraphItems.kMore || char === TreeGraphItems.kLess) {
                     // More/less siblings button (for STL containers)
                     const button = document.createElement("button");
-                    button.id = "fold-button";
+                    button.classList.add(Styles.button, Styles.foldButton);
                     const iconName = char === TreeGraphItems.kMore
                         ? "codicon-fold-down"
                         : "codicon-fold-up";
@@ -139,7 +88,6 @@ export class TreeInfoElement extends HTMLElement {
                                 createCustomEvent("more-less-toggled", {
                                     detail: { row: this.row },
                                     bubbles: true,
-                                    composed: true,
                                 }),
                             );
                             // We don't want these clicks to also trigger a cell click
@@ -149,7 +97,7 @@ export class TreeInfoElement extends HTMLElement {
                 } else {
                     // Generic indentation character
                     const indentGuide = document.createElement("div");
-                    indentGuide.classList.add("indent-guide");
+                    indentGuide.classList.add(Styles.indentGuide);
                     innerRoot.appendChild(indentGuide);
                 }
             }
@@ -177,4 +125,50 @@ enum TreeGraphItems {
     kMinus      = "-",
     kMore       = "v",
     kLess       = "^",
+}
+
+namespace Styles {
+    export const buttonSizePx = 16;
+    export const buttonPaddingPx = 2;
+    export const indentAmountPx = 8;
+
+    export const self = css({
+        height: "100%",
+        paddingLeft: "8px",
+    });
+    export const innerRoot = css({
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+    });
+    export const button = css({
+        cursor: "pointer",
+        color: "var(--vscode-icon-foreground)",
+        background: "none",
+        padding: 0,
+        border: "none",
+    });
+    export const expandButton = css({
+        padding: `0px ${buttonPaddingPx}px`,
+        width: buttonSizePx + "px",
+        height: buttonSizePx + "px",
+        fontSize: buttonSizePx + "px",
+        boxSizing: "content-box",
+    });
+    export const foldButton = css({
+        padding: 0,
+        width: `${indentAmountPx}px`,
+        height: "100%",
+        fontSize: `${indentAmountPx}px !important`,
+        display: "flex",
+        alignItems: "center",
+        transform: `translate(${indentAmountPx / 2}px, 0px)`,
+    });
+    export const indentGuide = css({
+        display: "inline-block",
+        height: "100%",
+        width: `${indentAmountPx}px`,
+        borderRight: `1px solid var(${Theming.Variables.IndentGuideColor})`,
+        boxSizing: "border-box",
+    });
 }

@@ -3,7 +3,6 @@
 
 const path = require("path");
 const webpack = require("webpack");
-const copyPlugin = require("copy-webpack-plugin")
 
 /**@type {webpack.Configuration}*/
 const extensionConfig = {
@@ -11,10 +10,10 @@ const extensionConfig = {
   target: "node",
   entry: "./src/extension.ts",
   output: {
-    path: path.resolve(__dirname, "dist"),
+    path: path.resolve(__dirname, "out/src"),
     filename: "extension.js",
     libraryTarget: "commonjs2",
-    devtoolModuleFilenameTemplate: "../[resource-path]"
+    devtoolModuleFilenameTemplate: "../../[resource-path]"
   },
   devtool: "source-map",
   externals: {
@@ -62,7 +61,7 @@ const webviewConfig = {
       outputModule: true
     },
     output: {
-      path: path.resolve(__dirname, "dist/webviews/"),
+      path: path.resolve(__dirname, "out/webviews/"),
       filename: "[name].js",
       libraryTarget: "module",
 			publicPath: '#{root}/dist/',
@@ -92,14 +91,7 @@ const webviewConfig = {
         }
       ]
     },
-    plugins: [
-      new copyPlugin({
-        // Copy all css files from ./webviews to ./dist/webviews (preserving subpaths)
-        patterns: [
-          { from: "**/*.css", to: "", context: "webviews" }
-        ]
-      })
-    ]
+    plugins: []
 };
 
 module.exports = [extensionConfig, webviewConfig];

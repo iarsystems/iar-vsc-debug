@@ -22,17 +22,19 @@ UI elements *outside* of the HTML tree that is replaced on each render.
 
 ### Styling
 
-Global styles can be added to `styles.css`. However, most components use a
-shadow DOM to scope their content, meaning they are not affected by global
-styles. We use types provided by the `csstype` package to define style rules in
-typescript, and convert them to a `CSSStyleSheet` which is injected into a
-component's shadow DOM. This lets us define styles in the same file/class as the
-component they apply to. 
+All styling is done via `@emotion/css` and its `css` function. This lets us
+define styles in Typesript code, typically in a `Styles` namespace adjacent to
+each component.
 
-Note that CSS variables *do* pierce the shadow DOM, and
-can be used to apply global styles that affect multiple component. For an example, see `src/theming.ts`, 
-which dynamically enables or disables some global style sheets depending on e.g. whether
-the view is in focus.
+The following links provide a short introduction to the `css` function:
+
+* [Introduction](https://emotion.sh/docs/introduction)
+* [Best Practices](https://emotion.sh/docs/best-practices)
+
+Some styling needs to change dynamically based on some global state, and needs
+to affect multiple components. Such styling are managed by `src/theming.ts`,
+which changes the values of some CSS variables depending on e.g. whether the
+view is in focus.
 
 ## Thrift bindings
 
@@ -42,7 +44,7 @@ instead of the ones in `iar-vsc-common`. These are generated for the browser,
 Node libraries (which would be unavailable in a webview).
 
 Note that we don't load the javascript support library yet
-([text](https://github.com/apache/thrift/blob/master/lib/js/src/thrift.js)), so
+([available here](https://github.com/apache/thrift/blob/master/lib/js/src/thrift.js)), so
 we can't *call* the thrift code, but we can use its type definitions.
 
 ## Rendering features

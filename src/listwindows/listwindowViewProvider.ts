@@ -62,7 +62,7 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider, vscod
         this.view.webview.options = {
             enableScripts: true,
             localResourceRoots: [
-                vscode.Uri.joinPath(this.extensionUri, "dist/webviews"),
+                vscode.Uri.joinPath(this.extensionUri, "out/webviews"),
                 vscode.Uri.joinPath(this.extensionUri, "node_modules/@vscode/codicons"),
             ]
         };
@@ -128,25 +128,23 @@ namespace Rendering {
         // load npm packages for standardized UI components and icons
         //! NOTE: ALL files you load here (even indirectly) must be explicitly included in .vscodeignore, so that they are packaged in the .vsix. Webpack will not find these files.
         // load css and js for the view
-        const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "dist", "webviews", "listwindow", "styles.css"));
-        const jsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "dist", "webviews", "listwindow.js"));
+        const jsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "out", "webviews", "listwindow.js"));
         const codiconsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "node_modules", "@vscode/codicons", "dist", "codicon.css"));
 
         const nonce = getNonce();
 
         // install the es6-string-html extension for syntax highlighting here
         return /*html*/`<!DOCTYPE html>
-    <html lang="en">
+    <html lang="en" style="height: 100%">
     <head>
         <meta charset="UTF-8">
         <meta http-equiv="Content-Security-Policy" content="default-src 'none';
                     font-src ${webview.cspSource};
                     img-src ${webview.cspSource};
                     frame-src ${webview.cspSource};
-                    script-src ${webview.cspSource} 'nonce-${nonce}';
-                    style-src ${webview.cspSource};">
+                    script-src 'nonce-${nonce}';
+                    style-src ${webview.cspSource} 'unsafe-inline';">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="${cssUri}">
         <link rel="stylesheet" href="${codiconsUri}">
         <script src="${jsUri}" nonce="${nonce}"></script>
         <title>Listwindow</title>

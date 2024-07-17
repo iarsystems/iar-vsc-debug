@@ -2,11 +2,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
+import { css } from "@emotion/css";
 import { createCustomEvent } from "../events";
 import { MessageService } from "../messageService";
 import { MenuItem } from "../thrift/listwindow_types";
 import { CellRightClickedEvent } from "./cell/cell";
-import { createCss } from "./styles/createCss";
 import { SharedStyles } from "./styles/sharedStyles";
 import { customElement } from "./utils";
 import * as FloatingUi from "@floating-ui/dom";
@@ -142,82 +142,6 @@ function toTree(items: MenuItem[]): MenuItemTree[] {
 
 @customElement("context-menu")
 class ContextMenuElement extends HTMLElement {
-    private static readonly STYLES: CSSStyleSheet = createCss({
-        ":host": {
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "max-content",
-            transition: "opacity 0.1s ease-in-out",
-            opacity: 0,
-            visibility: "hidden",
-            "z-index": SharedStyles.ZIndices.ContextMenu,
-        },
-        ".menu": {
-            // overflow: "hidden",
-            outline: "1px solid var(--vscode-menu-border)",
-            "border-radius": "5px",
-            color: "var(--vscode-menu-foreground)",
-            "background-color": "var(--vscode-menu-background)",
-            "box-shadow": "0 2px 8px var(--vscode-widget-shadow)",
-            padding: "4px 0",
-            margin: 0,
-            "list-style-type": "none",
-        },
-
-        // "menu-item": {
-        // },
-        "menu-item>div": {
-            cursor: "pointer",
-            "align-items": "center",
-            flex: "1 1 auto",
-            display: "flex",
-            height: "2em",
-            color: "var(--vscode-menu-foreground)",
-            position: "relative",
-            margin: "0 4px",
-            "border-radius": "4px",
-        },
-        "menu-item.disabled>div": {
-            cursor: "default",
-            color: "var(--vscode-disabledForeground)",
-        },
-        "menu-item:hover:not(.disabled)>div": {
-            color: "var(--vscode-menu-selectionForeground)",
-            "background-color": "var(--vscode-menu-selectionBackground)",
-            outline: "1px solid var(--vscode-menu-selectionBorder)",
-        },
-
-        ".menu-item-label": {
-            padding: "0 26px",
-            "max-height": "100%",
-            flex: "1 1 auto",
-        },
-        ".menu-item-separator": {
-            margin: "5px 0 !important",
-            padding: 0,
-            "border-radius": 0,
-            width: "100%",
-            height: "0px !important",
-            display: "block",
-            "border-bottom": "1px solid var(--vscode-menu-separatorBackground)",
-        },
-        ".menu-item-check, .submenu-indicator": {
-            width: "26px",
-            height: "100%",
-            position: "absolute",
-            display: "flex !important",
-            "align-items": "center",
-            "justify-content": "center",
-        },
-        ".menu-item-check": {
-            "font-size": "inherit !important",
-        },
-        ".submenu-indicator": {
-            right: 0,
-        },
-    });
-
     items: MenuItemTree[] = [];
 
     open(x: number, y: number) {
@@ -237,13 +161,11 @@ class ContextMenuElement extends HTMLElement {
     }
 
     connectedCallback() {
-        const shadow = this.attachShadow({ mode: "closed" });
-        shadow.adoptedStyleSheets.push(ContextMenuElement.STYLES);
-        shadow.adoptedStyleSheets.push(...SharedStyles.STYLES);
+        this.classList.add(Styles.self);
 
         const list = document.createElement("div");
-        list.classList.add("menu");
-        shadow.appendChild(list);
+        list.classList.add(Styles.menu);
+        this.appendChild(list);
 
         for (const item of this.items) {
             const listItem = new ContextMenuItemElement();
@@ -257,22 +179,21 @@ class ContextMenuItemElement extends HTMLElement {
     item: MenuItemTree | undefined = undefined;
 
     connectedCallback() {
+        this.classList.add(Styles.menuItem);
         if (!this.item) {
             return;
         }
-        if (!this.item.enabled) {
-            this.classList.add("disabled");
-        }
+        this.classList.add(this.item.enabled ? Styles.menuItemEnabled : Styles.menuItemDisabled);
 
         if (this.item.text === "") {
             const separator = document.createElement("span");
-            separator.classList.add("menu-item-separator");
+            separator.classList.add(Styles.menuItemSeparator);
             this.appendChild(separator);
             return;
         }
 
-        const listItem = document.createElement("div");
-        listItem.onclick = () => {
+        this.classList.add(Styles.menuItem);
+        this.onclick = () => {
             if (this.item && this.item.enabled && this.item.command !== 0) {
                 this.dispatchEvent(
                     createCustomEvent("context-menu-item-clicked", {
@@ -280,31 +201,29 @@ class ContextMenuItemElement extends HTMLElement {
                             command: this.item.command,
                         },
                         bubbles: true,
-                        composed: true,
                     }),
                 );
             }
         };
-        this.appendChild(listItem);
 
         const check = document.createElement("span");
-        check.classList.add("menu-item-check");
+        check.classList.add(Styles.icon, Styles.iconCheck);
         check.classList.add("codicon", "codicon-check");
         if (!this.item.checked) {
             check.style.visibility = "hidden";
         }
-        listItem.appendChild(check);
+        this.appendChild(check);
 
         const label = document.createElement("span");
         label.innerText = this.item.text;
-        label.classList.add("menu-item-label");
-        listItem.appendChild(label);
+        label.classList.add(Styles.menuItemLabel);
+        this.appendChild(label);
 
         if (this.item.children.length > 0) {
             const indicator = document.createElement("span");
-            indicator.classList.add("submenu-indicator");
+            indicator.classList.add(Styles.icon, Styles.iconSubmenu);
             indicator.classList.add("codicon", "codicon-chevron-right");
-            listItem.appendChild(indicator);
+            this.appendChild(indicator);
 
             if (this.item.enabled) {
                 const subMenu = new ContextMenuElement();
@@ -325,4 +244,81 @@ class ContextMenuItemElement extends HTMLElement {
             }
         }
     }
+}
+
+namespace Styles {
+    export const self = css({
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "max-content",
+        transition: "opacity 0.1s ease-in-out",
+        opacity: 0,
+        visibility: "hidden",
+        zIndex: SharedStyles.ZIndices.ContextMenu,
+    });
+    export const menu = css({
+        outline: "1px solid var(--vscode-menu-border)",
+        borderRadius: "5px",
+        color: "var(--vscode-menu-foreground)",
+        backgroundColor: "var(--vscode-menu-background)",
+        boxShadow: "0 2px 8px var(--vscode-widget-shadow)",
+        padding: "4px 0",
+        margin: 0,
+        listStyleType: "none",
+    });
+
+    export const menuItem = css({
+        cursor: "pointer",
+        alignItems: "center",
+        flex: "1 1 auto",
+        display: "flex",
+        height: "2em",
+        color: "var(--vscode-menu-foreground)",
+        position: "relative",
+        margin: "0 4px",
+        borderRadius: "4px",
+    });
+
+    export const menuItemDisabled = css({
+        cursor: "default",
+        color: "var(--vscode-disabledForeground)",
+    });
+
+    export const menuItemEnabled = css`
+        &:hover {
+            color: var(--vscode-menu-selectionForeground);
+            background-color: var(--vscode-menu-selectionBackground);
+            outline: 1px solid var(--vscode-menu-selectionBorder);
+        },
+    `;
+
+    export const menuItemLabel = css({
+        padding: "0 26px",
+        maxHeight: "100%",
+        flex: "1 1 auto",
+    });
+    export const menuItemSeparator = css({
+        margin: "5px 0 !important",
+        padding: 0,
+        borderRadius: 0,
+        width: "100%",
+        height: "0px !important",
+        display: "block",
+        borderBottom: "1px solid var(--vscode-menu-separatorBackground)",
+    });
+    export const icon = css({
+        width: "26px",
+        height: "100%",
+        position: "absolute",
+        display: "flex !important",
+        alignItems: "center",
+        justifyContent: "center",
+    });
+    export const iconCheck = css({
+        fontSize: "inherit !important",
+    });
+    export const iconSubmenu = css({
+        right: 0,
+    });
 }
