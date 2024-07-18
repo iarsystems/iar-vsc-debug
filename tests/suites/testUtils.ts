@@ -131,4 +131,11 @@ export namespace TestUtils {
             throw new Error(`Failed building test project (code ${proc.status}), iarbuild output: ${proc.stdout.toString()}`);
         }
     }
+
+    /**
+     * Escape special regex characters (e.g. '[' becomes '\[')
+     */
+    export function escapeRegex(str: string): string {
+        return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
 }
