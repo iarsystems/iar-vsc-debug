@@ -32,9 +32,9 @@ The following links provide a short introduction to the `css` function:
 * [Best Practices](https://emotion.sh/docs/best-practices)
 
 Some styling needs to change dynamically based on some global state, and needs
-to affect multiple components. Such styling are managed by `src/theming.ts`,
-which changes the values of some CSS variables depending on e.g. whether the
-view is in focus.
+to affect multiple components. Such styling is managed by
+[theming.ts](rendering/styles/theming.ts), which changes the values
+of some CSS variables depending on e.g. whether the view is in focus.
 
 ## Thrift bindings
 
@@ -76,17 +76,17 @@ we can't *call* the thrift code, but we can use its type definitions.
 * Drag-n-drop within a listwindow
 * Drop-target feedback
 * Context menu
+* Ensure visible
+* Clickable columns
 
 ### Functional Todo
 
 * Scrolling/navigation (keys, scrollbar, mousewheel, horizontal)
 * Selection update (key navigation)
-* Ensure visible
 * Multiple selection (but no support in model yet)
 * Save/restore state
 * Toolbars
 * Delay display-dimming on frozen to avoid flickering.
 * Partial selection when editing cells (which models do this?)
 * Sliding listmodels
-* Clickable columns
 * Drag-n-drop between different listwindows
