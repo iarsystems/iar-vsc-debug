@@ -198,7 +198,7 @@ export namespace TestConfiguration {
                 target: "riscv",
                 driver: "Simulator",
                 driverOptions: [
-                    "--core=RV32IMAC",
+                    "--core=RV32IMAFDC",
                     "-p",
                     "$TOOLKIT_DIR$/config/debugger/SiFive/e31_arty100t.ddf",
                     "-d",
