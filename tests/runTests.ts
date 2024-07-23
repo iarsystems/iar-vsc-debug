@@ -23,6 +23,9 @@ async function main() {
     } else if (suite === "debugger") {
         await runTestsIn(path.resolve(__dirname), "../../", "./suites/dbg/index", envs,
             undefined, label);
+    } else if (suite === "listwindow") {
+        await runTestsIn(path.resolve(__dirname), "../../", "./suites/listwindow/index", envs,
+            undefined, label);
     }
 
 }

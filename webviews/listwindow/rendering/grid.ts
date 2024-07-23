@@ -41,26 +41,23 @@ export class GridElement extends HTMLElement {
             this.initialColumnWidths = this.data.columnInfo.map(col => col.width);
         }
 
-        const backdrop = document.createElement("div");
-        backdrop.classList.add(Styles.backdrop);
         this.dragDropService?.registerDropTarget(
-            backdrop,
+            this,
             { col: -1, row: -1 },
             Target.kTargetAll,
         );
         if (this.dragDropService?.currentFeedback.target === Target.kTargetAll) {
             this.classList.add(SharedStyles.dropTarget);
         }
-        this.appendChild(backdrop);
 
         const grid = document.createElement("div");
         grid.classList.add(Styles.grid);
-        backdrop.appendChild(grid);
+        this.appendChild(grid);
 
-        backdrop.onclick = (ev: MouseEvent) => {
+        this.onclick = (ev: MouseEvent) => {
             // Any click that is not on a cell/header will be on the backdrop
             // or the grid's padding
-            if (ev.target === backdrop || ev.target === grid) {
+            if (ev.target === this || ev.target === grid) {
                 this.dispatchEvent(
                     createCustomEvent("cell-clicked", {
                         detail: {
@@ -77,14 +74,15 @@ export class GridElement extends HTMLElement {
         };
 
         // Create header
-        if (this.data.listSpec.showHeader) {
-            const header = new HeaderElement();
-            header.columns = this.data.columnInfo;
-            header.columnWidths = this.initialColumnWidths;
-            header.clickable = this.data.listSpec.canClickColumns;
-            header.resizeMode = this.resizeMode;
+        const header = new HeaderElement();
+        header.columns = this.data.columnInfo;
+        header.columnWidths = this.initialColumnWidths;
+        header.clickable = this.data.listSpec.canClickColumns;
+        header.resizeMode = this.resizeMode;
+        grid.appendChild(header);
 
-            grid.appendChild(header);
+        if (!this.data.listSpec.showHeader) {
+            header.style.display = "none";
         }
 
         // Create body
@@ -159,10 +157,6 @@ namespace Styles {
     });
     export const fillWidth = css({
         width: "100%",
-    });
-    export const backdrop = css({
-        width: "100%",
-        height: "100%",
     });
     export const grid = css({
         // The grid-template-columns are set by the header element

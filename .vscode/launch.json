@@ -63,5 +63,21 @@
                 "log-to-console": "true",
             },
 		},
+		{
+			"name": "Run Webview Component Tests",
+			"type": "node",
+			"request": "launch",
+			"program": "${workspaceFolder}/node_modules/mocha/bin/mocha",
+			"args": [
+				"--ui",
+				"tdd",
+				"${workspaceFolder}/out/webviews/**/*.test.js",
+			],
+			"outFiles": [ "${workspaceFolder}/out/**/*.js" ],
+			"preLaunchTask": "npm: webview-tests-compile",
+            "presentation": {
+                "group": "Tests",
+            },
+		},
 	],
 }

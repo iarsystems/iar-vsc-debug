@@ -53,6 +53,8 @@ export class MockListwindow implements vscode.Disposable {
                     params: getMockRenderParams(),
                 });
                 break;
+            case "rendered":
+                break;
             case "HTMLDump":
                 break;
             case "columnClicked":

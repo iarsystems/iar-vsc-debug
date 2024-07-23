@@ -153,7 +153,6 @@ export class DragDropService {
         if (DragDropFeedback.equals(this.currentFeedback, newFeedback)) {
             return;
         }
-        console.log("Changed feedback to: " + JSON.stringify(newFeedback));
         this.currentFeedback = newFeedback;
         this.onFeedbackChanged?.();
     }

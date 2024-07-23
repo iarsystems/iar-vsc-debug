@@ -85,6 +85,7 @@ class ListwindowController {
             case "render": {
                 this.renderParams = msg.params;
                 this.render(msg.ensureRowVisible);
+                this.messageService.sendMessage({ subject: "rendered" });
                 break;
             }
             case "setResizeMode":

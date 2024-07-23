@@ -57,7 +57,7 @@ export class HeaderElement extends HTMLElement {
 
             const title = document.createElement("div");
             title.classList.add(Styles.title);
-            title.innerText = column.title;
+            title.textContent = column.title;
             colHeader.appendChild(title);
 
             if (this.clickable) {

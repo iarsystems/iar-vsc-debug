@@ -109,7 +109,7 @@ export class CellElement extends HTMLElement {
 
         const label = document.createElement("div");
         label.classList.add(Styles.label);
-        label.innerText = this.cell?.text;
+        label.textContent = this.cell.text;
         this.content.appendChild(label);
 
         this.appendChild(new CellBordersElement);

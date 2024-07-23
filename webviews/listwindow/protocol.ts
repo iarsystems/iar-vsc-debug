@@ -45,6 +45,7 @@ export type ExtensionMessage =
  */
 export type ViewMessage =
   | { subject: "loaded" } // Sent when the view has been initialized
+  | { subject: "rendered" } // Sent when done with a render message, useful for testing
   | { subject: "HTMLDump", html: string } // Response to a dumpHTML message, contains the full HTML of the view
   | { subject: "columnClicked", col: number }
   | { subject: "cellLeftClicked", col: number, row: number, flags: SelectionFlags }
@@ -61,3 +62,22 @@ export type ViewMessage =
   | { subject: "contextItemClicked", command: number } // The user clicked a context menu item
   | { subject: "keyNavigationPressed", operation: KeyNavOperation }
   | { subject: "scrollOperationPressed", operation: ScrollOperation };
+
+
+/**
+ * Helper for selecting a specific variant of {@link ViewMessage}, e.g.
+ * ViewMessageVariant<"columnClicked"> === { subject: "columnClicked", col: number }
+ *
+ * Uses distributive conditional types to "iterate" over the variants, and a
+ * helper with a regular conditional type to choose the right variant:
+ * https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#distributive-conditional-types
+ */
+export type ViewMessageVariant<
+    Subject extends ViewMessage["subject"],
+    Message extends ViewMessage = ViewMessage,
+> = Message extends unknown ? PickVariant<Message, Subject> : never;
+
+type PickVariant<
+    T extends ViewMessage,
+    Subject extends ViewMessage["subject"],
+> = T["subject"] extends Subject ? T : never;

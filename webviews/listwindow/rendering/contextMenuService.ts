@@ -59,6 +59,7 @@ export class ContextMenuService {
                     command: ev.detail.command,
                 });
                 this.element?.close();
+                this.closeContextMenu();
             });
             document.body.appendChild(this.element);
 
@@ -162,6 +163,8 @@ class ContextMenuElement extends HTMLElement {
 
     connectedCallback() {
         this.classList.add(Styles.self);
+        this.style.opacity = "0";
+        this.style.visibility = "hidden";
 
         const list = document.createElement("div");
         list.classList.add(Styles.menu);
@@ -215,7 +218,7 @@ class ContextMenuItemElement extends HTMLElement {
         this.appendChild(check);
 
         const label = document.createElement("span");
-        label.innerText = this.item.text;
+        label.textContent = this.item.text;
         label.classList.add(Styles.menuItemLabel);
         this.appendChild(label);
 
@@ -253,8 +256,6 @@ namespace Styles {
         left: 0,
         width: "max-content",
         transition: "opacity 0.1s ease-in-out",
-        opacity: 0,
-        visibility: "hidden",
         zIndex: SharedStyles.ZIndices.ContextMenu,
     });
     export const menu = css({

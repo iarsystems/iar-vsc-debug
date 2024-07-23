@@ -16,8 +16,12 @@ import {
     ListSpec,
     SelRange,
 } from "iar-vsc-common/thrift/bindings/listwindow_types";
+import { queries } from "@testing-library/dom";
 import Int64 = require("node-int64");
 
+// For now this serves as a smoke test that we can activate and communicate with
+// the view. Later, we might want to start a real debug session and test e.g.
+// that the content of the live watch window matches what you would expect.
 suite("Listwindow Rendering", () => {
     suiteSetup(async() => {
         const ext = Vscode.extensions.getExtension("iarsystems.iar-debug");
@@ -30,44 +34,42 @@ suite("Listwindow Rendering", () => {
         await new Promise(res => setTimeout(res, 2000));
     });
 
-    setup(function() {
-        console.log("\n==========================================================" + this.currentTest!.title + "==========================================================\n");
-    });
-
     test("Renders headers", async() => {
         const renderParams = getBaseParameters();
-        const { window } = await renderAndGetDOM(renderParams);
-        Assert(window.document.documentElement.innerHTML.includes("Column 1"));
-        Assert(window.document.documentElement.innerHTML.includes("Column 2"));
+        {
+            const document = await renderAndGetDocument(renderParams);
+            queries.getByText(document.documentElement, "Column 1");
+            queries.getByText(document.documentElement, "Column 2");
+        }
     });
-
 });
 
-async function renderAndGetDOM(params: RenderParameters): Promise<JSDOM> {
+async function renderAndGetDocument(params: RenderParameters): Promise<Document> {
     Assert(testListwindow, "Has the extension not been activated?");
     await testListwindow!.render(params);
     const html = await testListwindow!.dumpHTML();
-    return new JSDOM(html);
+    return new JSDOM(html).window.document;
 }
 
+const black = new Color({
+    r: 0,
+    g: 0,
+    b: 0,
+    isDefault: true,
+    lowContrast: false,
+});
+const format = new Format({
+    align: Alignment.kLeft,
+    barColor: black,
+    bgColor: black,
+    editable: true,
+    icons: [],
+    style: TextStyle.kProportionalPlain,
+    textColor: black,
+    transp: black,
+});
+
 function getBaseParameters(): RenderParameters {
-    const black = new Color({
-        r: 0,
-        g: 0,
-        b: 0,
-        isDefault: true,
-        lowContrast: false,
-    });
-    const format = new Format({
-        align: Alignment.kLeft,
-        barColor: black,
-        bgColor: black,
-        editable: true,
-        icons: [],
-        style: TextStyle.kProportionalPlain,
-        textColor: black,
-        transp: black,
-    });
     const params: RenderParameters = {
         rows: [],
         columnInfo: [

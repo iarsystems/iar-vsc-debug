@@ -40,7 +40,7 @@ export namespace Theming {
             [Variables.GridLineStyle]: "none",
         },
         css`
-            html:hover {
+            &:hover {
                 ${Variables.IndentGuideColor}: var(--vscode-tree-indentGuidesStroke);
             }
         `,

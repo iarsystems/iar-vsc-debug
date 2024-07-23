@@ -94,7 +94,7 @@ class TooltipElement extends HTMLElement {
             return;
         }
 
-        this.innerText = this.tooltipText;
+        this.textContent = this.tooltipText;
 
         // Note that we cannot render the tooltip outside the view bounds (as a
         // "floating" window). It would just create a scrollbar.

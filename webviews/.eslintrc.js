@@ -23,6 +23,7 @@ const config = {
                 SwitchCase: 1,
               }
         ]
-    }
+    },
+
 };
 module.exports = config;
