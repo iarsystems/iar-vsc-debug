@@ -186,6 +186,10 @@ export class CellElement extends HTMLElement {
     }
 
     override onclick = (ev: MouseEvent) => {
+        if (ev.defaultPrevented) {
+            // The click was already handled by a subelement (probably the treeinfo)
+            return;
+        }
         if (ev.button === 0) {
             if (this.cell?.format.editable && this.content) {
                 this.dispatchEvent(

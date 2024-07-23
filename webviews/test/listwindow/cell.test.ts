@@ -119,7 +119,7 @@ suite("Listwindow cells", () => {
         Assert.strictEqual(cell.querySelector("button"), null);
     });
 
-    test("Renders treeinfo", async() => {
+    test("Can click treeinfo", async() => {
         const { api, dom, user } = await setupTestEnvironment();
 
         const renderParams = TestUtils.generateRenderParameters(4);
@@ -144,10 +144,18 @@ suite("Listwindow cells", () => {
             const button = cell.querySelector("button");
             Assert(button);
 
-            const expectedMsg = expectedMessages[row]!;
+            const cellClickMsgPromise = api.waitForMessage("cellLeftClicked", 100);
             user.click(button);
+            const expectedMsg = expectedMessages[row]!;
             const msg = await api.waitForMessage(expectedMsg.subject);
             Assert.deepStrictEqual(JSON.stringify(msg), JSON.stringify(expectedMsg));
+            try {
+                // A tree info click should *not* also trigger a cell click
+                await cellClickMsgPromise;
+                Assert.fail(
+                    "Cell registered click on tree info buttan as a cell click",
+                );
+            } catch {}
         }
     });
 

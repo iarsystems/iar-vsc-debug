@@ -61,8 +61,8 @@ export class TreeInfoElement extends HTMLElement {
                             detail: { row: this.row },
                             bubbles: true,
                         }));
-                        // We don't want these clicks to also trigger a cell click
-                        ev.stopPropagation();
+                        // Tell the cell to not also trigger a cell click
+                        ev.preventDefault();
                     }
                 };
             } else if (char === TreeGraphItems.kLeaf) {
@@ -90,8 +90,8 @@ export class TreeInfoElement extends HTMLElement {
                                     bubbles: true,
                                 }),
                             );
-                            // We don't want these clicks to also trigger a cell click
-                            ev.stopPropagation();
+                            // Tell the cell to not also trigger a cell click
+                            ev.preventDefault();
                         }
                     };
                 } else {
