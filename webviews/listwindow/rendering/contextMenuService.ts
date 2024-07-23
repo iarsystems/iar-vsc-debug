@@ -24,7 +24,7 @@ export class ContextMenuService {
         private readonly messageService: MessageService,
     ) {
         appElement.addEventListener("click", () => this.closeContextMenu());
-        window.addEventListener("blur", () => this.closeContextMenu());
+        // window.addEventListener("blur", () => this.closeContextMenu());
 
         this.messageService.addMessageHandler(msg => {
             if (msg.subject === "contextMenuReply") {
@@ -82,6 +82,7 @@ export class ContextMenuService {
                     };
                 },
             };
+            this.element?.beforeOpen();
             FloatingUi.computePosition(cursorElem, this.element, {
                 placement: "right-start",
                 middleware: [FloatingUi.flip(), FloatingUi.shift()],
@@ -145,6 +146,12 @@ function toTree(items: MenuItem[]): MenuItemTree[] {
 class ContextMenuElement extends HTMLElement {
     items: MenuItemTree[] = [];
 
+    // Ensures that the menu's size is calculated. Should be called before
+    // calculating the menu's position.
+    beforeOpen() {
+        this.style.display = "block";
+    }
+
     open(x: number, y: number) {
         Object.assign(this.style, {
             left: `${x}px`,
@@ -165,6 +172,7 @@ class ContextMenuElement extends HTMLElement {
         this.classList.add(Styles.self);
         this.style.opacity = "0";
         this.style.visibility = "hidden";
+        this.style.display = "none";
 
         const list = document.createElement("div");
         list.classList.add(Styles.menu);
@@ -234,6 +242,7 @@ class ContextMenuItemElement extends HTMLElement {
                 this.appendChild(subMenu);
 
                 this.onmouseenter = () => {
+                    subMenu.beforeOpen();
                     FloatingUi.computePosition(this, subMenu, {
                         placement: "right-start",
                         middleware: [FloatingUi.flip(), FloatingUi.shift()],
