@@ -95,10 +95,12 @@ function getBaseParameters(): RenderParameters {
             showGrid: true,
             showHeader: true,
         }),
-        selection: new SelRange({
-            first: new Int64(-1),
-            last: new Int64(-1),
-        }),
+        selection: [
+            new SelRange({
+                first: new Int64(-1),
+                last: new Int64(-1),
+            }),
+        ],
     };
 
     return params;

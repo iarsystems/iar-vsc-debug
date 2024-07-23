@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { createCustomEvent } from "../../events";
-import { ColumnResizeMode } from "../../protocol";
+import { ColumnResizeMode, Serializable } from "../../protocol";
 import { ResizeHandleElement } from "./resizeHandle";
 import { customElement } from "../utils";
 import { Column } from "../../thrift/listwindow_types";
@@ -39,7 +39,7 @@ export namespace ColumnClickedEvent {
 export class HeaderElement extends HTMLElement {
     private static readonly MIN_COL_WIDTH = 25;
 
-    columns: Array<Column> = [];
+    columns: Serializable<Column>[] = [];
     columnWidths: number[] = [];
     clickable = false;
     resizeMode: ColumnResizeMode = "fixed";

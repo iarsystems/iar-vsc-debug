@@ -7,6 +7,7 @@ import {
     ColumnResizeMode,
     ExtensionMessage,
     RenderParameters,
+    Serializable,
 } from "./protocol";
 import { GridElement } from "./rendering/grid";
 import { TooltipService } from "./rendering/tooltipService";
@@ -30,7 +31,7 @@ provideVSCodeDesignSystem().register(vsCodeTextField());
  */
 class ListwindowController {
     private readonly persistedState: PersistedState;
-    private renderParams: RenderParameters | undefined = undefined;
+    private renderParams: Serializable<RenderParameters> | undefined = undefined;
     private resizeMode: ColumnResizeMode = "fixed";
 
     private readonly messageService: MessageService;

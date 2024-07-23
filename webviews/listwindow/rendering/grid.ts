@@ -2,12 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { ColumnResizeMode, RenderParameters } from "../protocol";
+import { ColumnResizeMode, RenderParameters, Serializable } from "../protocol";
 import { HeaderElement } from "./header/header";
 import { RowElement } from "./row";
 import { HoverService } from "./hoverService";
 import { createCustomEvent } from "../events";
-import { customElement } from "./utils";
+import { customElement, toBigInt } from "./utils";
 import { CellElement } from "./cell/cell";
 import { DragDropService } from "./dragDropService";
 import { Target } from "../thrift/listwindow_types";
@@ -19,7 +19,7 @@ import { SharedStyles } from "./styles/sharedStyles";
  */
 @customElement("listwindow-grid")
 export class GridElement extends HTMLElement {
-    data?: RenderParameters = undefined;
+    data?: Serializable<RenderParameters> = undefined;
     initialColumnWidths: number[] | undefined = undefined;
     resizeMode: ColumnResizeMode = "fixed";
 
@@ -67,20 +67,19 @@ export class GridElement extends HTMLElement {
         }
 
         // Create body
+        const ranges = this.data.selection.map(range => {
+            return {
+                first: toBigInt(range.first),
+                last: toBigInt(range.last),
+            };
+        });
         for (const [y, row] of this.data.rows.entries()) {
             const rowElem = new RowElement();
             rowElem.row = row;
             rowElem.index = y;
-            // TODO: fix
-            rowElem.selected =
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                this.data.selection.first.buffer.data[7]! <= y &&
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                this.data.selection.last.buffer.data[7]! >= y;
+            rowElem.selected = ranges.some(
+                range => range.first <= y && range.last >= y,
+            );
             rowElem.addFillerCell = this.resizeMode === "fixed";
             rowElem.hoverService = this.hoverService;
             rowElem.dragDropService = this.dragDropService;

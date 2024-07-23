@@ -11,6 +11,7 @@ import { SharedStyles } from "../styles/sharedStyles";
 import { customElement } from "../utils";
 import { CellBordersElement } from "./cellBorders";
 import { TreeInfoElement } from "./treeInfo";
+import { Serializable } from "../../protocol";
 
 export interface CellPosition {
     col: number;
@@ -76,7 +77,7 @@ export class CellElement extends HTMLElement {
     static readonly ATTR_ROW = "row";
 
     // This may be undefined for empty "filler" cells
-    cell?: Cell = undefined;
+    cell?: Serializable<Cell> = undefined;
     /** Should be set on the first cell of a row to render indentation and expand/collapse icon */
     treeinfo: string | undefined = undefined;
     position: CellPosition = { col: -1, row: -1 };

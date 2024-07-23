@@ -8,20 +8,33 @@ import { Column, ListSpec, Row, SelRange, SelectionFlags } from "./thrift/listwi
 
 /**
  * This file defines the "protocol" used between a listwindow and the view
- * provider running in the extension. Note that all message types must be
- * JSON-serializable (the Int64 type used by thrift is NOT JSON-serializable).
+ * provider running in the extension.
  */
+
+// eslint-disable-next-line @typescript-eslint/ban-types
+type Unserializable = Function | bigint | symbol;
+/**
+ * Recursively strips everything that is not JSON-serializable from T (most
+ * notable all functions/methods). This is to let us use thrift types in the
+ * protocol while ensuring that we do not use any functions that do not exist
+ * on the deserialized objects.
+ */
+export type Serializable<T> = T extends (infer U)[]
+    ? Serializable<U>[]
+    : T extends object
+        ? { [K in keyof T as T[K] extends Unserializable ? never : K]: Serializable<T[K]> }
+        : T;
 
 /**
  * Everything needed to render a listwindow
  */
-// TODO: The thrift types are not fully serializable (e.g. Int64 is problematic)
-export interface RenderParameters {
+export type RenderParameters = Serializable<{
     rows: Row[];
     listSpec: ListSpec;
     columnInfo: Column[];
-    selection: SelRange;
-}
+    selection: SelRange[];
+}>;
+
 
 /**
  * Controls whether to auto-fill the grid to the width of the view, see the
@@ -36,7 +49,7 @@ export type ExtensionMessage =
   | { subject: "render", params: RenderParameters, ensureRowVisible?: number } // Render the given data
   | { subject: "setResizeMode", mode: ColumnResizeMode }
   | { subject: "dumpHTML" } // Send a message back with the current full HTML of the view (useful for testing)
-  | { subject: "contextMenuReply", menu: MenuItem[] }
+  | { subject: "contextMenuReply", menu: Serializable<MenuItem>[] }
   | { subject: "tooltipReply", text?: string }
   | { subject: "editableStringReply", text: string, col: number, row: number };
 

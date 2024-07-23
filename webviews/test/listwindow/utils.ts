@@ -87,10 +87,10 @@ export namespace TestUtils {
                 showGrid: true,
                 showHeader: true,
             }),
-            selection: new SelRange({
+            selection: [new SelRange({
                 first: new Int64(-1),
                 last: new Int64(-1),
-            }),
+            })],
         };
         params.rows = generateRows(numRows);
 

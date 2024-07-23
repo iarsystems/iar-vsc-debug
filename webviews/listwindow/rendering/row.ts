@@ -11,6 +11,7 @@ import { HoverService } from "./hoverService";
 import { Theming } from "./styles/theming";
 import { customElement } from "./utils";
 import { SharedStyles } from "./styles/sharedStyles";
+import { Serializable } from "../protocol";
 
 /**
  * A non-header row in a listwindow. This handles setting outlines and
@@ -18,7 +19,7 @@ import { SharedStyles } from "./styles/sharedStyles";
  */
 @customElement("listwindow-row")
 export class RowElement extends HTMLElement {
-    row?: Row = undefined;
+    row?: Serializable<Row> = undefined;
     index = -1;
     selected = false;
     addFillerCell = false;
@@ -111,11 +112,11 @@ namespace Styles {
             ${CellBorderVariables.StyleRight}: var(${Theming.Variables.ListSelectionOutlineStyle});
             ${CellBorderVariables.ColorRight}: var(${Theming.Variables.ListSelectionOutlineColor}, var(${Theming.Variables.ListSelectionBg}));
         }
-        /* Remove adjacent borders of non-selected rows */
-        &:not(.selected-row):has(+&.selected-row)>* {
+        /* Remove adjacent borders of other rows */
+        &:has(+&.selected-row)>* {
             ${CellBorderVariables.StyleBottom}: none;
         }
-        &:is(.selected-row)+&:not(.selected-row)>* {
+        &:is(.selected-row)+&>* {
             ${CellBorderVariables.StyleTop}: none;
         }
 

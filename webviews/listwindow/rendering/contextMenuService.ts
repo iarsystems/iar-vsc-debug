@@ -10,6 +10,7 @@ import { CellRightClickedEvent } from "./cell/cell";
 import { SharedStyles } from "./styles/sharedStyles";
 import { customElement } from "./utils";
 import * as FloatingUi from "@floating-ui/dom";
+import { Serializable } from "../protocol";
 
 interface PendingContextMenu {
     position: { x: number; y: number };
@@ -44,7 +45,7 @@ export class ContextMenuService {
         });
     }
 
-    private resolvePendingContextMenu(menuItems: MenuItem[]) {
+    private resolvePendingContextMenu(menuItems: Serializable<MenuItem>[]) {
         if (this.element) {
             document.body.removeChild(this.element);
             this.element = undefined;
@@ -117,7 +118,7 @@ interface MenuItemTree {
     children: MenuItemTree[];
 }
 
-function toTree(items: MenuItem[]): MenuItemTree[] {
+function toTree(items: Serializable<MenuItem>[]): MenuItemTree[] {
     const result: MenuItemTree[] = [];
 
     while (true) {

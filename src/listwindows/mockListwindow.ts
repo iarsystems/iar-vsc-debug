@@ -18,7 +18,7 @@ import {
     TextStyle,
 } from "iar-vsc-common/thrift/bindings/listwindow_types";
 import Int64 = require("node-int64");
-import { MenuItem } from "../../webviews/listwindow/thrift/listwindow_types";
+import { MenuItem, SelectionFlags } from "../../webviews/listwindow/thrift/listwindow_types";
 import { ListwindowViewProvider } from "./listwindowViewProvider";
 
 /**
@@ -62,7 +62,12 @@ export class MockListwindow implements vscode.Disposable {
             case "cellLeftClicked":
                 this.view.postMessageToView({
                     subject: "render",
-                    params: getMockRenderParams(msg.row),
+                    params: getMockRenderParams(
+                        msg.row,
+                        msg.flags === SelectionFlags.kAdd
+                            ? msg.row + 2
+                            : msg.row,
+                    ),
                     ensureRowVisible: msg.row,
                 });
                 break;
@@ -220,7 +225,7 @@ export class MockListwindow implements vscode.Disposable {
     }
 }
 
-function getMockRenderParams(selectedRow = 1) {
+function getMockRenderParams(selectionStart = 1, selectionEnd = selectionStart) {
     const format = new Format();
     format.align = Alignment.kLeft;
     format.style = TextStyle.kProportionalPlain;
@@ -292,7 +297,7 @@ function getMockRenderParams(selectedRow = 1) {
             }),
         ],
         listSpec: new ListSpec(),
-        selection: new SelRange(),
+        selection: [],
     };
     params.listSpec.showHeader = true;
     params.listSpec.showGrid = true;
@@ -342,7 +347,9 @@ function getMockRenderParams(selectedRow = 1) {
             treeinfo: "."
         }),
     );
-    params.selection.first = new Int64(selectedRow);
-    params.selection.last = new Int64(selectedRow);
+    params.selection.push(new SelRange({
+        first: new Int64(selectionStart),
+        last: new Int64(selectionEnd),
+    }));
     return params;
 }
