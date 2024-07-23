@@ -21,6 +21,7 @@ export class RowElement extends HTMLElement {
     row?: Row = undefined;
     index = -1;
     selected = false;
+    addFillerCell = false;
     dragDropService: DragDropService | undefined = undefined;
 
     hoverService: HoverService | undefined = undefined;
@@ -48,6 +49,11 @@ export class RowElement extends HTMLElement {
             cellElem.dragDropService = this.dragDropService;
 
             this.appendChild(cellElem);
+        }
+        if (this.addFillerCell) {
+            const filler = new CellElement();
+            filler.position.row = this.index;
+            this.appendChild(filler);
         }
 
         if (this.selected) {

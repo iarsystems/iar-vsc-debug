@@ -54,25 +54,6 @@ export class GridElement extends HTMLElement {
         grid.classList.add(Styles.grid);
         this.appendChild(grid);
 
-        this.onclick = (ev: MouseEvent) => {
-            // Any click that is not on a cell/header will be on the backdrop
-            // or the grid's padding
-            if (ev.target === this || ev.target === grid) {
-                this.dispatchEvent(
-                    createCustomEvent("cell-clicked", {
-                        detail: {
-                            col: -1,
-                            row: -1,
-                            isDoubleClick: ev.detail === 2,
-                            ctrlPressed: false,
-                            shiftPressed: false,
-                        },
-                        bubbles: true,
-                    }),
-                );
-            }
-        };
-
         // Create header
         const header = new HeaderElement();
         header.columns = this.data.columnInfo;
@@ -100,10 +81,32 @@ export class GridElement extends HTMLElement {
                 // @ts-ignore
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 this.data.selection.last.buffer.data[7]! >= y;
+            rowElem.addFillerCell = this.resizeMode === "fixed";
             rowElem.hoverService = this.hoverService;
             rowElem.dragDropService = this.dragDropService;
             grid.appendChild(rowElem);
         }
+
+        // The rest of the vertical space is taken up by a filler element that
+        // can be clicked to deselect everything
+        const fillerBottom = document.createElement("div");
+        fillerBottom.classList.add(Styles.fillerBottom);
+        this.appendChild(fillerBottom);
+        fillerBottom.onclick = (ev: MouseEvent) => {
+            this.dispatchEvent(
+                createCustomEvent("cell-clicked", {
+                    detail: {
+                        col: -1,
+                        row: -1,
+                        isDoubleClick: ev.detail === 2,
+                        ctrlPressed: false,
+                        shiftPressed: false,
+                    },
+                    bubbles: true,
+                }),
+            );
+        };
+
     }
 
     override oncontextmenu = (ev: MouseEvent) => {
@@ -153,16 +156,22 @@ export class GridElement extends HTMLElement {
 namespace Styles {
     export const self = css({
         height: "100%",
-        display: "block",
+        display: "flex",
+        flexDirection: "column",
     });
     export const fillWidth = css({
         width: "100%",
+        overflowX: "hidden",
     });
     export const grid = css({
         // The grid-template-columns are set by the header element
         display: "grid",
-        // Always add some space below the table that we can press to
-        // deselect everything
-        paddingBottom: "10px",
+        flex: "0 0 auto",
+    });
+    export const fillerBottom = css({
+        // We always want _some_ filler at the bottom, so there's an easy way to
+        // deselect everything.
+        height: "10px",
+        flex: "1 0 auto",
     });
 }

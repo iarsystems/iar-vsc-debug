@@ -75,6 +75,7 @@ export class CellElement extends HTMLElement {
     static readonly ATTR_COL = "column";
     static readonly ATTR_ROW = "row";
 
+    // This may be undefined for empty "filler" cells
     cell?: Cell = undefined;
     /** Should be set on the first cell of a row to render indentation and expand/collapse icon */
     treeinfo: string | undefined = undefined;
@@ -89,9 +90,6 @@ export class CellElement extends HTMLElement {
     connectedCallback() {
         this.classList.add(Styles.self);
 
-        if (!this.cell) {
-            return;
-        }
         this.setAttribute(CellElement.ATTR_COL, this.position.col.toString());
         this.setAttribute(CellElement.ATTR_ROW, this.position.row.toString());
 
@@ -99,6 +97,12 @@ export class CellElement extends HTMLElement {
         this.content = document.createElement("div");
         this.content.classList.add(Styles.content);
         this.appendChild(this.content);
+
+        this.appendChild(new CellBordersElement);
+
+        if (!this.cell) {
+            return;
+        }
 
         if (this.treeinfo) {
             const treeInfoElem = new TreeInfoElement();
@@ -112,7 +116,6 @@ export class CellElement extends HTMLElement {
         label.textContent = this.cell.text;
         this.content.appendChild(label);
 
-        this.appendChild(new CellBordersElement);
 
         // Add event handlers
         const cellId = `${this.position.col},${this.position.row}`;

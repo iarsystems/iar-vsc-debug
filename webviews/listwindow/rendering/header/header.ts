@@ -108,6 +108,11 @@ export class HeaderElement extends HTMLElement {
             }
         }
 
+        if (this.resizeMode === "fixed") {
+            // This is a filler column that takes up the remaining space
+            this.appendChild(document.createElement("span"));
+        }
+
         this.applyColumnWidths(this.columnWidths);
 
         if (this.resizeMode === "fit") {
@@ -121,6 +126,12 @@ export class HeaderElement extends HTMLElement {
         for (const width of widthsInPixels) {
             columnWidths += width + "px ";
         }
+        // In fixed mode, there is a filler column that should take up the
+        // remaining space
+        if (this.resizeMode === "fixed") {
+            columnWidths += "auto";
+        }
+
         if (this.parentElement) {
             this.parentElement.style.gridTemplateColumns = columnWidths;
         }
