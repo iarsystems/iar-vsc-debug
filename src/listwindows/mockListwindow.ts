@@ -195,6 +195,8 @@ export class MockListwindow implements vscode.Disposable {
                 break;
             case "moreLessToggled":
                 break;
+            case "checkboxToggled":
+                break;
             case "getEditableString":
                 this.view.postMessageToView({
                     subject: "editableStringReply",

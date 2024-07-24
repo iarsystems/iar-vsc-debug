@@ -30,6 +30,8 @@ provideVSCodeDesignSystem().register(vsCodeTextField(), vsCodeCheckbox());
  * input events.
  */
 class ListwindowController {
+    private static readonly NO_OVERFLOW_X = css({ overflowX: "hidden" });
+
     private readonly persistedState: PersistedState;
     private renderParams: Serializable<RenderParameters> | undefined = undefined;
     private resizeMode: ColumnResizeMode = "fixed";
@@ -47,6 +49,9 @@ class ListwindowController {
     ) {
         document.body.classList.add(css({
             padding: 0,
+            // For some reason the webview iframe is sometimes one pixel narrower
+            // than its container (rounding error?). This is to get around that.
+            paddingRight: "1px",
             height: "100%",
             color: "var(--vscode-sideBar-foreground, var(--vscode-foreground))",
             scrollbarColor: "var(--vscode-scrollbarSlider-background) transparent",
@@ -182,6 +187,12 @@ class ListwindowController {
         });
 
         Theming.setGridLinesVisible(!!this.renderParams?.listSpec.showGrid);
+
+        if (this.resizeMode === "fit") {
+            document.documentElement.classList.add(ListwindowController.NO_OVERFLOW_X);
+        } else {
+            document.documentElement.classList.remove(ListwindowController.NO_OVERFLOW_X);
+        }
 
         window.scrollTo(scrollX, scrollY);
 

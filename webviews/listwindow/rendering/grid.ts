@@ -161,7 +161,6 @@ namespace Styles {
     });
     export const fillWidth = css({
         width: "100%",
-        overflowX: "hidden",
     });
     export const grid = css({
         // The grid-template-columns are set by the header element
