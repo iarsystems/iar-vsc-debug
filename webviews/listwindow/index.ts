@@ -15,7 +15,7 @@ import { PersistedState } from "./state";
 import { SelectionFlags } from "./thrift/listwindow_types";
 import { HoverService } from "./rendering/hoverService";
 import { Theming } from "./rendering/styles/theming";
-import { provideVSCodeDesignSystem, vsCodeTextField } from "@vscode/webview-ui-toolkit";
+import { provideVSCodeDesignSystem, vsCodeCheckbox, vsCodeTextField } from "@vscode/webview-ui-toolkit";
 import { CellEditService } from "./rendering/cell/cellEditService";
 import { DragDropService } from "./rendering/dragDropService";
 import { ContextMenuService } from "./rendering/contextMenuService";
@@ -23,7 +23,7 @@ import { MessageService } from "./messageService";
 import { KeyboardInput } from "./keyboardInput";
 import { css } from "@emotion/css";
 
-provideVSCodeDesignSystem().register(vsCodeTextField());
+provideVSCodeDesignSystem().register(vsCodeTextField(), vsCodeCheckbox());
 
 /**
  * The main class, which orchestrates rendering and is where we handle most
@@ -168,6 +168,12 @@ class ListwindowController {
         grid.addEventListener("more-less-toggled", ev => {
             this.messageService.sendMessage({
                 subject: "moreLessToggled",
+                row: ev.detail.row,
+            });
+        });
+        grid.addEventListener("checkbox-toggled", ev => {
+            this.messageService.sendMessage({
+                subject: "checkboxToggled",
                 row: ev.detail.row,
             });
         });

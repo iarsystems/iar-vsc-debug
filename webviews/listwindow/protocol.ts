@@ -67,6 +67,7 @@ export type ViewMessage =
   | { subject: "getTooltip", col: number, row: number } // The user is hovering a cell. The extension should reply with "tooltipReply"
   | { subject: "rowExpansionToggled", row: number } // The user pressed an 'expand' or 'collapse' button
   | { subject: "moreLessToggled", row: number } // The user pressed a 'more' or 'less' siblings button
+  | { subject: "checkboxToggled", row: number }
   // The user wants to edit a cell, reply with "editableStringReply" using the value that should be shown in the text field
   | { subject: "getEditableString", col: number, row: number }
   | { subject: "cellEdited", col: number, row: number, newValue: string } // The user has changed the value of a cell

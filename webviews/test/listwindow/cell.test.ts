@@ -159,4 +159,45 @@ suite("Listwindow cells", () => {
         }
     });
 
+    test("Renders checkboxes", async() => {
+        const { api, dom } = await setupTestEnvironment();
+
+        const renderParams = TestUtils.generateRenderParameters(2);
+        renderParams.listSpec.showCheckBoxes = true;
+        renderParams.rows[0]!.isChecked = false;
+        renderParams.rows[1]!.isChecked = true;
+
+        await TestUtils.render(api, renderParams);
+
+        for (let row = 0; row < 2; row++) {
+            const cell = dom.window.document.querySelector(
+                `[column="0"][row="${row}"]`,
+            );
+            Assert(cell);
+            const checkbox = cell.querySelector("vscode-checkbox");
+            Assert(checkbox);
+            Assert("checked" in checkbox);
+            Assert.strictEqual(checkbox.checked, renderParams.rows[row]?.isChecked);
+        }
+    });
+
+    test("Can click checkbox", async() => {
+        const { api, dom, user } = await setupTestEnvironment();
+
+        const renderParams = TestUtils.generateRenderParameters(2);
+        renderParams.listSpec.showCheckBoxes = true;
+
+        await TestUtils.render(api, renderParams);
+
+        const cell = dom.window.document.querySelector(
+            `[column="0"][row="1"]`,
+        );
+        Assert(cell);
+        const checkbox = cell.querySelector("vscode-checkbox");
+        Assert(checkbox);
+        user.click(checkbox);
+        const msg = await api.waitForMessage("checkboxToggled");
+        Assert.strictEqual(msg.row, 1);
+    });
+
 });

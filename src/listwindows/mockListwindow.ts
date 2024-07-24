@@ -262,7 +262,7 @@ function getMockRenderParams(selectionStart = 1, selectionEnd = selectionStart) 
                         drop: Target.kTargetRow,
                     }),
                 ],
-                isChecked: false,
+                isChecked: true,
                 treeinfo: "-",
             }),
         ],
@@ -301,6 +301,7 @@ function getMockRenderParams(selectionStart = 1, selectionEnd = selectionStart) 
     };
     params.listSpec.showHeader = true;
     params.listSpec.showGrid = true;
+    params.listSpec.showCheckBoxes = true;
     params.listSpec.canClickColumns = true;
     for (let i = 0; i < 10; i++) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

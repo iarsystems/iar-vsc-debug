@@ -7,6 +7,7 @@ import {
     CellEditRequestedEvent,
     CellHoveredEvent,
     CellRightClickedEvent,
+    CheckboxToggledEvent,
 } from "./rendering/cell/cell";
 import { MoreLessToggledEvent, RowExpansionToggledEvent } from "./rendering/cell/treeInfo";
 import { ContextMenuItemClickEvent } from "./rendering/contextMenuService";
@@ -37,6 +38,7 @@ interface CustomEventTypeMap {
     "cell-edit-submitted": string,
     "row-expansion-toggled": RowExpansionToggledEvent.Detail;
     "more-less-toggled": MoreLessToggledEvent.Detail;
+    "checkbox-toggled": CheckboxToggledEvent.Detail;
     "context-menu-item-clicked": ContextMenuItemClickEvent.Detail;
 }
 

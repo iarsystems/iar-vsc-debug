@@ -80,6 +80,7 @@ export class GridElement extends HTMLElement {
             rowElem.selected = ranges.some(
                 range => range.first <= y && range.last >= y,
             );
+            rowElem.showCheckBoxes = this.data.listSpec.showCheckBoxes;
             rowElem.addFillerCell = this.resizeMode === "fixed";
             rowElem.hoverService = this.hoverService;
             rowElem.dragDropService = this.dragDropService;

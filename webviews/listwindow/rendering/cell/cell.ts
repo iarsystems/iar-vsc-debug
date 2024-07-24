@@ -12,6 +12,7 @@ import { customElement } from "../utils";
 import { CellBordersElement } from "./cellBorders";
 import { TreeInfoElement } from "./treeInfo";
 import { Serializable } from "../../protocol";
+import { Checkbox } from "@vscode/webview-ui-toolkit";
 
 export interface CellPosition {
     col: number;
@@ -63,6 +64,15 @@ export namespace CellEditRequestedEvent {
     export interface Detail extends CellPosition {
         /**The bounding box of the cell to edit (as returned from getBoundingClientRect) */
         cellBounds: DOMRect;
+
+    }
+}
+
+/** Emitted when the the user clicks a checkbox */
+export type CheckboxToggledEvent = CustomEvent<CheckboxToggledEvent.Detail>;
+export namespace CheckboxToggledEvent {
+    export interface Detail {
+        row: number;
     }
 }
 
@@ -80,6 +90,8 @@ export class CellElement extends HTMLElement {
     cell?: Serializable<Cell> = undefined;
     /** Should be set on the first cell of a row to render indentation and expand/collapse icon */
     treeinfo: string | undefined = undefined;
+    // If undefined, no checkbox is rendered
+    checked: boolean | undefined = undefined;
     position: CellPosition = { col: -1, row: -1 };
     selected = false;
 
@@ -105,11 +117,29 @@ export class CellElement extends HTMLElement {
             return;
         }
 
+        const prefixItems = document.createElement("div");
+        prefixItems.classList.add(Styles.prefixItems);
+        this.content.appendChild(prefixItems);
+
         if (this.treeinfo) {
             const treeInfoElem = new TreeInfoElement();
             treeInfoElem.treeinfo = this.treeinfo;
             treeInfoElem.row = this.position.row;
-            this.content.appendChild(treeInfoElem);
+            prefixItems.appendChild(treeInfoElem);
+        }
+
+        if (this.checked !== undefined) {
+            const checkbox = document.createElement("vscode-checkbox") as Checkbox;
+            checkbox.classList.add(Styles.checkbox);
+            checkbox.checked = this.checked;
+            checkbox.onclick = ev => {
+                ev.preventDefault();
+                this.dispatchEvent(createCustomEvent("checkbox-toggled", {
+                    detail: { row: this.position.row },
+                    bubbles: true,
+                }));
+            };
+            prefixItems.appendChild(checkbox);
         }
 
         const label = document.createElement("div");
@@ -248,12 +278,19 @@ namespace Styles {
     export const content = css({
         height: "22px",
         lineHeight: "22px",
-        // We use 'grid' to allow a checkbox or expand/collapse button at
-        // the start, with the label taking up the rest of the space.
+        // We use 'grid' to allow treeinfo/checkbox items at the start, with the
+        // label taking up the rest of the space.
         display: "grid",
         gridTemplateColumns: "max-content auto",
         alignItems: "center",
         userSelect: "none",
+    });
+    export const prefixItems = css({
+        display: "flex",
+        height: "100%",
+    });
+    export const checkbox = css({
+        margin: 0,
     });
     export const label = css([
         {

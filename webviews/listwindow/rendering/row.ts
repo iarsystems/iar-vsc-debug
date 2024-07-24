@@ -22,6 +22,7 @@ export class RowElement extends HTMLElement {
     row?: Serializable<Row> = undefined;
     index = -1;
     selected = false;
+    showCheckBoxes = false;
     addFillerCell = false;
     dragDropService: DragDropService | undefined = undefined;
 
@@ -43,6 +44,9 @@ export class RowElement extends HTMLElement {
             cellElem.cell = cell;
             if (x === 0) {
                 cellElem.treeinfo = this.row.treeinfo;
+                if (this.showCheckBoxes) {
+                    cellElem.checked = this.row.isChecked;
+                }
             }
             cellElem.selected = this.selected;
             cellElem.position = { col: x, row: this.index };

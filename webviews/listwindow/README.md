@@ -56,6 +56,7 @@ we can't *call* the thrift code, but we can use its type definitions.
 * Show/hide grid
 * Dim selection when losing focus
 * Drag-n-drop feedback
+* Checkboxes
 
 ### Rendering Todo
 
