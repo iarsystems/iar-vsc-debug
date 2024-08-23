@@ -74,8 +74,9 @@ export type ViewMessage =
   | { subject: "localDrop", srcCol: number, srcRow: number, dstCol: number, dstRow: number } // The user dropped the cell srcCol/srcRow at dstCol/dstRow
   | { subject: "externalDrop", col: number, row: number, droppedText: string } // The user dropped some text at the given position
   | { subject: "contextItemClicked", command: number } // The user clicked a context menu item
-  | { subject: "keyNavigationPressed", operation: KeyNavOperation }
-  | { subject: "scrollOperationPressed", operation: ScrollOperation };
+  | { subject: "keyNavigationPressed", operation: KeyNavOperation, rowsInPage: number }
+  | { subject: "scrollOperationPressed", operation: ScrollOperation, firstRow: number, lastRow: number }
+  | { subject: "keyPressed", code: number, repeat: number };
 
 
 /**

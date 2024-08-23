@@ -5,16 +5,14 @@
 import { TextField } from "@vscode/webview-ui-toolkit";
 import { createCustomEvent } from "../../events";
 import { customElement } from "../utils";
-import { CellEditRequestedEvent, CellPosition } from "./cell";
+import {  CellElement, CellPosition } from "./cell";
 import { MessageService } from "../../messageService";
 
 interface ActiveCellEdit {
     textField: TextFieldElement;
-    origin: CellEditRequestedEvent;
 }
 
 export class CellEditService {
-    private pendingEdit: CellEditRequestedEvent | undefined = undefined;
     private activeCellEdit: ActiveCellEdit | undefined = undefined;
 
     constructor(private readonly messageService: MessageService) {
@@ -28,29 +26,30 @@ export class CellEditService {
         });
     }
 
-    requestCellEdit(event: CellEditRequestedEvent) {
-        this.pendingEdit = event;
+    requestCellEdit(position: CellPosition) {
         this.messageService.sendMessage({
             subject: "getEditableString",
-            col: event.detail.col,
-            row: event.detail.row,
+            col: position.col,
+            row: position.row,
         });
     }
 
     private setEditableStringForPendingEdit(text: string, position: CellPosition) {
-        if (
-            position.col !== this.pendingEdit?.detail.col ||
-            position.row !== this.pendingEdit?.detail.row
-        ) {
+        if (position.col < 0 || position.row < 0) {
             return;
         }
+        const cellElem = CellElement.lookupCell(position);
+        if (!cellElem) {
+            return;
+        }
+
         this.cancelCellInput();
 
 
         const textField = new TextFieldElement;
         textField.defaultValue = text;
 
-        const rect = this.pendingEdit.detail.cellBounds;
+        const rect = cellElem.getBoundingClientRect();
 
         textField.style.position = "absolute";
         // The cell bounds are in client (i.e. "viewport") coordinates, but we
@@ -71,8 +70,8 @@ export class CellEditService {
             if (this.activeCellEdit) {
                 this.messageService.sendMessage({
                     subject: "cellEdited",
-                    col: this.activeCellEdit.origin.detail.col,
-                    row: this.activeCellEdit.origin.detail.row,
+                    col: position.col,
+                    row: position.row,
                     newValue: ev.detail,
 
                 });
@@ -82,9 +81,7 @@ export class CellEditService {
 
         this.activeCellEdit = {
             textField,
-            origin: this.pendingEdit,
         };
-        this.pendingEdit = undefined;
     }
 
     private cancelCellInput() {

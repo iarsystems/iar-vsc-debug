@@ -74,7 +74,7 @@
 				"${workspaceFolder}/out/webviews/**/*.test.js",
 			],
 			"outFiles": [ "${workspaceFolder}/out/**/*.js" ],
-			"preLaunchTask": "npm: webview-tests-compile",
+			"preLaunchTask": "npm: test-compile",
             "presentation": {
                 "group": "Tests",
             },

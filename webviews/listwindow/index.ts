@@ -22,6 +22,7 @@ import { ContextMenuService } from "./rendering/contextMenuService";
 import { MessageService } from "./messageService";
 import { KeyboardInput } from "./keyboardInput";
 import { css } from "@emotion/css";
+import { toBigInt } from "./rendering/utils";
 
 provideVSCodeDesignSystem().register(vsCodeTextField(), vsCodeCheckbox());
 
@@ -42,6 +43,8 @@ class ListwindowController {
     private readonly contextMenuService;
     private readonly cellEditService: CellEditService;
     private readonly dragDropService: DragDropService;
+
+    private grid: GridElement | undefined = undefined;
 
     constructor(
         private readonly appElement: HTMLElement,
@@ -79,7 +82,23 @@ class ListwindowController {
         window.addEventListener("focus", () => Theming.setViewHasFocus(true));
         window.addEventListener("blur", () => Theming.setViewHasFocus(false));
 
-        KeyboardInput.initialize(this.messageService);
+        KeyboardInput.initialize(this.messageService, () =>
+            this.grid?.getRangeOfVisibleRows(),
+        );
+        KeyboardInput.onCellEditRequested = () => {
+            if (this.renderParams && this.renderParams.selection.length === 1) {
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                const sel = this.renderParams.selection[0]!;
+                const start = toBigInt(sel.first);
+                const end = toBigInt(sel.last);
+                if (start === end) {
+                    this.cellEditService.requestCellEdit({
+                        col: -1,
+                        row: Number(start),
+                    });
+                }
+            }
+        };
 
         this.messageService.addMessageHandler(msg => this.handleMessage(msg));
         this.messageService.sendMessage({ subject: "loaded" });
@@ -114,29 +133,29 @@ class ListwindowController {
         const scrollY = window.scrollY;
 
         // Replace all contents of the appElement
-        const grid = new GridElement();
-        grid.data = this.renderParams;
-        grid.resizeMode = this.resizeMode;
+        this.grid = new GridElement();
+        this.grid.data = this.renderParams;
+        this.grid.resizeMode = this.resizeMode;
         if (this.persistedState.columnWidths) {
-            grid.initialColumnWidths = this.persistedState.columnWidths;
+            this.grid.initialColumnWidths = this.persistedState.columnWidths;
         }
-        grid.hoverService = this.hoverService;
-        grid.dragDropService = this.dragDropService;
+        this.grid.hoverService = this.hoverService;
+        this.grid.dragDropService = this.dragDropService;
 
-        this.appElement.replaceChildren(grid);
+        this.appElement.replaceChildren(this.grid);
 
         // Attach event listeners to the new elements
-        grid.addEventListener("columns-resized", ev => {
+        this.grid.addEventListener("columns-resized", ev => {
             this.persistedState.columnWidths = ev.detail.newColumnWidths;
         });
-        grid.addEventListener("column-clicked", ev => {
+        this.grid.addEventListener("column-clicked", ev => {
             this.messageService.sendMessage({
                 subject: "columnClicked",
                 col: ev.detail.col,
             });
         });
 
-        grid.addEventListener("cell-clicked", ev => {
+        this.grid.addEventListener("cell-clicked", ev => {
             if (ev.detail.isDoubleClick) {
                 this.messageService.sendMessage({
                     subject: "cellDoubleClicked",
@@ -158,32 +177,32 @@ class ListwindowController {
                 });
             }
         });
-        grid.addEventListener("cell-right-clicked", ev => {
+        this.grid.addEventListener("cell-right-clicked", ev => {
             this.contextMenuService.requestContextMenu(ev);
         });
-        grid.addEventListener("cell-hovered", ev => {
+        this.grid.addEventListener("cell-hovered", ev => {
             this.tooltipService.requestTooltip(ev);
         });
-        grid.addEventListener("row-expansion-toggled", ev => {
+        this.grid.addEventListener("row-expansion-toggled", ev => {
             this.messageService.sendMessage({
                 subject: "rowExpansionToggled",
                 row: ev.detail.row,
             });
         });
-        grid.addEventListener("more-less-toggled", ev => {
+        this.grid.addEventListener("more-less-toggled", ev => {
             this.messageService.sendMessage({
                 subject: "moreLessToggled",
                 row: ev.detail.row,
             });
         });
-        grid.addEventListener("checkbox-toggled", ev => {
+        this.grid.addEventListener("checkbox-toggled", ev => {
             this.messageService.sendMessage({
                 subject: "checkboxToggled",
                 row: ev.detail.row,
             });
         });
-        grid.addEventListener("cell-edit-requested", ev => {
-            this.cellEditService.requestCellEdit(ev);
+        this.grid.addEventListener("cell-edit-requested", ev => {
+            this.cellEditService.requestCellEdit(ev.detail);
         });
 
         Theming.setGridLinesVisible(!!this.renderParams?.listSpec.showGrid);
@@ -197,7 +216,7 @@ class ListwindowController {
         window.scrollTo(scrollX, scrollY);
 
         if (ensureRowVisible !== undefined) {
-            grid.ensureRowVisible(ensureRowVisible);
+            this.grid.ensureRowVisible(ensureRowVisible);
         }
     }
 }

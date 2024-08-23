@@ -53,4 +53,25 @@ suite("Listwindow keyboard input", () => {
             Assert.strictEqual(msg.operation, expectedOp);
         }
     });
+
+    test("Handles arbitrary keys", async() => {
+        const { api, user } = await setupTestEnvironment();
+
+        const renderParams = TestUtils.generateRenderParameters();
+        await TestUtils.render(api, renderParams);
+
+        const keysToTest = new Map([
+            ["KeyA", "a".charCodeAt(0)],
+            ["Digit1", "1".charCodeAt(0)],
+            ["Delete", 0x7f],
+            ["Backspace", 0x8],
+            ["Space", " ".charCodeAt(0)],
+        ]);
+        for (const [key, code] of keysToTest.entries()) {
+            const msgPromise = api.waitForMessage("keyPressed");
+            await user.keyboard(`[${key}]`);
+            const msg = await msgPromise;
+            Assert.strictEqual(msg.code, code);
+        }
+    });
 });

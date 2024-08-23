@@ -3,10 +3,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import * as Assert from "assert";
+import Int64 = require("node-int64");
 import { fireEvent, queries } from "@testing-library/dom";
 import { TestUtils } from "./utils";
 import { setupTestEnvironment } from "./testEnvironment";
 import { ViewMessage } from "../../listwindow/protocol";
+import { SelRange } from "iar-vsc-common/thrift/bindings/listwindow_types";
 
 suite("Listwindow cells", () => {
     test("Renders cells", async() => {
@@ -61,7 +63,7 @@ suite("Listwindow cells", () => {
         Assert.strictEqual(msg.col, 1);
     });
 
-    test("Can edit cells", async() => {
+    test("Can edit cells by clicking", async() => {
         const { api, dom, user } = await setupTestEnvironment();
 
         const renderParams = TestUtils.generateRenderParameters(1);
@@ -92,7 +94,35 @@ suite("Listwindow cells", () => {
         const editMsg = await api.waitForMessage("cellEdited");
         Assert.strictEqual(editMsg.row, 0);
         Assert.strictEqual(editMsg.col, 1);
+    });
 
+    test("Can edit cells by pressing 'insert'", async() => {
+        const { api, dom, user } = await setupTestEnvironment();
+
+        const renderParams = TestUtils.generateRenderParameters(2);
+        renderParams.rows[1]!.cells[1]!.format.editable = true;
+        renderParams.selection = [new SelRange({
+            first: new Int64(1),
+            last: new Int64(1),
+        })];
+        await TestUtils.render(api, renderParams);
+
+        user.keyboard("{Insert}");
+        const msg = await api.waitForMessage("getEditableString");
+        Assert.strictEqual(msg.row, 1);
+        Assert.strictEqual(msg.col, -1);
+        const editString = "Hello, editstring";
+        api.postMessage({
+            row: msg.row,
+            col: 1,
+            subject: "editableStringReply",
+            text: editString,
+        });
+
+        await TestUtils.findBySelector(
+            dom.window.document.documentElement,
+            `vscode-text-field[current-value="${editString}"] input`,
+        );
     });
 
     test("Renders treeinfo", async() => {

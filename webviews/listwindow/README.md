@@ -62,7 +62,6 @@ we can't *call* the thrift code, but we can use its type definitions.
 
 * Text color & background color
 * Dim display when frozen
-* Checkboxes
 * Icons
 * Progress-bars inside cells
 * Draw "filler" cells to the right and below
@@ -79,11 +78,11 @@ we can't *call* the thrift code, but we can use its type definitions.
 * Context menu
 * Ensure visible
 * Clickable columns
+* Scrolling/navigation (keys, scrollbar, mousewheel, horizontal)
+* Selection update (key navigation)
 
 ### Functional Todo
 
-* Scrolling/navigation (keys, scrollbar, mousewheel, horizontal)
-* Selection update (key navigation)
 * Multiple selection (but no support in model yet)
 * Save/restore state
 * Toolbars
