@@ -125,31 +125,58 @@ export class GridElement extends HTMLElement {
             return;
         }
 
-        const firstRow = this.querySelector(
-            `[${CellElement.ATTR_ROW}="0"]`,
-        );
-        const targetRow = this.querySelector(
-            `[${CellElement.ATTR_ROW}="${row}"]`,
-        );
-        if (!firstRow || !targetRow) {
+        // We use cells rather than rows to calculate Y positions, since rows
+        // use 'display: content' and thus have no bounds in the eyes of the
+        // layout engine.
+        const topmostCell = CellElement.lookupCell({ row: 0, col: 0 });
+        const targetCell = CellElement.lookupCell({ row, col: 0 });
+        if (!topmostCell || !targetCell) {
             return;
         }
         // When calculating scroll position, we consider anything below the
         // start of the first row to be the "viewport" (i.e. we subtract the
         // height of any header from the viewport).
-        const viewportY = firstRow.getBoundingClientRect().top + window.scrollY;
-        const targetBounds = targetRow.getBoundingClientRect();
+        const headerHeight = topmostCell.getBoundingClientRect().top + window.scrollY;
+        const targetBounds = targetCell.getBoundingClientRect();
         const isVisible =
-            targetBounds.top >= viewportY &&
+            targetBounds.top >= headerHeight &&
             targetBounds.bottom <= document.documentElement.clientHeight;
         if (!isVisible) {
             // Place the target row in the middle of the viewport.
             const rowY = targetBounds.top + window.scrollY;
-            const viewportHeight = document.documentElement.clientHeight - viewportY;
+            const viewportHeight = document.documentElement.clientHeight - headerHeight;
             const targetScroll =
-                rowY - viewportY - (viewportHeight / 2 - targetBounds.height / 2);
+                rowY - headerHeight - (viewportHeight / 2 - targetBounds.height / 2);
             window.scrollTo({ behavior: "smooth", top: targetScroll } );
         }
+    }
+
+    getRangeOfVisibleRows(): [number, number] | undefined {
+        const topmostCell = CellElement.lookupCell({ row: 0, col: 0 });
+        if (!topmostCell) {
+            return undefined;
+        }
+
+        // We assume all rows are the same height, and a row's height is the same
+        // as its cells' heights.
+        const rowHeight = topmostCell.getBoundingClientRect().height;
+        const firstVisible = Math.ceil(window.scrollY / rowHeight);
+        // We consider anything below the start of the first row to be the
+        // "viewport" (i.e. we subtract the height of any header from the
+        // viewport).
+        const viewportHeight =
+            document.documentElement.clientHeight -
+            (topmostCell.getBoundingClientRect().top + window.scrollY);
+        // Space taken up by any partially visible row at the top
+        const topMargin = firstVisible * rowHeight - window.scrollY;
+        const numVisible = Math.floor(
+            (viewportHeight - topMargin) / rowHeight,
+        );
+        let lastVisible = firstVisible + numVisible - 1;
+        if (this.data && this.data.rows.length - 1 < lastVisible) {
+            lastVisible = this.data.rows.length;
+        }
+        return [firstVisible, lastVisible];
     }
 }
 

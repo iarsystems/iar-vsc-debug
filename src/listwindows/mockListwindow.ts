@@ -198,6 +198,9 @@ export class MockListwindow implements vscode.Disposable {
             case "checkboxToggled":
                 break;
             case "getEditableString":
+                if (msg.col === -1) {
+                    msg.col = 0;
+                }
                 this.view.postMessageToView({
                     subject: "editableStringReply",
                     text: "Hello Edit",
@@ -214,6 +217,8 @@ export class MockListwindow implements vscode.Disposable {
             case "keyNavigationPressed":
                 break;
             case "scrollOperationPressed":
+                break;
+            case "keyPressed":
                 break;
             default: {
                 // Makes TS check that all message variants are handled

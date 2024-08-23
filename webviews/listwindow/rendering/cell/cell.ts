@@ -61,11 +61,7 @@ export namespace CellHoveredEvent {
 /** Emitted when the the user left clicks an editable cell */
 export type CellEditRequestedEvent = CustomEvent<CellEditRequestedEvent.Detail>;
 export namespace CellEditRequestedEvent {
-    export interface Detail extends CellPosition {
-        /**The bounding box of the cell to edit (as returned from getBoundingClientRect) */
-        cellBounds: DOMRect;
-
-    }
+    export interface Detail extends CellPosition {}
 }
 
 /** Emitted when the the user clicks a checkbox */
@@ -81,10 +77,21 @@ export namespace CheckboxToggledEvent {
  */
 @customElement("listwindow-cell")
 export class CellElement extends HTMLElement {
-    // Attributes set on each cell with its coordinates, to enable using
-    // querySelector to lookup specific cells.
-    static readonly ATTR_COL = "column";
-    static readonly ATTR_ROW = "row";
+    /**
+     * Finds the {@link CellElement} in the DOM with the given position
+     */
+    static lookupCell(pos: CellPosition): CellElement | undefined {
+        const elem = document.querySelector(
+            `[${CellElement.ATTR_ROW}="${pos.row}"][${CellElement.ATTR_COL}="${pos.col}"]`,
+        );
+        if (elem && elem instanceof CellElement) {
+            return elem;
+        }
+        return undefined;
+    }
+    private static readonly ATTR_COL = "column";
+    private static readonly ATTR_ROW = "row";
+
 
     // This may be undefined for empty "filler" cells
     cell?: Serializable<Cell> = undefined;
@@ -98,8 +105,6 @@ export class CellElement extends HTMLElement {
     hoverService: HoverService | undefined = undefined;
     dragDropService: DragDropService | undefined = undefined;
 
-    private content: HTMLElement | undefined = undefined;
-
     connectedCallback() {
         this.classList.add(Styles.self);
 
@@ -107,9 +112,9 @@ export class CellElement extends HTMLElement {
         this.setAttribute(CellElement.ATTR_ROW, this.position.row.toString());
 
         // Add content
-        this.content = document.createElement("div");
-        this.content.classList.add(Styles.content);
-        this.appendChild(this.content);
+        const content = document.createElement("div");
+        content.classList.add(Styles.content);
+        this.appendChild(content);
 
         this.appendChild(new CellBordersElement);
 
@@ -119,7 +124,7 @@ export class CellElement extends HTMLElement {
 
         const prefixItems = document.createElement("div");
         prefixItems.classList.add(Styles.prefixItems);
-        this.content.appendChild(prefixItems);
+        content.appendChild(prefixItems);
 
         if (this.treeinfo) {
             const treeInfoElem = new TreeInfoElement();
@@ -145,7 +150,7 @@ export class CellElement extends HTMLElement {
         const label = document.createElement("div");
         label.classList.add(Styles.label);
         label.textContent = this.cell.text;
-        this.content.appendChild(label);
+        content.appendChild(label);
 
 
         // Add event handlers
@@ -178,7 +183,7 @@ export class CellElement extends HTMLElement {
 
         // Add conditional styles
         if (this.cell.format.editable) {
-            this.content.classList.add(Styles.editable);
+            content.classList.add(Styles.editable);
         }
 
         label.classList.add(
@@ -225,12 +230,11 @@ export class CellElement extends HTMLElement {
             return;
         }
         if (ev.button === 0) {
-            if (this.cell?.format.editable && this.content) {
+            if (this.cell?.format.editable) {
                 this.dispatchEvent(
                     createCustomEvent("cell-edit-requested", {
                         detail: {
                             ...this.position,
-                            cellBounds: this.content.getBoundingClientRect(),
                         },
                         bubbles: true,
                     }),

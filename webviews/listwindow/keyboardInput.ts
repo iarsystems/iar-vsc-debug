@@ -10,14 +10,28 @@ import { KeyNavOperation, ScrollOperation } from "./thrift/listwindow_types";
  * navigate, and sends the appropriate messages to the backend.
  */
 export namespace KeyboardInput {
-    export function initialize(messageService: MessageService) {
+    // eslint-disable-next-line prefer-const
+    export let onCellEditRequested: (() => void) | undefined = undefined;
+
+    /**
+     * Initialized the keyboard listener
+     * @param messageService The service to send key input messages to
+     * @param getRangeOfVisibleRows A function providing the index of the first and last visible rows in the view.
+     */
+    export function initialize(
+        messageService: MessageService,
+        getRangeOfVisibleRows: () => [number, number] | undefined,
+    ) {
         document.body.addEventListener("keydown", ev => {
             if (ev.ctrlKey) {
                 const scrollOp = keyToScrollOp(ev.key);
                 if (scrollOp !== undefined) {
+                    const range = getRangeOfVisibleRows() ?? [-1, -1];
                     messageService.sendMessage({
                         subject: "scrollOperationPressed",
                         operation: scrollOp,
+                        firstRow: range[0],
+                        lastRow: range[1],
                     });
                     ev.preventDefault();
                     return;
@@ -26,16 +40,49 @@ export namespace KeyboardInput {
 
             const keyNavOp = keyToNavigationOp(ev.key);
             if (keyNavOp !== undefined) {
+                const range = getRangeOfVisibleRows();
+                const rowsInPage = range ? range[1] - range[0] + 1 : 0;
                 messageService.sendMessage({
                     subject: "keyNavigationPressed",
                     operation: keyNavOp,
+                    rowsInPage,
                 });
                 ev.preventDefault();
                 return;
             }
 
-            // TODO: handle insert
-            // TODO: handle arbitrary keypresses
+            if (ev.key === "Insert") {
+                onCellEditRequested?.();
+                return;
+            }
+
+            let keyCode: number | undefined = undefined;
+            if (ev.key.length === 1) {
+                keyCode = ev.key.charCodeAt(0);
+            } else {
+                // Some special keys have an ascii representation which we can send.
+                switch (ev.code) {
+                    case "Delete":
+                        keyCode = 0x7f;
+                        break;
+                    case "Backspace":
+                        keyCode = 0x08;
+                        break;
+                    case "Enter":
+                        keyCode = 0x0A;
+                        break;
+                    case "Tab":
+                        keyCode = 0x09;
+                        break;
+                }
+            }
+            if (keyCode !== undefined) {
+                messageService.sendMessage({
+                    subject: "keyPressed",
+                    code: keyCode,
+                    repeat: 1,
+                });
+            }
         });
     }
 
