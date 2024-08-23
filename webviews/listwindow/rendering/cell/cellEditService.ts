@@ -12,6 +12,10 @@ interface ActiveCellEdit {
     textField: TextFieldElement;
 }
 
+/**
+ * Allows editing cell contents by opening a text field above the cell, e.g.
+ * when clicking on it.
+ */
 export class CellEditService {
     private activeCellEdit: ActiveCellEdit | undefined = undefined;
 
@@ -26,6 +30,11 @@ export class CellEditService {
         });
     }
 
+    /**
+     * Requests that a text field is opened for the given cell. Specifying the
+     * column -1 lets the backend choose which column in the given row should
+     * be edited.
+     */
     requestCellEdit(position: CellPosition) {
         this.messageService.sendMessage({
             subject: "getEditableString",

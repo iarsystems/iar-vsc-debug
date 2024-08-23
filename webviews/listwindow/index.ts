@@ -92,6 +92,8 @@ class ListwindowController {
                 const start = toBigInt(sel.first);
                 const end = toBigInt(sel.last);
                 if (start === end) {
+                    // We do not yet know which column to edit. Sending '-1'
+                    // tells the backend to choose which column to edit.
                     this.cellEditService.requestCellEdit({
                         col: -1,
                         row: Number(start),
