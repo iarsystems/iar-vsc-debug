@@ -6,7 +6,7 @@ import { MenuItem, Note, Row, What } from "iar-vsc-common/thrift/bindings/listwi
 import * as ListWindowBackend from "iar-vsc-common/thrift/bindings/ListWindowBackend";
 import * as ListWindowFrontend from "iar-vsc-common/thrift/bindings/ListWindowFrontend";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
-import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
+import { ThriftServiceRegistry } from "iar-vsc-common/thrift/thriftServiceRegistry";
 import { Int64 } from "thrift";
 import { Disposable } from "./utils";
 import { logger } from "@vscode/debugadapter/lib/logger";
@@ -38,12 +38,12 @@ export class ListWindowClient implements Disposable.Disposable {
 
     /**
      * Starts a new ListWindowClient and connects it to the provided backend.
-     * @param serviceMgr The service manager to use to start the service and connect to the backend
+     * @param serviceRegistry The service manager to use to start the service and connect to the backend
      * @param serviceId The name of the backend service
      * @param idColumns The indices of a column or set of columns that uniquely distinguish a row from its siblings. If there is no such set of columns for a window, this class cannot be used for that window
      */
-    static async instantiate(serviceMgr: ThriftServiceManager, serviceId: string, idColumns: number | number[]): Promise<ListWindowClient> {
-        const backend = await serviceMgr.findService(serviceId, ListWindowBackend.Client);
+    static async instantiate(serviceRegistry: ThriftServiceRegistry, serviceId: string, idColumns: number | number[]): Promise<ListWindowClient> {
+        const backend = await serviceRegistry.findService(serviceId, ListWindowBackend.Client);
         if (await backend.service.isSliding()) {
             throw new Error("ListWindowClient does not support sliding windows.");
         }
@@ -54,7 +54,7 @@ export class ListWindowClient implements Disposable.Disposable {
             throw new Error("ListWindowClient requires at least one id column");
         }
         const windowClient = new ListWindowClient(backend, idColumns);
-        const loc = await serviceMgr.startService(serviceId + ".frontend", ListWindowFrontend, windowClient);
+        const loc = await serviceRegistry.startService(serviceId + ".frontend", ListWindowFrontend, windowClient);
         await backend.service.connect(loc);
         await backend.service.show(true);
         return windowClient;

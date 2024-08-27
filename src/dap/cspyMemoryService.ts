@@ -6,7 +6,7 @@ import * as Memory from "iar-vsc-common/thrift/bindings/CSpyMemory";
 import { MEMORY_SERVICE } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { Location, Zone } from "iar-vsc-common/thrift/bindings/shared_types";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
-import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
+import { ThriftServiceRegistry } from "iar-vsc-common/thrift/thriftServiceRegistry";
 import { Disposable } from "./utils";
 
 /**
@@ -16,10 +16,10 @@ import { Disposable } from "./utils";
  * this a namespace of pure functions.
  */
 export class CspyMemoryService implements Disposable.Disposable {
-    static async instantiate(serviceMgr: ThriftServiceManager,
+    static async instantiate(serviceRegistry: ThriftServiceRegistry,
     ): Promise<CspyMemoryService> {
         return new CspyMemoryService(
-            await serviceMgr.findService(MEMORY_SERVICE, Memory.Client),
+            await serviceRegistry.findService(MEMORY_SERVICE, Memory.Client),
         );
     }
 

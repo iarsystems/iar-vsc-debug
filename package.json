@@ -51,7 +51,7 @@
 		"@vscode/webview-ui-toolkit": "^1.4.0",
 		"async-mutex": "^0.3.2",
 		"await-notify": "1.0.1",
-		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#fbe3aae9",
+		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#0b35b639",
 		"thrift": "^0.12.0",
 		"xmlbuilder2": "^3.0.2"
 	},
