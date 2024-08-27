@@ -87,6 +87,7 @@
 		"webpack-watch": "webpack --mode development --watch --config-name extension --config-name webviews",
 		"package": "webpack --mode production --devtool hidden-source-map --config-name extension --config-name webviews",
 		"test-compile": "npm run webpack && tsc -p ./src",
+		"webview-tests-junit": "",
 		"prepare": "husky install"
 	},
 	"main": "./dist/extension",
