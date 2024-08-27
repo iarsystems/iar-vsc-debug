@@ -42,12 +42,14 @@ export class FrontendHandler implements ThriftServiceHandler<Frontend.Client>, D
      * handler.
      * @param eventSink Used to send DAP events to the frontend
      * @param sourceFileMap A set of path mappings/translations to use to resolve nonexistent source files
+     * @param clientSupportsThemes Whether the client can handle the {@link CustomEvent.Names.THEME_REQUESTED} request from the debug adapter
      * @param requestRegistry The registry where this handler should register the DAP requests it can handle
      */
     constructor(
         private readonly eventSink: DapEventSink,
         private readonly sourceFileMap: Record<string, string>,
-        requestRegistry: CommandRegistry<unknown, unknown>
+        private readonly clientSupportsThemes: boolean,
+        requestRegistry: CommandRegistry<unknown, unknown>,
     ) {
         requestRegistry.registerCommandWithTypeCheck(CustomRequest.Names.MESSAGE_BOX_CLOSED, CustomRequest.isMessageBoxClosedArgs,
             args => {
@@ -277,6 +279,10 @@ export class FrontendHandler implements ThriftServiceHandler<Frontend.Client>, D
     }
 
     getActiveTheme(): Q.Promise<Record<ThriftDisplayElement, ColorSchema>> {
+        if (!this.clientSupportsThemes) {
+            return Q.reject(new Error("Themes are not supported"));
+        }
+
         function toCspyTheme(vscodeTheme: CustomRequest.ThemeResolvedArgs["theme"]) {
             function toColorSchema(color: CustomRequest.ThemeColor) {
                 return new ColorSchema({ R: color.r, B: color.b, G: color.g });
