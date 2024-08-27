@@ -181,7 +181,12 @@ export class CellElement extends HTMLElement {
             this.cell.drop,
         );
 
-        // Add conditional styles
+        // Add styles
+        const textColor = this.cell.format.textColor;
+        this.style.color = `rgb(${textColor.r},${textColor.g},${textColor.b})`;
+        const bgColor = this.cell.format.bgColor;
+        this.style.backgroundColor = `rgb(${bgColor.r},${bgColor.g},${bgColor.b})`;
+
         if (this.cell.format.editable) {
             content.classList.add(Styles.editable);
         }

@@ -9,6 +9,7 @@ import {
 import {
     Alignment,
     Cell,
+    Color,
     Column,
     Format,
     ListSpec,
@@ -233,16 +234,27 @@ export class MockListwindow implements vscode.Disposable {
 }
 
 function getMockRenderParams(selectionStart = 1, selectionEnd = selectionStart) {
+    const black = new Color({ r: 0, b: 0, g: 0, isDefault: true, lowContrast: false });
+    const grey = new Color({ r: 180, b: 180, g: 180, isDefault: true, lowContrast: false });
+    const white = new Color({ r: 255, b: 255, g: 255, isDefault: true, lowContrast: false });
+    const red = new Color({ r: 255, b: 0, g: 0, isDefault: true, lowContrast: false });
+
     const format = new Format();
     format.align = Alignment.kLeft;
     format.style = TextStyle.kProportionalPlain;
+    format.bgColor = black;
+    format.textColor = grey;
     const editableFormat = new Format();
     editableFormat.align = Alignment.kLeft;
     editableFormat.style = TextStyle.kProportionalPlain;
     editableFormat.editable = true;
+    editableFormat.bgColor = black;
+    editableFormat.textColor = white;
     const memFormat = new Format();
     memFormat.align = Alignment.kRight;
-    memFormat.style = TextStyle.kFixedPlain;
+    memFormat.style = TextStyle.kFixedItalic;
+    memFormat.bgColor = black;
+    memFormat.textColor = red;
 
     const params: RenderParameters = {
         rows: [

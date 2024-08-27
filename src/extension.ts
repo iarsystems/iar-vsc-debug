@@ -15,6 +15,7 @@ import { MulticoreLockstepModeFrontend } from "./multicoreLockstepModeFrontend";
 import { MockListwindow } from "./listwindows/mockListwindow";
 import { LiveWatchListwindow } from "./listwindows/liveWatchListwindow";
 import { TestListwindow } from "./listwindows/testListwindow";
+import { ThemeProvider } from "./listwindows/themeProvider";
 
 let sessionTracker: DebugSessionTracker | undefined;
 // A special listwindow for tests
@@ -43,6 +44,7 @@ export function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(testListwindow);
         vscode.commands.executeCommand("setContext", "iar-debug.showTestView", true);
     }
+    context.subscriptions.push(new ThemeProvider());
 
     sessionTracker = new DebugSessionTracker(context);
     MulticoreLockstepModeFrontend.initialize(context, sessionTracker);
