@@ -99,7 +99,7 @@ namespace Styles {
         /* Highlight selected row(s) */
         &.selected-row>* {
             border-right-color: rgba(0, 0, 0, 0);
-            background-color: var(${Theming.Variables.ListSelectionBg});
+            background-color: var(${Theming.Variables.ListSelectionBg}) !important;
             color: var(${Theming.Variables.ListSelectionFg});
 
             ${CellBorderVariables.Style}: var(${Theming.Variables.ListSelectionOutlineStyle});
@@ -126,7 +126,7 @@ namespace Styles {
 
         /* Highlight hovered row(s) */
         &:hover:not(.selected-row)>* {
-            background-color: var(--vscode-list-hoverBackground);
+            background-color: var(--vscode-list-hoverBackground) !important;
             ${CellBorderVariables.StyleTop}: dotted;
             ${CellBorderVariables.ColorTop}: var(--vscode-contrastActiveBorder, rgba(0, 0, 0, 0));
             ${CellBorderVariables.StyleBottom}: dotted;
