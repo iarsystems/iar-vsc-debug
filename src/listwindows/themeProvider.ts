@@ -52,6 +52,7 @@ export class ThemeProvider implements vscode.WebviewViewProvider, vscode.Disposa
         this.disposables.push(
             vscode.debug.onDidReceiveDebugSessionCustomEvent(async ev => {
                 if (ev.event === CustomEvent.Names.THEME_REQUESTED) {
+                    console.log("Got " + ev.body.id);
                     const vars = await this.getCssVars();
 
                     const body: CustomRequest.ThemeResolvedArgs = {
@@ -81,6 +82,7 @@ export class ThemeProvider implements vscode.WebviewViewProvider, vscode.Disposa
                         },
                     };
 
+                    console.log("Resolving " + ev.body.id);
                     ev.session.customRequest(
                         CustomRequest.Names.THEME_RESOLVED,
                         body,
@@ -98,28 +100,27 @@ export class ThemeProvider implements vscode.WebviewViewProvider, vscode.Disposa
     }
 
     private async getCssVars(): Promise<CssVars> {
-        if (this.cssVars) {
-            return this.cssVars;
+        if (this.cssVars === undefined) {
+            this.cssVars = new Promise<CssVars>(resolve => {
+                this.onCssVarsResolved = vars => {
+                    resolve(vars);
+                    vscode.commands.executeCommand(
+                        "setContext",
+                        "iar-debug.showThemeDetector",
+                        false,
+                    );
+                };
+
+            });
+            await vscode.commands.executeCommand(
+                "setContext",
+                "iar-debug.showThemeDetector",
+                true,
+            );
+            await vscode.commands.executeCommand(`${ThemeProvider.VIEW_ID}.focus`);
         }
 
-        const promise = new Promise<CssVars>(resolve => {
-            this.onCssVarsResolved = vars => {
-                resolve(vars);
-                vscode.commands.executeCommand(
-                    "setContext",
-                    "iar-debug.showThemeDetector",
-                    false,
-                );
-            };
-        });
-        await vscode.commands.executeCommand(
-            "setContext",
-            "iar-debug.showThemeDetector",
-            true,
-        );
-        await vscode.commands.executeCommand(`${ThemeProvider.VIEW_ID}.focus`);
-
-        return promise;
+        return this.cssVars;
     }
 
     // Called by vscode before the view is shown
