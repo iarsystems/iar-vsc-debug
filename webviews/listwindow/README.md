@@ -58,11 +58,11 @@ we can't *call* the thrift code, but we can use its type definitions.
 * Drag-n-drop feedback
 * Checkboxes
 * Dim display when frozen
+* Text color & background color
+* Icons
 
 ### Rendering Todo
 
-* Text color & background color
-* Icons
 * Progress-bars inside cells
 * Draw "filler" cells to the right and below
 

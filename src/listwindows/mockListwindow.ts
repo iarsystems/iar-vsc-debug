@@ -263,17 +263,20 @@ function getMockRenderParams(selectionStart = 1, selectionEnd = selectionStart) 
     format.style = TextStyle.kProportionalPlain;
     format.bgColor = black;
     format.textColor = grey;
+    format.icons = [];
     const editableFormat = new Format();
     editableFormat.align = Alignment.kLeft;
     editableFormat.style = TextStyle.kProportionalPlain;
     editableFormat.editable = true;
     editableFormat.bgColor = black;
     editableFormat.textColor = white;
+    editableFormat.icons = ["IDE_PERSIST_EXPR_VAL"];
     const memFormat = new Format();
     memFormat.align = Alignment.kRight;
     memFormat.style = TextStyle.kFixedItalic;
     memFormat.bgColor = black;
     memFormat.textColor = red;
+    memFormat.icons = [];
 
     const params: RenderParameters = {
         rows: [
