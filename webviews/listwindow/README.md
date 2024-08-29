@@ -57,11 +57,11 @@ we can't *call* the thrift code, but we can use its type definitions.
 * Dim selection when losing focus
 * Drag-n-drop feedback
 * Checkboxes
+* Dim display when frozen
 
 ### Rendering Todo
 
 * Text color & background color
-* Dim display when frozen
 * Icons
 * Progress-bars inside cells
 * Draw "filler" cells to the right and below

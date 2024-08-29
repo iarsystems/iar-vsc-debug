@@ -101,6 +101,7 @@ function getBaseParameters(): RenderParameters {
                 last: new Int64(-1),
             }),
         ],
+        frozen: false,
     };
 
     return params;

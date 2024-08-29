@@ -264,7 +264,9 @@ class ListwindowController {
             });
         });
         this.grid.addEventListener("cell-edit-requested", ev => {
-            this.cellEditService.requestCellEdit(ev.detail);
+            if (!this.renderParams?.frozen) {
+                this.cellEditService.requestCellEdit(ev.detail);
+            }
         });
 
         Theming.setGridLinesVisible(!!this.renderParams?.listSpec.showGrid);

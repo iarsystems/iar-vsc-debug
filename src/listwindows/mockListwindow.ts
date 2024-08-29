@@ -336,6 +336,7 @@ function getMockRenderParams(selectionStart = 1, selectionEnd = selectionStart) 
         ],
         listSpec: new ListSpec(),
         selection: [],
+        frozen: false,
     };
     params.listSpec.showHeader = true;
     params.listSpec.showGrid = true;

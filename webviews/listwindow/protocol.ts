@@ -33,6 +33,7 @@ export type RenderParameters = Serializable<{
     listSpec: ListSpec;
     columnInfo: Column[];
     selection: SelRange[];
+    frozen: boolean;
 }>;
 
 

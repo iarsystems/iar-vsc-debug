@@ -22,6 +22,7 @@ export class RowElement extends HTMLElement {
     row?: Serializable<Row> = undefined;
     index = -1;
     selected = false;
+    frozen = false;
     showCheckBoxes = false;
     addFillerCell = false;
     dragDropService: DragDropService | undefined = undefined;
@@ -34,6 +35,9 @@ export class RowElement extends HTMLElement {
 
     connectedCallback() {
         this.classList.add(Styles.self);
+        if (!this.frozen) {
+            this.classList.add(Styles.hovers);
+        }
 
         if (!this.row) {
             // TODO: render an empty row?
@@ -123,8 +127,10 @@ namespace Styles {
         &:is(.selected-row)+&>* {
             ${CellBorderVariables.StyleTop}: none;
         }
+    `]);
 
-        /* Highlight hovered row(s) */
+    /* Highlight hovered row(s) */
+    export const hovers = css`
         &:hover:not(.selected-row)>* {
             background-color: var(--vscode-list-hoverBackground) !important;
             ${CellBorderVariables.StyleTop}: dotted;
@@ -149,5 +155,5 @@ namespace Styles {
         &:is(:hover)+&:not(.selected-row)>* {
             ${CellBorderVariables.StyleTop}: none;
         }
-    `]);
+    `;
 }

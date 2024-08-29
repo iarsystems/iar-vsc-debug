@@ -81,6 +81,7 @@ export class GridElement extends HTMLElement {
             rowElem.selected = ranges.some(
                 range => range.first <= y && range.last >= y,
             );
+            rowElem.frozen = this.data.frozen;
             rowElem.showCheckBoxes = this.data.listSpec.showCheckBoxes;
             rowElem.addFillerCell = this.resizeMode === "fixed";
             rowElem.hoverService = this.hoverService;
@@ -108,6 +109,20 @@ export class GridElement extends HTMLElement {
             );
         };
 
+        if (this.data.frozen) {
+            const overlay = document.createElement("div");
+            overlay.classList.add(Styles.overlay);
+            const isLightTheme = this.data.columnInfo[0]
+                ? this.data.columnInfo[0].defaultFormat.bgColor.r >
+                  this.data.columnInfo[0].defaultFormat.textColor.r
+                : false;
+            if (isLightTheme) {
+                overlay.style.backgroundColor = "rgba(255, 255, 255, 0.3)";
+            } else {
+                overlay.style.backgroundColor = "rgba(0, 0, 0, 0.2)";
+            }
+            this.appendChild(overlay);
+        }
     }
 
     override oncontextmenu = (ev: MouseEvent) => {
@@ -200,5 +215,10 @@ namespace Styles {
         // deselect everything.
         height: "10px",
         flex: "1 0 auto",
+    });
+    export const overlay = css({
+        pointerEvents: "none",
+        position: "absolute",
+        inset: 0,
     });
 }
