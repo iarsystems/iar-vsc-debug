@@ -13,8 +13,8 @@ import { logger } from "iar-vsc-common/logger";
 import { DialogService } from "./dialogService";
 import { MulticoreLockstepModeFrontend } from "./multicoreLockstepModeFrontend";
 import { MockListwindow } from "./listwindows/mockListwindow";
-import { LiveWatchListwindow } from "./listwindows/liveWatchListwindow";
 import { TestListwindow } from "./listwindows/testListwindow";
+import { ListwindowManager } from "./listwindows/windowManager";
 
 let sessionTracker: DebugSessionTracker | undefined;
 // A special listwindow for tests
@@ -34,7 +34,6 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", new CSpyConfigurationsProvider(), vscode.DebugConfigurationProviderTriggerKind.Dynamic));
     context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", new DefaultCSpyConfigurationResolver()));
 
-    context.subscriptions.push(new LiveWatchListwindow(context.extensionUri));
     if (context.extensionMode === vscode.ExtensionMode.Development) {
         context.subscriptions.push(new MockListwindow(context.extensionUri));
         vscode.commands.executeCommand("setContext", "iar-debug.showMockView", true);
@@ -43,6 +42,7 @@ export function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(testListwindow);
         vscode.commands.executeCommand("setContext", "iar-debug.showTestView", true);
     }
+    new ListwindowManager(context);
 
     sessionTracker = new DebugSessionTracker(context);
     MulticoreLockstepModeFrontend.initialize(context, sessionTracker);
