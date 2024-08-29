@@ -295,6 +295,7 @@ namespace Styles {
     export const title = css({
         overflow: "hidden",
         textOverflow: "ellipsis",
+        textWrap: "nowrap",
         padding: "0px 12px",
         boxSizing: "border-box",
         maxWidth: "100%",
