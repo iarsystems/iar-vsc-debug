@@ -47,6 +47,7 @@ export type ColumnResizeMode = "fit" | "fixed";
  */
 export type ExtensionMessage =
   | { subject: "render", params: RenderParameters, ensureRowVisible?: number } // Render the given data
+  | { subject: "renderToolbar", params: string} // Render the given data
   | { subject: "setResizeMode", mode: ColumnResizeMode }
   | { subject: "dumpHTML" } // Send a message back with the current full HTML of the view (useful for testing)
   | { subject: "contextMenuReply", menu: Serializable<MenuItem>[] }
@@ -76,7 +77,10 @@ export type ViewMessage =
   | { subject: "contextItemClicked", command: number } // The user clicked a context menu item
   | { subject: "keyNavigationPressed", operation: KeyNavOperation, rowsInPage: number }
   | { subject: "scrollOperationPressed", operation: ScrollOperation, firstRow: number, lastRow: number }
-  | { subject: "keyPressed", code: number, repeat: number };
+  | { subject: "keyPressed", code: number, repeat: number }
+  | { subject: "toolbarRendered" } // The user has clicked on an item the toolbar.
+  | { subject: "toolbarItemInteraction", id: string, properties: string } // The user has interacted with a toolbar item.
+  | { subject: "getToolbarToolTip", id: string }; // The user is hovering a toolbar item.
 
 
 /**

@@ -25,6 +25,7 @@ export class GridElement extends HTMLElement {
 
     hoverService: HoverService | undefined = undefined;
     dragDropService: DragDropService | undefined = undefined;
+    headerElement: HeaderElement | undefined = undefined;
 
     connectedCallback() {
         this.classList.add(Styles.self);
@@ -55,15 +56,15 @@ export class GridElement extends HTMLElement {
         this.appendChild(grid);
 
         // Create header
-        const header = new HeaderElement();
-        header.columns = this.data.columnInfo;
-        header.columnWidths = this.initialColumnWidths;
-        header.clickable = this.data.listSpec.canClickColumns;
-        header.resizeMode = this.resizeMode;
-        grid.appendChild(header);
+        this.headerElement = new HeaderElement();
+        this.headerElement.columns = this.data.columnInfo;
+        this.headerElement.columnWidths = this.initialColumnWidths;
+        this.headerElement.clickable = this.data.listSpec.canClickColumns;
+        this.headerElement.resizeMode = this.resizeMode;
+        grid.appendChild(this.headerElement);
 
         if (!this.data.listSpec.showHeader) {
-            header.style.display = "none";
+            this.headerElement.style.display = "none";
         }
 
         // Create body

@@ -29,6 +29,11 @@ export namespace TestUtils {
         return api.waitForMessage("rendered");
     }
 
+    export function renderToolbar(api: MockVSCodeApi, params: string) {
+        api.postMessage({ subject: "renderToolbar", params });
+        return api.waitForMessage("toolbarRendered");
+    }
+
     const black = new Color({
         r: 0,
         g: 0,

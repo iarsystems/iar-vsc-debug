@@ -10,6 +10,7 @@ import { Column } from "../../thrift/listwindow_types";
 import { SharedStyles } from "../styles/sharedStyles";
 import { Theming } from "../styles/theming";
 import { css } from "@emotion/css";
+import { ToolbarElement } from "../toolbar/toolbar";
 
 /**
  * Emitted when the the user has resized a column
@@ -45,6 +46,10 @@ export class HeaderElement extends HTMLElement {
     resizeMode: ColumnResizeMode = "fixed";
 
     private columnHeaders: HTMLElement[] = [];
+
+    public addToolbarArea(): void {
+        this.classList.toggle(Styles.toolbarToggle);
+    }
 
     connectedCallback() {
         this.classList.add(Styles.self);
@@ -282,6 +287,11 @@ namespace Styles {
             }
         `,
     ]);
+    export const toolbarToggle = css`
+        >* {
+            top: ${ToolbarElement.TOOLBAR_HEIGHT}px;
+        }
+    `;
     export const title = css({
         overflow: "hidden",
         textOverflow: "ellipsis",

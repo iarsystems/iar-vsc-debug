@@ -20,6 +20,7 @@ import {
     ResizeHandleDragEndEvent,
     ResizeHandleMovedEvent,
 } from "./rendering/header/resizeHandle";
+import { ToolbarItemEvent, ToolbarItemHoveredEvent } from "./rendering/toolbar/toolbarItem";
 
 /**
  * Defines custom DOM events ({@link CustomEvent})s available in the view, each
@@ -40,6 +41,8 @@ interface CustomEventTypeMap {
     "more-less-toggled": MoreLessToggledEvent.Detail;
     "checkbox-toggled": CheckboxToggledEvent.Detail;
     "context-menu-item-clicked": ContextMenuItemClickEvent.Detail;
+    "toolbar-item-interaction": ToolbarItemEvent.Detail;
+    "toolbar-item-hovered": ToolbarItemHoveredEvent.Detail;
 }
 
 type CustomEventMap = {

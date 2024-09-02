@@ -64,6 +64,7 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider, vscod
             localResourceRoots: [
                 vscode.Uri.joinPath(this.extensionUri, "out/webviews"),
                 vscode.Uri.joinPath(this.extensionUri, "node_modules/@vscode/codicons"),
+                vscode.Uri.joinPath(this.extensionUri, "images/icons"),
             ]
         };
         let resolveViewLoaded: (() => void) | undefined = undefined;
@@ -150,9 +151,13 @@ namespace Rendering {
         <title>Listwindow</title>
     </head>
     <body>
+        <div id="imageroot" root="${webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "images", "icons"))}">
+        </div>
+        <div id="toolbar""></div>
         <!-- This is used to identify drag-and-drop operations, must be unique! -->
         <div id="app" viewId="${viewId}">
         </div>
+
     </body>
     </html>`;
     }

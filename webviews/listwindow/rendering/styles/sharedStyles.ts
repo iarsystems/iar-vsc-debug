@@ -43,7 +43,8 @@ export namespace SharedStyles {
     // it's easier to get an overview of how the elements stack.
     export enum ZIndices {
         GridHeader = 1,
-        Tooltip = 2,
-        ContextMenu = 2,
+        Toolbar = 2,
+        Tooltip = 3,
+        ContextMenu = 3,
     }
 }
