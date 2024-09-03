@@ -10,32 +10,28 @@ import { ServiceLocation } from "iar-vsc-common/thrift/bindings/ServiceRegistry_
 import { logger } from "iar-vsc-common/logger";
 
 /**
- * Placeholder for the real listwindow proxy
+ * Placeholder for the real listwindow backend/proxy/something else.
  */
-class ListwindowProxy {
-    static connect(
-        _registry: ThriftServiceRegistry,
-        _serviceName: string,
-    ): Promise<ListwindowProxy> {
-        return Promise.resolve(new ListwindowProxy());
-    }
+class ListwindowBackend {
+    constructor(
+        private readonly view: ListwindowViewProvider,
+        private readonly serviceName: string,
+    ) {}
 
-    constructor() {
-        /* */
+    /**
+     * Connect to the given cspyserver instance, and use it to run the view.
+     */
+    setBackend(registry: ThriftServiceRegistry): void {
+        logger.debug(
+            `Logging these so the compiler doesn't complain about them being unused: ${this.view}, ${this.serviceName}, ${registry}`,
+        );
     }
 
     /**
-     * Uses the given view to render to, and begins handling messages (e.g user
-     * interaction) from it.
+     * Forget about the given cspyserver instance (usually called when it is
+     * about to be shut down).
      */
-    attachToView(_view: ListwindowViewProvider): void {
-        /* */
-    }
-
-    /**
-     * Forgets about any currently attached view.
-     */
-    detachFromView(): void {
+    forgetBackend(_registry: ThriftServiceRegistry): void {
         /* */
     }
 }
@@ -43,11 +39,10 @@ class ListwindowProxy {
 type ViewId = string;
 
 /**
- * Sets up the listwindow webviews, and sets up listwindow backend
- * connections ("proxies") whenever a debug session launches.
- * When there are multiple debug sessions running at once, this class also acts
- * as a "multiplexer", controlling which of the backends is allowed to render to
- * the listwindow webviews.
+ * Sets up the listwindow webviews and manages the backend connections. This
+ * class locates services registries (i.e. cspyserver instances) for new debug
+ * sessions and, when there are multiple debug sessions, notifies the
+ * listwindows which cspyserver instance to use.
  */
 export class ListwindowManager {
     // Each entry is a supported listwindow, consisting of a vscode view id and
@@ -56,29 +51,19 @@ export class ListwindowManager {
         ["iar-live-watch", "WIN_STATIC_WATCH"],
     ];
 
-    private readonly views: Map<ViewId, ListwindowViewProvider>;
-    private readonly sessions: Map<
-        vscode.DebugSession,
-        Map<ViewId, ListwindowProxy>
-    > = new Map();
-    // The proxies which are currently using the webviews
-    private attachedProxies: ListwindowProxy[] = [];
+    private readonly windows: ListwindowBackend[];
+    private readonly sessions: Map<vscode.DebugSession, ThriftServiceRegistry> =
+        new Map();
 
     constructor(context: vscode.ExtensionContext) {
-        this.views = new Map(
-            ListwindowManager.VIEW_DEFINITIONS.map(([viewId, _]) => [
-                viewId,
-                new ListwindowViewProvider(context.extensionUri, viewId),
-            ]),
-        );
-
-        context.subscriptions.push(
-            vscode.debug.onDidStartDebugSession(session => {
-                if (session.type !== "cspy") {
-                    return;
-                }
-                this.setupProxies(session);
-            }),
+        this.windows = ListwindowManager.VIEW_DEFINITIONS.map(
+            ([viewId, serviceName]) => {
+                const view = new ListwindowViewProvider(
+                    context.extensionUri,
+                    viewId,
+                );
+                return new ListwindowBackend(view, serviceName);
+            },
         );
 
         context.subscriptions.push(
@@ -86,63 +71,39 @@ export class ListwindowManager {
                 if (session.type !== "cspy") {
                     return;
                 }
+                const registry = this.sessions.get(session);
+                if (registry) {
+                    for (const window of this.windows) {
+                        window.forgetBackend(registry);
+                    }
+                }
                 this.sessions.delete(session);
             }),
         );
 
         context.subscriptions.push(
             vscode.debug.onDidChangeActiveDebugSession(async session => {
-                this.attachedProxies.forEach(proxy => proxy.detachFromView());
-                this.attachedProxies = [];
-
                 if (session === undefined || session.type !== "cspy") {
                     return;
                 }
 
-                // Sometimes, onDidChangeActiveDebugSession is called before
-                // onDidStartDebugSession, in that case we need to connect here
-                await this.setupProxies(session);
-                const proxies = this.sessions.get(session);
-                if (!proxies) {
-                    return;
+                if (!this.sessions.has(session)) {
+                    const location: CustomRequest.RegistryLocationResponse =
+                        await session.customRequest(
+                            CustomRequest.Names.GET_REGISTRY_LOCATION,
+                        );
+                    const registry = new ThriftServiceRegistry(
+                        new ServiceLocation(location),
+                    );
+                    this.sessions.set(session, registry);
                 }
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                const registry = this.sessions.get(session)!;
 
-                for (const [viewId, view] of this.views) {
-                    const proxy = proxies.get(viewId);
-                    if (proxy) {
-                        proxy.attachToView(view);
-                        this.attachedProxies.push(proxy);
-                    }
+                for (const window of this.windows) {
+                    window.setBackend(registry);
                 }
             }),
         );
-    }
-
-    private async setupProxies(session: vscode.DebugSession) {
-        if (this.sessions.has(session)) {
-            return;
-        }
-        this.sessions.set(session, new Map());
-
-        const location: CustomRequest.RegistryLocationResponse =
-            await session.customRequest(
-                CustomRequest.Names.GET_REGISTRY_LOCATION,
-            );
-        const registry = new ThriftServiceRegistry(
-            new ServiceLocation(location),
-        );
-
-        const proxies = new Map();
-        for (const [viewId, serviceName] of ListwindowManager.VIEW_DEFINITIONS) {
-            try {
-                const proxy = await ListwindowProxy.connect(registry, serviceName);
-                proxies.set(viewId, proxy);
-            } catch (e) {
-                logger.warn(
-                    `Failed to connect to listwindow backend '${serviceName}': ${e}`,
-                );
-            }
-        }
-        this.sessions.set(session, proxies);
     }
 }
