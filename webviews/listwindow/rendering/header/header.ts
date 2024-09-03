@@ -142,16 +142,18 @@ export class HeaderElement extends HTMLElement {
         }
     }
 
-    // Changes the width of each (non-fixed-width) to be specified as a
+    // Changes the width of each (non-fixed-width) column to be specified as a
     // "fraction" based on its current rendered width. This makes the columns
     // scale proportionally to their fraction value.
     private applyRenderedWidthsAsFractions() {
         let columnWidths = "";
         for (const [i, header] of this.columnHeaders.entries()) {
-            const width = header.offsetWidth;
-            const unit = this.columns[i]?.fixed ? "px" : "fr";
-            columnWidths += width + unit;
-            columnWidths += " ";
+            let width = header.offsetWidth + "fr";
+            const columnSpec = this.columns[i];
+            if (columnSpec?.fixed) {
+                width = columnSpec.width + "px";
+            }
+            columnWidths += width + " ";
         }
         if (this.parentElement) {
             this.parentElement.style.gridTemplateColumns = columnWidths;
@@ -295,6 +297,7 @@ namespace Styles {
     export const title = css({
         overflow: "hidden",
         textOverflow: "ellipsis",
+        textWrap: "nowrap",
         padding: "0px 12px",
         boxSizing: "border-box",
         maxWidth: "100%",

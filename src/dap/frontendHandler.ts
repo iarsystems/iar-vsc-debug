@@ -310,6 +310,7 @@ export class FrontendHandler implements ThriftServiceHandler<Frontend.Client>, D
                 [ThriftDisplayElement.kPowerLogFamilyBg]:   bg,
                 [ThriftDisplayElement.kEventLogFamilyBg]:   bg,
                 [ThriftDisplayElement.kRegisterFamilyBg]:   bg,
+                [ThriftDisplayElement.kSideMargin]:         bg,
 
                 // Foregrounds
                 [ThriftDisplayElement.kText]:         fg,

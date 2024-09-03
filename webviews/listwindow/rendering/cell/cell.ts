@@ -149,7 +149,28 @@ export class CellElement extends HTMLElement {
 
         const label = document.createElement("div");
         label.classList.add(Styles.label);
-        label.textContent = this.cell.text;
+        if (this.treeinfo || this.checked !== undefined) {
+            label.style.paddingLeft = "3px";
+        }
+
+        for (const icon of this.cell.format.icons) {
+            const iconSpec = IconMap.get(icon);
+            if (iconSpec) {
+                const iconContainer = document.createElement("span");
+                iconContainer.classList.add(Styles.icon);
+                const iconSpan = document.createElement("span");
+                iconSpan.classList.add("codicon", "codicon-" + iconSpec[0]);
+                if (iconSpec[1]) {
+                    iconSpan.style.color = iconSpec[1];
+                }
+                iconContainer.appendChild(iconSpan);
+                label.appendChild(iconContainer);
+            }
+        }
+
+        const labelText = document.createElement("span");
+        labelText.textContent = this.cell.text;
+        label.appendChild(labelText);
         content.appendChild(label);
 
 
@@ -301,21 +322,20 @@ namespace Styles {
     export const checkbox = css({
         margin: 0,
     });
-    export const label = css([
-        {
-            gridColumn: 2,
-            padding: "0px 12px",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-            wordBreak: "keep-all",
-        },
-        css`
-            :not(:first-child) {
-                padding-left: 3px;
-            }
-        `,
-    ]);
+    export const icon = css({
+        marginInline: "2px",
+        display: "inline-flex",
+        alignItems: "center",
+    });
+    export const label = css({
+        gridColumn: 2,
+        display: "flex",
+        padding: "0px 12px",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+        wordBreak: "keep-all",
+    });
     export const editable = css({
         cursor: "pointer",
     });
@@ -333,3 +353,19 @@ namespace Styles {
         fontStyle: "italic",
     });
 }
+
+/**
+ * Maps each icon name to its corresponding codicon name and (optionally) color
+ */
+const IconMap = new Map<string, [string, string | undefined]>([
+    // Code coverage window
+    ["CSPY_CODE_COVERED_NONE", ["star-empty", "red"]],
+    ["CSPY_CODE_COVERED_MEDIUM", ["star-half", "yellow"]],
+    ["CSPY_CODE_COVERED_FULL", ["star-full", "green"]],
+    // Images window
+    ["IDI_DBG_IMAGES_ON_FOCUSED", ["pass-filled", undefined]],
+    ["IDI_DBG_IMAGES_ON_UNFOCUSED", ["pass", undefined]],
+    // Macro window
+    ["IDE_PERSIST_EXPR_VAL", ["refresh", "green"]],
+    ["IDE_EXPR_VAL", ["refresh", "blue"]],
+]);

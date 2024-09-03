@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { KeyNavOperation, ScrollOperation } from "./thrift/listwindow_types";
+import { EditInfo, KeyNavOperation, ScrollOperation } from "./thrift/listwindow_types";
 import { MenuItem } from "./thrift/listwindow_types";
 import { Column, ListSpec, Row, SelRange, SelectionFlags } from "./thrift/listwindow_types";
 
@@ -33,6 +33,7 @@ export type RenderParameters = Serializable<{
     listSpec: ListSpec;
     columnInfo: Column[];
     selection: SelRange[];
+    frozen: boolean;
 }>;
 
 
@@ -52,7 +53,7 @@ export type ExtensionMessage =
   | { subject: "dumpHTML" } // Send a message back with the current full HTML of the view (useful for testing)
   | { subject: "contextMenuReply", menu: Serializable<MenuItem>[] }
   | { subject: "tooltipReply", text?: string }
-  | { subject: "editableStringReply", text: string, col: number, row: number };
+  | { subject: "editableStringReply", info: Serializable<EditInfo>, col: number, row: number };
 
 /**
  * A message from the listwindow view to the extension

@@ -19,7 +19,7 @@ import {
     TextStyle,
 } from "iar-vsc-common/thrift/bindings/listwindow_types";
 import Int64 = require("node-int64");
-import { MenuItem, SelectionFlags } from "../../webviews/listwindow/thrift/listwindow_types";
+import { EditInfo, MenuItem, SelectionFlags } from "../../webviews/listwindow/thrift/listwindow_types";
 import { ListwindowViewProvider } from "./listwindowViewProvider";
 
 /**
@@ -208,7 +208,14 @@ export class MockListwindow implements vscode.Disposable {
                 }
                 this.view.postMessageToView({
                     subject: "editableStringReply",
-                    text: "Hello Edit",
+                    info: new EditInfo({
+                        editString: "Hello Edit",
+                        column: 0,
+                        range: new SelRange({
+                            first: new Int64(0),
+                            last: new Int64(-1),
+                        }),
+                    }),
                     col: msg.col,
                     row: msg.row,
                 });
@@ -263,17 +270,20 @@ function getMockRenderParams(selectionStart = 1, selectionEnd = selectionStart) 
     format.style = TextStyle.kProportionalPlain;
     format.bgColor = black;
     format.textColor = grey;
+    format.icons = [];
     const editableFormat = new Format();
     editableFormat.align = Alignment.kLeft;
     editableFormat.style = TextStyle.kProportionalPlain;
     editableFormat.editable = true;
     editableFormat.bgColor = black;
     editableFormat.textColor = white;
+    editableFormat.icons = ["IDE_PERSIST_EXPR_VAL"];
     const memFormat = new Format();
     memFormat.align = Alignment.kRight;
     memFormat.style = TextStyle.kFixedItalic;
     memFormat.bgColor = black;
     memFormat.textColor = red;
+    memFormat.icons = [];
 
     const params: RenderParameters = {
         rows: [
@@ -336,6 +346,7 @@ function getMockRenderParams(selectionStart = 1, selectionEnd = selectionStart) 
         ],
         listSpec: new ListSpec(),
         selection: [],
+        frozen: false,
     };
     params.listSpec.showHeader = true;
     params.listSpec.showGrid = true;

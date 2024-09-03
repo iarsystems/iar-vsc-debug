@@ -31,12 +31,15 @@ export namespace SharedStyles {
     }
     const ALIGNMENT_LEFT = css({
         textAlign: "left",
+        justifySelf: "left",
     });
     const ALIGNMENT_RIGHT = css({
         textAlign: "right",
+        justifySelf: "right",
     });
     const ALIGNMENT_CENTER = css({
         textAlign: "center",
+        justifySelf: "center",
     });
 
     // "z-index" values used by various elements. By defining them in one place,
