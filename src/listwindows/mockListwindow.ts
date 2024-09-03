@@ -19,7 +19,7 @@ import {
     TextStyle,
 } from "iar-vsc-common/thrift/bindings/listwindow_types";
 import Int64 = require("node-int64");
-import { MenuItem, SelectionFlags } from "../../webviews/listwindow/thrift/listwindow_types";
+import { EditInfo, MenuItem, SelectionFlags } from "../../webviews/listwindow/thrift/listwindow_types";
 import { ListwindowViewProvider } from "./listwindowViewProvider";
 
 /**
@@ -208,7 +208,14 @@ export class MockListwindow implements vscode.Disposable {
                 }
                 this.view.postMessageToView({
                     subject: "editableStringReply",
-                    text: "Hello Edit",
+                    info: new EditInfo({
+                        editString: "Hello Edit",
+                        column: 0,
+                        range: new SelRange({
+                            first: new Int64(0),
+                            last: new Int64(-1),
+                        }),
+                    }),
                     col: msg.col,
                     row: msg.row,
                 });

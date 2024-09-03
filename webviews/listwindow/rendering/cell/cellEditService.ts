@@ -4,9 +4,11 @@
 
 import { TextField } from "@vscode/webview-ui-toolkit";
 import { createCustomEvent } from "../../events";
-import { customElement } from "../utils";
+import { customElement, toNumber } from "../utils";
 import {  CellElement, CellPosition } from "./cell";
 import { MessageService } from "../../messageService";
+import { EditInfo } from "../../thrift/listwindow_types";
+import { Serializable } from "../../protocol";
 
 interface ActiveCellEdit {
     textField: TextFieldElement;
@@ -22,7 +24,7 @@ export class CellEditService {
     constructor(private readonly messageService: MessageService) {
         this.messageService.addMessageHandler(msg => {
             if (msg.subject === "editableStringReply") {
-                this.setEditableStringForPendingEdit(msg.text, {
+                this.setEditableStringForPendingEdit(msg.info, {
                     col: msg.col,
                     row: msg.row,
                 });
@@ -43,7 +45,10 @@ export class CellEditService {
         });
     }
 
-    private setEditableStringForPendingEdit(text: string, position: CellPosition) {
+    private setEditableStringForPendingEdit(
+        info: Serializable<EditInfo>,
+        position: CellPosition,
+    ) {
         if (position.col < 0 || position.row < 0) {
             return;
         }
@@ -54,17 +59,20 @@ export class CellEditService {
 
         this.cancelCellInput();
 
-
-        const textField = new TextFieldElement;
-        textField.defaultValue = text;
+        const textField = new TextFieldElement();
+        textField.defaultValue = info.editString;
+        textField.selection = [
+            toNumber(info.range.first),
+            toNumber(info.range.last),
+        ];
 
         const rect = cellElem.getBoundingClientRect();
 
         textField.style.position = "absolute";
         // The cell bounds are in client (i.e. "viewport") coordinates, but we
         // want them in page coordinates.
-        textField.style.left = (rect.left + window.scrollX) + "px";
-        textField.style.top = (rect.top + window.scrollY) + "px";
+        textField.style.left = rect.left + window.scrollX + "px";
+        textField.style.top = rect.top + window.scrollY + "px";
         textField.style.width = rect.width + "px";
         textField.style.height = rect.height + "px";
         textField.width = rect.width;
@@ -72,9 +80,7 @@ export class CellEditService {
 
         document.body.appendChild(textField);
 
-        textField.addEventListener("canceled", () =>
-            this.cancelCellInput(),
-        );
+        textField.addEventListener("canceled", () => this.cancelCellInput());
         textField.addEventListener("cell-edit-submitted", ev => {
             if (this.activeCellEdit) {
                 this.messageService.sendMessage({
@@ -82,7 +88,6 @@ export class CellEditService {
                     col: position.col,
                     row: position.row,
                     newValue: ev.detail,
-
                 });
             }
             this.cancelCellInput();
@@ -104,6 +109,7 @@ export class CellEditService {
 @customElement("listwindow-text-field")
 class TextFieldElement extends HTMLElement {
     defaultValue = "";
+    selection: [number, number] | undefined = undefined;
     width: number | undefined = undefined;
     height: number | undefined = undefined;
 
@@ -121,6 +127,14 @@ class TextFieldElement extends HTMLElement {
         const input = document.createElement("vscode-text-field") as TextField;
         input.autofocus = true;
         input.value = this.defaultValue;
+        // The vscode-text-field doesn't seem to create its children immediately,
+        // so wait for the next frame to set the selection.
+        requestAnimationFrame(() => {
+            if (this.selection) {
+                const inputElem = input.shadowRoot?.querySelector("input");
+                inputElem?.setSelectionRange(this.selection[0], this.selection[1]);
+            }
+        });
 
         input.onblur = () => this.onCancel();
         input.onkeydown = ev => {
