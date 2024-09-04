@@ -44,7 +44,7 @@ export class GridElement extends HTMLElement {
 
         this.dragDropService?.registerDropTarget(
             this,
-            { col: -1, row: -1 },
+            { col: -1, row: -1n },
             Target.kTargetAll,
         );
         if (this.dragDropService?.currentFeedback.target === Target.kTargetAll) {
@@ -77,7 +77,7 @@ export class GridElement extends HTMLElement {
         for (const [y, row] of this.data.rows.entries()) {
             const rowElem = new RowElement();
             rowElem.row = row;
-            rowElem.index = y;
+            rowElem.index = BigInt(y);
             rowElem.selected = ranges.some(
                 range => range.first <= y && range.last >= y,
             );
@@ -99,7 +99,7 @@ export class GridElement extends HTMLElement {
                 createCustomEvent("cell-clicked", {
                     detail: {
                         col: -1,
-                        row: -1,
+                        row: -1n,
                         isDoubleClick: ev.detail === 2,
                         ctrlPressed: false,
                         shiftPressed: false,
@@ -129,14 +129,14 @@ export class GridElement extends HTMLElement {
         this.dispatchEvent(createCustomEvent("cell-right-clicked", {
             detail: {
                 col: -1,
-                row: -1,
+                row: -1n,
                 clickPosition: ev,
             },
             bubbles: true,
         }));
     };
 
-    ensureRowVisible(row: number) {
+    ensureRowVisible(row: bigint) {
         if (row < 0) {
             return;
         }
@@ -144,7 +144,7 @@ export class GridElement extends HTMLElement {
         // We use cells rather than rows to calculate Y positions, since rows
         // use 'display: content' and thus have no bounds in the eyes of the
         // layout engine.
-        const topmostCell = CellElement.lookupCell({ row: 0, col: 0 });
+        const topmostCell = CellElement.lookupCell({ row: 0n, col: 0 });
         const targetCell = CellElement.lookupCell({ row, col: 0 });
         if (!topmostCell || !targetCell) {
             return;
@@ -167,8 +167,8 @@ export class GridElement extends HTMLElement {
         }
     }
 
-    getRangeOfVisibleRows(): [number, number] | undefined {
-        const topmostCell = CellElement.lookupCell({ row: 0, col: 0 });
+    getRangeOfVisibleRows(): [bigint, bigint] | undefined {
+        const topmostCell = CellElement.lookupCell({ row: 0n, col: 0 });
         if (!topmostCell) {
             return undefined;
         }
@@ -192,7 +192,8 @@ export class GridElement extends HTMLElement {
         if (this.data && this.data.rows.length - 1 < lastVisible) {
             lastVisible = this.data.rows.length;
         }
-        return [firstVisible, lastVisible];
+        // TODO: use offset
+        return [BigInt(firstVisible), BigInt(lastVisible)];
     }
 }
 

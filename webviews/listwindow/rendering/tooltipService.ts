@@ -45,7 +45,7 @@ export class TooltipService {
         this.messageService.sendMessage({
             subject: "getTooltip",
             col: event.detail.col,
-            row: event.detail.row,
+            row: { value: event.detail.row.toString() },
         });
     }
 

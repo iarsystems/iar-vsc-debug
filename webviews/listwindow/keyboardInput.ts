@@ -20,18 +20,18 @@ export namespace KeyboardInput {
      */
     export function initialize(
         messageService: MessageService,
-        getRangeOfVisibleRows: () => [number, number] | undefined,
+        getRangeOfVisibleRows: () => [bigint, bigint] | undefined,
     ) {
         document.body.addEventListener("keydown", ev => {
             if (ev.ctrlKey) {
                 const scrollOp = keyToScrollOp(ev.key);
                 if (scrollOp !== undefined) {
-                    const range = getRangeOfVisibleRows() ?? [-1, -1];
+                    const range = getRangeOfVisibleRows() ?? [-1n, -1n];
                     messageService.sendMessage({
                         subject: "scrollOperationPressed",
                         operation: scrollOp,
-                        firstRow: range[0],
-                        lastRow: range[1],
+                        firstRow: { value: range[0].toString() },
+                        lastRow: { value: range[1].toString() },
                     });
                     ev.preventDefault();
                     return;
@@ -41,7 +41,7 @@ export namespace KeyboardInput {
             const keyNavOp = keyToNavigationOp(ev.key);
             if (keyNavOp !== undefined) {
                 const range = getRangeOfVisibleRows();
-                const rowsInPage = range ? range[1] - range[0] + 1 : 0;
+                const rowsInPage = range ? Number(range[1] - range[0]) + 1 : 0;
                 messageService.sendMessage({
                     subject: "keyNavigationPressed",
                     operation: keyNavOp,

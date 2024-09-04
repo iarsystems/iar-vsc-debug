@@ -44,16 +44,22 @@ export type RenderParameters = Serializable<{
 export type ColumnResizeMode = "fit" | "fixed";
 
 /**
+ * Since bigint is not JSON-serializable, we need to send it as a string. The
+ * value can be parsed using BigInt(mySerializedBigint.value)
+ */
+export interface SerializedBigInt { value: string }
+
+/**
  * A message from the extension to the listwindow view
  */
 export type ExtensionMessage =
-  | { subject: "render", params: RenderParameters, ensureRowVisible?: number } // Render the given data
+  | { subject: "render", params: RenderParameters, ensureRowVisible?: SerializedBigInt } // Render the given data
   | { subject: "renderToolbar", params: string} // Render the given data
   | { subject: "setResizeMode", mode: ColumnResizeMode }
   | { subject: "dumpHTML" } // Send a message back with the current full HTML of the view (useful for testing)
   | { subject: "contextMenuReply", menu: Serializable<MenuItem>[] }
   | { subject: "tooltipReply", text?: string }
-  | { subject: "editableStringReply", info: Serializable<EditInfo>, col: number, row: number };
+  | { subject: "editableStringReply", info: Serializable<EditInfo>, col: number, row: SerializedBigInt };
 
 /**
  * A message from the listwindow view to the extension
@@ -63,21 +69,21 @@ export type ViewMessage =
   | { subject: "rendered" } // Sent when done with a render message, useful for testing
   | { subject: "HTMLDump", html: string } // Response to a dumpHTML message, contains the full HTML of the view
   | { subject: "columnClicked", col: number }
-  | { subject: "cellLeftClicked", col: number, row: number, flags: SelectionFlags }
-  | { subject: "cellDoubleClicked", col: number, row: number }
-  | { subject: "getContextMenu", col: number, row: number } // The user right-clicked a cell. The extension should reply with "contextMenuReply"
-  | { subject: "getTooltip", col: number, row: number } // The user is hovering a cell. The extension should reply with "tooltipReply"
-  | { subject: "rowExpansionToggled", row: number } // The user pressed an 'expand' or 'collapse' button
-  | { subject: "moreLessToggled", row: number } // The user pressed a 'more' or 'less' siblings button
-  | { subject: "checkboxToggled", row: number }
+  | { subject: "cellLeftClicked", col: number, row: SerializedBigInt, flags: SelectionFlags }
+  | { subject: "cellDoubleClicked", col: number, row: SerializedBigInt }
+  | { subject: "getContextMenu", col: number, row: SerializedBigInt } // The user right-clicked a cell. The extension should reply with "contextMenuReply"
+  | { subject: "getTooltip", col: number, row: SerializedBigInt } // The user is hovering a cell. The extension should reply with "tooltipReply"
+  | { subject: "rowExpansionToggled", row: SerializedBigInt } // The user pressed an 'expand' or 'collapse' button
+  | { subject: "moreLessToggled", row: SerializedBigInt } // The user pressed a 'more' or 'less' siblings button
+  | { subject: "checkboxToggled", row: SerializedBigInt }
   // The user wants to edit a cell, reply with "editableStringReply" using the value that should be shown in the text field
-  | { subject: "getEditableString", col: number, row: number }
-  | { subject: "cellEdited", col: number, row: number, newValue: string } // The user has changed the value of a cell
-  | { subject: "localDrop", srcCol: number, srcRow: number, dstCol: number, dstRow: number } // The user dropped the cell srcCol/srcRow at dstCol/dstRow
-  | { subject: "externalDrop", col: number, row: number, droppedText: string } // The user dropped some text at the given position
+  | { subject: "getEditableString", col: number, row: SerializedBigInt }
+  | { subject: "cellEdited", col: number, row: SerializedBigInt, newValue: string } // The user has changed the value of a cell
+  | { subject: "localDrop", srcCol: number, srcRow: SerializedBigInt, dstCol: number, dstRow: SerializedBigInt } // The user dropped the cell srcCol/srcRow at dstCol/dstRow
+  | { subject: "externalDrop", col: number, row: SerializedBigInt, droppedText: string } // The user dropped some text at the given position
   | { subject: "contextItemClicked", command: number } // The user clicked a context menu item
   | { subject: "keyNavigationPressed", operation: KeyNavOperation, rowsInPage: number }
-  | { subject: "scrollOperationPressed", operation: ScrollOperation, firstRow: number, lastRow: number }
+  | { subject: "scrollOperationPressed", operation: ScrollOperation, firstRow: SerializedBigInt, lastRow: SerializedBigInt }
   | { subject: "keyPressed", code: number, repeat: number }
   | { subject: "toolbarRendered" } // The user has clicked on an item the toolbar.
   | { subject: "toolbarItemInteraction", id: string, properties: string } // The user has interacted with a toolbar item.

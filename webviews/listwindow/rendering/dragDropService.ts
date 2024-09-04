@@ -10,7 +10,7 @@ import { CellElement, CellPosition } from "./cell/cell";
 export interface DragDropFeedback {
     target: Target;
     col: number;
-    row: number;
+    row: bigint;
 }
 
 /**
@@ -19,7 +19,7 @@ export interface DragDropFeedback {
 interface DragSource {
     windowId: string;
     col: number;
-    row: number;
+    row: bigint;
 }
 // Key for the DragSource data format on the event
 const DRAG_SOURCE_FORMAT = "application/listwindow-source";
@@ -125,9 +125,9 @@ export class DragDropService {
                         this.messageService.sendMessage({
                             subject: "localDrop",
                             srcCol: source.col,
-                            srcRow: source.row,
+                            srcRow: { value: source.row.toString() },
                             dstCol: position.col,
-                            dstRow: position.row,
+                            dstRow: { value: position.row.toString() },
                         });
                         return;
                     } else {
@@ -141,7 +141,7 @@ export class DragDropService {
                     this.messageService.sendMessage({
                         subject: "externalDrop",
                         col: position.col,
-                        row: position.row,
+                        row: { value: position.row.toString() },
                         droppedText: dropText,
                     });
                 }
@@ -163,7 +163,7 @@ namespace DragDropFeedback {
         return {
             target: Target.kNoTarget,
             col: -1,
-            row: -1,
+            row: -1n,
         };
     }
 

@@ -68,10 +68,10 @@ export class MockListwindow implements vscode.Disposable {
                 this.view.postMessageToView({
                     subject: "render",
                     params: getMockRenderParams(
-                        msg.row,
+                        Number(msg.row.value),
                         msg.flags === SelectionFlags.kAdd
-                            ? msg.row + 2
-                            : msg.row,
+                            ? Number(msg.row.value) + 2
+                            : Number(msg.row),
                     ),
                     ensureRowVisible: msg.row,
                 });

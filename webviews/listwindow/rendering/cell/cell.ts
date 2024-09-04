@@ -16,7 +16,7 @@ import { Checkbox } from "@vscode/webview-ui-toolkit";
 
 export interface CellPosition {
     col: number;
-    row: number;
+    row: bigint;
 }
 
 /** Emitted when the the user left clicks a cell */
@@ -68,7 +68,7 @@ export namespace CellEditRequestedEvent {
 export type CheckboxToggledEvent = CustomEvent<CheckboxToggledEvent.Detail>;
 export namespace CheckboxToggledEvent {
     export interface Detail {
-        row: number;
+        row: bigint;
     }
 }
 
@@ -99,7 +99,7 @@ export class CellElement extends HTMLElement {
     treeinfo: string | undefined = undefined;
     // If undefined, no checkbox is rendered
     checked: boolean | undefined = undefined;
-    position: CellPosition = { col: -1, row: -1 };
+    position: CellPosition = { col: -1, row: -1n };
     selected = false;
 
     hoverService: HoverService | undefined = undefined;

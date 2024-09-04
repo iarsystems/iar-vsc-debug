@@ -113,7 +113,7 @@ class ListwindowController {
                     // tells the backend to choose which column to edit.
                     this.cellEditService.requestCellEdit({
                         col: -1,
-                        row: Number(start),
+                        row: start,
                     });
                 }
             }
@@ -134,7 +134,11 @@ class ListwindowController {
             }
             case "render": {
                 this.renderParams = msg.params;
-                this.render(msg.ensureRowVisible);
+                this.render(
+                    msg.ensureRowVisible
+                        ? BigInt(msg.ensureRowVisible.value)
+                        : undefined,
+                );
                 this.messageService.sendMessage({ subject: "rendered" });
                 break;
             }
@@ -186,7 +190,7 @@ class ListwindowController {
         }
     }
 
-    private render(ensureRowVisible?: number) {
+    private render(ensureRowVisible?: bigint) {
         const scrollX = window.scrollX;
         const scrollY = window.scrollY;
 
@@ -222,7 +226,7 @@ class ListwindowController {
                 this.messageService.sendMessage({
                     subject: "cellDoubleClicked",
                     col: ev.detail.col,
-                    row: ev.detail.row,
+                    row: { value: ev.detail.row.toString() },
                 });
             } else {
                 let flags = SelectionFlags.kReplace;
@@ -234,7 +238,7 @@ class ListwindowController {
                 this.messageService.sendMessage({
                     subject: "cellLeftClicked",
                     col: ev.detail.col,
-                    row: ev.detail.row,
+                    row: { value: ev.detail.row.toString() },
                     flags,
                 });
             }
@@ -248,19 +252,19 @@ class ListwindowController {
         this.grid.addEventListener("row-expansion-toggled", ev => {
             this.messageService.sendMessage({
                 subject: "rowExpansionToggled",
-                row: ev.detail.row,
+                row: { value: ev.detail.row.toString() },
             });
         });
         this.grid.addEventListener("more-less-toggled", ev => {
             this.messageService.sendMessage({
                 subject: "moreLessToggled",
-                row: ev.detail.row,
+                row: { value: ev.detail.row.toString() },
             });
         });
         this.grid.addEventListener("checkbox-toggled", ev => {
             this.messageService.sendMessage({
                 subject: "checkboxToggled",
-                row: ev.detail.row,
+                row: { value: ev.detail.row.toString() },
             });
         });
         this.grid.addEventListener("cell-edit-requested", ev => {

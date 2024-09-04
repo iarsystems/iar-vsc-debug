@@ -20,7 +20,7 @@ import { Serializable } from "../protocol";
 @customElement("listwindow-row")
 export class RowElement extends HTMLElement {
     row?: Serializable<Row> = undefined;
-    index = -1;
+    index = -1n;
     selected = false;
     frozen = false;
     showCheckBoxes = false;

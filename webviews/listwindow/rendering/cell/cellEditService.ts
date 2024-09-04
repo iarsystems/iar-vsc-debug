@@ -26,7 +26,7 @@ export class CellEditService {
             if (msg.subject === "editableStringReply") {
                 this.setEditableStringForPendingEdit(msg.info, {
                     col: msg.col,
-                    row: msg.row,
+                    row: BigInt(msg.row.value),
                 });
             }
         });
@@ -41,7 +41,7 @@ export class CellEditService {
         this.messageService.sendMessage({
             subject: "getEditableString",
             col: position.col,
-            row: position.row,
+            row: { value: position.row.toString() },
         });
     }
 
@@ -86,7 +86,7 @@ export class CellEditService {
                 this.messageService.sendMessage({
                     subject: "cellEdited",
                     col: position.col,
-                    row: position.row,
+                    row: { value: position.row.toString() },
                     newValue: ev.detail,
                 });
             }

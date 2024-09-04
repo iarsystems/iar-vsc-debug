@@ -41,7 +41,7 @@ export class ContextMenuService {
         this.messageService.sendMessage({
             subject: "getContextMenu",
             col: event.detail.col,
-            row: event.detail.row,
+            row: { value: event.detail.row.toString() },
         });
     }
 

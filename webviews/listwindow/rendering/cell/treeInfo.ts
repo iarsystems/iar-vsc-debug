@@ -13,7 +13,7 @@ import { customElement } from "../utils";
 export type RowExpansionToggledEvent = CustomEvent<RowExpansionToggledEvent.Detail>;
 export namespace RowExpansionToggledEvent {
     export interface Detail {
-        row: number;
+        row: bigint;
     }
 }
 /**
@@ -22,7 +22,7 @@ export namespace RowExpansionToggledEvent {
 export type MoreLessToggledEvent = CustomEvent<MoreLessToggledEvent.Detail>;
 export namespace MoreLessToggledEvent {
     export interface Detail {
-        row: number;
+        row: bigint;
     }
 }
 
@@ -33,7 +33,7 @@ export namespace MoreLessToggledEvent {
 @customElement("listwindow-tree-info")
 export class TreeInfoElement extends HTMLElement {
     treeinfo = "";
-    row = -1;
+    row = -1n;
 
     connectedCallback() {
         this.classList.add(Styles.self);
