@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import * as Q from "q";
-import { Note, What } from "iar-vsc-common/thrift/bindings/listwindow_types";
+import { MenuItem, Note, What } from "iar-vsc-common/thrift/bindings/listwindow_types";
 import * as ListWindowBackend from "iar-vsc-common/thrift/bindings/ListWindowBackend";
 import * as ListWindowFrontend from "iar-vsc-common/thrift/bindings/ListWindowFrontend";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
@@ -13,44 +13,34 @@ import { ListwindowViewProvider } from "./listwindowViewProvider";
 import { RenderParameters, ViewMessage } from "../../webviews/listwindow/protocol";
 import { Int64 } from "thrift";
 
-export interface Cell {
-    value: string;
-    isEditable: boolean;
-}
-
-export interface ListWindowRowReference {
-    cells: Cell[];
-    hasChildren: boolean;
-    parentIds: string[][];
-}
-
 /**
- * Poses as a frontend for a list window, managing all events and keeping track of all its rows.
- * The contents are represented to users of this class as a tree, consisting of some top-level rows {@link getTopLevelRows},
- * and their children {@link getChildrenOf}.
- * NOTE: This class requires that the window cannot have identical rows at the same level (e.g. identical top-level rows
- * or identical children of some row). This works e.g. for variable windows, but might not be true for other windows.
- * Getting around this limitation is *possible*, but way too complicated to be worth doing until we actually need it.
- * NOTE 2: This class **only** works with non-sliding list windows.
+ * This class acts as the intermediary layer between the webview (ListwindowViewProvider)
+ * and the cspyserver backend.
+ * User interactions from the webview enters via the handleMessageFromView and notifications
+ * are handled by the notify method, which is how the cspyserver interacts with the VsCode
+ * client.
+ *
+ * To increase responsiveness, a row-proxy is placed between the ListWindowBackendHandler
+ * and cspyserver.
  */
+type Backend = ThriftClient<ListWindowBackend.Client>;
+
 export class ListWindowBackendHandler {
-    private backendClient: ThriftClient<ListWindowBackend.Client> | undefined =
-        undefined;
+    private backendClient: Backend | undefined = undefined;
     private frontendLocation: ServiceLocation | undefined = undefined;
     private readonly proxy: ListWindowProxy = new ListWindowProxy();
 
     private readonly view: ListwindowViewProvider;
     private readonly serviceName: string;
 
+    private activePromise: Q.Promise<unknown> | undefined;
+
     private readonly currentRow = 0;
     private readonly numberOfVisibleRows = 2;
     private currentSeq = new Int64(0);
     private latestSeq = new Int64(0);
 
-    constructor(
-        view: ListwindowViewProvider,
-        serviceName: string
-    ) {
+    constructor(view: ListwindowViewProvider, serviceName: string) {
         this.view = view;
         this.serviceName = serviceName;
 
@@ -59,9 +49,7 @@ export class ListWindowBackendHandler {
         this.view.onMessageReceived = msg => this.handleMessageFromView(msg);
     }
 
-    async connect(
-        serviceRegistry: ThriftServiceRegistry
-    ): Promise<void> {
+    async connect(serviceRegistry: ThriftServiceRegistry): Promise<void> {
         this.backendClient = await serviceRegistry.findService(
             this.serviceName,
             ListWindowBackend.Client,
@@ -85,6 +73,19 @@ export class ListWindowBackendHandler {
         this.frontendLocation = undefined;
     }
 
+    private scheduleCall<T>(
+        call: (backendClient: Backend) => void,
+    ): Q.Promise<T | undefined> {
+        const chainPromise =
+            this.activePromise !== undefined ? this.activePromise : Q.resolve();
+        return chainPromise.then(() => {
+            if (this.backendClient) {
+                return call(this.backendClient) as T;
+            }
+            return undefined;
+        });
+    }
+
     private handleMessageFromView(msg: ViewMessage) {
         switch (msg.subject) {
             case "loaded": {
@@ -98,7 +99,21 @@ export class ListWindowBackendHandler {
             case "columnClicked":
             case "cellLeftClicked":
             case "cellDoubleClicked":
-            case "getContextMenu":
+            case "getContextMenu": {
+                this.activePromise = this.scheduleCall<MenuItem[]>(
+                    (client: Backend) => {
+                        return client.service.getContextMenu(new Int64(1), 1);
+                    },
+                ).then(value => {
+                    if (value) {
+                        this.view.postMessageToView({
+                            subject: "contextMenuReply",
+                            menu: value,
+                        });
+                    }
+                });
+                break;
+            }
             case "getTooltip":
             case "rowExpansionToggled":
             case "moreLessToggled":
@@ -128,8 +143,6 @@ export class ListWindowBackendHandler {
             });
         });
     }
-
-    private activePromise: Q.Promise<unknown> | undefined;
 
     // callback from list window backend
     notify(note: Note): Q.Promise<void> {
@@ -175,5 +188,4 @@ export class ListWindowBackendHandler {
         this.activePromise = updatePromise;
         return Q.resolve();
     }
-
 }
