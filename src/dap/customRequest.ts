@@ -4,6 +4,7 @@
 
 import { MsgIcon, MsgKind, MsgResult } from "iar-vsc-common/thrift/bindings/frontend_types";
 import { BreakpointType } from "./breakpoints/cspyBreakpointService";
+import { Protocol, Transport } from "iar-vsc-common/thrift/bindings/ServiceRegistry_types";
 
 /**
  * Custom requests can be sent from a DAP client to the DAP server. Basically, these are C-SPY specific extensions to
@@ -14,6 +15,7 @@ export namespace CustomRequest {
      * Holds the names of all supported custom requests (i.e. the string values used to perform the requests).
      */
     export enum Names {
+        GET_REGISTRY_LOCATION     = "getRegistryLocation",
         USE_AUTO_BREAKPOINTS      = "useAutoBreakpoints",
         USE_HARDWARE_BREAKPOINTS  = "useHardwareBreakpoints",
         USE_SOFTWARE_BREAKPOINTS  = "useSoftwareBreakpoints",
@@ -31,6 +33,16 @@ export namespace CustomRequest {
         PROGRESS_BAR_CANCELED    = "progressBarCanceled",
         ELEMENT_SELECTED         = "elementSelected",
         MULTIELEMENT_SELECTED    = "multiElementSelected",
+    }
+
+    /**
+     * Response data to a {@link CustomRequest.Names.GET_REGISTRY_LOCATION} request.
+     */
+    export interface RegistryLocationResponse {
+        host: string;
+        port: number;
+        transport: Transport;
+        protocol: Protocol;
     }
 
     /**

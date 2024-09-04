@@ -350,6 +350,10 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.teardown.pushDisposable(breakpointManager);
 
             // --- Set up custom DAP requests ---
+            this.customRequestRegistry.registerCommand(
+                CustomRequest.Names.GET_REGISTRY_LOCATION,
+                () => cspyProcess.serviceRegistry.registryLocation,
+            );
             const breakpointTypeExtension = new BreakpointTypeProtocolExtension(driver, this, args.breakpointType,
                 this.customRequestRegistry, this.consoleCommandRegistry);
             this.customRequestRegistry.registerCommand(CustomRequest.Names.REGISTERS, async(): Promise<CustomRequest.RegistersResponse> => {
