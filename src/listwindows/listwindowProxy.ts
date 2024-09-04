@@ -2,77 +2,119 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import * as Q from "q";
 import {
     Note,
     Row,
     What,
 } from "iar-vsc-common/thrift/bindings/listwindow_types";
 import * as ListWindowBackend from "iar-vsc-common/thrift/bindings/ListWindowBackend";
-import { ListwindowViewProvider } from "./listwindowViewProvider";
 import { RenderParameters } from "../../webviews/listwindow/protocol";
 import { Int64 } from "thrift";
 
-export class ListwindowProxy {
-    // Start with a stupid cache.
-    private readonly cache: Map<number, Row>;
+export class SimpleProxyCache {
+    private client: ListWindowBackend.Client | undefined = undefined;
+    public cache: Map<Int64, Row> = new Map<Int64, Row>();
 
+    public connect(c: ListWindowBackend.Client) {
+        this.client = c;
+        this.cache.clear();
+    }
+
+    public async GetRow(rowNo: Int64): Promise<Row> {
+        if (this.cache.has(rowNo)) {
+            return this.cache.get(rowNo) as Row;
+        }
+
+        const row = await this.client?.getRow(rowNo);
+        this.cache.set(rowNo, row as Row);
+        return row as Row;
+    }
+}
+
+/** The proxy acts as a simple cache between the backend model and the frontend model
+ *  to have the webview be more responsive. The proxy keeps track of the validity of
+ *  the cache and supplies the view with RenderParameters 1: from the proxy or 2: from
+ *  the backend in case the value is unknown.
+ */
+export class ListWindowProxy {
+    // Start with a stupid cache.
+    private readonly cache: SimpleProxyCache = new SimpleProxyCache();
     private client: ListWindowBackend.Client | undefined = undefined;
     private renderParams: RenderParameters =
-        ListwindowProxy.getDefaultRenderParameters();
-    private readonly isFrozen = false;
+        ListWindowProxy.getDefaultRenderParameters();
+    private isFrozen = false;
 
     // Swapping client.
     connectToClient(newClient: ListWindowBackend.Client) {
         this.client = newClient;
-        this.cache.clear();
-        this.renderParams = ListwindowProxy.getDefaultRenderParameters();
-    }
-
-    constructor() {
-        this.cache = new Map<number, Row>();
+        this.cache.connect(newClient);
+        this.renderParams = ListWindowProxy.getDefaultRenderParameters();
     }
 
     // callback from list window backend
-    notify(note: Note): Q.Promise<void> {
+    async notify(note: Note): Promise<Note> {
         switch (note.what) {
-            case What.kEnsureVisible:
-            case What.kSelectionUpdate:
+            case What.kSelectionUpdate: {
+                await this.updateSelection();
+                break;
+            }
             case What.kRowUpdate: {
+                this.cache.cache.delete(note.row);
+                await this.updateSelection();
                 break;
             }
-            case What.kNormalUpdate:
+            case What.kNormalUpdate: {
+                // Update the rows from scratch.
+                this.cache.cache.clear();
+                await this.updateSelection();
+                break;
+            }
             case What.kFullUpdate: {
-                this.cache.clear();
+                // Update the rows, cols and listspec from scratch.
+                this.cache.cache.clear();
+                await this.updateColumns();
+                await this.updateListSpec();
+                await this.updateSelection();
                 break;
             }
-            case What.kFreeze:
-            case What.kThaw:
+            case What.kFreeze: {
+                this.isFrozen = true;
+                break;
+            }
+            case What.kThaw: {
+                this.isFrozen = false;
+                break;
+            }
             default:
         }
-        return Q.resolve();
+        return note;
     }
 
     getRenderParameter(): RenderParameters {
         return this.renderParams;
     }
 
-    /*
-    private async updateListSpec(): Promise<void> {
+    async updateSelection(): Promise<void> {
+        if (this.client) {
+            this.renderParams.selection = await this.client.getSelection();
+        }
+    }
+
+    async updateListSpec(): Promise<void> {
         if (this.client) {
             this.renderParams.listSpec = await this.client.getListSpec();
         }
     }
 
-    private async updateColumns(): Promise<void> {
+    async updateColumns(): Promise<void> {
         if (this.client) {
             this.renderParams.columnInfo = await this.client.getColumnInfo();
         }
     }
-        */
 
-    public async updateRenderParameters(
-        offset: number, noVisibleRows: number
+    async updateRenderParameters(
+        offset: number,
+        noVisibleRows: number,
     ): Promise<RenderParameters> {
         if (!this.client || this.isFrozen) {
             return this.renderParams;
@@ -86,23 +128,7 @@ export class ListwindowProxy {
             this.renderParams.rows.push(await this.client.getRow(rowNo));
         }
 
-
         return this.renderParams;
-    }
-
-    /**
-     * Uses the given view to render to, and begins handling messages (e.g user
-     * interaction) from it.
-     */
-    attachToView(_view: ListwindowViewProvider): void {
-        /* */
-    }
-
-    /**
-     * Forgets about any currently attached view.
-     */
-    detachFromView(): void {
-        /* */
     }
 
     static getDefaultRenderParameters(): RenderParameters {
