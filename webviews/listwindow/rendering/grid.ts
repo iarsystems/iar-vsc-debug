@@ -25,6 +25,7 @@ export class GridElement extends HTMLElement {
 
     hoverService: HoverService | undefined = undefined;
     dragDropService: DragDropService | undefined = undefined;
+    headerElement: HeaderElement | undefined = undefined;
 
     connectedCallback() {
         this.classList.add(Styles.self);
@@ -55,15 +56,15 @@ export class GridElement extends HTMLElement {
         this.appendChild(grid);
 
         // Create header
-        const header = new HeaderElement();
-        header.columns = this.data.columnInfo;
-        header.columnWidths = this.initialColumnWidths;
-        header.clickable = this.data.listSpec.canClickColumns;
-        header.resizeMode = this.resizeMode;
-        grid.appendChild(header);
+        this.headerElement = new HeaderElement();
+        this.headerElement.columns = this.data.columnInfo;
+        this.headerElement.columnWidths = this.initialColumnWidths;
+        this.headerElement.clickable = this.data.listSpec.canClickColumns;
+        this.headerElement.resizeMode = this.resizeMode;
+        grid.appendChild(this.headerElement);
 
         if (!this.data.listSpec.showHeader) {
-            header.style.display = "none";
+            this.headerElement.style.display = "none";
         }
 
         // Create body
@@ -80,6 +81,7 @@ export class GridElement extends HTMLElement {
             rowElem.selected = ranges.some(
                 range => range.first <= y && range.last >= y,
             );
+            rowElem.frozen = this.data.frozen;
             rowElem.showCheckBoxes = this.data.listSpec.showCheckBoxes;
             rowElem.addFillerCell = this.resizeMode === "fixed";
             rowElem.hoverService = this.hoverService;
@@ -107,6 +109,20 @@ export class GridElement extends HTMLElement {
             );
         };
 
+        if (this.data.frozen) {
+            const overlay = document.createElement("div");
+            overlay.classList.add(Styles.overlay);
+            const isLightTheme = this.data.columnInfo[0]
+                ? this.data.columnInfo[0].defaultFormat.bgColor.r >
+                  this.data.columnInfo[0].defaultFormat.textColor.r
+                : false;
+            if (isLightTheme) {
+                overlay.style.backgroundColor = "rgba(255, 255, 255, 0.3)";
+            } else {
+                overlay.style.backgroundColor = "rgba(0, 0, 0, 0.2)";
+            }
+            this.appendChild(overlay);
+        }
     }
 
     override oncontextmenu = (ev: MouseEvent) => {
@@ -199,5 +215,10 @@ namespace Styles {
         // deselect everything.
         height: "10px",
         flex: "1 0 auto",
+    });
+    export const overlay = css({
+        pointerEvents: "none",
+        position: "absolute",
+        inset: 0,
     });
 }

@@ -95,6 +95,10 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     leaveTargetRunning?: boolean
     /** Hidden option. Allows starting sessions with any target (although it might not work) */
     bypassTargetRestriction?: boolean;
+    /** Hidden option. Enables the debug adapter to ask the client for a theme definition. This is
+     * required to render listwindows properly, but can be disabled in tests.
+     */
+    enableThemeLookup?: boolean;
 }
 
 /**
@@ -268,7 +272,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             });
             cspyProcess.serviceRegistry.startService(LIBSUPPORT_SERVICE, LibSupportService2, this.libSupportHandler);
 
-            const frontendHandler = new FrontendHandler(this, args.sourceFileMap ?? {}, this.customRequestRegistry);
+            const frontendHandler = new FrontendHandler(this, args.sourceFileMap ?? {}, args.enableThemeLookup ?? false, this.customRequestRegistry);
             this.teardown.pushDisposable(frontendHandler);
             cspyProcess.serviceRegistry.startService(FRONTEND_SERVICE, Frontend, frontendHandler);
             const timelineFrontendHandler = new TimelineFrontendHandler();

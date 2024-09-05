@@ -9,6 +9,7 @@ import {
 import {
     Alignment,
     Cell,
+    Color,
     Column,
     Format,
     ListSpec,
@@ -18,7 +19,7 @@ import {
     TextStyle,
 } from "iar-vsc-common/thrift/bindings/listwindow_types";
 import Int64 = require("node-int64");
-import { MenuItem, SelectionFlags } from "../../webviews/listwindow/thrift/listwindow_types";
+import { EditInfo, MenuItem, SelectionFlags } from "../../webviews/listwindow/thrift/listwindow_types";
 import { ListwindowViewProvider } from "./listwindowViewProvider";
 
 /**
@@ -51,6 +52,10 @@ export class MockListwindow implements vscode.Disposable {
                 this.view.postMessageToView({
                     subject: "render",
                     params: getMockRenderParams(),
+                });
+                this.view.postMessageToView({
+                    subject: "renderToolbar",
+                    params: toolbar,
                 });
                 break;
             case "rendered":
@@ -203,7 +208,14 @@ export class MockListwindow implements vscode.Disposable {
                 }
                 this.view.postMessageToView({
                     subject: "editableStringReply",
-                    text: "Hello Edit",
+                    info: new EditInfo({
+                        editString: "Hello Edit",
+                        column: 0,
+                        range: new SelRange({
+                            first: new Int64(0),
+                            last: new Int64(-1),
+                        }),
+                    }),
                     col: msg.col,
                     row: msg.row,
                 });
@@ -217,6 +229,21 @@ export class MockListwindow implements vscode.Disposable {
             case "keyNavigationPressed":
                 break;
             case "scrollOperationPressed":
+                break;
+            case "toolbarItemInteraction":
+                console.log(
+                    `Interaction with item ${msg.id} with data ${msg.properties}`,
+                );
+                break;
+            case "getToolbarToolTip": {
+                const text = `Tooltip for item ${msg.id}`;
+                this.view.postMessageToView({
+                    subject: "tooltipReply",
+                    text,
+                });
+                break;
+            }
+            case "toolbarRendered":
                 break;
             case "keyPressed":
                 break;
@@ -233,16 +260,30 @@ export class MockListwindow implements vscode.Disposable {
 }
 
 function getMockRenderParams(selectionStart = 1, selectionEnd = selectionStart) {
+    const black = new Color({ r: 0, b: 0, g: 0, isDefault: true, lowContrast: false });
+    const grey = new Color({ r: 180, b: 180, g: 180, isDefault: true, lowContrast: false });
+    const white = new Color({ r: 255, b: 255, g: 255, isDefault: true, lowContrast: false });
+    const red = new Color({ r: 255, b: 0, g: 0, isDefault: true, lowContrast: false });
+
     const format = new Format();
     format.align = Alignment.kLeft;
     format.style = TextStyle.kProportionalPlain;
+    format.bgColor = black;
+    format.textColor = grey;
+    format.icons = [];
     const editableFormat = new Format();
     editableFormat.align = Alignment.kLeft;
     editableFormat.style = TextStyle.kProportionalPlain;
     editableFormat.editable = true;
+    editableFormat.bgColor = black;
+    editableFormat.textColor = white;
+    editableFormat.icons = ["IDE_PERSIST_EXPR_VAL"];
     const memFormat = new Format();
     memFormat.align = Alignment.kRight;
-    memFormat.style = TextStyle.kFixedPlain;
+    memFormat.style = TextStyle.kFixedItalic;
+    memFormat.bgColor = black;
+    memFormat.textColor = red;
+    memFormat.icons = [];
 
     const params: RenderParameters = {
         rows: [
@@ -305,6 +346,7 @@ function getMockRenderParams(selectionStart = 1, selectionEnd = selectionStart) 
         ],
         listSpec: new ListSpec(),
         selection: [],
+        frozen: false,
     };
     params.listSpec.showHeader = true;
     params.listSpec.showGrid = true;
@@ -361,3 +403,331 @@ function getMockRenderParams(selectionStart = 1, selectionEnd = selectionStart) 
     }));
     return params;
 }
+
+
+const toolbar = `<tree>
+<key>ROOT</key>
+<value>NONE</value>
+<children>
+    <tree>
+      <key>ITEM0</key>
+      <value>NONE</value>
+      <children>
+        <tree>
+          <key>TEXT</key>
+          <value>first</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>ID</key>
+          <value>100</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>KIND</key>
+          <value>TEXTBUTTON</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>STRINGLIST</key>
+          <value>LIST</value>
+          <children>
+            <tree>
+              <key>0</key>
+              <value>first</value>
+              <children/>
+            </tree>
+            <tree>
+              <key>1</key>
+              <value>Huppladuffing</value>
+              <children/>
+            </tree>
+          </children>
+        </tree>
+      </children>
+    </tree>
+    <tree>
+      <key>ITEM1</key>
+      <value>NONE</value>
+      <children>
+        <tree>
+          <key>TEXT</key>
+          <value>Huppladuffing</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>ID</key>
+          <value>300</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>KIND</key>
+          <value>TEXTBUTTON</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>STRINGLIST</key>
+          <value>LIST</value>
+          <children>
+            <tree>
+              <key>0</key>
+              <value>first</value>
+              <children/>
+            </tree>
+            <tree>
+              <key>1</key>
+              <value>Huppladuffing</value>
+              <children/>
+            </tree>
+          </children>
+        </tree>
+      </children>
+    </tree>
+    <tree>
+      <key>ITEM2</key>
+      <value>NONE</value>
+      <children>
+        <tree>
+          <key>TEXT</key>
+          <value>MORE</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>ID</key>
+          <value>-1</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>KIND</key>
+          <value>SPACING</value>
+          <children/>
+        </tree>
+      </children>
+    </tree>
+    <tree>
+      <key>ITEM3</key>
+      <value>NONE</value>
+      <children>
+        <tree>
+          <key>TEXT</key>
+          <value>IDI_DBU_TRACE_CLEAR</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>ID</key>
+          <value>200</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>KIND</key>
+          <value>ICONBUTTON</value>
+          <children/>
+        </tree>
+      </children>
+    </tree>
+    <tree>
+      <key>ITEM4</key>
+      <value>NONE</value>
+      <children>
+        <tree>
+          <key>TEXT</key>
+          <value>LESS</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>ID</key>
+          <value>-1</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>KIND</key>
+          <value>SPACING</value>
+          <children/>
+        </tree>
+      </children>
+    </tree>
+    <tree>
+      <key>ITEM5</key>
+      <value>NONE</value>
+      <children>
+        <tree>
+          <key>TEXT</key>
+          <value>IDI_DBU_TRACE_BROWSE</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>ID</key>
+          <value>400</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>KIND</key>
+          <value>ICONBUTTON</value>
+          <children/>
+        </tree>
+      </children>
+    </tree>
+    <tree>
+      <key>ITEM6</key>
+      <value>NONE</value>
+      <children>
+        <tree>
+          <key>TEXT</key>
+          <value>Check</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>ID</key>
+          <value>500</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>KIND</key>
+          <value>TEXTCHECK</value>
+          <children/>
+        </tree>
+      </children>
+    </tree>
+    <tree>
+      <key>ITEM7</key>
+      <value>NONE</value>
+      <children>
+        <tree>
+          <key>TEXT</key>
+          <value>IDI_DBU_TRACE_ONOFF</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>ID</key>
+          <value>600</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>KIND</key>
+          <value>ICONCHECK</value>
+          <children/>
+        </tree>
+      </children>
+    </tree>
+    <tree>
+      <key>ITEM8</key>
+      <value>NONE</value>
+      <children>
+        <tree>
+          <key>TEXT</key>
+          <value>MC</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>ID</key>
+          <value>700</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>KIND</key>
+          <value>SELECTMENU</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>STRINGLIST</key>
+          <value>LIST</value>
+          <children>
+            <tree>
+              <key>0</key>
+              <value>Alfa</value>
+              <children/>
+            </tree>
+            <tree>
+              <key>1</key>
+              <value>Beta</value>
+              <children/>
+            </tree>
+            <tree>
+              <key>2</key>
+              <value>Gamma</value>
+              <children/>
+            </tree>
+          </children>
+        </tree>
+      </children>
+    </tree>
+    <tree>
+      <key>ITEM9</key>
+      <value>NONE</value>
+      <children>
+        <tree>
+          <key>TEXT</key>
+          <value>Display:</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>ID</key>
+          <value>800</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>KIND</key>
+          <value>DISPLAYTEXT</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>TEXT2</key>
+          <value>Samla mammas manna</value>
+          <children/>
+        </tree>
+      </children>
+    </tree>
+    <tree>
+      <key>ITEM10</key>
+      <value>NONE</value>
+      <children>
+        <tree>
+          <key>TEXT</key>
+          <value>Hmm...</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>ID</key>
+          <value>900</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>KIND</key>
+          <value>ICONMENU</value>
+          <children/>
+        </tree>
+      </children>
+    </tree>
+    <tree>
+      <key>ITEM11</key>
+      <value>NONE</value>
+      <children>
+        <tree>
+          <key>TEXT</key>
+          <value>Editlabel</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>ID</key>
+          <value>1000</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>KIND</key>
+          <value>EDITTEXT</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>TEXT2</key>
+          <value>Lagom bred eller hur</value>
+          <children/>
+        </tree>
+        <tree>
+          <key>BOOL</key>
+          <value>1</value>
+          <children/>
+        </tree>
+      </children>
+    </tree>
+  </children>
+</tree>`;

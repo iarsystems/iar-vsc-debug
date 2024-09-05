@@ -29,7 +29,28 @@ export function toBigInt(int64: Serializable<Int64>): bigint {
         for (const num of int64.buffer.data) {
             str += num.toString(16);
         }
-        return BigInt(str);
+        const big = BigInt(str);
+        // Int64s are signed, so if the most significant bit is set, we should
+        // count that bit as negative instead.
+        if (int64.buffer.data[0] === undefined) {
+            return big;
+        }
+        if ((int64.buffer.data[0] & (1 << 7)) === 0) {
+            return big;
+        }
+        return big - BigInt(2) * (BigInt(1) << BigInt(63));
     }
     throw new Error("Got an invalid Int64");
+}
+
+/**
+ * Converts an int64 we've been sent from the extension into a Number. Throws if
+ * the number is too large to be represented as a Number.
+ */
+export function toNumber(int64: Serializable<Int64>): number {
+    const big = toBigInt(int64);
+    if (big > Number.MAX_SAFE_INTEGER || big < Number.MIN_SAFE_INTEGER) {
+        throw new Error(`The number ${big} is too large to be represented as a Number`);
+    }
+    return Number(big);
 }

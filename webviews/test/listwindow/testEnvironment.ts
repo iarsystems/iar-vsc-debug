@@ -25,6 +25,8 @@ export async function setupTestEnvironment(): Promise<{
         /*html*/ `
         <html>
             <body>
+                <div id="toolbar" viewId="testView">
+                </div>
                 <div id="app" viewId="testView">
                 </div>
             </body>
@@ -32,6 +34,9 @@ export async function setupTestEnvironment(): Promise<{
         { runScripts: "dangerously", pretendToBeVisual: true },
     );
     dom.window.scrollTo = () => {
+        /* JSDOM doesn't implement this, so we mock it */
+    };
+    dom.window.HTMLElement.prototype.scrollIntoView = function() {
         /* JSDOM doesn't implement this, so we mock it */
     };
     const user = userEvent.setup({ document: dom.window.document });

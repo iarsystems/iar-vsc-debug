@@ -10,6 +10,7 @@ import { Column } from "../../thrift/listwindow_types";
 import { SharedStyles } from "../styles/sharedStyles";
 import { Theming } from "../styles/theming";
 import { css } from "@emotion/css";
+import { ToolbarElement } from "../toolbar/toolbar";
 
 /**
  * Emitted when the the user has resized a column
@@ -45,6 +46,10 @@ export class HeaderElement extends HTMLElement {
     resizeMode: ColumnResizeMode = "fixed";
 
     private columnHeaders: HTMLElement[] = [];
+
+    public addToolbarArea(): void {
+        this.classList.toggle(Styles.toolbarToggle);
+    }
 
     connectedCallback() {
         this.classList.add(Styles.self);
@@ -137,16 +142,18 @@ export class HeaderElement extends HTMLElement {
         }
     }
 
-    // Changes the width of each (non-fixed-width) to be specified as a
+    // Changes the width of each (non-fixed-width) column to be specified as a
     // "fraction" based on its current rendered width. This makes the columns
     // scale proportionally to their fraction value.
     private applyRenderedWidthsAsFractions() {
         let columnWidths = "";
         for (const [i, header] of this.columnHeaders.entries()) {
-            const width = header.offsetWidth;
-            const unit = this.columns[i]?.fixed ? "px" : "fr";
-            columnWidths += width + unit;
-            columnWidths += " ";
+            let width = header.offsetWidth + "fr";
+            const columnSpec = this.columns[i];
+            if (columnSpec?.fixed) {
+                width = columnSpec.width + "px";
+            }
+            columnWidths += width + " ";
         }
         if (this.parentElement) {
             this.parentElement.style.gridTemplateColumns = columnWidths;
@@ -282,9 +289,15 @@ namespace Styles {
             }
         `,
     ]);
+    export const toolbarToggle = css`
+        >* {
+            top: ${ToolbarElement.TOOLBAR_HEIGHT}px;
+        }
+    `;
     export const title = css({
         overflow: "hidden",
         textOverflow: "ellipsis",
+        textWrap: "nowrap",
         padding: "0px 12px",
         boxSizing: "border-box",
         maxWidth: "100%",

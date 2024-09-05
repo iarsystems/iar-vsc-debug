@@ -4,6 +4,7 @@
 
 import { MessageService } from "../messageService";
 import { CellHoveredEvent } from "./cell/cell";
+import { ToolbarItemHoveredEvent } from "./toolbar/toolbarItem";
 import { SharedStyles } from "./styles/sharedStyles";
 import { customElement } from "./utils";
 import { css } from "@emotion/css";
@@ -45,6 +46,19 @@ export class TooltipService {
             subject: "getTooltip",
             col: event.detail.col,
             row: event.detail.row,
+        });
+    }
+
+    requestToolbarTooltip(event: ToolbarItemHoveredEvent) {
+        const fallbackText = event.detail.fallbackInfo;
+        this.pendingTooltip = {
+            position: event.detail.hoverPosition,
+            fallbackText,
+        };
+        document.addEventListener("mousemove", this.clearTooltip);
+        this.messageService.sendMessage({
+            subject: "getToolbarToolTip",
+            id: event.detail.id,
         });
     }
 
