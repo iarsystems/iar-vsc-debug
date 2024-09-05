@@ -134,6 +134,7 @@ export class ListWindowProxy {
     static getDefaultRenderParameters(): RenderParameters {
         const rows: Row[] = [];
         return {
+            frozen: true,
             rows: rows,
             columnInfo: [],
             selection: [],

@@ -254,7 +254,7 @@ export class ListWindowBackendHandler {
                             subject: "editableStringReply",
                             col: value.column,
                             row: edit.row,
-                            text: value.editString,
+                            info: value
                         });
                     }
                 });
