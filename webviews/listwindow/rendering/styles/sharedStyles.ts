@@ -31,19 +31,23 @@ export namespace SharedStyles {
     }
     const ALIGNMENT_LEFT = css({
         textAlign: "left",
+        justifySelf: "left",
     });
     const ALIGNMENT_RIGHT = css({
         textAlign: "right",
+        justifySelf: "right",
     });
     const ALIGNMENT_CENTER = css({
         textAlign: "center",
+        justifySelf: "center",
     });
 
     // "z-index" values used by various elements. By defining them in one place,
     // it's easier to get an overview of how the elements stack.
     export enum ZIndices {
         GridHeader = 1,
-        Tooltip = 2,
-        ContextMenu = 2,
+        Toolbar = 2,
+        Tooltip = 3,
+        ContextMenu = 3,
     }
 }

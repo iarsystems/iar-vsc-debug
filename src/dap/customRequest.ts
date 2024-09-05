@@ -33,6 +33,7 @@ export namespace CustomRequest {
         PROGRESS_BAR_CANCELED    = "progressBarCanceled",
         ELEMENT_SELECTED         = "elementSelected",
         MULTIELEMENT_SELECTED    = "multiElementSelected",
+        THEME_RESOLVED           = "themeResolved",
     }
 
     /**
@@ -150,6 +151,31 @@ export namespace CustomRequest {
         }
         return false;
     }
+
+    /**
+     * All channels are 0-255.
+     */
+    export interface ThemeColor { r: number, g: number, b: number }
+    /**
+     * Request arguments/parameters for a {@link CustomRequest.THEME_RESOLVED} request.
+     */
+    export interface ThemeResolvedArgs {
+        id: number;
+        theme: {
+            bg: ThemeColor;
+            fg: ThemeColor;
+            disabledFg: ThemeColor;
+            highlightedFg: ThemeColor;
+            pc: ThemeColor;
+        };
+    }
+    export function isThemeResolvedArgs(obj: unknown): obj is ThemeResolvedArgs {
+        if (typeof(obj) === "object") {
+            const args = obj as ThemeResolvedArgs;
+            return args.id !== undefined && args.theme !== undefined;
+        }
+        return false;
+    }
 }
 
 /**
@@ -171,6 +197,7 @@ export namespace CustomEvent {
         ELEMENT_SELECT_CREATED      = "elementSelectCreated",
         MULTIELEMENT_SELECT_CREATED = "multiElementSelectCreated",
         FILE_OPENED                 = "fileOpened",
+        THEME_REQUESTED             = "themeRequested",
     }
 
     export interface MessageBoxCreatedData {
@@ -239,5 +266,8 @@ export namespace CustomEvent {
         path: string;
         line: number,
         col: number,
+    }
+    export interface ThemeRequestedData {
+        id: number;
     }
 }

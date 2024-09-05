@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { KeyNavOperation, ScrollOperation } from "./thrift/listwindow_types";
+import { EditInfo, KeyNavOperation, ScrollOperation } from "./thrift/listwindow_types";
 import { MenuItem } from "./thrift/listwindow_types";
 import { Column, ListSpec, Row, SelRange, SelectionFlags } from "./thrift/listwindow_types";
 
@@ -33,6 +33,7 @@ export type RenderParameters = Serializable<{
     listSpec: ListSpec;
     columnInfo: Column[];
     selection: SelRange[];
+    frozen: boolean;
 }>;
 
 
@@ -47,11 +48,12 @@ export type ColumnResizeMode = "fit" | "fixed";
  */
 export type ExtensionMessage =
   | { subject: "render", params: RenderParameters, ensureRowVisible?: number } // Render the given data
+  | { subject: "renderToolbar", params: string} // Render the given data
   | { subject: "setResizeMode", mode: ColumnResizeMode }
   | { subject: "dumpHTML" } // Send a message back with the current full HTML of the view (useful for testing)
   | { subject: "contextMenuReply", menu: Serializable<MenuItem>[] }
   | { subject: "tooltipReply", text?: string }
-  | { subject: "editableStringReply", text: string, col: number, row: number };
+  | { subject: "editableStringReply", info: Serializable<EditInfo>, col: number, row: number };
 
 /**
  * A message from the listwindow view to the extension
@@ -76,7 +78,10 @@ export type ViewMessage =
   | { subject: "contextItemClicked", command: number } // The user clicked a context menu item
   | { subject: "keyNavigationPressed", operation: KeyNavOperation, rowsInPage: number }
   | { subject: "scrollOperationPressed", operation: ScrollOperation, firstRow: number, lastRow: number }
-  | { subject: "keyPressed", code: number, repeat: number };
+  | { subject: "keyPressed", code: number, repeat: number }
+  | { subject: "toolbarRendered" } // The user has clicked on an item the toolbar.
+  | { subject: "toolbarItemInteraction", id: string, properties: string } // The user has interacted with a toolbar item.
+  | { subject: "getToolbarToolTip", id: string }; // The user is hovering a toolbar item.
 
 
 /**
