@@ -60,6 +60,8 @@ export class MockListwindow implements vscode.Disposable {
                 break;
             case "rendered":
                 break;
+            case "viewportChanged":
+                break;
             case "HTMLDump":
                 break;
             case "columnClicked":
@@ -71,7 +73,7 @@ export class MockListwindow implements vscode.Disposable {
                         Number(msg.row.value),
                         msg.flags === SelectionFlags.kAdd
                             ? Number(msg.row.value) + 2
-                            : Number(msg.row),
+                            : Number(msg.row.value),
                     ),
                     ensureRowVisible: msg.row,
                 });
@@ -347,6 +349,12 @@ function getMockRenderParams(selectionStart = 1, selectionEnd = selectionStart) 
         listSpec: new ListSpec(),
         selection: [],
         frozen: false,
+        scrollInfo: {
+            offset: { value: "0" },
+            fractionBefore: 0.0,
+            fractionInWin: 1.0,
+            fractionAfter: 0.0,
+        }
     };
     params.listSpec.showHeader = true;
     params.listSpec.showGrid = true;

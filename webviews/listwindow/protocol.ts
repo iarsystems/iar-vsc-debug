@@ -34,6 +34,13 @@ export type RenderParameters = Serializable<{
     columnInfo: Column[];
     selection: SelRange[];
     frozen: boolean;
+    scrollInfo: {
+        // The index of the first row
+        offset: SerializedBigInt;
+        fractionInWin: number;
+        fractionBefore: number;
+        fractionAfter: number;
+    }
 }>;
 
 
@@ -68,6 +75,7 @@ export type ViewMessage =
   | { subject: "loaded" } // Sent when the view has been initialized
   | { subject: "rendered" } // Sent when done with a render message, useful for testing
   | { subject: "HTMLDump", html: string } // Response to a dumpHTML message, contains the full HTML of the view
+  | { subject: "viewportChanged", firstRow: SerializedBigInt, lastRow: SerializedBigInt } // The user has scrolled or resize the view
   | { subject: "columnClicked", col: number }
   | { subject: "cellLeftClicked", col: number, row: SerializedBigInt, flags: SelectionFlags }
   | { subject: "cellDoubleClicked", col: number, row: SerializedBigInt }

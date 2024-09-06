@@ -13,6 +13,8 @@ import { CellBordersElement } from "./cellBorders";
 import { TreeInfoElement } from "./treeInfo";
 import { Serializable } from "../../protocol";
 import { Checkbox } from "@vscode/webview-ui-toolkit";
+import { MessageService } from "../../messageService";
+import { SelectionFlags } from "../../thrift/listwindow_types";
 
 export interface CellPosition {
     col: number;
@@ -104,6 +106,7 @@ export class CellElement extends HTMLElement {
 
     hoverService: HoverService | undefined = undefined;
     dragDropService: DragDropService | undefined = undefined;
+    messageService: MessageService | undefined = undefined;
 
     connectedCallback() {
         this.classList.add(Styles.self);
@@ -130,6 +133,7 @@ export class CellElement extends HTMLElement {
             const treeInfoElem = new TreeInfoElement();
             treeInfoElem.treeinfo = this.treeinfo;
             treeInfoElem.row = this.position.row;
+            treeInfoElem.messageService = this.messageService;
             prefixItems.appendChild(treeInfoElem);
         }
 
@@ -139,10 +143,10 @@ export class CellElement extends HTMLElement {
             checkbox.checked = this.checked;
             checkbox.onclick = ev => {
                 ev.preventDefault();
-                this.dispatchEvent(createCustomEvent("checkbox-toggled", {
-                    detail: { row: this.position.row },
-                    bubbles: true,
-                }));
+                this.messageService?.sendMessage({
+                    subject: "checkboxToggled",
+                    row: { value: this.position.row.toString() },
+                });
             };
             prefixItems.appendChild(checkbox);
         }
@@ -267,17 +271,26 @@ export class CellElement extends HTMLElement {
                 );
                 return;
             }
-            this.dispatchEvent(
-                createCustomEvent("cell-clicked", {
-                    detail: {
-                        ...this.position,
-                        isDoubleClick: ev.detail === 2,
-                        ctrlPressed: ev.ctrlKey,
-                        shiftPressed: ev.shiftKey,
-                    },
-                    bubbles: true,
-                }),
-            );
+            if (ev.detail === 2) { // is a double click
+                this.messageService?.sendMessage({
+                    subject: "cellDoubleClicked",
+                    col: this.position.col,
+                    row: { value: this.position.row.toString() },
+                });
+            } else {
+                let flags = SelectionFlags.kReplace;
+                if (ev.ctrlKey) {
+                    flags = SelectionFlags.kAdd;
+                } else if (ev.shiftKey) {
+                    flags = SelectionFlags.kRange;
+                }
+                this.messageService?.sendMessage({
+                    subject: "cellLeftClicked",
+                    col: this.position.col,
+                    row: { value: this.position.row.toString() },
+                    flags,
+                });
+            }
         }
         return null;
     };

@@ -102,6 +102,12 @@ function getBaseParameters(): RenderParameters {
             }),
         ],
         frozen: false,
+        scrollInfo: {
+            fractionBefore: 0,
+            fractionInWin: 1,
+            fractionAfter: 0,
+            offset: { value: "0" },
+        }
     };
 
     return params;
