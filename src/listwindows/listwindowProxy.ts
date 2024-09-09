@@ -13,21 +13,29 @@ import { Int64 } from "thrift";
 
 export class SimpleProxyCache {
     private client: ListWindowBackend.Client | undefined = undefined;
-    public cache: Map<Int64, Row> = new Map<Int64, Row>();
+    public cache: Map<bigint, Row> = new Map<bigint, Row>();
 
     public connect(c: ListWindowBackend.Client) {
         this.client = c;
         this.cache.clear();
     }
 
-    public async GetRow(rowNo: Int64): Promise<Row> {
+    public async GetRow(rowNo: bigint): Promise<Row> {
         if (this.cache.has(rowNo)) {
             return this.cache.get(rowNo) as Row;
         }
 
-        const row = await this.client?.getRow(rowNo);
+        const row = await this.client?.getRow(new Int64(Number(rowNo)));
         this.cache.set(rowNo, row as Row);
         return row as Row;
+    }
+
+    public DeleteRow(rowNo: Int64) {
+        const r = BigInt(rowNo.toNumber());
+        if (this.cache.has(r)) {
+            return;
+        }
+        this.cache.delete(r);
     }
 }
 
@@ -42,7 +50,6 @@ export class ListWindowProxy {
     private client: ListWindowBackend.Client | undefined = undefined;
     private renderParams: RenderParameters =
         ListWindowProxy.getDefaultRenderParameters();
-    private isFrozen = false;
 
     // Swapping client.
     connectToClient(newClient: ListWindowBackend.Client) {
@@ -59,7 +66,7 @@ export class ListWindowProxy {
                 break;
             }
             case What.kRowUpdate: {
-                this.cache.cache.delete(note.row);
+                this.cache.DeleteRow(note.row);
                 await this.updateSelection();
                 break;
             }
@@ -78,11 +85,11 @@ export class ListWindowProxy {
                 break;
             }
             case What.kFreeze: {
-                this.isFrozen = true;
+                this.renderParams.frozen = true;
                 break;
             }
             case What.kThaw: {
-                this.isFrozen = false;
+                this.renderParams.frozen = false;
                 break;
             }
             default:
@@ -116,7 +123,8 @@ export class ListWindowProxy {
         offset: number,
         noVisibleRows: number,
     ): Promise<RenderParameters> {
-        if (!this.client || this.isFrozen) {
+        if (!this.client || this.renderParams.frozen) {
+            // No updates when the model is frozen.
             return this.renderParams;
         }
 
