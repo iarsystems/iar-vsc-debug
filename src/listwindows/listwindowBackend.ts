@@ -6,6 +6,8 @@ import {
     EditInfo,
     MenuItem,
     Note,
+    ToolbarNote,
+    ToolbarWhat,
     Tooltip,
     What,
 } from "iar-vsc-common/thrift/bindings/listwindow_types";
@@ -16,10 +18,7 @@ import { ThriftServiceRegistry } from "iar-vsc-common/thrift/thriftServiceRegist
 import { ServiceLocation } from "iar-vsc-common/thrift/bindings/ServiceRegistry_types";
 import { ListWindowProxy } from "./listwindowProxy";
 import { ListwindowViewProvider } from "./listwindowViewProvider";
-import {
-    ViewMessage,
-    ViewMessageVariant,
-} from "../../webviews/listwindow/protocol";
+import { ViewMessage } from "../../webviews/listwindow/protocol";
 import { Int64 } from "thrift";
 
 /**
@@ -92,11 +91,18 @@ export class ListWindowBackendHandler {
                 ensureVisible: new Int64(-1),
             }),
         );
+        await this.notifyToolbar(
+            new ToolbarNote({
+                what: ToolbarWhat.kFullUpdate,
+                focusOn: -1,
+            }),
+        );
     }
 
-    async disconnect(): Promise<void> {
+    async forgetBackend(): Promise<void> {
+        // Disconnect the frontend as we don't want any
+        // notifications from the un-active session.
         await this.backendClient?.service.disconnect();
-        this.backendClient?.close();
         this.backendClient = undefined;
         this.frontendLocation = undefined;
     }
@@ -132,48 +138,46 @@ export class ListWindowBackendHandler {
                 console.log("Rendered...");
                 break;
             }
-            case "HTMLDump":
+            case "HTMLDump": {
+                break;
+            }
             case "columnClicked": {
-                const realMsg = msg as ViewMessageVariant<"columnClicked">;
                 this.activePromise = this.scheduleCall<void>(
                     (client: Backend) => {
-                        return client.service.columnClick(realMsg.col);
+                        return client.service.columnClick(msg.col);
                     },
                 );
                 break;
             }
             case "cellLeftClicked": {
-                const realMsg = msg as ViewMessageVariant<"cellLeftClicked">;
                 this.activePromise = this.scheduleCall<void>(
                     (client: Backend) => {
                         return client.service.click(
-                            new Int64(realMsg.row),
-                            realMsg.col,
-                            realMsg.flags,
+                            new Int64(msg.row),
+                            msg.col,
+                            msg.flags,
                         );
                     },
                 );
                 break;
             }
             case "cellDoubleClicked": {
-                const realMsg = msg as ViewMessageVariant<"cellDoubleClicked">;
                 this.activePromise = this.scheduleCall<void>(
                     (client: Backend) => {
                         return client.service.doubleClick(
-                            new Int64(realMsg.row),
-                            realMsg.col,
+                            new Int64(msg.row),
+                            msg.col,
                         );
                     },
                 );
                 break;
             }
             case "getContextMenu": {
-                const contextMsg = msg as ViewMessageVariant<"getContextMenu">;
                 this.activePromise = this.scheduleCall<MenuItem[]>(
                     (client: Backend) => {
                         return client.service.getContextMenu(
-                            new Int64(contextMsg.row),
-                            contextMsg.col,
+                            new Int64(msg.row),
+                            msg.col,
                         );
                     },
                 ).then(value => {
@@ -187,12 +191,11 @@ export class ListWindowBackendHandler {
                 break;
             }
             case "getTooltip": {
-                const toolTip = msg as ViewMessageVariant<"getTooltip">;
                 this.activePromise = this.scheduleCall<Tooltip>(
                     (client: Backend) => {
                         return client.service.getToolTip(
-                            new Int64(toolTip.row),
-                            toolTip.row,
+                            new Int64(msg.row),
+                            msg.row,
                             this.currentRow,
                         );
                     },
@@ -207,45 +210,42 @@ export class ListWindowBackendHandler {
                 break;
             }
             case "rowExpansionToggled": {
-                const toggle = msg as ViewMessageVariant<"rowExpansionToggled">;
                 this.activePromise = this.scheduleCall<void>(
                     (client: Backend) => {
                         return client.service.toggleExpansion(
-                            new Int64(toggle.row),
+                            new Int64(msg.row),
                         );
                     },
                 );
                 break;
             }
             case "moreLessToggled": {
-                const toggle = msg as ViewMessageVariant<"moreLessToggled">;
                 this.activePromise = this.scheduleCall<void>(
                     (client: Backend) => {
                         return client.service.toggleMoreOrLess(
-                            new Int64(toggle.row),
+                            new Int64(msg.row),
                         );
                     },
                 );
                 break;
             }
             case "checkboxToggled": {
-                const toggle = msg as ViewMessageVariant<"checkboxToggled">;
                 this.activePromise = this.scheduleCall<void>(
                     (client: Backend) => {
                         return client.service.toggleCheckmark(
-                            new Int64(toggle.row),
+                            new Int64(msg.row),
                         );
                     },
                 );
                 break;
             }
             case "getEditableString": {
-                const edit = msg as ViewMessageVariant<"getEditableString">;
+                msg;
                 this.activePromise = this.scheduleCall<EditInfo>(
                     (client: Backend) => {
                         return client.service.getEditableString(
-                            new Int64(edit.row),
-                            edit.row,
+                            new Int64(msg.row),
+                            msg.row,
                         );
                     },
                 ).then(value => {
@@ -253,36 +253,34 @@ export class ListWindowBackendHandler {
                         this.view.postMessageToView({
                             subject: "editableStringReply",
                             col: value.column,
-                            row: edit.row,
-                            info: value
+                            row: msg.row,
+                            info: value,
                         });
                     }
                 });
                 break;
             }
             case "cellEdited": {
-                const cell = msg as ViewMessageVariant<"cellEdited">;
                 this.activePromise = this.scheduleCall<void>(
                     (client: Backend) => {
                         return client.service.setValue(
-                            new Int64(cell.row),
-                            cell.col,
-                            cell.newValue,
+                            new Int64(msg.row),
+                            msg.col,
+                            msg.newValue,
                         );
                     },
                 );
                 break;
             }
             case "localDrop": {
-                const drop = msg as ViewMessageVariant<"localDrop">;
                 this.activePromise = this.scheduleCall<boolean>(
                     (client: Backend) => {
                         return client.service.dropLocal(
-                            new Int64(drop.dstRow),
-                            drop.dstCol,
+                            new Int64(msg.dstRow),
+                            msg.dstCol,
                             "",
-                            new Int64(drop.srcRow),
-                            drop.srcCol,
+                            new Int64(msg.srcRow),
+                            msg.srcCol,
                         );
                     },
                 ).then(value => {
@@ -293,13 +291,13 @@ export class ListWindowBackendHandler {
                 break;
             }
             case "externalDrop": {
-                const drop = msg as ViewMessageVariant<"externalDrop">;
+                msg;
                 this.activePromise = this.scheduleCall<boolean>(
                     (client: Backend) => {
                         return client.service.drop(
-                            new Int64(drop.row),
-                            drop.col,
-                            drop.droppedText,
+                            new Int64(msg.row),
+                            msg.col,
+                            msg.droppedText,
                         );
                     },
                 ).then(value => {
@@ -310,39 +308,33 @@ export class ListWindowBackendHandler {
                 break;
             }
             case "contextItemClicked": {
-                const context = msg as ViewMessageVariant<"contextItemClicked">;
                 this.activePromise = this.scheduleCall<boolean>(
                     (client: Backend) => {
-                        return client.service.handleContextMenu(
-                            context.command,
-                        );
+                        return client.service.handleContextMenu(msg.command);
                     },
                 );
                 break;
             }
             case "keyNavigationPressed": {
-                const key = msg as ViewMessageVariant<"keyNavigationPressed">;
                 this.activePromise = this.scheduleCall<void>(
                     (client: Backend) => {
                         return client.service.keyNavigate(
-                            key.operation,
+                            msg.operation,
                             0, // TO-DO
                             0, // TO-DO
-                            key.rowsInPage,
+                            msg.rowsInPage,
                         );
                     },
                 );
                 break;
             }
             case "scrollOperationPressed": {
-                const scroll =
-                    msg as ViewMessageVariant<"scrollOperationPressed">;
                 this.activePromise = this.scheduleCall<Int64>(
                     (client: Backend) => {
                         return client.service.scroll(
-                            scroll.operation,
-                            new Int64(scroll.firstRow),
-                            new Int64(scroll.lastRow),
+                            msg.operation,
+                            new Int64(msg.firstRow),
+                            new Int64(msg.lastRow),
                         );
                     },
                 ).then(value => {
@@ -353,12 +345,11 @@ export class ListWindowBackendHandler {
                 break;
             }
             case "keyPressed": {
-                const key = msg as ViewMessageVariant<"keyPressed">;
                 this.activePromise = this.scheduleCall<void>(
                     (client: Backend) => {
                         return client.service.handleKeyDown(
-                            key.code,
-                            key.repeat,
+                            msg.code,
+                            msg.repeat,
                             false, // TO-DO
                             false, // TO-DO
                         );
@@ -367,6 +358,31 @@ export class ListWindowBackendHandler {
                 break;
             }
         }
+    }
+
+    notifyToolbar(note: ToolbarNote): Q.Promise<void> {
+        switch (note.what) {
+            case ToolbarWhat.kNormalUpdate: {
+                break;
+            }
+            case ToolbarWhat.kFullUpdate: {
+                this.scheduleCall<string>(client => {
+                    return client.service.getToolbarDefinition();
+                }).then(value => {
+                    if (value && value.length > 0) {
+                        this.view?.postMessageToView({
+                            subject: "renderToolbar",
+                            params: value,
+                        });
+                    }
+                });
+                break;
+            }
+            case ToolbarWhat.kFocusOn: {
+                break;
+            }
+        }
+        return Q.resolve();
     }
 
     // callback from list window backend
@@ -392,12 +408,11 @@ export class ListWindowBackendHandler {
 
         updatePromise.then(async (cN: Note) => {
             this.currentSeq = cN.seq;
-            // This does not require any action from the update concept.
-            if (note.what === What.kFreeze || note.what === What.kThaw) {
-                return;
-            }
-
-            if (this.currentSeq < this.latestSeq) {
+            if (
+                cN.what !== What.kFreeze &&
+                cN.what !== What.kThaw &&
+                this.currentSeq < this.latestSeq
+            ) {
                 // Discard.
                 return;
             }
