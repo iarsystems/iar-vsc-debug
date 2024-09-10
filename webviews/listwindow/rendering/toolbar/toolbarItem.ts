@@ -36,11 +36,15 @@ function addVsCodeIcon(
     iconId: string,
     defaultImage = "kebab-vertical",
 ): void {
-    let iconName = VsCodeIconMap.get(iconId);
-    if (iconName === undefined) {
-        iconName = defaultImage;
+    const iconSpec = VsCodeIconMap.get(iconId);
+    if (iconSpec !== undefined) {
+        element.classList.add("codicon", `codicon-${iconId[0]}`);
+        if (iconSpec[1] !== undefined) {
+            element.style.color = iconSpec[1] as string;
+        }
+    } else {
+        element.classList.add("codicon", `codicon-${defaultImage}`);
     }
-    element.classList.add("codicon", `codicon-${iconName}`);
 }
 
 export interface State {
