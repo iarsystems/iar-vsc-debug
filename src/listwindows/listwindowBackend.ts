@@ -357,6 +357,38 @@ export class ListWindowBackendHandler {
                 );
                 break;
             }
+            case "getToolbarToolTip": {
+                this.activePromise = this.scheduleCall<string>(
+                    (client: Backend) => {
+                        return client.service.getToolbarItemTooltip(msg.id);
+                    },
+                ).then(value => {
+                    if (value) {
+                        if (value) {
+                            this.view.postMessageToView({
+                                subject: "tooltipReply",
+                                text: value,
+                            });
+                        }
+                    }
+                });
+                break;
+            }
+            case "toolbarItemInteraction": {
+                this.activePromise = this.scheduleCall<void>(
+                    (client: Backend) => {
+                        return client.service.setToolbarItemValue(
+                            msg.id,
+                            msg.properties,
+                        );
+                    },
+                );
+                break;
+            }
+            case "toolbarRendered": {
+                // TO-DO Handle state update here.
+                break;
+            }
         }
     }
 
@@ -421,6 +453,7 @@ export class ListWindowBackendHandler {
                 this.currentRow,
                 this.numberOfVisibleRows,
             );
+
             console.log("Posting render to view...");
             await this.view?.postMessageToView({
                 subject: "render",
