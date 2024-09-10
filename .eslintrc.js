@@ -24,7 +24,10 @@ const config = {
   },
   ignorePatterns: [".eslintrc.js"],
   rules: {
-    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_"}], // Same as in tsconfig. Allow such vars if they start with an underscore.
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" } // Same as in tsconfig. Allow such vars if they start with an underscore.
+    ],
     "require-await": "error",                                   // Helps catch missing awaits
     "strict": "error",                                          // Disallows use of e.g. reserved keywords
     "prefer-promise-reject-errors": "error",                    // Throwing real Errors helps traceability

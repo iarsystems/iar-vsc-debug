@@ -4,7 +4,7 @@
 
 
 import { Variable, Handles } from "@vscode/debugadapter";
-import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
+import { ThriftServiceRegistry } from "iar-vsc-common/thrift/thriftServiceRegistry";
 import { ListWindowClient, ListWindowRowReference } from "../listWindowClient";
 import { Disposable } from "../utils";
 import { VariablesUtils } from "./variablesUtils";
@@ -43,21 +43,21 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
 
     /**
      * Creates a new variables provider from a listwindow and a specification of which columns contain which data.
-     * @param serviceMgr The service manager running the debug session
+     * @param serviceRegistry The service manager running the debug session
      * @param windowServiceId The name of the service running the listwindow to use
      * @param varNameColumn The column containing variable names
      * @param varValueColumn The column containing variable values
      * @param varTypeColumn The column containing variable type (may be negative if there is no such column)
      * @param varLocationColumn The column containing variable locations (may be negative if there is no such column)
      */
-    static async instantiate(serviceMgr: ThriftServiceManager,
+    static async instantiate(serviceRegistry: ThriftServiceRegistry,
         windowServiceId: string,
         varNameColumn: number,
         varValueColumn: number,
         varTypeColumn: number,
         varLocationColumn: number): Promise<ListWindowVariablesProvider> {
 
-        const windowClient = await ListWindowClient.instantiate(serviceMgr, windowServiceId, [varNameColumn, varTypeColumn]);
+        const windowClient = await ListWindowClient.instantiate(serviceRegistry, windowServiceId, [varNameColumn, varTypeColumn]);
         return new ListWindowVariablesProvider(windowClient, varNameColumn, varValueColumn, varTypeColumn, varLocationColumn);
     }
 

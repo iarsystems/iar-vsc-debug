@@ -7,7 +7,7 @@ import * as Breakpoints from "iar-vsc-common/thrift/bindings/Breakpoints";
 import { DebugProtocol } from "@vscode/debugprotocol";
 import * as Thrift from "iar-vsc-common/thrift/bindings/shared_types";
 import { Disposable } from "../utils";
-import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
+import { ThriftServiceRegistry } from "iar-vsc-common/thrift/thriftServiceRegistry";
 import { BREAKPOINTS_SERVICE } from "iar-vsc-common/thrift/bindings/breakpoints_types";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { DescriptorWriter } from "./descriptors/descriptorWriter";
@@ -43,15 +43,15 @@ export class CSpyBreakpointService implements Disposable.Disposable {
 
     /**
      * Creates and returns a new breakpoint manager
-     * @param serviceMgr The service manager handling the debug session
+     * @param serviceRegistry The service manager handling the debug session
      * @param driver The driver running the debug session
      */
-    static async instantiate(serviceMgr: ThriftServiceManager,
+    static async instantiate(serviceRegistry: ThriftServiceRegistry,
         clientLinesStartAt1: boolean,
         clientColumnsStartAt1: boolean,
         driver: CSpyDriver): Promise<CSpyBreakpointService> {
         return new CSpyBreakpointService(
-            await serviceMgr.findService(BREAKPOINTS_SERVICE, Breakpoints.Client),
+            await serviceRegistry.findService(BREAKPOINTS_SERVICE, Breakpoints.Client),
             clientLinesStartAt1,
             clientColumnsStartAt1,
             driver
