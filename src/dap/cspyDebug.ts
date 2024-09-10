@@ -40,6 +40,7 @@ import { MulticoreProtocolExtension } from "./multicoreProtocolExtension";
 import { BreakpointTypeProtocolExtension } from "./breakpoints/breakpointTypeProtocolExtension";
 import { WorkbenchFeatures} from "iar-vsc-common/workbenchfeatureregistry";
 import { ThriftServiceRegistryProcess } from "iar-vsc-common/thrift/thriftServiceRegistryProcess";
+import { listwindowManager } from "../extension";
 
 
 /**
@@ -50,6 +51,8 @@ import { ThriftServiceRegistryProcess } from "iar-vsc-common/thrift/thriftServic
  * and this interface should always match that schema.
  */
 export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
+    /** The current debug session id*/
+    __sessionId?: string
     /** The name of the target in lower case (e.g. arm) */
     target: string;
     /** An absolute path to the "program" to debug. */
@@ -156,7 +159,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
      */
     public constructor() {
         super();
-
         this.setDebuggerLinesStartAt1(true);
         this.setDebuggerColumnsStartAt1(true);
     }
@@ -369,6 +371,18 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 multicoreExtension = new MulticoreProtocolExtension(args.multicoreLockstepModeEnabled ?? true, this.customRequestRegistry);
             }
 
+
+            // -- Launch all the listwindows --
+            // This needs to be done before starting the target to avoid
+            // any collisions with the state of the core when setting up
+            // the listwindows.
+            if (listwindowManager) {
+                await listwindowManager.connect(
+                    args.__sessionId as string,
+                    cspyProcess.serviceRegistry,
+                );
+            }
+
             // -- Store everything needed to be able to handle requests --
             this.services = {
                 cspyProcess,
@@ -383,8 +397,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 multicoreExtension,
                 breakpointTypeExtension,
             };
-            this.teardown.pushFunction(() => this.services = undefined);
-
+            this.teardown.pushFunction(() => (this.services = undefined));
         } catch (e) {
             await this.endSession();
             response.success = false;
