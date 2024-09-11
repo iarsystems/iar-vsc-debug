@@ -28,10 +28,6 @@ export declare class Client {
 
   UpdateOptionValue(request: UpdateOptionValueRequest, callback?: (data: UpdateOptionValueResponse)=>void): void;
 
-  CommitChanges(request: CommitChangesRequest): Q.Promise<CommitChangesResponse>;
-
-  CommitChanges(request: CommitChangesRequest, callback?: (data: CommitChangesResponse)=>void): void;
-
   DestroySession(destroySessionRequest: DestroySessionRequest): Q.Promise<DestroySessionResponse>;
 
   DestroySession(destroySessionRequest: DestroySessionRequest, callback?: (data: DestroySessionResponse)=>void): void;
@@ -43,4 +39,12 @@ export declare class Client {
   GetOptionTree(getOptionTreeRequest: GetOptionTreeRequest): Q.Promise<GetOptionTreeResponse>;
 
   GetOptionTree(getOptionTreeRequest: GetOptionTreeRequest, callback?: (data: GetOptionTreeResponse)=>void): void;
+
+  VerifyOptionState(verifyOptionStateRequest: VerifyOptionStateRequest): Q.Promise<VerifyOptionStateResponse>;
+
+  VerifyOptionState(verifyOptionStateRequest: VerifyOptionStateRequest, callback?: (data: VerifyOptionStateResponse)=>void): void;
+
+  CommitOptionState(commitOptionStateRequest: CommitOptionStateRequest): Q.Promise<CommitOptionStateResponse>;
+
+  CommitOptionState(commitOptionStateRequest: CommitOptionStateRequest, callback?: (data: CommitOptionStateResponse)=>void): void;
 }

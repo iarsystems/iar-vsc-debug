@@ -126,10 +126,20 @@ class ListwindowController {
     /** Handle a message from the view provider in the extension code */
     private handleMessage(msg: ExtensionMessage) {
         switch (msg.subject) {
+            case "updateToolbarItem": {
+                //Handled by the items them-self
+                break;
+            }
             case "renderToolbar": {
                 this.toolbarRenderParams = msg.params;
                 this.renderToolbar();
-                this.messageService.sendMessage({ subject: "toolbarRendered" });
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                if (this.toolbar) {
+                    this.messageService.sendMessage({
+                        subject: "toolbarRendered",
+                        ids: this.toolbar.getItemIds(),
+                    });
+                }
                 break;
             }
             case "render": {
@@ -159,7 +169,7 @@ class ListwindowController {
             this.toolbarRenderParams &&
             this.toolbarRenderParams.length > 0
         ) {
-            this.toolbar = new ToolbarElement(this.toolbarRenderParams);
+            this.toolbar = new ToolbarElement(this.toolbarRenderParams, this.messageService);
             this.toolbar.hoverService = this.hoverService;
             this.toolbarElement.replaceChildren(this.toolbar);
             this.toolbarElement.classList.add(Styles.toolbarCanvas);

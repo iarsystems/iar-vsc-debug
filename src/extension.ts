@@ -18,12 +18,17 @@ import { ListwindowManager } from "./listwindows/windowManager";
 import { ThemeProvider } from "./listwindows/themeProvider";
 
 let sessionTracker: DebugSessionTracker | undefined;
+export let listwindowManager: ListwindowManager | undefined;
+
 // A special listwindow for tests
 export let testListwindow: TestListwindow | undefined = undefined;
 
 export function activate(context: vscode.ExtensionContext) {
     logger.init("IAR C-SPY Debug");
     logger.debug("Activating extension");
+
+    listwindowManager = new ListwindowManager(context);
+
     // register a configuration provider for 'cspy' debug type
     vscode.debug.registerDebugAdapterDescriptorFactory("cspy", {
         createDebugAdapterDescriptor(_session: vscode.DebugSession, _executable: vscode.DebugAdapterExecutable | undefined): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
@@ -43,7 +48,7 @@ export function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(testListwindow);
         vscode.commands.executeCommand("setContext", "iar-debug.showTestView", true);
     }
-    new ListwindowManager(context);
+
     context.subscriptions.push(new ThemeProvider());
 
     sessionTracker = new DebugSessionTracker(context);

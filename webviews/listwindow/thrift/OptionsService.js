@@ -316,108 +316,6 @@ OptionsService_UpdateOptionValue_result.prototype.write = function(output) {
   return;
 };
 
-var OptionsService_CommitChanges_args = function(args) {
-  this.request = null;
-  if (args) {
-    if (args.request !== undefined && args.request !== null) {
-      this.request = new ttypes.CommitChangesRequest(args.request);
-    }
-  }
-};
-OptionsService_CommitChanges_args.prototype = {};
-OptionsService_CommitChanges_args.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true) {
-    var ret = input.readFieldBegin();
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid) {
-      case 1:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.request = new ttypes.CommitChangesRequest();
-        this.request.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 0:
-        input.skip(ftype);
-        break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-OptionsService_CommitChanges_args.prototype.write = function(output) {
-  output.writeStructBegin('OptionsService_CommitChanges_args');
-  if (this.request !== null && this.request !== undefined) {
-    output.writeFieldBegin('request', Thrift.Type.STRUCT, 1);
-    this.request.write(output);
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-var OptionsService_CommitChanges_result = function(args) {
-  this.success = null;
-  if (args) {
-    if (args.success !== undefined && args.success !== null) {
-      this.success = new ttypes.CommitChangesResponse(args.success);
-    }
-  }
-};
-OptionsService_CommitChanges_result.prototype = {};
-OptionsService_CommitChanges_result.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true) {
-    var ret = input.readFieldBegin();
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid) {
-      case 0:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.success = new ttypes.CommitChangesResponse();
-        this.success.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 0:
-        input.skip(ftype);
-        break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-OptionsService_CommitChanges_result.prototype.write = function(output) {
-  output.writeStructBegin('OptionsService_CommitChanges_result');
-  if (this.success !== null && this.success !== undefined) {
-    output.writeFieldBegin('success', Thrift.Type.STRUCT, 0);
-    this.success.write(output);
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
 var OptionsService_DestroySession_args = function(args) {
   this.destroySessionRequest = null;
   if (args) {
@@ -724,6 +622,210 @@ OptionsService_GetOptionTree_result.prototype.write = function(output) {
   return;
 };
 
+var OptionsService_VerifyOptionState_args = function(args) {
+  this.verifyOptionStateRequest = null;
+  if (args) {
+    if (args.verifyOptionStateRequest !== undefined && args.verifyOptionStateRequest !== null) {
+      this.verifyOptionStateRequest = new ttypes.VerifyOptionStateRequest(args.verifyOptionStateRequest);
+    }
+  }
+};
+OptionsService_VerifyOptionState_args.prototype = {};
+OptionsService_VerifyOptionState_args.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.verifyOptionStateRequest = new ttypes.VerifyOptionStateRequest();
+        this.verifyOptionStateRequest.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+OptionsService_VerifyOptionState_args.prototype.write = function(output) {
+  output.writeStructBegin('OptionsService_VerifyOptionState_args');
+  if (this.verifyOptionStateRequest !== null && this.verifyOptionStateRequest !== undefined) {
+    output.writeFieldBegin('verifyOptionStateRequest', Thrift.Type.STRUCT, 1);
+    this.verifyOptionStateRequest.write(output);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var OptionsService_VerifyOptionState_result = function(args) {
+  this.success = null;
+  if (args) {
+    if (args.success !== undefined && args.success !== null) {
+      this.success = new ttypes.VerifyOptionStateResponse(args.success);
+    }
+  }
+};
+OptionsService_VerifyOptionState_result.prototype = {};
+OptionsService_VerifyOptionState_result.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 0:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.success = new ttypes.VerifyOptionStateResponse();
+        this.success.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+OptionsService_VerifyOptionState_result.prototype.write = function(output) {
+  output.writeStructBegin('OptionsService_VerifyOptionState_result');
+  if (this.success !== null && this.success !== undefined) {
+    output.writeFieldBegin('success', Thrift.Type.STRUCT, 0);
+    this.success.write(output);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var OptionsService_CommitOptionState_args = function(args) {
+  this.commitOptionStateRequest = null;
+  if (args) {
+    if (args.commitOptionStateRequest !== undefined && args.commitOptionStateRequest !== null) {
+      this.commitOptionStateRequest = new ttypes.CommitOptionStateRequest(args.commitOptionStateRequest);
+    }
+  }
+};
+OptionsService_CommitOptionState_args.prototype = {};
+OptionsService_CommitOptionState_args.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.commitOptionStateRequest = new ttypes.CommitOptionStateRequest();
+        this.commitOptionStateRequest.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+OptionsService_CommitOptionState_args.prototype.write = function(output) {
+  output.writeStructBegin('OptionsService_CommitOptionState_args');
+  if (this.commitOptionStateRequest !== null && this.commitOptionStateRequest !== undefined) {
+    output.writeFieldBegin('commitOptionStateRequest', Thrift.Type.STRUCT, 1);
+    this.commitOptionStateRequest.write(output);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var OptionsService_CommitOptionState_result = function(args) {
+  this.success = null;
+  if (args) {
+    if (args.success !== undefined && args.success !== null) {
+      this.success = new ttypes.CommitOptionStateResponse(args.success);
+    }
+  }
+};
+OptionsService_CommitOptionState_result.prototype = {};
+OptionsService_CommitOptionState_result.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 0:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.success = new ttypes.CommitOptionStateResponse();
+        this.success.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+OptionsService_CommitOptionState_result.prototype.write = function(output) {
+  output.writeStructBegin('OptionsService_CommitOptionState_result');
+  if (this.success !== null && this.success !== undefined) {
+    output.writeFieldBegin('success', Thrift.Type.STRUCT, 0);
+    this.success.write(output);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
 var OptionsServiceClient = exports.Client = function(input, output) {
   this.input = input;
   this.output = (!output) ? input : output;
@@ -905,64 +1007,6 @@ OptionsServiceClient.prototype.recv_UpdateOptionValue = function() {
   throw 'UpdateOptionValue failed: unknown result';
 };
 
-OptionsServiceClient.prototype.CommitChanges = function(request, callback) {
-  this.send_CommitChanges(request, callback); 
-  if (!callback) {
-    return this.recv_CommitChanges();
-  }
-};
-
-OptionsServiceClient.prototype.send_CommitChanges = function(request, callback) {
-  var params = {
-    request: request
-  };
-  var args = new OptionsService_CommitChanges_args(params);
-  try {
-    this.output.writeMessageBegin('CommitChanges', Thrift.MessageType.CALL, this.seqid);
-    args.write(this.output);
-    this.output.writeMessageEnd();
-    if (callback) {
-      var self = this;
-      this.output.getTransport().flush(true, function() {
-        var result = null;
-        try {
-          result = self.recv_CommitChanges();
-        } catch (e) {
-          result = e;
-        }
-        callback(result);
-      });
-    } else {
-      return this.output.getTransport().flush();
-    }
-  }
-  catch (e) {
-    if (typeof this.output.getTransport().reset === 'function') {
-      this.output.getTransport().reset();
-    }
-    throw e;
-  }
-};
-
-OptionsServiceClient.prototype.recv_CommitChanges = function() {
-  var ret = this.input.readMessageBegin();
-  var mtype = ret.mtype;
-  if (mtype == Thrift.MessageType.EXCEPTION) {
-    var x = new Thrift.TApplicationException();
-    x.read(this.input);
-    this.input.readMessageEnd();
-    throw x;
-  }
-  var result = new OptionsService_CommitChanges_result();
-  result.read(this.input);
-  this.input.readMessageEnd();
-
-  if (null !== result.success) {
-    return result.success;
-  }
-  throw 'CommitChanges failed: unknown result';
-};
-
 OptionsServiceClient.prototype.DestroySession = function(destroySessionRequest, callback) {
   this.send_DestroySession(destroySessionRequest, callback); 
   if (!callback) {
@@ -1135,4 +1179,120 @@ OptionsServiceClient.prototype.recv_GetOptionTree = function() {
     return result.success;
   }
   throw 'GetOptionTree failed: unknown result';
+};
+
+OptionsServiceClient.prototype.VerifyOptionState = function(verifyOptionStateRequest, callback) {
+  this.send_VerifyOptionState(verifyOptionStateRequest, callback); 
+  if (!callback) {
+    return this.recv_VerifyOptionState();
+  }
+};
+
+OptionsServiceClient.prototype.send_VerifyOptionState = function(verifyOptionStateRequest, callback) {
+  var params = {
+    verifyOptionStateRequest: verifyOptionStateRequest
+  };
+  var args = new OptionsService_VerifyOptionState_args(params);
+  try {
+    this.output.writeMessageBegin('VerifyOptionState', Thrift.MessageType.CALL, this.seqid);
+    args.write(this.output);
+    this.output.writeMessageEnd();
+    if (callback) {
+      var self = this;
+      this.output.getTransport().flush(true, function() {
+        var result = null;
+        try {
+          result = self.recv_VerifyOptionState();
+        } catch (e) {
+          result = e;
+        }
+        callback(result);
+      });
+    } else {
+      return this.output.getTransport().flush();
+    }
+  }
+  catch (e) {
+    if (typeof this.output.getTransport().reset === 'function') {
+      this.output.getTransport().reset();
+    }
+    throw e;
+  }
+};
+
+OptionsServiceClient.prototype.recv_VerifyOptionState = function() {
+  var ret = this.input.readMessageBegin();
+  var mtype = ret.mtype;
+  if (mtype == Thrift.MessageType.EXCEPTION) {
+    var x = new Thrift.TApplicationException();
+    x.read(this.input);
+    this.input.readMessageEnd();
+    throw x;
+  }
+  var result = new OptionsService_VerifyOptionState_result();
+  result.read(this.input);
+  this.input.readMessageEnd();
+
+  if (null !== result.success) {
+    return result.success;
+  }
+  throw 'VerifyOptionState failed: unknown result';
+};
+
+OptionsServiceClient.prototype.CommitOptionState = function(commitOptionStateRequest, callback) {
+  this.send_CommitOptionState(commitOptionStateRequest, callback); 
+  if (!callback) {
+    return this.recv_CommitOptionState();
+  }
+};
+
+OptionsServiceClient.prototype.send_CommitOptionState = function(commitOptionStateRequest, callback) {
+  var params = {
+    commitOptionStateRequest: commitOptionStateRequest
+  };
+  var args = new OptionsService_CommitOptionState_args(params);
+  try {
+    this.output.writeMessageBegin('CommitOptionState', Thrift.MessageType.CALL, this.seqid);
+    args.write(this.output);
+    this.output.writeMessageEnd();
+    if (callback) {
+      var self = this;
+      this.output.getTransport().flush(true, function() {
+        var result = null;
+        try {
+          result = self.recv_CommitOptionState();
+        } catch (e) {
+          result = e;
+        }
+        callback(result);
+      });
+    } else {
+      return this.output.getTransport().flush();
+    }
+  }
+  catch (e) {
+    if (typeof this.output.getTransport().reset === 'function') {
+      this.output.getTransport().reset();
+    }
+    throw e;
+  }
+};
+
+OptionsServiceClient.prototype.recv_CommitOptionState = function() {
+  var ret = this.input.readMessageBegin();
+  var mtype = ret.mtype;
+  if (mtype == Thrift.MessageType.EXCEPTION) {
+    var x = new Thrift.TApplicationException();
+    x.read(this.input);
+    this.input.readMessageEnd();
+    throw x;
+  }
+  var result = new OptionsService_CommitOptionState_result();
+  result.read(this.input);
+  this.input.readMessageEnd();
+
+  if (null !== result.success) {
+    return result.success;
+  }
+  throw 'CommitOptionState failed: unknown result';
 };

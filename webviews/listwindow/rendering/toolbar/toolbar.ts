@@ -15,6 +15,7 @@ import { XMLParser, XMLValidator } from "fast-xml-parser";
 import { unpackTree } from "./toolbarUtils";
 import { HoverService } from "../hoverService";
 import { BasicToolbarItem } from "./toolbarItem";
+import { MessageService } from "../../messageService";
 
 @customElement("listwindow-toolbar")
 export class ToolbarElement extends HTMLElement {
@@ -30,14 +31,26 @@ export class ToolbarElement extends HTMLElement {
         stringList: [],
     });
 
-    items: ToolbarItem[] = [];
+    private items: ToolbarItem[] = [];
+
     hoverService: HoverService | undefined = undefined;
     private toolbarContent: HTMLElement | undefined = undefined;
+
+    private readonly messageService: MessageService;
     private readonly definition: string;
 
-    constructor(def: string) {
+    constructor(def: string, msgService: MessageService) {
         super();
+        this.messageService = msgService;
         this.definition = def;
+    }
+
+    public getItemIds(): string[] {
+        const ids: string[] = [];
+        this.items.forEach(item => {
+            ids.push(item.id);
+        });
+        return ids;
     }
 
     connectedCallback() {
@@ -110,6 +123,10 @@ export class ToolbarElement extends HTMLElement {
             if (newItem !== undefined) {
                 newItem.hoverService = this.hoverService;
                 this.toolbarContent.appendChild(newItem);
+                // Add handler for the messages.
+                this.messageService.addMessageHandler(msg => {
+                    newItem?.handleMessage(msg);
+                });
             }
         }
 

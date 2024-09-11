@@ -229,9 +229,9 @@
 					"when": "iar-debug.showMockView"
 				},
 				{
-					"id": "iar-live-watch",
-					"contextualTitle": "Live Watch",
-					"name": "Live Watch",
+					"id": "iar-autos",
+					"contextualTitle": "Autos",
+					"name": "Autos",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy"
 				}

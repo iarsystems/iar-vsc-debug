@@ -19,4 +19,8 @@ export declare class Client {
   notify(note: Note): Q.Promise<void>;
 
   notify(note: Note, callback?: (data: void)=>void): void;
+
+  notifyToolbar(note: ToolbarNote): Q.Promise<void>;
+
+  notifyToolbar(note: ToolbarNote, callback?: (data: void)=>void): void;
 }
