@@ -27,7 +27,7 @@ import { CommandRegistry } from "./commandRegistry";
 import { Disposable, Utils } from "./utils";
 import { CspyDisassemblyService } from "./cspyDisassemblyService";
 import { CspyMemoryService } from "./cspyMemoryService";
-import { CustomRequest } from "./customRequest";
+import { CustomEvent, CustomRequest } from "./customRequest";
 import { RegisterInformationService } from "./registerInformationService";
 import { FrontendHandler } from "./frontendHandler";
 import { FRONTEND_SERVICE } from "iar-vsc-common/thrift/bindings/frontend_types";
@@ -50,6 +50,8 @@ import { ThriftServiceRegistryProcess } from "iar-vsc-common/thrift/thriftServic
  * and this interface should always match that schema.
  */
 export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
+    /** The current debug session id. ADDED BY VSCODE -> DO NOT SET*/
+    __sessionId?: string
     /** The name of the target in lower case (e.g. arm) */
     target: string;
     /** An absolute path to the "program" to debug. */
@@ -144,6 +146,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     private readonly customRequestRegistry: CommandRegistry<unknown, unknown> = new CommandRegistry();
 
     private readonly configurationDone = new Subject();
+    private readonly listwindowsDone = new Subject();
 
     // Need to keep track of this for when we initialize the breakpoint manager
     private clientLinesStartAt1 = false;
@@ -156,7 +159,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
      */
     public constructor() {
         super();
-
         this.setDebuggerLinesStartAt1(true);
         this.setDebuggerColumnsStartAt1(true);
     }
@@ -369,6 +371,28 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 multicoreExtension = new MulticoreProtocolExtension(args.multicoreLockstepModeEnabled ?? true, this.customRequestRegistry);
             }
 
+            // -- Launch all the listwindows --
+            // This needs to be done before starting the target to avoid
+            // any collisions with the state of the core when setting up
+            // the listwindows.
+
+            // Register a callback to the listwindow setup completion.
+            if (args.__sessionId !== undefined) {
+                this.customRequestRegistry.registerCommand(
+                    CustomRequest.Names.LISTWINDOWS_RESOLVED,
+                    () => {
+                        this.listwindowsDone.notify();
+                    },
+                );
+                const body: CustomEvent.ListWindowsRequestedData = {
+                    sessionId: args.__sessionId as string,
+                };
+                this.sendEvent(
+                    new Event(CustomEvent.Names.LISTWINDOWS_REQUESTED, body),
+                );
+                await this.listwindowsDone.wait();
+            }
+
             // -- Store everything needed to be able to handle requests --
             this.services = {
                 cspyProcess,
@@ -383,8 +407,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 multicoreExtension,
                 breakpointTypeExtension,
             };
-            this.teardown.pushFunction(() => this.services = undefined);
-
+            this.teardown.pushFunction(() => (this.services = undefined));
         } catch (e) {
             await this.endSession();
             response.success = false;

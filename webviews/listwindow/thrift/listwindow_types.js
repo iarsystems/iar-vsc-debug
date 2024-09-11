@@ -105,6 +105,14 @@ ttypes.What = {
   '6' : 'kThaw',
   'kThaw' : 6
 };
+ttypes.ToolbarWhat = {
+  '0' : 'kNormalUpdate',
+  'kNormalUpdate' : 0,
+  '1' : 'kFullUpdate',
+  'kFullUpdate' : 1,
+  '2' : 'kFocusOn',
+  'kFocusOn' : 2
+};
 var Range = module.exports.Range = function(args) {
   this.first = null;
   this.last = null;
@@ -1419,6 +1427,180 @@ Note.prototype.write = function(output) {
   if (this.anonPos !== null && this.anonPos !== undefined) {
     output.writeFieldBegin('anonPos', Thrift.Type.STRING, 5);
     output.writeString(this.anonPos);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var ToolbarNote = module.exports.ToolbarNote = function(args) {
+  this.what = null;
+  this.focusOn = null;
+  if (args) {
+    if (args.what !== undefined && args.what !== null) {
+      this.what = args.what;
+    }
+    if (args.focusOn !== undefined && args.focusOn !== null) {
+      this.focusOn = args.focusOn;
+    }
+  }
+};
+ToolbarNote.prototype = {};
+ToolbarNote.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.I32) {
+        this.what = input.readI32().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.I32) {
+        this.focusOn = input.readI32().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+ToolbarNote.prototype.write = function(output) {
+  output.writeStructBegin('ToolbarNote');
+  if (this.what !== null && this.what !== undefined) {
+    output.writeFieldBegin('what', Thrift.Type.I32, 1);
+    output.writeI32(this.what);
+    output.writeFieldEnd();
+  }
+  if (this.focusOn !== null && this.focusOn !== undefined) {
+    output.writeFieldBegin('focusOn', Thrift.Type.I32, 2);
+    output.writeI32(this.focusOn);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var ToolbarItemState = module.exports.ToolbarItemState = function(args) {
+  this.enabled = null;
+  this.visible = null;
+  this.on = null;
+  this.detail = null;
+  this.str = null;
+  if (args) {
+    if (args.enabled !== undefined && args.enabled !== null) {
+      this.enabled = args.enabled;
+    }
+    if (args.visible !== undefined && args.visible !== null) {
+      this.visible = args.visible;
+    }
+    if (args.on !== undefined && args.on !== null) {
+      this.on = args.on;
+    }
+    if (args.detail !== undefined && args.detail !== null) {
+      this.detail = args.detail;
+    }
+    if (args.str !== undefined && args.str !== null) {
+      this.str = args.str;
+    }
+  }
+};
+ToolbarItemState.prototype = {};
+ToolbarItemState.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.BOOL) {
+        this.enabled = input.readBool().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.BOOL) {
+        this.visible = input.readBool().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 3:
+      if (ftype == Thrift.Type.BOOL) {
+        this.on = input.readBool().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 4:
+      if (ftype == Thrift.Type.I64) {
+        this.detail = input.readI64().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 5:
+      if (ftype == Thrift.Type.STRING) {
+        this.str = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+ToolbarItemState.prototype.write = function(output) {
+  output.writeStructBegin('ToolbarItemState');
+  if (this.enabled !== null && this.enabled !== undefined) {
+    output.writeFieldBegin('enabled', Thrift.Type.BOOL, 1);
+    output.writeBool(this.enabled);
+    output.writeFieldEnd();
+  }
+  if (this.visible !== null && this.visible !== undefined) {
+    output.writeFieldBegin('visible', Thrift.Type.BOOL, 2);
+    output.writeBool(this.visible);
+    output.writeFieldEnd();
+  }
+  if (this.on !== null && this.on !== undefined) {
+    output.writeFieldBegin('on', Thrift.Type.BOOL, 3);
+    output.writeBool(this.on);
+    output.writeFieldEnd();
+  }
+  if (this.detail !== null && this.detail !== undefined) {
+    output.writeFieldBegin('detail', Thrift.Type.I64, 4);
+    output.writeI64(this.detail);
+    output.writeFieldEnd();
+  }
+  if (this.str !== null && this.str !== undefined) {
+    output.writeFieldBegin('str', Thrift.Type.STRING, 5);
+    output.writeString(this.str);
     output.writeFieldEnd();
   }
   output.writeFieldStop();

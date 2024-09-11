@@ -78,6 +78,14 @@ export declare enum DesktopPathSlavery {
   Slave = 1,
 }
 
+/**
+ * Possible categories of user arg var settings
+ */
+export declare enum UserArgVarCategory {
+  kWorkspace = 0,
+  kGlobal = 1,
+}
+
 export declare class ProjectManagerError extends Thrift.TException {
   description: string;
 
@@ -102,8 +110,9 @@ export declare class ToolDefinition {
   hiddenOutputExtensions: string[];
   toolType: ToolType;
   invocationType: InvocationType;
+  extensionOverrides: string;
 
-    constructor(args?: { id: string; name: string; executableName: string; inputExtensions: string[]; outputExtensions: string[]; hiddenOutputExtensions: string[]; toolType: ToolType; invocationType: InvocationType; });
+    constructor(args?: { id: string; name: string; executableName: string; inputExtensions: string[]; outputExtensions: string[]; hiddenOutputExtensions: string[]; toolType: ToolType; invocationType: InvocationType; extensionOverrides: string; });
   read(input: Object): void;
   write(input: Object): void;
 }
@@ -290,6 +299,66 @@ export declare class ControlFilePlugin {
   isInternal: boolean;
 
     constructor(args?: { name: string; filefilter: string; isInternal: boolean; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
+/**
+ * Settings for user arg vars. Replaces PmUserArgVarModifier
+ */
+export declare class UserArgVarInfo {
+  name: string;
+  value: string;
+  id: number;
+
+    constructor(args?: { name: string; value: string; id: number; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
+/**
+ * Settings for user arg var groups
+ */
+export declare class UserArgVarGroupInfo {
+  name: string;
+  active: boolean;
+  readOnly: boolean;
+  inherited: boolean;
+  category: UserArgVarCategory;
+  id: number;
+  variables: UserArgVarInfo[];
+
+    constructor(args?: { name: string; active: boolean; readOnly: boolean; inherited: boolean; category: UserArgVarCategory; id: number; variables: UserArgVarInfo[]; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
+/**
+ * A build tool provided to the project manager by a client
+ */
+export declare class ExternalTool {
+  name: string;
+  path: string;
+  arguments: string;
+  positionRegexp: string;
+  warningRegexp: string;
+  errorRegexp: string;
+
+    constructor(args?: { name: string; path: string; arguments: string; positionRegexp: string; warningRegexp: string; errorRegexp: string; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
+/**
+ * Abstract description of the wizards available
+ */
+export declare class WizardPlugin {
+  toolchainName: string;
+  displayName: string;
+  description: string;
+  requireSave: boolean;
+
+    constructor(args?: { toolchainName: string; displayName: string; description: string; requireSave: boolean; });
   read(input: Object): void;
   write(input: Object): void;
 }

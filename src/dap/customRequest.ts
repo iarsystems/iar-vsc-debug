@@ -34,6 +34,7 @@ export namespace CustomRequest {
         ELEMENT_SELECTED         = "elementSelected",
         MULTIELEMENT_SELECTED    = "multiElementSelected",
         THEME_RESOLVED           = "themeResolved",
+        LISTWINDOWS_RESOLVED     = "listwindowResolved",
     }
 
     /**
@@ -198,6 +199,7 @@ export namespace CustomEvent {
         MULTIELEMENT_SELECT_CREATED = "multiElementSelectCreated",
         FILE_OPENED                 = "fileOpened",
         THEME_REQUESTED             = "themeRequested",
+        LISTWINDOWS_REQUESTED       = "listwindowRequested"
     }
 
     export interface MessageBoxCreatedData {
@@ -269,5 +271,8 @@ export namespace CustomEvent {
     }
     export interface ThemeRequestedData {
         id: number;
+    }
+    export interface ListWindowsRequestedData {
+        sessionId: string;
     }
 }

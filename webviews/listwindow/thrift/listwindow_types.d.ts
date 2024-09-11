@@ -68,6 +68,12 @@ export declare enum What {
   kThaw = 6,
 }
 
+export declare enum ToolbarWhat {
+  kNormalUpdate = 0,
+  kFullUpdate = 1,
+  kFocusOn = 2,
+}
+
 export declare class Range {
   first: Int64;
   last: Int64;
@@ -215,6 +221,27 @@ export declare class Note {
   anonPos: string;
 
     constructor(args?: { what: What; seq: Int64; ensureVisible: Int64; row: Int64; anonPos: string; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
+export declare class ToolbarNote {
+  what: ToolbarWhat;
+  focusOn: number;
+
+    constructor(args?: { what: ToolbarWhat; focusOn: number; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
+export declare class ToolbarItemState {
+  enabled: boolean;
+  visible: boolean;
+  on: boolean;
+  detail: Int64;
+  str: string;
+
+    constructor(args?: { enabled: boolean; visible: boolean; on: boolean; detail: Int64; str: string; });
   read(input: Object): void;
   write(input: Object): void;
 }

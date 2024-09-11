@@ -541,6 +541,16 @@ export declare class Client extends HeartbeatService.Client {
   AddToolchain(toolchain: Toolchain, callback?: (data: void)=>void): void;
 
   /**
+   * Update the definition for a tool
+   */
+  UpdateTool(toolchainId: string, tool: ToolDefinition): Q.Promise<boolean>;
+
+  /**
+   * Update the definition for a tool
+   */
+  UpdateTool(toolchainId: string, tool: ToolDefinition, callback?: (data: boolean)=>void): void;
+
+  /**
    * Get batch build item list.
    */
   GetBatchBuildItems(): Q.Promise<BatchBuildItem[]>;
@@ -903,4 +913,96 @@ export declare class Client extends HeartbeatService.Client {
   ApplyOptionsForProject(prj: ProjectContext, options: OptionDescription[]): Q.Promise<boolean>;
 
   ApplyOptionsForProject(prj: ProjectContext, options: OptionDescription[], callback?: (data: boolean)=>void): void;
+
+  /**
+   * Get the current settings for user-defined argument variables
+   */
+  GetUserArgVarInfo(category: UserArgVarCategory): Q.Promise<UserArgVarGroupInfo[]>;
+
+  /**
+   * Get the current settings for user-defined argument variables
+   */
+  GetUserArgVarInfo(category: UserArgVarCategory, callback?: (data: UserArgVarGroupInfo[])=>void): void;
+
+  /**
+   * Set the current settings for user-defined argument variables
+   */
+  SetUserArgVarInfo(info: UserArgVarGroupInfo[]): Q.Promise<void>;
+
+  /**
+   * Set the current settings for user-defined argument variables
+   */
+  SetUserArgVarInfo(info: UserArgVarGroupInfo[], callback?: (data: void)=>void): void;
+
+  /**
+   * Load the current settings for user-defined argument variables from a file
+   */
+  ImportUserArgVarInfo(category: UserArgVarCategory, argVarFilePath: string): Q.Promise<void>;
+
+  /**
+   * Load the current settings for user-defined argument variables from a file
+   */
+  ImportUserArgVarInfo(category: UserArgVarCategory, argVarFilePath: string, callback?: (data: void)=>void): void;
+
+  /**
+   * Save the current settings for user-defined argument variables to a file
+   */
+  ExportUserArgVarInfo(category: UserArgVarCategory, argVarFilePath: string): Q.Promise<void>;
+
+  /**
+   * Save the current settings for user-defined argument variables to a file
+   */
+  ExportUserArgVarInfo(category: UserArgVarCategory, argVarFilePath: string, callback?: (data: void)=>void): void;
+
+  /**
+   * Get the current external tools
+   */
+  GetExternalTools(): Q.Promise<ExternalTool[]>;
+
+  /**
+   * Get the current external tools
+   */
+  GetExternalTools(callback?: (data: ExternalTool[])=>void): void;
+
+  /**
+   * Set the external tools to use
+   */
+  SetExternalTools(tools: ExternalTool[]): Q.Promise<void>;
+
+  /**
+   * Set the external tools to use
+   */
+  SetExternalTools(tools: ExternalTool[], callback?: (data: void)=>void): void;
+
+  /**
+   * Get the list of available plugins
+   */
+  GetWizards(toolchainId: string): Q.Promise<WizardPlugin[]>;
+
+  /**
+   * Get the list of available plugins
+   */
+  GetWizards(toolchainId: string, callback?: (data: WizardPlugin[])=>void): void;
+
+  /**
+   * Run a wizard
+   */
+  RunWizard(wizard: WizardPlugin): Q.Promise<ProjectContext>;
+
+  /**
+   * Run a wizard
+   */
+  RunWizard(wizard: WizardPlugin, callback?: (data: ProjectContext)=>void): void;
+
+  GetGlobalOptions(): Q.Promise<OptionDescription[]>;
+
+  GetGlobalOptions(callback?: (data: OptionDescription[])=>void): void;
+
+  GetGlobalOption(id: string): Q.Promise<OptionDescription[]>;
+
+  GetGlobalOption(id: string, callback?: (data: OptionDescription[])=>void): void;
+
+  ApplyGlobalOptions(options: OptionDescription[]): Q.Promise<OptionDescription[]>;
+
+  ApplyGlobalOptions(options: OptionDescription[], callback?: (data: OptionDescription[])=>void): void;
 }

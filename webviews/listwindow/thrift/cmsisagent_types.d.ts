@@ -27,22 +27,6 @@ export declare enum FileCategory {
   kOther = 12,
 }
 
-export declare class DeviceInfo {
-  id: string;
-  name: string;
-  packId: string;
-  family: string;
-  vendor: string;
-  subFamily: string;
-  variant: string;
-  compile: CompileInfo[];
-  processor: ProcessorInfo[];
-
-    constructor(args?: { id: string; name: string; packId: string; family: string; vendor: string; subFamily: string; variant: string; compile: CompileInfo[]; processor: ProcessorInfo[]; });
-  read(input: Object): void;
-  write(input: Object): void;
-}
-
 export declare class FileInfo {
   name: string;
   attr: string;
@@ -95,6 +79,22 @@ export declare class ProcessorInfo {
   DcoreVersion: string;
 
     constructor(args?: { Pname: string; Dvendor: string; Dcore: string; Dfpu: string; Dmpu: string; Dendian: string; Dclock: string; DcoreVersion: string; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
+export declare class DeviceInfo {
+  id: string;
+  name: string;
+  packId: string;
+  family: string;
+  vendor: string;
+  subFamily: string;
+  variant: string;
+  compile: CompileInfo[];
+  processor: ProcessorInfo[];
+
+    constructor(args?: { id: string; name: string; packId: string; family: string; vendor: string; subFamily: string; variant: string; compile: CompileInfo[]; processor: ProcessorInfo[]; });
   read(input: Object): void;
   write(input: Object): void;
 }
