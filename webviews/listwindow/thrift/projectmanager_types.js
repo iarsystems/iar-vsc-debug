@@ -79,6 +79,12 @@ ttypes.DesktopPathSlavery = {
   '1' : 'Slave',
   'Slave' : 1
 };
+ttypes.UserArgVarCategory = {
+  '0' : 'kWorkspace',
+  'kWorkspace' : 0,
+  '1' : 'kGlobal',
+  'kGlobal' : 1
+};
 var ProjectManagerError = module.exports.ProjectManagerError = function(args) {
   this.description = null;
   if (args) {
@@ -139,6 +145,7 @@ var ToolDefinition = module.exports.ToolDefinition = function(args) {
   this.hiddenOutputExtensions = null;
   this.toolType = null;
   this.invocationType = null;
+  this.extensionOverrides = null;
   if (args) {
     if (args.id !== undefined && args.id !== null) {
       this.id = args.id;
@@ -163,6 +170,9 @@ var ToolDefinition = module.exports.ToolDefinition = function(args) {
     }
     if (args.invocationType !== undefined && args.invocationType !== null) {
       this.invocationType = args.invocationType;
+    }
+    if (args.extensionOverrides !== undefined && args.extensionOverrides !== null) {
+      this.extensionOverrides = args.extensionOverrides;
     }
   }
 };
@@ -257,6 +267,13 @@ ToolDefinition.prototype.read = function(input) {
         input.skip(ftype);
       }
       break;
+      case 9:
+      if (ftype == Thrift.Type.STRING) {
+        this.extensionOverrides = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
       default:
         input.skip(ftype);
     }
@@ -327,6 +344,11 @@ ToolDefinition.prototype.write = function(output) {
   if (this.invocationType !== null && this.invocationType !== undefined) {
     output.writeFieldBegin('invocationType', Thrift.Type.I32, 8);
     output.writeI32(this.invocationType);
+    output.writeFieldEnd();
+  }
+  if (this.extensionOverrides !== null && this.extensionOverrides !== undefined) {
+    output.writeFieldBegin('extensionOverrides', Thrift.Type.STRING, 9);
+    output.writeString(this.extensionOverrides);
     output.writeFieldEnd();
   }
   output.writeFieldStop();
@@ -1739,6 +1761,466 @@ ControlFilePlugin.prototype.write = function(output) {
   if (this.isInternal !== null && this.isInternal !== undefined) {
     output.writeFieldBegin('isInternal', Thrift.Type.BOOL, 3);
     output.writeBool(this.isInternal);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var UserArgVarInfo = module.exports.UserArgVarInfo = function(args) {
+  this.name = null;
+  this.value = null;
+  this.id = null;
+  if (args) {
+    if (args.name !== undefined && args.name !== null) {
+      this.name = args.name;
+    }
+    if (args.value !== undefined && args.value !== null) {
+      this.value = args.value;
+    }
+    if (args.id !== undefined && args.id !== null) {
+      this.id = args.id;
+    }
+  }
+};
+UserArgVarInfo.prototype = {};
+UserArgVarInfo.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.STRING) {
+        this.name = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.STRING) {
+        this.value = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 3:
+      if (ftype == Thrift.Type.I32) {
+        this.id = input.readI32().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+UserArgVarInfo.prototype.write = function(output) {
+  output.writeStructBegin('UserArgVarInfo');
+  if (this.name !== null && this.name !== undefined) {
+    output.writeFieldBegin('name', Thrift.Type.STRING, 1);
+    output.writeString(this.name);
+    output.writeFieldEnd();
+  }
+  if (this.value !== null && this.value !== undefined) {
+    output.writeFieldBegin('value', Thrift.Type.STRING, 2);
+    output.writeString(this.value);
+    output.writeFieldEnd();
+  }
+  if (this.id !== null && this.id !== undefined) {
+    output.writeFieldBegin('id', Thrift.Type.I32, 3);
+    output.writeI32(this.id);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var UserArgVarGroupInfo = module.exports.UserArgVarGroupInfo = function(args) {
+  this.name = null;
+  this.active = null;
+  this.readOnly = null;
+  this.inherited = null;
+  this.category = null;
+  this.id = null;
+  this.variables = null;
+  if (args) {
+    if (args.name !== undefined && args.name !== null) {
+      this.name = args.name;
+    }
+    if (args.active !== undefined && args.active !== null) {
+      this.active = args.active;
+    }
+    if (args.readOnly !== undefined && args.readOnly !== null) {
+      this.readOnly = args.readOnly;
+    }
+    if (args.inherited !== undefined && args.inherited !== null) {
+      this.inherited = args.inherited;
+    }
+    if (args.category !== undefined && args.category !== null) {
+      this.category = args.category;
+    }
+    if (args.id !== undefined && args.id !== null) {
+      this.id = args.id;
+    }
+    if (args.variables !== undefined && args.variables !== null) {
+      this.variables = Thrift.copyList(args.variables, [ttypes.UserArgVarInfo]);
+    }
+  }
+};
+UserArgVarGroupInfo.prototype = {};
+UserArgVarGroupInfo.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.STRING) {
+        this.name = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.BOOL) {
+        this.active = input.readBool().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 3:
+      if (ftype == Thrift.Type.BOOL) {
+        this.readOnly = input.readBool().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 4:
+      if (ftype == Thrift.Type.BOOL) {
+        this.inherited = input.readBool().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 5:
+      if (ftype == Thrift.Type.I32) {
+        this.category = input.readI32().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 6:
+      if (ftype == Thrift.Type.I32) {
+        this.id = input.readI32().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 7:
+      if (ftype == Thrift.Type.LIST) {
+        this.variables = [];
+        var _rtmp371 = input.readListBegin();
+        var _size70 = _rtmp371.size || 0;
+        for (var _i72 = 0; _i72 < _size70; ++_i72) {
+          var elem73 = null;
+          elem73 = new ttypes.UserArgVarInfo();
+          elem73.read(input);
+          this.variables.push(elem73);
+        }
+        input.readListEnd();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+UserArgVarGroupInfo.prototype.write = function(output) {
+  output.writeStructBegin('UserArgVarGroupInfo');
+  if (this.name !== null && this.name !== undefined) {
+    output.writeFieldBegin('name', Thrift.Type.STRING, 1);
+    output.writeString(this.name);
+    output.writeFieldEnd();
+  }
+  if (this.active !== null && this.active !== undefined) {
+    output.writeFieldBegin('active', Thrift.Type.BOOL, 2);
+    output.writeBool(this.active);
+    output.writeFieldEnd();
+  }
+  if (this.readOnly !== null && this.readOnly !== undefined) {
+    output.writeFieldBegin('readOnly', Thrift.Type.BOOL, 3);
+    output.writeBool(this.readOnly);
+    output.writeFieldEnd();
+  }
+  if (this.inherited !== null && this.inherited !== undefined) {
+    output.writeFieldBegin('inherited', Thrift.Type.BOOL, 4);
+    output.writeBool(this.inherited);
+    output.writeFieldEnd();
+  }
+  if (this.category !== null && this.category !== undefined) {
+    output.writeFieldBegin('category', Thrift.Type.I32, 5);
+    output.writeI32(this.category);
+    output.writeFieldEnd();
+  }
+  if (this.id !== null && this.id !== undefined) {
+    output.writeFieldBegin('id', Thrift.Type.I32, 6);
+    output.writeI32(this.id);
+    output.writeFieldEnd();
+  }
+  if (this.variables !== null && this.variables !== undefined) {
+    output.writeFieldBegin('variables', Thrift.Type.LIST, 7);
+    output.writeListBegin(Thrift.Type.STRUCT, this.variables.length);
+    for (var iter74 in this.variables) {
+      if (this.variables.hasOwnProperty(iter74)) {
+        iter74 = this.variables[iter74];
+        iter74.write(output);
+      }
+    }
+    output.writeListEnd();
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var ExternalTool = module.exports.ExternalTool = function(args) {
+  this.name = null;
+  this.path = null;
+  this.arguments = null;
+  this.positionRegexp = null;
+  this.warningRegexp = null;
+  this.errorRegexp = null;
+  if (args) {
+    if (args.name !== undefined && args.name !== null) {
+      this.name = args.name;
+    }
+    if (args.path !== undefined && args.path !== null) {
+      this.path = args.path;
+    }
+    if (args.arguments !== undefined && args.arguments !== null) {
+      this.arguments = args.arguments;
+    }
+    if (args.positionRegexp !== undefined && args.positionRegexp !== null) {
+      this.positionRegexp = args.positionRegexp;
+    }
+    if (args.warningRegexp !== undefined && args.warningRegexp !== null) {
+      this.warningRegexp = args.warningRegexp;
+    }
+    if (args.errorRegexp !== undefined && args.errorRegexp !== null) {
+      this.errorRegexp = args.errorRegexp;
+    }
+  }
+};
+ExternalTool.prototype = {};
+ExternalTool.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.STRING) {
+        this.name = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.STRING) {
+        this.path = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 3:
+      if (ftype == Thrift.Type.STRING) {
+        this.arguments = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 4:
+      if (ftype == Thrift.Type.STRING) {
+        this.positionRegexp = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 5:
+      if (ftype == Thrift.Type.STRING) {
+        this.warningRegexp = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 6:
+      if (ftype == Thrift.Type.STRING) {
+        this.errorRegexp = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+ExternalTool.prototype.write = function(output) {
+  output.writeStructBegin('ExternalTool');
+  if (this.name !== null && this.name !== undefined) {
+    output.writeFieldBegin('name', Thrift.Type.STRING, 1);
+    output.writeString(this.name);
+    output.writeFieldEnd();
+  }
+  if (this.path !== null && this.path !== undefined) {
+    output.writeFieldBegin('path', Thrift.Type.STRING, 2);
+    output.writeString(this.path);
+    output.writeFieldEnd();
+  }
+  if (this.arguments !== null && this.arguments !== undefined) {
+    output.writeFieldBegin('arguments', Thrift.Type.STRING, 3);
+    output.writeString(this.arguments);
+    output.writeFieldEnd();
+  }
+  if (this.positionRegexp !== null && this.positionRegexp !== undefined) {
+    output.writeFieldBegin('positionRegexp', Thrift.Type.STRING, 4);
+    output.writeString(this.positionRegexp);
+    output.writeFieldEnd();
+  }
+  if (this.warningRegexp !== null && this.warningRegexp !== undefined) {
+    output.writeFieldBegin('warningRegexp', Thrift.Type.STRING, 5);
+    output.writeString(this.warningRegexp);
+    output.writeFieldEnd();
+  }
+  if (this.errorRegexp !== null && this.errorRegexp !== undefined) {
+    output.writeFieldBegin('errorRegexp', Thrift.Type.STRING, 6);
+    output.writeString(this.errorRegexp);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var WizardPlugin = module.exports.WizardPlugin = function(args) {
+  this.toolchainName = null;
+  this.displayName = null;
+  this.description = null;
+  this.requireSave = null;
+  if (args) {
+    if (args.toolchainName !== undefined && args.toolchainName !== null) {
+      this.toolchainName = args.toolchainName;
+    }
+    if (args.displayName !== undefined && args.displayName !== null) {
+      this.displayName = args.displayName;
+    }
+    if (args.description !== undefined && args.description !== null) {
+      this.description = args.description;
+    }
+    if (args.requireSave !== undefined && args.requireSave !== null) {
+      this.requireSave = args.requireSave;
+    }
+  }
+};
+WizardPlugin.prototype = {};
+WizardPlugin.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.STRING) {
+        this.toolchainName = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.STRING) {
+        this.displayName = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 3:
+      if (ftype == Thrift.Type.STRING) {
+        this.description = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 4:
+      if (ftype == Thrift.Type.BOOL) {
+        this.requireSave = input.readBool().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+WizardPlugin.prototype.write = function(output) {
+  output.writeStructBegin('WizardPlugin');
+  if (this.toolchainName !== null && this.toolchainName !== undefined) {
+    output.writeFieldBegin('toolchainName', Thrift.Type.STRING, 1);
+    output.writeString(this.toolchainName);
+    output.writeFieldEnd();
+  }
+  if (this.displayName !== null && this.displayName !== undefined) {
+    output.writeFieldBegin('displayName', Thrift.Type.STRING, 2);
+    output.writeString(this.displayName);
+    output.writeFieldEnd();
+  }
+  if (this.description !== null && this.description !== undefined) {
+    output.writeFieldBegin('description', Thrift.Type.STRING, 3);
+    output.writeString(this.description);
+    output.writeFieldEnd();
+  }
+  if (this.requireSave !== null && this.requireSave !== undefined) {
+    output.writeFieldBegin('requireSave', Thrift.Type.BOOL, 4);
+    output.writeBool(this.requireSave);
     output.writeFieldEnd();
   }
   output.writeFieldStop();

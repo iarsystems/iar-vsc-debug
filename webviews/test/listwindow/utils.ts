@@ -68,6 +68,7 @@ export namespace TestUtils {
 
     export function generateRenderParameters(numRows = 0): RenderParameters {
         const params: RenderParameters = {
+            frozen: false,
             rows: [],
             columnInfo: [
                 new Column({

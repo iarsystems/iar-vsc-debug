@@ -43,213 +43,6 @@ ttypes.FileCategory = {
   '12' : 'kOther',
   'kOther' : 12
 };
-var DeviceInfo = module.exports.DeviceInfo = function(args) {
-  this.id = null;
-  this.name = null;
-  this.packId = null;
-  this.family = null;
-  this.vendor = null;
-  this.subFamily = null;
-  this.variant = null;
-  this.compile = null;
-  this.processor = null;
-  if (args) {
-    if (args.id !== undefined && args.id !== null) {
-      this.id = args.id;
-    }
-    if (args.name !== undefined && args.name !== null) {
-      this.name = args.name;
-    }
-    if (args.packId !== undefined && args.packId !== null) {
-      this.packId = args.packId;
-    }
-    if (args.family !== undefined && args.family !== null) {
-      this.family = args.family;
-    }
-    if (args.vendor !== undefined && args.vendor !== null) {
-      this.vendor = args.vendor;
-    }
-    if (args.subFamily !== undefined && args.subFamily !== null) {
-      this.subFamily = args.subFamily;
-    }
-    if (args.variant !== undefined && args.variant !== null) {
-      this.variant = args.variant;
-    }
-    if (args.compile !== undefined && args.compile !== null) {
-      this.compile = Thrift.copyList(args.compile, [null]);
-    }
-    if (args.processor !== undefined && args.processor !== null) {
-      this.processor = Thrift.copyList(args.processor, [null]);
-    }
-  }
-};
-DeviceInfo.prototype = {};
-DeviceInfo.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true) {
-    var ret = input.readFieldBegin();
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid) {
-      case 1:
-      if (ftype == Thrift.Type.STRING) {
-        this.id = input.readString().value;
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 2:
-      if (ftype == Thrift.Type.STRING) {
-        this.name = input.readString().value;
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 3:
-      if (ftype == Thrift.Type.STRING) {
-        this.packId = input.readString().value;
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 4:
-      if (ftype == Thrift.Type.STRING) {
-        this.family = input.readString().value;
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 5:
-      if (ftype == Thrift.Type.STRING) {
-        this.vendor = input.readString().value;
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 6:
-      if (ftype == Thrift.Type.STRING) {
-        this.subFamily = input.readString().value;
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 7:
-      if (ftype == Thrift.Type.STRING) {
-        this.variant = input.readString().value;
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 8:
-      if (ftype == Thrift.Type.LIST) {
-        this.compile = [];
-        var _rtmp31 = input.readListBegin();
-        var _size0 = _rtmp31.size || 0;
-        for (var _i2 = 0; _i2 < _size0; ++_i2) {
-          var elem3 = null;
-          elem3 = new ttypes.CompileInfo();
-          elem3.read(input);
-          this.compile.push(elem3);
-        }
-        input.readListEnd();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 9:
-      if (ftype == Thrift.Type.LIST) {
-        this.processor = [];
-        var _rtmp35 = input.readListBegin();
-        var _size4 = _rtmp35.size || 0;
-        for (var _i6 = 0; _i6 < _size4; ++_i6) {
-          var elem7 = null;
-          elem7 = new ttypes.ProcessorInfo();
-          elem7.read(input);
-          this.processor.push(elem7);
-        }
-        input.readListEnd();
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-DeviceInfo.prototype.write = function(output) {
-  output.writeStructBegin('DeviceInfo');
-  if (this.id !== null && this.id !== undefined) {
-    output.writeFieldBegin('id', Thrift.Type.STRING, 1);
-    output.writeString(this.id);
-    output.writeFieldEnd();
-  }
-  if (this.name !== null && this.name !== undefined) {
-    output.writeFieldBegin('name', Thrift.Type.STRING, 2);
-    output.writeString(this.name);
-    output.writeFieldEnd();
-  }
-  if (this.packId !== null && this.packId !== undefined) {
-    output.writeFieldBegin('packId', Thrift.Type.STRING, 3);
-    output.writeString(this.packId);
-    output.writeFieldEnd();
-  }
-  if (this.family !== null && this.family !== undefined) {
-    output.writeFieldBegin('family', Thrift.Type.STRING, 4);
-    output.writeString(this.family);
-    output.writeFieldEnd();
-  }
-  if (this.vendor !== null && this.vendor !== undefined) {
-    output.writeFieldBegin('vendor', Thrift.Type.STRING, 5);
-    output.writeString(this.vendor);
-    output.writeFieldEnd();
-  }
-  if (this.subFamily !== null && this.subFamily !== undefined) {
-    output.writeFieldBegin('subFamily', Thrift.Type.STRING, 6);
-    output.writeString(this.subFamily);
-    output.writeFieldEnd();
-  }
-  if (this.variant !== null && this.variant !== undefined) {
-    output.writeFieldBegin('variant', Thrift.Type.STRING, 7);
-    output.writeString(this.variant);
-    output.writeFieldEnd();
-  }
-  if (this.compile !== null && this.compile !== undefined) {
-    output.writeFieldBegin('compile', Thrift.Type.LIST, 8);
-    output.writeListBegin(Thrift.Type.STRUCT, this.compile.length);
-    for (var iter8 in this.compile) {
-      if (this.compile.hasOwnProperty(iter8)) {
-        iter8 = this.compile[iter8];
-        iter8.write(output);
-      }
-    }
-    output.writeListEnd();
-    output.writeFieldEnd();
-  }
-  if (this.processor !== null && this.processor !== undefined) {
-    output.writeFieldBegin('processor', Thrift.Type.LIST, 9);
-    output.writeListBegin(Thrift.Type.STRUCT, this.processor.length);
-    for (var iter9 in this.processor) {
-      if (this.processor.hasOwnProperty(iter9)) {
-        iter9 = this.processor[iter9];
-        iter9.write(output);
-      }
-    }
-    output.writeListEnd();
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
 var FileInfo = module.exports.FileInfo = function(args) {
   this.name = null;
   this.attr = null;
@@ -504,13 +297,13 @@ ComponentInfo.prototype.read = function(input) {
       case 12:
       if (ftype == Thrift.Type.LIST) {
         this.sourceFiles = [];
-        var _rtmp311 = input.readListBegin();
-        var _size10 = _rtmp311.size || 0;
-        for (var _i12 = 0; _i12 < _size10; ++_i12) {
-          var elem13 = null;
-          elem13 = new ttypes.FileInfo();
-          elem13.read(input);
-          this.sourceFiles.push(elem13);
+        var _rtmp31 = input.readListBegin();
+        var _size0 = _rtmp31.size || 0;
+        for (var _i2 = 0; _i2 < _size0; ++_i2) {
+          var elem3 = null;
+          elem3 = new ttypes.FileInfo();
+          elem3.read(input);
+          this.sourceFiles.push(elem3);
         }
         input.readListEnd();
       } else {
@@ -586,10 +379,10 @@ ComponentInfo.prototype.write = function(output) {
   if (this.sourceFiles !== null && this.sourceFiles !== undefined) {
     output.writeFieldBegin('sourceFiles', Thrift.Type.LIST, 12);
     output.writeListBegin(Thrift.Type.STRUCT, this.sourceFiles.length);
-    for (var iter14 in this.sourceFiles) {
-      if (this.sourceFiles.hasOwnProperty(iter14)) {
-        iter14 = this.sourceFiles[iter14];
-        iter14.write(output);
+    for (var iter4 in this.sourceFiles) {
+      if (this.sourceFiles.hasOwnProperty(iter4)) {
+        iter4 = this.sourceFiles[iter4];
+        iter4.write(output);
       }
     }
     output.writeListEnd();
@@ -831,6 +624,213 @@ ProcessorInfo.prototype.write = function(output) {
   if (this.DcoreVersion !== null && this.DcoreVersion !== undefined) {
     output.writeFieldBegin('DcoreVersion', Thrift.Type.STRING, 8);
     output.writeString(this.DcoreVersion);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var DeviceInfo = module.exports.DeviceInfo = function(args) {
+  this.id = null;
+  this.name = null;
+  this.packId = null;
+  this.family = null;
+  this.vendor = null;
+  this.subFamily = null;
+  this.variant = null;
+  this.compile = null;
+  this.processor = null;
+  if (args) {
+    if (args.id !== undefined && args.id !== null) {
+      this.id = args.id;
+    }
+    if (args.name !== undefined && args.name !== null) {
+      this.name = args.name;
+    }
+    if (args.packId !== undefined && args.packId !== null) {
+      this.packId = args.packId;
+    }
+    if (args.family !== undefined && args.family !== null) {
+      this.family = args.family;
+    }
+    if (args.vendor !== undefined && args.vendor !== null) {
+      this.vendor = args.vendor;
+    }
+    if (args.subFamily !== undefined && args.subFamily !== null) {
+      this.subFamily = args.subFamily;
+    }
+    if (args.variant !== undefined && args.variant !== null) {
+      this.variant = args.variant;
+    }
+    if (args.compile !== undefined && args.compile !== null) {
+      this.compile = Thrift.copyList(args.compile, [ttypes.CompileInfo]);
+    }
+    if (args.processor !== undefined && args.processor !== null) {
+      this.processor = Thrift.copyList(args.processor, [ttypes.ProcessorInfo]);
+    }
+  }
+};
+DeviceInfo.prototype = {};
+DeviceInfo.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.STRING) {
+        this.id = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.STRING) {
+        this.name = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 3:
+      if (ftype == Thrift.Type.STRING) {
+        this.packId = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 4:
+      if (ftype == Thrift.Type.STRING) {
+        this.family = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 5:
+      if (ftype == Thrift.Type.STRING) {
+        this.vendor = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 6:
+      if (ftype == Thrift.Type.STRING) {
+        this.subFamily = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 7:
+      if (ftype == Thrift.Type.STRING) {
+        this.variant = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 8:
+      if (ftype == Thrift.Type.LIST) {
+        this.compile = [];
+        var _rtmp36 = input.readListBegin();
+        var _size5 = _rtmp36.size || 0;
+        for (var _i7 = 0; _i7 < _size5; ++_i7) {
+          var elem8 = null;
+          elem8 = new ttypes.CompileInfo();
+          elem8.read(input);
+          this.compile.push(elem8);
+        }
+        input.readListEnd();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 9:
+      if (ftype == Thrift.Type.LIST) {
+        this.processor = [];
+        var _rtmp310 = input.readListBegin();
+        var _size9 = _rtmp310.size || 0;
+        for (var _i11 = 0; _i11 < _size9; ++_i11) {
+          var elem12 = null;
+          elem12 = new ttypes.ProcessorInfo();
+          elem12.read(input);
+          this.processor.push(elem12);
+        }
+        input.readListEnd();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+DeviceInfo.prototype.write = function(output) {
+  output.writeStructBegin('DeviceInfo');
+  if (this.id !== null && this.id !== undefined) {
+    output.writeFieldBegin('id', Thrift.Type.STRING, 1);
+    output.writeString(this.id);
+    output.writeFieldEnd();
+  }
+  if (this.name !== null && this.name !== undefined) {
+    output.writeFieldBegin('name', Thrift.Type.STRING, 2);
+    output.writeString(this.name);
+    output.writeFieldEnd();
+  }
+  if (this.packId !== null && this.packId !== undefined) {
+    output.writeFieldBegin('packId', Thrift.Type.STRING, 3);
+    output.writeString(this.packId);
+    output.writeFieldEnd();
+  }
+  if (this.family !== null && this.family !== undefined) {
+    output.writeFieldBegin('family', Thrift.Type.STRING, 4);
+    output.writeString(this.family);
+    output.writeFieldEnd();
+  }
+  if (this.vendor !== null && this.vendor !== undefined) {
+    output.writeFieldBegin('vendor', Thrift.Type.STRING, 5);
+    output.writeString(this.vendor);
+    output.writeFieldEnd();
+  }
+  if (this.subFamily !== null && this.subFamily !== undefined) {
+    output.writeFieldBegin('subFamily', Thrift.Type.STRING, 6);
+    output.writeString(this.subFamily);
+    output.writeFieldEnd();
+  }
+  if (this.variant !== null && this.variant !== undefined) {
+    output.writeFieldBegin('variant', Thrift.Type.STRING, 7);
+    output.writeString(this.variant);
+    output.writeFieldEnd();
+  }
+  if (this.compile !== null && this.compile !== undefined) {
+    output.writeFieldBegin('compile', Thrift.Type.LIST, 8);
+    output.writeListBegin(Thrift.Type.STRUCT, this.compile.length);
+    for (var iter13 in this.compile) {
+      if (this.compile.hasOwnProperty(iter13)) {
+        iter13 = this.compile[iter13];
+        iter13.write(output);
+      }
+    }
+    output.writeListEnd();
+    output.writeFieldEnd();
+  }
+  if (this.processor !== null && this.processor !== undefined) {
+    output.writeFieldBegin('processor', Thrift.Type.LIST, 9);
+    output.writeListBegin(Thrift.Type.STRUCT, this.processor.length);
+    for (var iter14 in this.processor) {
+      if (this.processor.hasOwnProperty(iter14)) {
+        iter14 = this.processor[iter14];
+        iter14.write(output);
+      }
+    }
+    output.writeListEnd();
     output.writeFieldEnd();
   }
   output.writeFieldStop();

@@ -9,6 +9,57 @@ if (typeof Int64 === 'undefined' && typeof require === 'function') {
 
 
 var ttypes = module.exports = {};
+var OptionsServiceError = module.exports.OptionsServiceError = function(args) {
+  this.description = null;
+  if (args) {
+    if (args.description !== undefined && args.description !== null) {
+      this.description = args.description;
+    }
+  }
+};
+Thrift.inherits(OptionsServiceError, Thrift.TException);
+OptionsServiceError.prototype.name = 'OptionsServiceError';
+OptionsServiceError.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.STRING) {
+        this.description = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+OptionsServiceError.prototype.write = function(output) {
+  output.writeStructBegin('OptionsServiceError');
+  if (this.description !== null && this.description !== undefined) {
+    output.writeFieldBegin('description', Thrift.Type.STRING, 1);
+    output.writeString(this.description);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
 var CreateSessionRequest = module.exports.CreateSessionRequest = function(args) {
   this.projectPath = null;
   this.configurationName = null;
@@ -377,154 +428,6 @@ UpdateOptionValueResponse.prototype.write = function(output) {
   if (this.optionId !== null && this.optionId !== undefined) {
     output.writeFieldBegin('optionId', Thrift.Type.STRING, 3);
     output.writeString(this.optionId);
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-var CommitChangesRequest = module.exports.CommitChangesRequest = function(args) {
-  this.sessionId = null;
-  if (args) {
-    if (args.sessionId !== undefined && args.sessionId !== null) {
-      this.sessionId = new shared_ttypes.Id(args.sessionId);
-    }
-  }
-};
-CommitChangesRequest.prototype = {};
-CommitChangesRequest.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true) {
-    var ret = input.readFieldBegin();
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid) {
-      case 1:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.sessionId = new shared_ttypes.Id();
-        this.sessionId.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 0:
-        input.skip(ftype);
-        break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-CommitChangesRequest.prototype.write = function(output) {
-  output.writeStructBegin('CommitChangesRequest');
-  if (this.sessionId !== null && this.sessionId !== undefined) {
-    output.writeFieldBegin('sessionId', Thrift.Type.STRUCT, 1);
-    this.sessionId.write(output);
-    output.writeFieldEnd();
-  }
-  output.writeFieldStop();
-  output.writeStructEnd();
-  return;
-};
-
-var CommitChangesResponse = module.exports.CommitChangesResponse = function(args) {
-  this.sessionId = null;
-  this.result = null;
-  this.optionId = null;
-  this.value = null;
-  if (args) {
-    if (args.sessionId !== undefined && args.sessionId !== null) {
-      this.sessionId = new shared_ttypes.Id(args.sessionId);
-    }
-    if (args.result !== undefined && args.result !== null) {
-      this.result = new shared_ttypes.Success(args.result);
-    }
-    if (args.optionId !== undefined && args.optionId !== null) {
-      this.optionId = args.optionId;
-    }
-    if (args.value !== undefined && args.value !== null) {
-      this.value = args.value;
-    }
-  }
-};
-CommitChangesResponse.prototype = {};
-CommitChangesResponse.prototype.read = function(input) {
-  input.readStructBegin();
-  while (true) {
-    var ret = input.readFieldBegin();
-    var ftype = ret.ftype;
-    var fid = ret.fid;
-    if (ftype == Thrift.Type.STOP) {
-      break;
-    }
-    switch (fid) {
-      case 1:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.sessionId = new shared_ttypes.Id();
-        this.sessionId.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 2:
-      if (ftype == Thrift.Type.STRUCT) {
-        this.result = new shared_ttypes.Success();
-        this.result.read(input);
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 3:
-      if (ftype == Thrift.Type.STRING) {
-        this.optionId = input.readString().value;
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      case 4:
-      if (ftype == Thrift.Type.STRING) {
-        this.value = input.readString().value;
-      } else {
-        input.skip(ftype);
-      }
-      break;
-      default:
-        input.skip(ftype);
-    }
-    input.readFieldEnd();
-  }
-  input.readStructEnd();
-  return;
-};
-
-CommitChangesResponse.prototype.write = function(output) {
-  output.writeStructBegin('CommitChangesResponse');
-  if (this.sessionId !== null && this.sessionId !== undefined) {
-    output.writeFieldBegin('sessionId', Thrift.Type.STRUCT, 1);
-    this.sessionId.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.result !== null && this.result !== undefined) {
-    output.writeFieldBegin('result', Thrift.Type.STRUCT, 2);
-    this.result.write(output);
-    output.writeFieldEnd();
-  }
-  if (this.optionId !== null && this.optionId !== undefined) {
-    output.writeFieldBegin('optionId', Thrift.Type.STRING, 3);
-    output.writeString(this.optionId);
-    output.writeFieldEnd();
-  }
-  if (this.value !== null && this.value !== undefined) {
-    output.writeFieldBegin('value', Thrift.Type.STRING, 4);
-    output.writeString(this.value);
     output.writeFieldEnd();
   }
   output.writeFieldStop();
@@ -984,6 +887,442 @@ GetOptionTreeResponse.prototype.write = function(output) {
   }
   if (this.success !== null && this.success !== undefined) {
     output.writeFieldBegin('success', Thrift.Type.STRUCT, 3);
+    this.success.write(output);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var OptionValue = module.exports.OptionValue = function(args) {
+  this.optionDefinitionId = null;
+  this.data = null;
+  if (args) {
+    if (args.optionDefinitionId !== undefined && args.optionDefinitionId !== null) {
+      this.optionDefinitionId = args.optionDefinitionId;
+    }
+    if (args.data !== undefined && args.data !== null) {
+      this.data = args.data;
+    }
+  }
+};
+OptionValue.prototype = {};
+OptionValue.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.STRING) {
+        this.optionDefinitionId = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.STRING) {
+        this.data = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+OptionValue.prototype.write = function(output) {
+  output.writeStructBegin('OptionValue');
+  if (this.optionDefinitionId !== null && this.optionDefinitionId !== undefined) {
+    output.writeFieldBegin('optionDefinitionId', Thrift.Type.STRING, 1);
+    output.writeString(this.optionDefinitionId);
+    output.writeFieldEnd();
+  }
+  if (this.data !== null && this.data !== undefined) {
+    output.writeFieldBegin('data', Thrift.Type.STRING, 2);
+    output.writeString(this.data);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var VerificationError = module.exports.VerificationError = function(args) {
+  this.optionDefinitionId = null;
+  this.errorMessage = null;
+  if (args) {
+    if (args.optionDefinitionId !== undefined && args.optionDefinitionId !== null) {
+      this.optionDefinitionId = args.optionDefinitionId;
+    }
+    if (args.errorMessage !== undefined && args.errorMessage !== null) {
+      this.errorMessage = args.errorMessage;
+    }
+  }
+};
+VerificationError.prototype = {};
+VerificationError.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.STRING) {
+        this.optionDefinitionId = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.STRING) {
+        this.errorMessage = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+VerificationError.prototype.write = function(output) {
+  output.writeStructBegin('VerificationError');
+  if (this.optionDefinitionId !== null && this.optionDefinitionId !== undefined) {
+    output.writeFieldBegin('optionDefinitionId', Thrift.Type.STRING, 1);
+    output.writeString(this.optionDefinitionId);
+    output.writeFieldEnd();
+  }
+  if (this.errorMessage !== null && this.errorMessage !== undefined) {
+    output.writeFieldBegin('errorMessage', Thrift.Type.STRING, 2);
+    output.writeString(this.errorMessage);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var VerifyOptionStateRequest = module.exports.VerifyOptionStateRequest = function(args) {
+  this.sessionId = null;
+  this.optionValues = null;
+  if (args) {
+    if (args.sessionId !== undefined && args.sessionId !== null) {
+      this.sessionId = new shared_ttypes.Id(args.sessionId);
+    }
+    if (args.optionValues !== undefined && args.optionValues !== null) {
+      this.optionValues = Thrift.copyList(args.optionValues, [ttypes.OptionValue]);
+    }
+  }
+};
+VerifyOptionStateRequest.prototype = {};
+VerifyOptionStateRequest.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.sessionId = new shared_ttypes.Id();
+        this.sessionId.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.LIST) {
+        this.optionValues = [];
+        var _rtmp38 = input.readListBegin();
+        var _size7 = _rtmp38.size || 0;
+        for (var _i9 = 0; _i9 < _size7; ++_i9) {
+          var elem10 = null;
+          elem10 = new ttypes.OptionValue();
+          elem10.read(input);
+          this.optionValues.push(elem10);
+        }
+        input.readListEnd();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+VerifyOptionStateRequest.prototype.write = function(output) {
+  output.writeStructBegin('VerifyOptionStateRequest');
+  if (this.sessionId !== null && this.sessionId !== undefined) {
+    output.writeFieldBegin('sessionId', Thrift.Type.STRUCT, 1);
+    this.sessionId.write(output);
+    output.writeFieldEnd();
+  }
+  if (this.optionValues !== null && this.optionValues !== undefined) {
+    output.writeFieldBegin('optionValues', Thrift.Type.LIST, 2);
+    output.writeListBegin(Thrift.Type.STRUCT, this.optionValues.length);
+    for (var iter11 in this.optionValues) {
+      if (this.optionValues.hasOwnProperty(iter11)) {
+        iter11 = this.optionValues[iter11];
+        iter11.write(output);
+      }
+    }
+    output.writeListEnd();
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var VerifyOptionStateResponse = module.exports.VerifyOptionStateResponse = function(args) {
+  this.sessionId = null;
+  this.tree = null;
+  this.success = null;
+  this.verificationErrors = null;
+  if (args) {
+    if (args.sessionId !== undefined && args.sessionId !== null) {
+      this.sessionId = new shared_ttypes.Id(args.sessionId);
+    }
+    if (args.tree !== undefined && args.tree !== null) {
+      this.tree = new ttypes.Tree(args.tree);
+    }
+    if (args.success !== undefined && args.success !== null) {
+      this.success = new shared_ttypes.Success(args.success);
+    }
+    if (args.verificationErrors !== undefined && args.verificationErrors !== null) {
+      this.verificationErrors = Thrift.copyList(args.verificationErrors, [ttypes.VerificationError]);
+    }
+  }
+};
+VerifyOptionStateResponse.prototype = {};
+VerifyOptionStateResponse.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.sessionId = new shared_ttypes.Id();
+        this.sessionId.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.tree = new ttypes.Tree();
+        this.tree.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 3:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.success = new shared_ttypes.Success();
+        this.success.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 4:
+      if (ftype == Thrift.Type.LIST) {
+        this.verificationErrors = [];
+        var _rtmp313 = input.readListBegin();
+        var _size12 = _rtmp313.size || 0;
+        for (var _i14 = 0; _i14 < _size12; ++_i14) {
+          var elem15 = null;
+          elem15 = new ttypes.VerificationError();
+          elem15.read(input);
+          this.verificationErrors.push(elem15);
+        }
+        input.readListEnd();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+VerifyOptionStateResponse.prototype.write = function(output) {
+  output.writeStructBegin('VerifyOptionStateResponse');
+  if (this.sessionId !== null && this.sessionId !== undefined) {
+    output.writeFieldBegin('sessionId', Thrift.Type.STRUCT, 1);
+    this.sessionId.write(output);
+    output.writeFieldEnd();
+  }
+  if (this.tree !== null && this.tree !== undefined) {
+    output.writeFieldBegin('tree', Thrift.Type.STRUCT, 2);
+    this.tree.write(output);
+    output.writeFieldEnd();
+  }
+  if (this.success !== null && this.success !== undefined) {
+    output.writeFieldBegin('success', Thrift.Type.STRUCT, 3);
+    this.success.write(output);
+    output.writeFieldEnd();
+  }
+  if (this.verificationErrors !== null && this.verificationErrors !== undefined) {
+    output.writeFieldBegin('verificationErrors', Thrift.Type.LIST, 4);
+    output.writeListBegin(Thrift.Type.STRUCT, this.verificationErrors.length);
+    for (var iter16 in this.verificationErrors) {
+      if (this.verificationErrors.hasOwnProperty(iter16)) {
+        iter16 = this.verificationErrors[iter16];
+        iter16.write(output);
+      }
+    }
+    output.writeListEnd();
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var CommitOptionStateRequest = module.exports.CommitOptionStateRequest = function(args) {
+  this.sessionId = null;
+  if (args) {
+    if (args.sessionId !== undefined && args.sessionId !== null) {
+      this.sessionId = new shared_ttypes.Id(args.sessionId);
+    }
+  }
+};
+CommitOptionStateRequest.prototype = {};
+CommitOptionStateRequest.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.sessionId = new shared_ttypes.Id();
+        this.sessionId.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+CommitOptionStateRequest.prototype.write = function(output) {
+  output.writeStructBegin('CommitOptionStateRequest');
+  if (this.sessionId !== null && this.sessionId !== undefined) {
+    output.writeFieldBegin('sessionId', Thrift.Type.STRUCT, 1);
+    this.sessionId.write(output);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var CommitOptionStateResponse = module.exports.CommitOptionStateResponse = function(args) {
+  this.sessionId = null;
+  this.success = null;
+  if (args) {
+    if (args.sessionId !== undefined && args.sessionId !== null) {
+      this.sessionId = new shared_ttypes.Id(args.sessionId);
+    }
+    if (args.success !== undefined && args.success !== null) {
+      this.success = new shared_ttypes.Success(args.success);
+    }
+  }
+};
+CommitOptionStateResponse.prototype = {};
+CommitOptionStateResponse.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.sessionId = new shared_ttypes.Id();
+        this.sessionId.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.success = new shared_ttypes.Success();
+        this.success.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+CommitOptionStateResponse.prototype.write = function(output) {
+  output.writeStructBegin('CommitOptionStateResponse');
+  if (this.sessionId !== null && this.sessionId !== undefined) {
+    output.writeFieldBegin('sessionId', Thrift.Type.STRUCT, 1);
+    this.sessionId.write(output);
+    output.writeFieldEnd();
+  }
+  if (this.success !== null && this.success !== undefined) {
+    output.writeFieldBegin('success', Thrift.Type.STRUCT, 2);
     this.success.write(output);
     output.writeFieldEnd();
   }

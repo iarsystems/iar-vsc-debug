@@ -4,11 +4,10 @@
 
 import * as vscode from "vscode";
 import { ListwindowViewProvider } from "./listwindowViewProvider";
-import { CustomRequest } from "../dap/customRequest";
+import { CustomEvent, CustomRequest } from "../dap/customRequest";
 import { ThriftServiceRegistry } from "iar-vsc-common/thrift/thriftServiceRegistry";
 import { ServiceLocation } from "iar-vsc-common/thrift/bindings/ServiceRegistry_types";
-import { ListWindowBackendHandler} from "./listwindowBackend";
-
+import { ListWindowBackendHandler } from "./listwindowBackend";
 
 type ViewId = string;
 
@@ -30,6 +29,8 @@ export class ListwindowManager {
     private readonly sessions: Map<string, ThriftServiceRegistry> = new Map();
     private activeSession: string | undefined = undefined;
 
+    // Connect all registered windows to the corresponding services using
+    // the given registry.
     async connect(sessionId: string, registry: ThriftServiceRegistry) {
         if (!this.sessions.has(sessionId)) {
             this.sessions.set(sessionId, registry);
@@ -52,6 +53,36 @@ export class ListwindowManager {
         return false;
     }
 
+    // From a given vscode debug session, connect a listwindows to
+    // the registry assigned to the session. If the given session is
+    // the active session, this call does nothing.
+    private async connectToSession(session: vscode.DebugSession) {
+        if (session.type !== "cspy") {
+            return;
+        }
+
+        if (this.isActiveSession(session.id)) {
+            // This is already the active session.
+            return;
+        }
+
+        let registry: ThriftServiceRegistry | null = null;
+        if (!this.sessions.has(session.id)) {
+            const location: CustomRequest.RegistryLocationResponse =
+                await session.customRequest(
+                    CustomRequest.Names.GET_REGISTRY_LOCATION,
+                );
+            registry = new ThriftServiceRegistry(new ServiceLocation(location));
+        } else {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            registry = this.sessions.get(session.id)!;
+        }
+
+        if (registry) {
+            await this.connect(session.id, registry);
+        }
+    }
+
     constructor(context: vscode.ExtensionContext) {
         this.windows = ListwindowManager.VIEW_DEFINITIONS.map(
             ([viewId, serviceName]) => {
@@ -61,6 +92,20 @@ export class ListwindowManager {
                 );
                 return new ListWindowBackendHandler(view, serviceName);
             },
+        );
+
+        // Called during the start-up phase of a debug session. This allows
+        // the listwindows to perform a complete update before the core
+        // is started.
+        context.subscriptions.push(
+            vscode.debug.onDidReceiveDebugSessionCustomEvent(async ev => {
+                if (ev.event === CustomEvent.Names.LISTWINDOWS_REQUESTED) {
+                    await this.connectToSession(ev.session);
+                    await ev.session.customRequest(
+                        CustomRequest.Names.LISTWINDOWS_RESOLVED,
+                    );
+                }
+            }),
         );
 
         context.subscriptions.push(
@@ -84,31 +129,8 @@ export class ListwindowManager {
 
         context.subscriptions.push(
             vscode.debug.onDidChangeActiveDebugSession(async session => {
-                if (session === undefined || session.type !== "cspy") {
-                    return;
-                }
-
-                if (this.isActiveSession(session.id)) {
-                    // This is already the active session.
-                    return;
-                }
-
-                let registry: ThriftServiceRegistry | null = null;
-                if (!this.sessions.has(session.id)) {
-                    const location: CustomRequest.RegistryLocationResponse =
-                        await session.customRequest(
-                            CustomRequest.Names.GET_REGISTRY_LOCATION,
-                        );
-                    registry = new ThriftServiceRegistry(
-                        new ServiceLocation(location),
-                    );
-                } else {
-                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                    registry = this.sessions.get(session.id)!;
-                }
-
-                if (registry) {
-                    this.connect(session.id, registry);
+                if (session !== undefined) {
+                    await this.connectToSession(session);
                 }
             }),
         );

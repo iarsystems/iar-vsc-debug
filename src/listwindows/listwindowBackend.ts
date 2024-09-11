@@ -6,6 +6,7 @@ import {
     EditInfo,
     MenuItem,
     Note,
+    ToolbarItemState,
     ToolbarNote,
     ToolbarWhat,
     Tooltip,
@@ -49,6 +50,8 @@ export class ListWindowBackendHandler {
     // The current sequences handled by the view.
     private currentSeq = new Int64(0);
     private latestSeq = new Int64(0);
+
+    private toolbarIds: string[] = [];
 
     constructor(view: ListwindowViewProvider, serviceName: string) {
         this.view = view;
@@ -386,7 +389,13 @@ export class ListWindowBackendHandler {
                 break;
             }
             case "toolbarRendered": {
-                // TO-DO Handle state update here.
+                this.toolbarIds = msg.ids;
+                this.notifyToolbar(
+                    new ToolbarNote({
+                        what: ToolbarWhat.kNormalUpdate,
+                        focusOn: 0,
+                    }),
+                );
                 break;
             }
         }
@@ -395,10 +404,25 @@ export class ListWindowBackendHandler {
     notifyToolbar(note: ToolbarNote): Q.Promise<void> {
         switch (note.what) {
             case ToolbarWhat.kNormalUpdate: {
+                this.toolbarIds.forEach(id => {
+                    this.activePromise = this.scheduleCall<ToolbarItemState>(
+                        client => {
+                            return client.service.getToolbarItemState(id);
+                        },
+                    ).then(value => {
+                        if (value) {
+                            this.view?.postMessageToView({
+                                subject: "updateToolbarItem",
+                                id: id,
+                                state: value,
+                            });
+                        }
+                    });
+                });
                 break;
             }
             case ToolbarWhat.kFullUpdate: {
-                this.scheduleCall<string>(client => {
+                this.activePromise = this.scheduleCall<string>(client => {
                     return client.service.getToolbarDefinition();
                 }).then(value => {
                     if (value && value.length > 0) {

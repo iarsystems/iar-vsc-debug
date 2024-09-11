@@ -109,13 +109,20 @@ export class ListWindowProxy {
 
     async updateListSpec(): Promise<void> {
         if (this.client) {
-            this.renderParams.listSpec = await this.client.getListSpec();
+            const spec = await this.client.getListSpec();
+            if (spec.showHeader || spec.showGrid) {
+                // Avoid resetting to default.
+                this.renderParams.listSpec = spec;
+            }
         }
     }
 
     async updateColumns(): Promise<void> {
         if (this.client) {
-            this.renderParams.columnInfo = await this.client.getColumnInfo();
+            const newCols = await this.client.getColumnInfo();
+            if (newCols.length > 0) {
+                this.renderParams.columnInfo = newCols;
+            }
         }
     }
 
