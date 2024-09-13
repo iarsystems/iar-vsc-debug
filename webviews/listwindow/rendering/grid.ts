@@ -11,7 +11,7 @@ import { DragDropService } from "./dragDropService";
 import { ScrollOperation, SelectionFlags, Target } from "../thrift/listwindow_types";
 import { css } from "@emotion/css";
 import { SharedStyles } from "./styles/sharedStyles";
-import { VirtualList } from "./virtualList/virtualList";
+import { VirtualList } from "./virtualList";
 import { CellEditService } from "./cell/cellEditService";
 import { MessageService } from "../messageService";
 import { TooltipService } from "./tooltipService";
