@@ -74,7 +74,6 @@ export class ListWindowProxy {
                 // Update the rows from scratch.
                 this.cache.cache.clear();
                 await this.updateSelection();
-                await this.updateNumberOfRows();
                 break;
             }
             case What.kFullUpdate: {
@@ -167,7 +166,6 @@ export class ListWindowProxy {
     static getDefaultRenderParameters(): Omit<RenderParameters, "scrollInfo"> {
         const rows: Row[] = [];
         return {
-            frozen: false,
             frozen: false,
             rows: rows,
             columnInfo: [],
