@@ -3,6 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { MessageService } from "../messageService";
+import { SerializedBigInt } from "../protocol";
 import { Target } from "../thrift/listwindow_types";
 import { CellElement, CellPosition } from "./cell/cell";
 
@@ -19,7 +20,7 @@ export interface DragDropFeedback {
 interface DragSource {
     windowId: string;
     col: number;
-    row: bigint;
+    row: SerializedBigInt;
 }
 // Key for the DragSource data format on the event
 const DRAG_SOURCE_FORMAT = "application/listwindow-source";
@@ -67,7 +68,7 @@ export class DragDropService {
                 const source: DragSource = {
                     windowId: this.windowId,
                     col: elem.position.col,
-                    row: elem.position.row,
+                    row: { value: elem.position.row.toString() },
                 };
                 ev.dataTransfer.setData(
                     DRAG_SOURCE_FORMAT,
@@ -125,7 +126,7 @@ export class DragDropService {
                         this.messageService.sendMessage({
                             subject: "localDrop",
                             srcCol: source.col,
-                            srcRow: { value: source.row.toString() },
+                            srcRow: source.row,
                             dstCol: position.col,
                             dstRow: { value: position.row.toString() },
                         });

@@ -34,7 +34,7 @@ suite("Listwindow drag & drop", () => {
         });
         const msg = await msgPromise;
         Assert.strictEqual(msg.col, 0);
-        Assert.strictEqual(msg.row, 0);
+        Assert.strictEqual(msg.row.value, "0");
         Assert.strictEqual(msg.droppedText, dropText);
     });
 
@@ -56,7 +56,7 @@ suite("Listwindow drag & drop", () => {
         });
         const msg = await msgPromise;
         Assert.strictEqual(msg.col, -1);
-        Assert.strictEqual(msg.row, -1);
+        Assert.strictEqual(msg.row.value, "-1");
         Assert.strictEqual(msg.droppedText, dropText);
     });
 });

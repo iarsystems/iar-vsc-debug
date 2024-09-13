@@ -41,7 +41,7 @@ suite("Listwindow cells", () => {
         user.click(cell);
 
         const msg = await api.waitForMessage("cellLeftClicked");
-        Assert.strictEqual(msg.row, 0);
+        Assert.strictEqual(msg.row.value, "0");
         Assert.strictEqual(msg.col, 1);
     });
 
@@ -59,7 +59,7 @@ suite("Listwindow cells", () => {
         fireEvent.contextMenu(cell);
 
         const msg = await msgPromise;
-        Assert.strictEqual(msg.row, 0);
+        Assert.strictEqual(msg.row.value, "0");
         Assert.strictEqual(msg.col, 1);
     });
 
@@ -77,7 +77,7 @@ suite("Listwindow cells", () => {
         user.click(cell);
 
         const msg = await api.waitForMessage("getEditableString");
-        Assert.strictEqual(msg.row, 0);
+        Assert.strictEqual(msg.row.value, "0");
         Assert.strictEqual(msg.col, 1);
         const editString = "Hello, editstring";
         api.postMessage({
@@ -99,7 +99,7 @@ suite("Listwindow cells", () => {
         );
         user.type(input, "{Enter}");
         const editMsg = await api.waitForMessage("cellEdited");
-        Assert.strictEqual(editMsg.row, 0);
+        Assert.strictEqual(editMsg.row.value, "0");
         Assert.strictEqual(editMsg.col, 1);
     });
 
@@ -116,7 +116,7 @@ suite("Listwindow cells", () => {
 
         user.keyboard("{Insert}");
         const msg = await api.waitForMessage("getEditableString");
-        Assert.strictEqual(msg.row, 1);
+        Assert.strictEqual(msg.row.value, "1");
         Assert.strictEqual(msg.col, -1);
         const editString = "Hello, editstring";
         api.postMessage({
@@ -172,10 +172,10 @@ suite("Listwindow cells", () => {
         await TestUtils.render(api, renderParams);
 
         const expectedMessages: Array<ViewMessage> = [
-            { subject: "rowExpansionToggled", row: 0 },
-            { subject: "rowExpansionToggled", row: 1 },
-            { subject: "moreLessToggled", row: 2 },
-            { subject: "moreLessToggled", row: 3 },
+            { subject: "rowExpansionToggled", row: { value: "0" } },
+            { subject: "rowExpansionToggled", row: { value: "1" } },
+            { subject: "moreLessToggled", row: { value: "2" } },
+            { subject: "moreLessToggled", row: { value: "3" } },
         ];
 
         for (let row = 0; row < 4; row++) {
@@ -239,7 +239,7 @@ suite("Listwindow cells", () => {
         Assert(checkbox);
         user.click(checkbox);
         const msg = await api.waitForMessage("checkboxToggled");
-        Assert.strictEqual(msg.row, 1);
+        Assert.strictEqual(msg.row.value, "1");
     });
 
 });

@@ -62,6 +62,23 @@ export class GridRenderer {
                 });
             }
         });
+        this.scroller.onclick = ev => {
+            if (ev.target !== this.scroller) {
+                return;
+            }
+            this.messageService.sendMessage({
+                subject: "cellLeftClicked",
+                col: -1,
+                row: { value: "-1" },
+                flags: SelectionFlags.kReplace,
+            });
+        };
+        this.dragDropService?.registerDropTarget(
+            this.container,
+            { col: -1, row: -1n },
+            Target.kTargetAll,
+        );
+
 
         this.grid = document.createElement("div");
         this.scroller.appendChild(this.grid);
@@ -102,15 +119,12 @@ export class GridRenderer {
             initialColumnWidths = params.columnInfo.map(col => col.width);
         }
 
-        this.dragDropService?.registerDropTarget(
-            this.grid,
-            { col: -1, row: -1n },
-            Target.kTargetAll,
-        );
         if (
             this.dragDropService?.currentFeedback.target === Target.kTargetAll
         ) {
-            this.grid.classList.add(SharedStyles.dropTarget);
+            this.container.classList.add(SharedStyles.dropTarget);
+        } else {
+            this.container.classList.remove(SharedStyles.dropTarget);
         }
 
         // Create header
@@ -119,6 +133,7 @@ export class GridRenderer {
         headerElement.columnWidths = initialColumnWidths;
         headerElement.clickable = params.listSpec.canClickColumns;
         headerElement.resizeMode = resizeMode;
+        headerElement.messageService = this.messageService;
         this.grid.appendChild(headerElement);
 
         if (!params.listSpec.showHeader) {
@@ -156,19 +171,6 @@ export class GridRenderer {
             fillerTop.style.gridColumn = `span ${params.columnInfo.length}`;
             const fillerBottom = document.createElement("div");
             fillerBottom.style.gridColumn = `span ${params.columnInfo.length}`;
-            // The bottom filler has a minHeight to ensure there's always some
-            // space at the very bottom of the list that can be clicked to
-            // deselect everything.
-            fillerBottom.classList.add(Styles.fillerBottom);
-            this.grid.appendChild(fillerBottom);
-            fillerBottom.onclick = () => {
-                this.messageService.sendMessage({
-                    subject: "cellLeftClicked",
-                    col: -1,
-                    row: { value: "-1" },
-                    flags: SelectionFlags.kReplace,
-                });
-            };
 
             this.listRenderer.render({
                 container: this.grid,
@@ -223,9 +225,6 @@ namespace Styles {
     });
     export const fillWidth = css({
         width: "100%",
-    });
-    export const fillerBottom = css({
-        minHeight: "10px",
     });
     export const overlay = css({
         pointerEvents: "none",

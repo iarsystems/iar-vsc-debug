@@ -98,6 +98,12 @@ export namespace TestUtils {
                 first: new Int64(-1),
                 last: new Int64(-1),
             })],
+            offset: { value: "0" },
+            scrollInfo: {
+                fractionBefore: 0,
+                fractionInWin: 1,
+                fractionAfter: 0,
+            },
         };
         params.rows = generateRows(numRows);
 
