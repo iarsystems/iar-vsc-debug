@@ -13,6 +13,7 @@ import { CellBordersElement } from "./cellBorders";
 import { TreeInfoElement } from "./treeInfo";
 import { Serializable } from "../../protocol";
 import { Checkbox } from "@vscode/webview-ui-toolkit";
+import { IconMap } from "../icons";
 
 export interface CellPosition {
     col: number;
@@ -353,19 +354,3 @@ namespace Styles {
         fontStyle: "italic",
     });
 }
-
-/**
- * Maps each icon name to its corresponding codicon name and (optionally) color
- */
-const IconMap = new Map<string, [string, string | undefined]>([
-    // Code coverage window
-    ["CSPY_CODE_COVERED_NONE", ["star-empty", "red"]],
-    ["CSPY_CODE_COVERED_MEDIUM", ["star-half", "yellow"]],
-    ["CSPY_CODE_COVERED_FULL", ["star-full", "green"]],
-    // Images window
-    ["IDI_DBG_IMAGES_ON_FOCUSED", ["pass-filled", undefined]],
-    ["IDI_DBG_IMAGES_ON_UNFOCUSED", ["pass", undefined]],
-    // Macro window
-    ["IDE_PERSIST_EXPR_VAL", ["refresh", "green"]],
-    ["IDE_EXPR_VAL", ["refresh", "blue"]],
-]);

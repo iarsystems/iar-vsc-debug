@@ -20,13 +20,14 @@ export class SimpleProxyCache {
         this.cache.clear();
     }
 
-    public async GetRow(rowNo: bigint): Promise<Row> {
-        if (this.cache.has(rowNo)) {
-            return this.cache.get(rowNo) as Row;
+    public async getRow(rowNo: Int64): Promise<Row> {
+        const bigIntNo = BigInt(rowNo.toString());
+        if (this.cache.has(bigIntNo)) {
+            return this.cache.get(bigIntNo) as Row;
         }
 
         const row = await this.client?.getRow(new Int64(Number(rowNo)));
-        this.cache.set(rowNo, row as Row);
+        this.cache.set(bigIntNo, row as Row);
         return row as Row;
     }
 
@@ -48,6 +49,7 @@ export class ListWindowProxy {
     // Start with a stupid cache.
     private readonly cache: SimpleProxyCache = new SimpleProxyCache();
     private client: ListWindowBackend.Client | undefined = undefined;
+    private noRows = 0;
     private renderParams: RenderParameters =
         ListWindowProxy.getDefaultRenderParameters();
 
@@ -74,6 +76,7 @@ export class ListWindowProxy {
                 // Update the rows from scratch.
                 this.cache.cache.clear();
                 await this.updateSelection();
+                await this.updateNumberOfRows();
                 break;
             }
             case What.kFullUpdate: {
@@ -107,6 +110,12 @@ export class ListWindowProxy {
         }
     }
 
+    async updateNumberOfRows(): Promise<void> {
+        if (this.client) {
+            this.noRows = (await this.client.getNumberOfRows()).toNumber();
+        }
+    }
+
     async updateListSpec(): Promise<void> {
         if (this.client) {
             const spec = await this.client.getListSpec();
@@ -128,7 +137,7 @@ export class ListWindowProxy {
 
     async updateRenderParameters(
         offset: number,
-        noVisibleRows: number,
+        _noVisibleRows: number,
     ): Promise<RenderParameters> {
         if (!this.client || this.renderParams.frozen) {
             // No updates when the model is frozen.
@@ -138,9 +147,9 @@ export class ListWindowProxy {
         this.renderParams.selection = await this.client.getSelection();
         this.renderParams.rows = [];
 
-        for (let i = 0; i < noVisibleRows; i++) {
+        for (let i = 0; i < this.noRows; i++) {
             const rowNo = new Int64(i + offset);
-            this.renderParams.rows.push(await this.client.getRow(rowNo));
+            this.renderParams.rows.push(await this.cache.getRow(rowNo));
         }
 
         return this.renderParams;
@@ -149,7 +158,7 @@ export class ListWindowProxy {
     static getDefaultRenderParameters(): RenderParameters {
         const rows: Row[] = [];
         return {
-            frozen: true,
+            frozen: false,
             rows: rows,
             columnInfo: [],
             selection: [],

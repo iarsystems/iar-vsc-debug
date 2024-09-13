@@ -31,6 +31,7 @@ import { css } from "@emotion/css";
 import { ToolbarElement } from "./rendering/toolbar/toolbar";
 import { toBigInt } from "./rendering/utils";
 import { SharedStyles } from "./rendering/styles/sharedStyles";
+import { PropertyTreeItem } from "./thrift/shared_types";
 
 provideVSCodeDesignSystem().register(
     vsCodeTextField(),
@@ -49,7 +50,8 @@ class ListwindowController {
     private readonly persistedState: PersistedState;
     private renderParams: Serializable<RenderParameters> | undefined =
         undefined;
-    private toolbarRenderParams: string | undefined = undefined;
+    private toolbarRenderParams: Serializable<PropertyTreeItem> | undefined =
+        undefined;
     private resizeMode: ColumnResizeMode = "fixed";
 
     private readonly messageService: MessageService;
@@ -163,13 +165,17 @@ class ListwindowController {
         }
     }
 
+
     private renderToolbar() {
         if (
             this.toolbarElement &&
             this.toolbarRenderParams &&
-            this.toolbarRenderParams.length > 0
+            this.toolbarRenderParams.children.length > 0
         ) {
-            this.toolbar = new ToolbarElement(this.toolbarRenderParams, this.messageService);
+            this.toolbar = new ToolbarElement(
+                this.toolbarRenderParams,
+                this.messageService,
+            );
             this.toolbar.hoverService = this.hoverService;
             this.toolbarElement.replaceChildren(this.toolbar);
             this.toolbarElement.classList.add(Styles.toolbarCanvas);
@@ -185,14 +191,8 @@ class ListwindowController {
                 this.tooltipService.requestToolbarTooltip(ev);
             });
 
-            // Re-position the position of the header to give
-            // room for the toolbar.
-            if (
-                this.grid !== undefined &&
-                this.grid.headerElement !== undefined
-            ) {
-                this.grid.headerElement.addToolbarArea();
-            }
+            // Re-draw
+            this.render();
         }
     }
 
@@ -209,10 +209,10 @@ class ListwindowController {
         }
         this.grid.hoverService = this.hoverService;
         this.grid.dragDropService = this.dragDropService;
-
-        if (this.toolbar !== undefined && this.grid.headerElement) {
-            this.grid.headerElement.addToolbarArea();
-        }
+        this.grid.hasToolbar = this.toolbar !== undefined;
+        this.appElement.style.marginTop = this.grid.hasToolbar
+            ? `${ToolbarElement.TOOLBAR_HEIGHT}px`
+            : "0px";
 
         this.appElement.replaceChildren(this.grid);
 

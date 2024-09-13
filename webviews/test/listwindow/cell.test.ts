@@ -83,7 +83,14 @@ suite("Listwindow cells", () => {
         api.postMessage({
             ...msg,
             subject: "editableStringReply",
-            text: editString,
+            info: {
+                editString: editString,
+                column: msg.col,
+                range: {
+                    first: new Int64(0),
+                    last: new Int64(editString.length),
+                },
+            },
         });
 
         const input = await TestUtils.findBySelector(
@@ -116,8 +123,13 @@ suite("Listwindow cells", () => {
             row: msg.row,
             col: 1,
             subject: "editableStringReply",
-            text: editString,
+            info: {
+                editString: editString,
+                column: 0,
+                range: { first: new Int64(0), last: new Int64(-1) },
+            },
         });
+
 
         await TestUtils.findBySelector(
             dom.window.document.documentElement,

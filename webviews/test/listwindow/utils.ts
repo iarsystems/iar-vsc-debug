@@ -14,11 +14,12 @@ import {
     Cell,
     Target,
 } from "iar-vsc-common/thrift/bindings/listwindow_types";
-import { RenderParameters } from "../../listwindow/protocol";
+import { RenderParameters, Serializable } from "../../listwindow/protocol";
 import Int64 = require("node-int64");
 import { MockVSCodeApi } from "./testEnvironment";
 import { waitFor } from "@testing-library/dom";
 import * as Assert from "assert";
+import { PropertyTreeItem } from "../../listwindow/thrift/shared_types";
 
 export namespace TestUtils {
     /**
@@ -29,7 +30,7 @@ export namespace TestUtils {
         return api.waitForMessage("rendered");
     }
 
-    export function renderToolbar(api: MockVSCodeApi, params: string) {
+    export function renderToolbar(api: MockVSCodeApi, params: Serializable<PropertyTreeItem>) {
         api.postMessage({ subject: "renderToolbar", params });
         return api.waitForMessage("toolbarRendered");
     }
