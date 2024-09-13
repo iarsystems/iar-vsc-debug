@@ -19,8 +19,10 @@ import { ThriftServiceRegistry } from "iar-vsc-common/thrift/thriftServiceRegist
 import { ServiceLocation } from "iar-vsc-common/thrift/bindings/ServiceRegistry_types";
 import { ListWindowProxy } from "./listwindowProxy";
 import { ListwindowViewProvider } from "./listwindowViewProvider";
-import { ViewMessage } from "../../webviews/listwindow/protocol";
+import { Serializable, ViewMessage } from "../../webviews/listwindow/protocol";
 import { Int64 } from "thrift";
+import { PropertyTreeItem } from "iar-vsc-common/thrift/bindings/shared_types";
+
 
 /**
  * This class acts as the intermediary layer between the webview (ListwindowViewProvider)
@@ -127,6 +129,22 @@ export class ListWindowBackendHandler {
         });
     }
 
+    private unpackTree(
+        treeDescription: Serializable<PropertyTreeItem>,
+    ): PropertyTreeItem {
+        const item = new PropertyTreeItem();
+
+        item.key = treeDescription.key;
+        item.value = treeDescription.value;
+        item.children = [];
+        treeDescription.children.forEach(
+            (element: Serializable<PropertyTreeItem>) => {
+                item.children.push(this.unpackTree(element));
+            },
+        );
+        return item;
+    }
+
     // Handle all types of callbacks from the view. The calls can end up in two ways:
     // 1. The method is a getter => produce a chain on the promise to send a message to
     //    the underlying view to perform the actual display.
@@ -135,6 +153,21 @@ export class ListWindowBackendHandler {
     private handleMessageFromView(msg: ViewMessage) {
         switch (msg.subject) {
             case "loaded": {
+                this.notify(
+                    new Note({
+                        what: What.kFullUpdate,
+                        anonPos: "",
+                        seq: new Int64(-1),
+                        row: new Int64(-1),
+                        ensureVisible: new Int64(-1),
+                    }),
+                );
+                this.notifyToolbar(
+                    new ToolbarNote({
+                        what: ToolbarWhat.kFullUpdate,
+                        focusOn: -1,
+                    }),
+                );
                 break;
             }
             case "rendered": {
@@ -378,12 +411,10 @@ export class ListWindowBackendHandler {
                 break;
             }
             case "toolbarItemInteraction": {
+                const item = this.unpackTree(msg.properties);
                 this.activePromise = this.scheduleCall<void>(
                     (client: Backend) => {
-                        return client.service.setToolbarItemValue(
-                            msg.id,
-                            msg.properties,
-                        );
+                        return client.service.setToolbarItemValue(msg.id, item);
                     },
                 );
                 break;
@@ -422,10 +453,12 @@ export class ListWindowBackendHandler {
                 break;
             }
             case ToolbarWhat.kFullUpdate: {
-                this.activePromise = this.scheduleCall<string>(client => {
-                    return client.service.getToolbarDefinition();
-                }).then(value => {
-                    if (value && value.length > 0) {
+                this.activePromise = this.scheduleCall<PropertyTreeItem>(
+                    client => {
+                        return client.service.getToolbarDefinition();
+                    },
+                ).then(value => {
+                    if (value) {
                         this.view?.postMessageToView({
                             subject: "renderToolbar",
                             params: value,
@@ -462,7 +495,7 @@ export class ListWindowBackendHandler {
             return note;
         });
 
-        updatePromise.then(async (cN: Note) => {
+        this.activePromise = updatePromise.then(async (cN: Note) => {
             this.currentSeq = cN.seq;
             if (
                 cN.what !== What.kFreeze &&
@@ -478,13 +511,11 @@ export class ListWindowBackendHandler {
                 this.numberOfVisibleRows,
             );
 
-            console.log("Posting render to view...");
             await this.view?.postMessageToView({
                 subject: "render",
                 params: contents,
             });
         });
-        this.activePromise = updatePromise;
         return Q.resolve();
     }
 }

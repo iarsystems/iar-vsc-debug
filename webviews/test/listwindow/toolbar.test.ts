@@ -4,15 +4,13 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
 import * as Assert from "assert";
-import {
-    packTree,
-    unpackTree,
-} from "../../../webviews/listwindow/rendering/toolbar/toolbarUtils";
 import { TreeData } from "../../listwindow/rendering/toolbar/toolbarConstants";
 import { setupTestEnvironment } from "./testEnvironment";
 import { TestUtils } from "./utils";
 import { fireEvent, queries } from "@testing-library/dom";
 import { Checkbox } from "@vscode/webview-ui-toolkit";
+import { PropertyTreeItem } from "../../listwindow/thrift/shared_types";
+import { Serializable } from "../../listwindow/protocol";
 
 export function FindItemValue(
     start: TreeData,
@@ -74,44 +72,12 @@ export function FindElement(
     return undefined;
 }
 
-suite("IfPropertyTree", () => {
-    test("Unpack description", () => {
-        const data: TreeData = unpackTree(TestData.TestDescription);
-        Assert.strictEqual(data.key, "ROOT");
-        // Ensure that we've collected all twelve kids.
-        Assert.strictEqual(data.children.length, 12);
-
-        // Try to locate an item in the list.
-        const item8 = data.children.find((value: TreeData) => {
-            return value.key === "ITEM8";
-        });
-        Assert.ok(item8 !== undefined);
-        Assert.strictEqual(FindItemValue(item8, "TEXT"), "MC");
-        Assert.strictEqual(FindItemValue(item8, "KIND"), "SELECTMENU");
-        Assert.strictEqual(FindItemValue(item8, "0"), "Alfa");
-        Assert.strictEqual(FindItemValue(item8, "2"), "Gamma");
-    }),
-    test("Pack tree", () => {
-        const tree = packTree(TestData.TestTree, false);
-        Assert.ok(tree.length > 0);
-    }),
-    test("Unpack + pack", () => {
-        const unpacked: TreeData = unpackTree(TestData.TestDescription);
-        // Pack the newly unpacked tree and ensure that we get the
-        // same as we started with.
-        const packed = packTree(unpacked, false);
-        // Clean the description to make the comparison work.
-        const modded = TestData.TestDescription.replaceAll(/\n\s+|\n/g, "");
-        Assert.strictEqual(modded, packed);
-    });
-});
-
 suite("Listwindow Toolbar", () => {
     test("Buttons...", async() => {
         const { api, dom, user } = await setupTestEnvironment();
         await TestUtils.renderToolbar(
             api,
-            packTree(TestData.ButtonToolbar, false),
+            TestData.ButtonToolbar,
         );
 
         let button = await queries.findByText(
@@ -136,7 +102,7 @@ suite("Listwindow Toolbar", () => {
         const { api, dom } = await setupTestEnvironment();
         await TestUtils.renderToolbar(
             api,
-            packTree(TestData.EditToolbar, false),
+            TestData.EditToolbar,
         );
         const edit = (await FindByLabel(
             dom.window.document.documentElement,
@@ -153,7 +119,7 @@ suite("Listwindow Toolbar", () => {
         const { api, dom, user } = await setupTestEnvironment();
         await TestUtils.renderToolbar(
             api,
-            packTree(TestData.CheckBoxToolbar, false),
+            TestData.CheckBoxToolbar,
         );
 
         const button = (await queries.findByText(
@@ -188,7 +154,7 @@ suite("Listwindow Toolbar", () => {
         const { api, dom, user } = await setupTestEnvironment();
         await TestUtils.renderToolbar(
             api,
-            packTree(TestData.DropDownToolbar, false),
+            TestData.DropDownToolbar,
         );
 
         const option = (await queries.findByText(
@@ -216,14 +182,14 @@ suite("Listwindow Toolbar", () => {
         // that the item contains the packaged item id.
         Assert.ok(option.selected);
         Assert.strictEqual(item.id, "select");
-        Assert.ok(!item.properties.includes("item1"));
-        Assert.ok(item.properties.includes("item2"));
+        Assert.ok(!item.properties.children[1]?.value.includes("item1"));
+        Assert.ok(item.properties.children[1]?.value.includes("item2"));
     }),
     test("Icon dropdown...", async() => {
         const { api, dom, user } = await setupTestEnvironment();
         await TestUtils.renderToolbar(
             api,
-            packTree(TestData.IconDropDown, false),
+            TestData.IconDropDown,
         );
 
         const anchor = (await queries.findByText(
@@ -251,7 +217,7 @@ suite("Listwindow Toolbar", () => {
 });
 
 namespace TestData {
-    export const TestTree: TreeData = {
+    export const TestTree: Serializable<PropertyTreeItem> = {
         key: "root",
         value: "some_val",
         children: [
@@ -264,7 +230,7 @@ namespace TestData {
         ],
     };
 
-    export const ButtonToolbar: TreeData = {
+    export const ButtonToolbar: Serializable<PropertyTreeItem> = {
         key: "ROOT",
         value: "NONE",
         children: [
@@ -289,7 +255,7 @@ namespace TestData {
         ],
     };
 
-    export const EditToolbar: TreeData = {
+    export const EditToolbar: Serializable<PropertyTreeItem> = {
         key: "ROOT",
         value: "NONE",
         children: [
@@ -306,7 +272,7 @@ namespace TestData {
         ],
     };
 
-    export const CheckBoxToolbar: TreeData = {
+    export const CheckBoxToolbar: Serializable<PropertyTreeItem> = {
         key: "ROOT",
         value: "NONE",
         children: [
@@ -331,7 +297,7 @@ namespace TestData {
         ],
     };
 
-    export const DropDownToolbar: TreeData = {
+    export const DropDownToolbar: Serializable<PropertyTreeItem> = {
         key: "ROOT",
         value: "NONE",
         children: [
@@ -356,7 +322,7 @@ namespace TestData {
         ],
     };
 
-    export const IconDropDown: TreeData = {
+    export const IconDropDown: Serializable<PropertyTreeItem> = {
         key: "ROOT",
         value: "NONE",
         children: [
@@ -379,331 +345,4 @@ namespace TestData {
             },
         ],
     };
-
-    export const TestDescription = `<tree>
-<key>ROOT</key>
-<value>NONE</value>
-<children>
-    <tree>
-      <key>ITEM0</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>first</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>100</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>TEXTBUTTON</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>STRINGLIST</key>
-          <value>LIST</value>
-          <children>
-            <tree>
-              <key>0</key>
-              <value>first</value>
-              <children/>
-            </tree>
-            <tree>
-              <key>1</key>
-              <value>Huppladuffing</value>
-              <children/>
-            </tree>
-          </children>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM1</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>Huppladuffing</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>300</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>TEXTBUTTON</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>STRINGLIST</key>
-          <value>LIST</value>
-          <children>
-            <tree>
-              <key>0</key>
-              <value>first</value>
-              <children/>
-            </tree>
-            <tree>
-              <key>1</key>
-              <value>Huppladuffing</value>
-              <children/>
-            </tree>
-          </children>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM2</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>MORE</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>-1</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>SPACING</value>
-          <children/>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM3</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>IDI_DBU_TRACE_CLEAR</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>200</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>ICONBUTTON</value>
-          <children/>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM4</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>LESS</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>-1</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>SPACING</value>
-          <children/>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM5</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>IDI_DBU_TRACE_BROWSE</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>400</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>ICONBUTTON</value>
-          <children/>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM6</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>Check</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>500</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>TEXTCHECK</value>
-          <children/>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM7</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>IDI_DBU_TRACE_ONOFF</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>600</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>ICONCHECK</value>
-          <children/>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM8</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>MC</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>700</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>SELECTMENU</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>STRINGLIST</key>
-          <value>LIST</value>
-          <children>
-            <tree>
-              <key>0</key>
-              <value>Alfa</value>
-              <children/>
-            </tree>
-            <tree>
-              <key>1</key>
-              <value>Beta</value>
-              <children/>
-            </tree>
-            <tree>
-              <key>2</key>
-              <value>Gamma</value>
-              <children/>
-            </tree>
-          </children>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM9</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>Display:</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>800</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>DISPLAYTEXT</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>TEXT2</key>
-          <value>Samla mammas manna</value>
-          <children/>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM10</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>Hmm...</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>900</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>ICONMENU</value>
-          <children/>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM11</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>Editlabel</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>1000</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>EDITTEXT</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>TEXT2</key>
-          <value>Lagom bred eller hur</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>BOOL</key>
-          <value>1</value>
-          <children/>
-        </tree>
-      </children>
-    </tree>
-  </children>
-</tree>`;
 }

@@ -4,9 +4,8 @@
 
 import { css } from "@emotion/css";
 import { customElement } from "../utils";
-import { ToolbarItem, ToolbarItemType, TreeData } from "./toolbarConstants";
+import { ToolbarItem, ToolbarItemType } from "./toolbarConstants";
 import { createCustomEvent } from "../../events";
-import { packTree, VsCodeIconMap } from "./toolbarUtils";
 import { Checkbox } from "@vscode/webview-ui-toolkit/dist/checkbox";
 import { Button } from "@vscode/webview-ui-toolkit/dist/button";
 import { Dropdown } from "@vscode/webview-ui-toolkit/dist/dropdown";
@@ -14,12 +13,14 @@ import { SharedStyles } from "../styles/sharedStyles";
 import { HoverService } from "../hoverService";
 import { ExtensionMessage, Serializable } from "../../protocol";
 import { ToolbarItemState } from "../../thrift/listwindow_types";
+import { IconMap } from "../icons";
+import { PropertyTreeItem } from "../../thrift/shared_types";
 
 export type ToolbarItemEvent = CustomEvent<ToolbarItemEvent.Detail>;
 export namespace ToolbarItemEvent {
     export interface Detail {
         id: string;
-        properties: string;
+        properties: Serializable<PropertyTreeItem>;
     }
 }
 
@@ -38,7 +39,7 @@ function addVsCodeIcon(
     iconId: string,
     defaultImage = "kebab-vertical",
 ): void {
-    const iconSpec = VsCodeIconMap.get(iconId);
+    const iconSpec = IconMap.get(iconId);
     if (iconSpec !== undefined) {
         element.classList.add("codicon", `codicon-${iconSpec[0]}`);
         if (iconSpec[1] !== undefined) {
@@ -85,6 +86,20 @@ export abstract class BasicToolbarItem extends HTMLElement {
                 this.updateState(msg.state);
             }
         }
+    }
+
+    public packContent(
+        final: boolean,
+        content: string,
+    ): Serializable<PropertyTreeItem> {
+        return {
+            key: "ROOT",
+            value: "NONE",
+            children: [
+                { key: "int0", value: final ? "1" : "0", children: [] },
+                { key: "str0", value: content, children: [] },
+            ],
+        };
     }
 
     constructor(def: ToolbarItem) {
@@ -196,7 +211,7 @@ export class ToolbarItemText extends BasicToolbarItem {
                         createCustomEvent("toolbar-item-interaction", {
                             detail: {
                                 id: this.definition.id,
-                                properties: content as string,
+                                properties: this.packContent(true, content),
                             },
                             bubbles: true,
                         }),
@@ -230,7 +245,7 @@ export class ToolbarItemText extends BasicToolbarItem {
                         createCustomEvent("toolbar-item-interaction", {
                             detail: {
                                 id: this.definition.id,
-                                properties: element.textContent as string,
+                                properties: this.packContent(true, this.edit.value),
                             },
                             bubbles: true,
                         }),
@@ -330,7 +345,7 @@ export class ToolbarItemIconMenu extends BasicToolbarItem {
                     createCustomEvent("toolbar-item-interaction", {
                         detail: {
                             id: this.definition.id,
-                            properties: "",
+                            properties: this.packContent(true, value),
                         },
                         bubbles: true,
                     }),
@@ -396,7 +411,7 @@ export class ToolbarItemButton extends BasicToolbarItem {
         this.btn.onclick = () => {
             this.dispatchEvent(
                 createCustomEvent("toolbar-item-interaction", {
-                    detail: { id: this.definition.id, properties: "" },
+                    detail: { id: this.definition.id, properties: {key: "ROOT", value: "NONE", children: []} },
                     bubbles: true, // Needs to bubble up to the root DOM.
                 }),
             );
@@ -435,17 +450,11 @@ export class ToolbarItemCombo extends BasicToolbarItem {
             this.select?.appendChild(option);
 
             option.onclick = _ev => {
-                // Pack the content.
-                const data: TreeData = {
-                    key: "TEXT",
-                    value: option.text,
-                    children: [],
-                };
                 this.dispatchEvent(
                     createCustomEvent("toolbar-item-interaction", {
                         detail: {
                             id: this.definition.id,
-                            properties: packTree(data, true),
+                            properties: this.packContent(true, option.text),
                         },
                         bubbles: true,
                     }),
@@ -502,7 +511,7 @@ export class ToolbarItemSimpleCheckBox extends BasicToolbarItem {
                 createCustomEvent("toolbar-item-interaction", {
                     detail: {
                         id: this.definition.id,
-                        properties: "",
+                        properties: {key: "ROOT", value: "NONE", children: []},
                     },
                     bubbles: true,
                 }),
@@ -557,7 +566,7 @@ export class ToolbarItemCheckBox extends BasicToolbarItem {
                 createCustomEvent("toolbar-item-interaction", {
                     detail: {
                         id: this.definition.id,
-                        properties: "",
+                        properties: {key: "ROOT", value: "NONE", children: []},
                     },
                     bubbles: true,
                 }),

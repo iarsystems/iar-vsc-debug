@@ -7,15 +7,14 @@ import { customElement } from "../utils";
 import * as Items from "./toolbarItem";
 import {
     ToolbarItem,
-    TreeData,
     ToolbarItemType,
     Tags,
 } from "./toolbarConstants";
-import { XMLParser, XMLValidator } from "fast-xml-parser";
-import { unpackTree } from "./toolbarUtils";
 import { HoverService } from "../hoverService";
 import { BasicToolbarItem } from "./toolbarItem";
 import { MessageService } from "../../messageService";
+import { PropertyTreeItem } from "../../thrift/shared_types";
+import { Serializable } from "../../protocol";
 
 @customElement("listwindow-toolbar")
 export class ToolbarElement extends HTMLElement {
@@ -37,9 +36,9 @@ export class ToolbarElement extends HTMLElement {
     private toolbarContent: HTMLElement | undefined = undefined;
 
     private readonly messageService: MessageService;
-    private readonly definition: string;
+    private readonly definition: Serializable<PropertyTreeItem>;
 
-    constructor(def: string, msgService: MessageService) {
+    constructor(def: Serializable<PropertyTreeItem>, msgService: MessageService) {
         super();
         this.messageService = msgService;
         this.definition = def;
@@ -135,22 +134,12 @@ export class ToolbarElement extends HTMLElement {
         this.appendChild(this.toolbarContent);
     }
 
-    parseDescription(def: string): ToolbarItem[] {
-        // Check that the given definition is ok.
-        if (!XMLValidator.validate(def)) {
-            console.error(`Failed to parse toolbar definition: ${def}`);
-            return [];
-        }
-        // Parse the given definition.
-        const parser = new XMLParser();
-        const parsedDef = parser.parse(def);
-
+    parseDescription(def: Serializable<PropertyTreeItem>): ToolbarItem[] {
         const items: ToolbarItem[] = [];
 
         // Unpack the tree and create all the items that we
         // want to generate to the toolbar.
-        const parsedTree = unpackTree(parsedDef.tree);
-        parsedTree.children.forEach((value: TreeData) => {
+        def.children.forEach((value: Serializable<PropertyTreeItem>) => {
             const newItem = this.unpackItem(value);
             if (newItem.type === ToolbarItemType.kKindUnknown) {
                 return;
@@ -160,7 +149,7 @@ export class ToolbarElement extends HTMLElement {
         return items;
     }
 
-    unpackItem(item: TreeData): ToolbarItem {
+    unpackItem(item: Serializable<PropertyTreeItem>): ToolbarItem {
         // Iterate over the items keys and store the information.
         const toolbarItem: ToolbarItem = {
             itemKey: item.key,
@@ -173,7 +162,7 @@ export class ToolbarElement extends HTMLElement {
         };
 
         // Handle the information stored in the children
-        item.children.forEach((subItem: TreeData) => {
+        item.children.forEach((subItem: Serializable<PropertyTreeItem>) => {
             const key: string = subItem.key;
             switch (key) {
                 case Tags.kKeyItemKind:

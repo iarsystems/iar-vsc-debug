@@ -44,6 +44,7 @@ export class HeaderElement extends HTMLElement {
     columnWidths: number[] = [];
     clickable = false;
     resizeMode: ColumnResizeMode = "fixed";
+    hasToolbar = false;
 
     private columnHeaders: HTMLElement[] = [];
 
@@ -53,6 +54,9 @@ export class HeaderElement extends HTMLElement {
 
     connectedCallback() {
         this.classList.add(Styles.self);
+        if (this.hasToolbar) {
+            this.addToolbarArea();
+        }
         this.columnHeaders = [];
 
         for (const [i, column] of this.columns.entries()) {

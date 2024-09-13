@@ -22,7 +22,8 @@ export class ListwindowManager {
     // a cspyserver service name
     private static readonly VIEW_DEFINITIONS: Array<[ViewId, string]> = [
         ["iar-autos", "WIN_AUTO"],
-        //["iar-quick-watch", "WIN_QUICK_WATCH"]
+        ["iar-quick-watch", "WIN_QUICK_WATCH"],
+        ["iar-reg-2", "WIN_REGISTER_2"]
     ];
 
     private readonly windows: ListWindowBackendHandler[];

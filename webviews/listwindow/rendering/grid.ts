@@ -26,6 +26,8 @@ export class GridElement extends HTMLElement {
     hoverService: HoverService | undefined = undefined;
     dragDropService: DragDropService | undefined = undefined;
     headerElement: HeaderElement | undefined = undefined;
+    gridElement: HTMLDivElement | undefined = undefined;
+    hasToolbar = false;
 
     connectedCallback() {
         this.classList.add(Styles.self);
@@ -51,9 +53,9 @@ export class GridElement extends HTMLElement {
             this.classList.add(SharedStyles.dropTarget);
         }
 
-        const grid = document.createElement("div");
-        grid.classList.add(Styles.grid);
-        this.appendChild(grid);
+        this.gridElement = document.createElement("div");
+        this.gridElement.classList.add(Styles.grid);
+        this.appendChild(this.gridElement);
 
         // Create header
         this.headerElement = new HeaderElement();
@@ -61,7 +63,8 @@ export class GridElement extends HTMLElement {
         this.headerElement.columnWidths = this.initialColumnWidths;
         this.headerElement.clickable = this.data.listSpec.canClickColumns;
         this.headerElement.resizeMode = this.resizeMode;
-        grid.appendChild(this.headerElement);
+        this.headerElement.hasToolbar = this.hasToolbar;
+        this.gridElement.appendChild(this.headerElement);
 
         if (!this.data.listSpec.showHeader) {
             this.headerElement.style.display = "none";
@@ -86,7 +89,7 @@ export class GridElement extends HTMLElement {
             rowElem.addFillerCell = this.resizeMode === "fixed";
             rowElem.hoverService = this.hoverService;
             rowElem.dragDropService = this.dragDropService;
-            grid.appendChild(rowElem);
+            this.gridElement.appendChild(rowElem);
         }
 
         // The rest of the vertical space is taken up by a filler element that
