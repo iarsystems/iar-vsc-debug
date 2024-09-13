@@ -42,7 +42,12 @@ export class ListwindowManager {
         this.activeSession = sessionId;
         if (sessionId) {
             for (const window of this.windows) {
-                window.setActiveSession(sessionId);
+                try {
+                    window.setActiveSession(sessionId);
+                } catch {
+                    // This is normal, since not all listwindows are supported by
+                    // all drivers
+                }
             }
         }
     }
@@ -78,7 +83,12 @@ export class ListwindowManager {
         const registry = new ThriftServiceRegistry(new ServiceLocation(location));
 
         for (const window of this.windows) {
-            await window.connect(session.id, registry);
+            try {
+                await window.connect(session.id, registry);
+            } catch {
+                // This is normal, since not all listwindows are supported by
+                // all drivers
+            }
         }
     }
 
