@@ -1429,3 +1429,98 @@ Breakpoint.prototype.write = function(output) {
   return;
 };
 
+var PropertyTreeItem = module.exports.PropertyTreeItem = function(args) {
+  this.key = null;
+  this.value = null;
+  this.children = null;
+  if (args) {
+    if (args.key !== undefined && args.key !== null) {
+      this.key = args.key;
+    }
+    if (args.value !== undefined && args.value !== null) {
+      this.value = args.value;
+    }
+    if (args.children !== undefined && args.children !== null) {
+      this.children = Thrift.copyList(args.children, [null]);
+    }
+  }
+};
+PropertyTreeItem.prototype = {};
+PropertyTreeItem.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.STRING) {
+        this.key = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.STRING) {
+        this.value = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 3:
+      if (ftype == Thrift.Type.LIST) {
+        this.children = [];
+        var _rtmp311 = input.readListBegin();
+        var _size10 = _rtmp311.size || 0;
+        for (var _i12 = 0; _i12 < _size10; ++_i12) {
+          var elem13 = null;
+          elem13 = new ttypes.PropertyTreeItem();
+          elem13.read(input);
+          this.children.push(elem13);
+        }
+        input.readListEnd();
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+PropertyTreeItem.prototype.write = function(output) {
+  output.writeStructBegin('PropertyTreeItem');
+  if (this.key !== null && this.key !== undefined) {
+    output.writeFieldBegin('key', Thrift.Type.STRING, 1);
+    output.writeString(this.key);
+    output.writeFieldEnd();
+  }
+  if (this.value !== null && this.value !== undefined) {
+    output.writeFieldBegin('value', Thrift.Type.STRING, 2);
+    output.writeString(this.value);
+    output.writeFieldEnd();
+  }
+  if (this.children !== null && this.children !== undefined) {
+    output.writeFieldBegin('children', Thrift.Type.LIST, 3);
+    output.writeListBegin(Thrift.Type.STRUCT, this.children.length);
+    for (var iter14 in this.children) {
+      if (this.children.hasOwnProperty(iter14)) {
+        iter14 = this.children[iter14];
+        iter14.write(output);
+      }
+    }
+    output.writeListEnd();
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+

@@ -241,7 +241,15 @@
 					"name": "Trace",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy"
+				},
+				{
+					"id": "iar-quick-watch",
+					"contextualTitle": "Quick watch",
+					"name": "Quick Watch",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy"
 				}
+
 			]
 		},
 		"breakpoints": [

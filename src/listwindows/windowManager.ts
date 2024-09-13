@@ -30,6 +30,8 @@ export class ListwindowManager {
     private static readonly VIEW_DEFINITIONS: ViewDefinition[] = [
         { viewId: "iar-autos", serviceName: "WIN_AUTO" },
         { viewId: "iar-trace", serviceName: "WIN_SLIDING_TRACE_WINDOW" },
+        { viewId: "iar-quick-watch", serviceName: "WIN_QUICK_WATCH" },
+        { viewId: "iar-reg-2", serviceName: "WIN_REGISTER_2" },
     ];
 
     private readonly windows: ListWindowBackendHandler[];

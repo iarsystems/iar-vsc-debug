@@ -5,6 +5,7 @@
 import { EditInfo, KeyNavOperation, ScrollOperation, ToolbarItemState } from "./thrift/listwindow_types";
 import { MenuItem } from "./thrift/listwindow_types";
 import { Column, ListSpec, Row, SelRange, SelectionFlags } from "./thrift/listwindow_types";
+import { PropertyTreeItem } from "./thrift/shared_types";
 
 /**
  * This file defines the "protocol" used between a listwindow and the view
@@ -61,7 +62,7 @@ export interface SerializedBigInt { value: string }
  */
 export type ExtensionMessage =
   | { subject: "render", params: RenderParameters, ensureRowVisible?: SerializedBigInt } // Render the given data
-  | { subject: "renderToolbar", params: string} // Render the given data
+  | { subject: "renderToolbar", params: Serializable<PropertyTreeItem>} // Render the given data
   | { subject: "updateToolbarItem", id: string, state: Serializable<ToolbarItemState>} // Update the state of an item in the toolbar.
   | { subject: "setResizeMode", mode: ColumnResizeMode }
   | { subject: "dumpHTML" } // Send a message back with the current full HTML of the view (useful for testing)
@@ -95,7 +96,7 @@ export type ViewMessage =
   | { subject: "scrollOperationPressed", operation: ScrollOperation }
   | { subject: "keyPressed", code: number, repeat: number }
   | { subject: "toolbarRendered", ids: string[] }
-  | { subject: "toolbarItemInteraction", id: string, properties: string } // The user has interacted with a toolbar item.
+  | { subject: "toolbarItemInteraction", id: string, properties: Serializable<PropertyTreeItem> } // The user has interacted with a toolbar item.
   | { subject: "getToolbarToolTip", id: string }; // The user is hovering a toolbar item.
 
 

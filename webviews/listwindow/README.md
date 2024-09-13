@@ -81,12 +81,12 @@ we can't *call* the thrift code, but we can use its type definitions.
 * Scrolling/navigation (keys, scrollbar, mousewheel, horizontal)
 * Selection update (key navigation)
 * Partial selection when editing cells (which models do this?)
+* Toolbars
 
 ### Functional Todo
 
 * Multiple selection (but no support in model yet)
 * Save/restore state
-* Toolbars
 * Delay display-dimming on frozen to avoid flickering.
 * Sliding listmodels
 * Drag-n-drop between different listwindows

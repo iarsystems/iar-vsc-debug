@@ -27,6 +27,7 @@ import { KeyboardInput } from "./keyboardInput";
 import { css } from "@emotion/css";
 import { ToolbarElement } from "./rendering/toolbar/toolbar";
 import { toBigInt } from "./rendering/utils";
+import { PropertyTreeItem } from "./thrift/shared_types";
 
 provideVSCodeDesignSystem().register(
     vsCodeTextField(),
@@ -45,7 +46,8 @@ class ListwindowController {
     private readonly persistedState: PersistedState;
     private renderParams: Serializable<RenderParameters> | undefined =
         undefined;
-    private toolbarRenderParams: string | undefined = undefined;
+    private toolbarRenderParams: Serializable<PropertyTreeItem> | undefined =
+        undefined;
     private resizeMode: ColumnResizeMode = "fixed";
 
     private readonly messageService: MessageService;
@@ -168,13 +170,17 @@ class ListwindowController {
         }
     }
 
+
     private renderToolbar() {
         if (
             this.toolbarElement &&
             this.toolbarRenderParams &&
-            this.toolbarRenderParams.length > 0
+            this.toolbarRenderParams.children.length > 0
         ) {
-            this.toolbar = new ToolbarElement(this.toolbarRenderParams, this.messageService);
+            this.toolbar = new ToolbarElement(
+                this.toolbarRenderParams,
+                this.messageService,
+            );
             this.toolbar.hoverService = this.hoverService;
             this.toolbarElement.replaceChildren(this.toolbar);
             this.toolbarElement.classList.add(Styles.toolbarCanvas);

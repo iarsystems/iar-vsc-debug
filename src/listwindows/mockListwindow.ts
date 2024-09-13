@@ -5,6 +5,7 @@ import * as vscode from "vscode";
 import {
     ViewMessage,
     RenderParameters,
+    Serializable,
 } from "../../webviews/listwindow/protocol";
 import {
     Alignment,
@@ -21,6 +22,7 @@ import {
 import Int64 = require("node-int64");
 import { EditInfo, MenuItem, SelectionFlags } from "../../webviews/listwindow/thrift/listwindow_types";
 import { ListwindowViewProvider } from "./listwindowViewProvider";
+import { PropertyTreeItem } from "../../webviews/listwindow/thrift/shared_types";
 
 /**
  * A listwindow that renders mock data and is able to fake some user interaction.
@@ -412,330 +414,317 @@ function getMockRenderParams(selectionStart = 1, selectionEnd = selectionStart) 
     return params;
 }
 
-
-const toolbar = `<tree>
-<key>ROOT</key>
-<value>NONE</value>
-<children>
-    <tree>
-      <key>ITEM0</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>first</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>100</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>TEXTBUTTON</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>STRINGLIST</key>
-          <value>LIST</value>
-          <children>
-            <tree>
-              <key>0</key>
-              <value>first</value>
-              <children/>
-            </tree>
-            <tree>
-              <key>1</key>
-              <value>Huppladuffing</value>
-              <children/>
-            </tree>
-          </children>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM1</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>Huppladuffing</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>300</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>TEXTBUTTON</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>STRINGLIST</key>
-          <value>LIST</value>
-          <children>
-            <tree>
-              <key>0</key>
-              <value>first</value>
-              <children/>
-            </tree>
-            <tree>
-              <key>1</key>
-              <value>Huppladuffing</value>
-              <children/>
-            </tree>
-          </children>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM2</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>MORE</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>-1</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>SPACING</value>
-          <children/>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM3</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>IDI_DBU_TRACE_CLEAR</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>200</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>ICONBUTTON</value>
-          <children/>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM4</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>LESS</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>-1</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>SPACING</value>
-          <children/>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM5</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>IDI_DBU_TRACE_BROWSE</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>400</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>ICONBUTTON</value>
-          <children/>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM6</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>Check</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>500</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>TEXTCHECK</value>
-          <children/>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM7</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>IDI_DBU_TRACE_ONOFF</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>600</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>ICONCHECK</value>
-          <children/>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM8</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>MC</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>700</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>SELECTMENU</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>STRINGLIST</key>
-          <value>LIST</value>
-          <children>
-            <tree>
-              <key>0</key>
-              <value>Alfa</value>
-              <children/>
-            </tree>
-            <tree>
-              <key>1</key>
-              <value>Beta</value>
-              <children/>
-            </tree>
-            <tree>
-              <key>2</key>
-              <value>Gamma</value>
-              <children/>
-            </tree>
-          </children>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM9</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>Display:</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>800</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>DISPLAYTEXT</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>TEXT2</key>
-          <value>Samla mammas manna</value>
-          <children/>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM10</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>Hmm...</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>900</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>ICONMENU</value>
-          <children/>
-        </tree>
-      </children>
-    </tree>
-    <tree>
-      <key>ITEM11</key>
-      <value>NONE</value>
-      <children>
-        <tree>
-          <key>TEXT</key>
-          <value>Editlabel</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>ID</key>
-          <value>1000</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>KIND</key>
-          <value>EDITTEXT</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>TEXT2</key>
-          <value>Lagom bred eller hur</value>
-          <children/>
-        </tree>
-        <tree>
-          <key>BOOL</key>
-          <value>1</value>
-          <children/>
-        </tree>
-      </children>
-    </tree>
-  </children>
-</tree>`;
+const toolbar: Serializable<PropertyTreeItem> = {
+    key: "ROOT",
+    value: "NONE",
+    children: [
+        {
+            key: "ITEM0",
+            value: "NONE",
+            children: [
+                {
+                    key: "TEXT",
+                    value: "first",
+                    children: [],
+                },
+                {
+                    key: "ID",
+                    value: "100",
+                    children: [],
+                },
+                {
+                    key: "KIND",
+                    value: "TEXTBUTTON",
+                    children: [],
+                },
+                {
+                    key: "STRINGLIST",
+                    value: "LIST",
+                    children: [
+                        { key: "0", value: "first", children: [] },
+                        {
+                            key: "1",
+                            value: "Huppladuffing",
+                            children: [],
+                        },
+                    ],
+                },
+            ],
+        },
+        {
+            key: "ITEM1",
+            value: "NONE",
+            children: [
+                { key: "TEXT", value: "Huppladuffing", children: [] },
+                {
+                    key: "ID",
+                    value: "300",
+                    children: [],
+                },
+                {
+                    key: "KIND",
+                    value: "TEXTBUTTON",
+                    children: [],
+                },
+                {
+                    key: "STRINGLIST",
+                    value: "LIST",
+                    children: [
+                        { key: "0", value: "first", children: [] },
+                        {
+                            key: "1",
+                            value: "Huppladuffing",
+                            children: [],
+                        },
+                    ],
+                },
+            ],
+        },
+        {
+            key: "ITEM2",
+            value: "NONE",
+            children: [
+                {
+                    key: "TEXT",
+                    value: "MORE",
+                    children: [],
+                },
+                {
+                    key: "ID",
+                    value: "-1",
+                    children: [],
+                },
+                {
+                    key: "KIND",
+                    value: "SPACING",
+                    children: [],
+                },
+            ],
+        },
+        {
+            key: "ITEM3",
+            value: "NONE",
+            children: [
+                {
+                    key: "TEXT",
+                    value: "IDI_DBU_TRACE_CLEAR",
+                    children: [],
+                },
+                {
+                    key: "ID",
+                    value: "200",
+                    children: [],
+                },
+                {
+                    key: "KIND",
+                    value: "ICONBUTTON",
+                    children: [],
+                },
+            ],
+        },
+        {
+            key: "ITEM4",
+            value: "NONE",
+            children: [
+                {
+                    key: "TEXT",
+                    value: "LESS",
+                    children: [],
+                },
+                {
+                    key: "ID",
+                    value: "-1",
+                    children: [],
+                },
+                {
+                    key: "KIND",
+                    value: "SPACING",
+                    children: [],
+                },
+            ],
+        },
+        {
+            key: "ITEM5",
+            value: "NONE",
+            children: [
+                {
+                    key: "TEXT",
+                    value: "IDI_DBU_TRACE_BROWSE",
+                    children: [],
+                },
+                {
+                    key: "ID",
+                    value: "400",
+                    children: [],
+                },
+                {
+                    key: "KIND",
+                    value: "ICONBUTTON",
+                    children: [],
+                },
+            ],
+        },
+        {
+            key: "ITEM6",
+            value: "NONE",
+            children: [
+                {
+                    key: "TEXT",
+                    value: "Check",
+                    children: [],
+                },
+                {
+                    key: "ID",
+                    value: "500",
+                    children: [],
+                },
+                {
+                    key: "KIND",
+                    value: "TEXTCHECK",
+                    children: [],
+                },
+            ],
+        },
+        {
+            key: "ITEM7",
+            value: "NONE",
+            children: [
+                {
+                    key: "TEXT",
+                    value: "IDI_DBU_TRACE_ONOFF",
+                    children: [],
+                },
+                {
+                    key: "ID",
+                    value: "600",
+                    children: [],
+                },
+                {
+                    key: "KIND",
+                    value: "ICONCHECK",
+                    children: [],
+                },
+            ],
+        },
+        {
+            key: "ITEM8",
+            value: "NONE",
+            children: [
+                {
+                    key: "TEXT",
+                    value: "MC",
+                    children: [],
+                },
+                {
+                    key: "ID",
+                    value: "700",
+                    children: [],
+                },
+                {
+                    key: "KIND",
+                    value: "SELECTMENU",
+                    children: [],
+                },
+                {
+                    key: "STRINGLIST",
+                    value: "LIST",
+                    children: [
+                        {
+                            key: "0",
+                            value: "Alfa",
+                            children: [],
+                        },
+                        {
+                            key: "1",
+                            value: "Beta",
+                            children: [],
+                        },
+                        {
+                            key: "2",
+                            value: "Gamma",
+                            children: [],
+                        },
+                    ],
+                },
+            ],
+        },
+        {
+            key: "ITEM9",
+            value: "NONE",
+            children: [
+                {
+                    key: "TEXT",
+                    value: "Display:",
+                    children: [],
+                },
+                {
+                    key: "ID",
+                    value: "800",
+                    children: [],
+                },
+                {
+                    key: "KIND",
+                    value: "DISPLAYTEXT",
+                    children: [],
+                },
+                {
+                    key: "TEXT2",
+                    value: "Samla mammas manna",
+                    children: [],
+                },
+            ],
+        },
+        {
+            key: "ITEM10",
+            value: "NONE",
+            children: [
+                {
+                    key: "TEXT",
+                    value: "Hmm...",
+                    children: [],
+                },
+                {
+                    key: "ID",
+                    value: "900",
+                    children: [],
+                },
+                {
+                    key: "KIND",
+                    value: "ICONMENU",
+                    children: [],
+                },
+            ],
+        },
+        {
+            key: "ITEM11",
+            value: "NONE",
+            children: [
+                {
+                    key: "TEXT",
+                    value: "Editlabel",
+                    children: [],
+                },
+                {
+                    key: "ID",
+                    value: "1000",
+                    children: [],
+                },
+                {
+                    key: "KIND",
+                    value: "EDITTEXT",
+                    children: [],
+                },
+                {
+                    key: "TEXT2",
+                    value: "Lagom bred eller hur",
+                    children: [],
+                },
+                {
+                    key: "BOOL",
+                    value: "1",
+                    children: [],
+                },
+            ],
+        },
+    ],
+};
