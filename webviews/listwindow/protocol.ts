@@ -34,9 +34,9 @@ export type RenderParameters = Serializable<{
     columnInfo: Column[];
     selection: SelRange[];
     frozen: boolean;
+    // The index of the first row
+    offset: SerializedBigInt;
     scrollInfo: {
-        // The index of the first row
-        offset: SerializedBigInt;
         fractionInWin: number;
         fractionBefore: number;
         fractionAfter: number;
@@ -76,7 +76,7 @@ export type ViewMessage =
   | { subject: "loaded" } // Sent when the view has been initialized
   | { subject: "rendered" } // Sent when done with a render message, useful for testing
   | { subject: "HTMLDump", html: string } // Response to a dumpHTML message, contains the full HTML of the view
-  | { subject: "viewportChanged", firstRow: SerializedBigInt, lastRow: SerializedBigInt } // The user has scrolled or resize the view
+  | { subject: "viewportChanged", rowsInPage: number } // The user has scrolled or resize the view
   | { subject: "columnClicked", col: number }
   | { subject: "cellLeftClicked", col: number, row: SerializedBigInt, flags: SelectionFlags }
   | { subject: "cellDoubleClicked", col: number, row: SerializedBigInt }
@@ -91,8 +91,8 @@ export type ViewMessage =
   | { subject: "localDrop", srcCol: number, srcRow: SerializedBigInt, dstCol: number, dstRow: SerializedBigInt } // The user dropped the cell srcCol/srcRow at dstCol/dstRow
   | { subject: "externalDrop", col: number, row: SerializedBigInt, droppedText: string } // The user dropped some text at the given position
   | { subject: "contextItemClicked", command: number } // The user clicked a context menu item
-  | { subject: "keyNavigationPressed", operation: KeyNavOperation, rowsInPage: number }
-  | { subject: "scrollOperationPressed", operation: ScrollOperation, firstRow: SerializedBigInt, lastRow: SerializedBigInt }
+  | { subject: "keyNavigationPressed", operation: KeyNavOperation }
+  | { subject: "scrollOperationPressed", operation: ScrollOperation }
   | { subject: "keyPressed", code: number, repeat: number }
   | { subject: "toolbarRendered", ids: string[] }
   | { subject: "toolbarItemInteraction", id: string, properties: string } // The user has interacted with a toolbar item.

@@ -234,6 +234,13 @@
 					"name": "Autos",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy"
+				},
+				{
+					"id": "iar-trace",
+					"contextualTitle": "Trace",
+					"name": "Trace",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy"
 				}
 			]
 		},

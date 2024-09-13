@@ -4,7 +4,7 @@
 
 import { css } from "@emotion/css";
 import { createCustomEvent } from "../../events";
-import { Cell, TextStyle } from "../../thrift/listwindow_types";
+import { Cell, Column, TextStyle } from "../../thrift/listwindow_types";
 import { DragDropService } from "../dragDropService";
 import { HoverService } from "../hoverService";
 import { SharedStyles } from "../styles/sharedStyles";
@@ -93,6 +93,7 @@ export class CellElement extends HTMLElement {
     }
     private static readonly ATTR_COL = "column";
     private static readonly ATTR_ROW = "row";
+    static readonly HEIGHT_PX = 22;
 
 
     // This may be undefined for empty "filler" cells
@@ -101,6 +102,7 @@ export class CellElement extends HTMLElement {
     treeinfo: string | undefined = undefined;
     // If undefined, no checkbox is rendered
     checked: boolean | undefined = undefined;
+    columnInfo: Serializable<Column> | undefined = undefined;
     position: CellPosition = { col: -1, row: -1n };
     selected = false;
 
@@ -207,9 +209,15 @@ export class CellElement extends HTMLElement {
         );
 
         // Add styles
-        const textColor = this.cell.format.textColor;
+        let textColor = this.cell.format.textColor;
+        if (textColor.isDefault && this.columnInfo) {
+            textColor = this.columnInfo.defaultFormat.textColor;
+        }
         this.style.color = `rgb(${textColor.r},${textColor.g},${textColor.b})`;
-        const bgColor = this.cell.format.bgColor;
+        let bgColor = this.cell.format.bgColor;
+        if (bgColor.isDefault && this.columnInfo) {
+            bgColor = this.columnInfo.defaultFormat.bgColor;
+        }
         this.style.backgroundColor = `rgb(${bgColor.r},${bgColor.g},${bgColor.b})`;
 
         if (this.cell.format.editable) {
@@ -319,8 +327,8 @@ namespace Styles {
         overflow: "hidden",
     });
     export const content = css({
-        height: "22px",
-        lineHeight: "22px",
+        height: `${CellElement.HEIGHT_PX}px`,
+        lineHeight: `${CellElement.HEIGHT_PX}px`,
         // We use 'grid' to allow treeinfo/checkbox items at the start, with the
         // label taking up the rest of the space.
         display: "grid",
@@ -346,7 +354,7 @@ namespace Styles {
         padding: "0px 12px",
         overflow: "hidden",
         textOverflow: "ellipsis",
-        whiteSpace: "nowrap",
+        whiteSpace: "preserve nowrap",
         wordBreak: "keep-all",
     });
     export const editable = css({

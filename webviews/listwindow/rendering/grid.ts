@@ -8,14 +8,14 @@ import { RowElement } from "./row";
 import { HoverService } from "./hoverService";
 import { toBigInt } from "./utils";
 import { DragDropService } from "./dragDropService";
-import { SelectionFlags, Target } from "../thrift/listwindow_types";
+import { ScrollOperation, SelectionFlags, Target } from "../thrift/listwindow_types";
 import { css } from "@emotion/css";
 import { SharedStyles } from "./styles/sharedStyles";
 import { VirtualList } from "./virtualList/virtualList";
 import { CellEditService } from "./cell/cellEditService";
 import { MessageService } from "../messageService";
 import { TooltipService } from "./tooltipService";
-import { CellPosition } from "./cell/cell";
+import { CellElement, CellPosition } from "./cell/cell";
 import { ContextMenuService } from "./contextMenuService";
 
 /**
@@ -28,6 +28,8 @@ export class GridRenderer {
     // The data grid, i.e. the header and cells. Cleared and redrawn on each
     // render.
     private readonly grid: HTMLElement;
+    // An transparent overlay used to dim the view when it is frozen.
+    private readonly overlay: HTMLElement;
 
     private readonly listRenderer = new VirtualList();
     private readonly cellEditService: CellEditService;
@@ -44,18 +46,31 @@ export class GridRenderer {
         this.scroller.classList.add(Styles.scroller);
         this.scroller.classList.add(Styles.fillWidth);
 
+        const resizeObserver = new ResizeObserver(() => {
+            messageService.sendMessage({
+                subject: "viewportChanged",
+                rowsInPage: this.listRenderer.getNumVisibleRows() ?? 0,
+            });
+        });
+        resizeObserver.observe(this.scroller);
+        this.scroller.addEventListener("wheel", e => {
+            if (e.deltaY !== 0) {
+                e.preventDefault();
+                this.messageService.sendMessage({
+                    subject: "scrollOperationPressed",
+                    operation: e.deltaY > 0 ? ScrollOperation.kScrollLineDown : ScrollOperation.kScrollLineUp,
+                });
+            }
+        });
+
         this.grid = document.createElement("div");
         this.scroller.appendChild(this.grid);
         this.grid.classList.add(Styles.grid);
 
-        this.listRenderer.onViewportChanged = (first, last) => {
-            console.log(first, last);
-            messageService.sendMessage({
-                subject: "viewportChanged",
-                firstRow: { value: first.toString() },
-                lastRow: { value: last.toString() },
-            });
-        };
+        this.overlay = document.createElement("div");
+        this.overlay.classList.add(Styles.overlay);
+        container.appendChild(this.overlay);
+
         this.cellEditService = new CellEditService(this.scroller, messageService);
         this.container.addEventListener("cell-edit-requested", ev => {
             this.cellEditService.requestCellEdit(ev.detail);
@@ -74,10 +89,7 @@ export class GridRenderer {
         params: Serializable<RenderParameters>,
         resizeMode: ColumnResizeMode,
         initialColumnWidths: number[] | undefined,
-        ensureRowVisible: bigint | undefined,
     ) {
-        this.listRenderer.preRender();
-
         this.grid.replaceChildren();
 
         if (resizeMode === "fit") {
@@ -120,11 +132,12 @@ export class GridRenderer {
                 last: toBigInt(range.last),
             };
         });
-        const elems: HTMLElement[] = [];
+        const rows: HTMLElement[] = [];
         for (const [y, row] of params.rows.entries()) {
             const rowElem = new RowElement();
             rowElem.row = row;
-            const actualY = BigInt(y) + BigInt(params.scrollInfo.offset.value);
+            rowElem.columns = params.columnInfo;
+            const actualY = BigInt(y) + BigInt(params.offset.value);
             rowElem.index = actualY;
             rowElem.selected = ranges.some(
                 range => range.first <= actualY && range.last >= actualY,
@@ -135,7 +148,7 @@ export class GridRenderer {
             rowElem.hoverService = this.hoverService;
             rowElem.dragDropService = this.dragDropService;
             rowElem.messageService = this.messageService;
-            elems.push(rowElem);
+            rows.push(rowElem);
         }
 
         {
@@ -157,33 +170,27 @@ export class GridRenderer {
                 });
             };
 
-            this.listRenderer.render(
-                {
-                    container: this.grid,
-                    items: elems,
-                    fillerTop,
-                    fillerBottom,
-                    // TODO: calculate this properly
-                    itemHeight: 23,
-                    scrollInfo: params.scrollInfo,
-                },
-                ensureRowVisible,
-            );
+            this.listRenderer.render({
+                container: this.grid,
+                items: rows,
+                fillerTop,
+                fillerBottom,
+                itemHeight:
+                    CellElement.HEIGHT_PX + (params.listSpec.showGrid ? 1 : 0),
+                scrollInfo: params.scrollInfo,
+            });
         }
 
         if (params.frozen) {
-            const overlay = document.createElement("div");
-            overlay.classList.add(Styles.overlay);
             const isLightTheme = params.columnInfo[0]
                 ? params.columnInfo[0].defaultFormat.bgColor.r >
                   params.columnInfo[0].defaultFormat.textColor.r
                 : false;
             if (isLightTheme) {
-                overlay.style.backgroundColor = "rgba(255, 255, 255, 0.3)";
+                this.overlay.style.backgroundColor = "rgba(255, 255, 255, 0.3)";
             } else {
-                overlay.style.backgroundColor = "rgba(0, 0, 0, 0.2)";
+                this.overlay.style.backgroundColor = "rgba(0, 0, 0, 0.2)";
             }
-            this.container.appendChild(overlay);
         }
         this.container.oncontextmenu = (ev: MouseEvent) => {
             this.contextMenuService.requestContextMenu({
@@ -194,8 +201,8 @@ export class GridRenderer {
         };
     }
 
-    getRangeOfVisibleRows() {
-        return this.listRenderer.getRangeOfVisibleRows();
+    getNumVisibleRows() {
+        return this.listRenderer.getNumVisibleRows();
     }
 
     requestCellEdit(pos: CellPosition) {

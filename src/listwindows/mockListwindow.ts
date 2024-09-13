@@ -349,8 +349,8 @@ function getMockRenderParams(selectionStart = 1, selectionEnd = selectionStart) 
         listSpec: new ListSpec(),
         selection: [],
         frozen: false,
+        offset: { value: "0" },
         scrollInfo: {
-            offset: { value: "0" },
             fractionBefore: 0.0,
             fractionInWin: 1.0,
             fractionAfter: 0.0,

@@ -91,9 +91,6 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider, vscod
 
     async postMessageToView(msg: ExtensionMessage) {
         await this.viewLoaded;
-        if (!this.view) {
-            logger.warn(`Tried sending message to view '${this.viewId}' that hasn't been created yet: ${JSON.stringify(msg)}`);
-        }
         return this.view?.webview.postMessage(msg);
     }
 

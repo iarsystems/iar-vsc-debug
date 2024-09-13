@@ -18,20 +18,14 @@ export namespace KeyboardInput {
      * @param messageService The service to send key input messages to
      * @param getRangeOfVisibleRows A function providing the index of the first and last visible rows in the view.
      */
-    export function initialize(
-        messageService: MessageService,
-        getRangeOfVisibleRows: () => { first: bigint, last: bigint } | undefined,
-    ) {
+    export function initialize(messageService: MessageService) {
         document.body.addEventListener("keydown", ev => {
             if (ev.ctrlKey) {
                 const scrollOp = keyToScrollOp(ev.key);
                 if (scrollOp !== undefined) {
-                    const range = getRangeOfVisibleRows() ?? { first: -1n, last: -1n};
                     messageService.sendMessage({
                         subject: "scrollOperationPressed",
                         operation: scrollOp,
-                        firstRow: { value: range.first.toString() },
-                        lastRow: { value: range.last.toString() },
                     });
                     ev.preventDefault();
                     return;
@@ -40,12 +34,9 @@ export namespace KeyboardInput {
 
             const keyNavOp = keyToNavigationOp(ev.key);
             if (keyNavOp !== undefined) {
-                const range = getRangeOfVisibleRows();
-                const rowsInPage = range ? Number(range.last - range.first) + 1 : 0;
                 messageService.sendMessage({
                     subject: "keyNavigationPressed",
                     operation: keyNavOp,
-                    rowsInPage,
                 });
                 ev.preventDefault();
                 return;
@@ -69,7 +60,7 @@ export namespace KeyboardInput {
                         keyCode = 0x08;
                         break;
                     case "Enter":
-                        keyCode = 0x0A;
+                        keyCode = 0x0a;
                         break;
                     case "Tab":
                         keyCode = 0x09;

@@ -168,6 +168,6 @@ namespace DragDropFeedback {
     }
 
     export function equals(f1: DragDropFeedback, f2: DragDropFeedback) {
-        return JSON.stringify(f1) === JSON.stringify(f2);
+        return f1.target === f2.target && f1.col === f2.col && f1.row === f2.row;
     }
 }

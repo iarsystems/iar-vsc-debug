@@ -102,9 +102,7 @@ class ListwindowController {
         window.addEventListener("focus", () => Theming.setViewHasFocus(true));
         window.addEventListener("blur", () => Theming.setViewHasFocus(false));
 
-        KeyboardInput.initialize(this.messageService, () =>
-            this.grid?.getRangeOfVisibleRows(),
-        );
+        KeyboardInput.initialize(this.messageService);
         KeyboardInput.onCellEditRequested = () => {
             if (this.renderParams && this.renderParams.selection.length === 1) {
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -151,11 +149,7 @@ class ListwindowController {
             }
             case "render": {
                 this.renderParams = msg.params;
-                this.render(
-                    msg.ensureRowVisible
-                        ? BigInt(msg.ensureRowVisible.value)
-                        : undefined,
-                );
+                this.render();
                 this.messageService.sendMessage({ subject: "rendered" });
                 break;
             }
@@ -198,7 +192,7 @@ class ListwindowController {
         }
     }
 
-    private render(ensureRowVisible?: bigint) {
+    private render() {
         if (!this.renderParams) {
             return;
         }
@@ -214,7 +208,6 @@ class ListwindowController {
             this.renderParams,
             this.resizeMode,
             this.persistedState.columnWidths,
-            ensureRowVisible,
         );
 
     }

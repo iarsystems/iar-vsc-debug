@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { css } from "@emotion/css";
-import { Row, Target } from "../thrift/listwindow_types";
+import { Column, Row, Target } from "../thrift/listwindow_types";
 import { CellElement } from "./cell/cell";
 import { CellBorderVariables } from "./cell/cellBorders";
 import { DragDropService } from "./dragDropService";
@@ -21,6 +21,7 @@ import { MessageService } from "../messageService";
 @customElement("listwindow-row")
 export class RowElement extends HTMLElement {
     row?: Serializable<Row> = undefined;
+    columns?: Serializable<Column>[] = undefined;
     index = -1n;
     selected = false;
     frozen = false;
@@ -53,6 +54,7 @@ export class RowElement extends HTMLElement {
                     cellElem.checked = this.row.isChecked;
                 }
             }
+            cellElem.columnInfo = this.columns?.[x];
             cellElem.selected = this.selected;
             cellElem.position = { col: x, row: this.index };
             cellElem.hoverService = this.hoverService;
