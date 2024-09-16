@@ -48,8 +48,8 @@ export class ListWindowBackendHandler {
             // in the background.
             if (msg.subject === "viewportChanged") {
                 this.numberOfVisibleRows = msg.rowsInPage;
-                for (const session of this.sessions.values()) {
-                    session.handleMessageFromView(msg);
+                for (const controller of this.sessions.values()) {
+                    controller.handleMessageFromView(msg);
                 }
                 return;
             }
