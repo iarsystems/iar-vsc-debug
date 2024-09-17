@@ -4,7 +4,7 @@
 
 import { css } from "@emotion/css";
 import { createCustomEvent } from "../../events";
-import { Cell, TextStyle } from "../../thrift/listwindow_types";
+import { Cell, Column, TextStyle } from "../../thrift/listwindow_types";
 import { DragDropService } from "../dragDropService";
 import { HoverService } from "../hoverService";
 import { SharedStyles } from "../styles/sharedStyles";
@@ -13,11 +13,13 @@ import { CellBordersElement } from "./cellBorders";
 import { TreeInfoElement } from "./treeInfo";
 import { Serializable } from "../../protocol";
 import { Checkbox } from "@vscode/webview-ui-toolkit";
+import { MessageService } from "../../messageService";
+import { SelectionFlags } from "../../thrift/listwindow_types";
 import { IconMap } from "../icons";
 
 export interface CellPosition {
     col: number;
-    row: number;
+    row: bigint;
 }
 
 /** Emitted when the the user left clicks a cell */
@@ -69,7 +71,7 @@ export namespace CellEditRequestedEvent {
 export type CheckboxToggledEvent = CustomEvent<CheckboxToggledEvent.Detail>;
 export namespace CheckboxToggledEvent {
     export interface Detail {
-        row: number;
+        row: bigint;
     }
 }
 
@@ -92,6 +94,7 @@ export class CellElement extends HTMLElement {
     }
     private static readonly ATTR_COL = "column";
     private static readonly ATTR_ROW = "row";
+    static readonly HEIGHT_PX = 22;
 
 
     // This may be undefined for empty "filler" cells
@@ -100,11 +103,13 @@ export class CellElement extends HTMLElement {
     treeinfo: string | undefined = undefined;
     // If undefined, no checkbox is rendered
     checked: boolean | undefined = undefined;
-    position: CellPosition = { col: -1, row: -1 };
+    columnInfo: Serializable<Column> | undefined = undefined;
+    position: CellPosition = { col: -1, row: -1n };
     selected = false;
 
     hoverService: HoverService | undefined = undefined;
     dragDropService: DragDropService | undefined = undefined;
+    messageService: MessageService | undefined = undefined;
 
     connectedCallback() {
         this.classList.add(Styles.self);
@@ -131,6 +136,7 @@ export class CellElement extends HTMLElement {
             const treeInfoElem = new TreeInfoElement();
             treeInfoElem.treeinfo = this.treeinfo;
             treeInfoElem.row = this.position.row;
+            treeInfoElem.messageService = this.messageService;
             prefixItems.appendChild(treeInfoElem);
         }
 
@@ -140,10 +146,10 @@ export class CellElement extends HTMLElement {
             checkbox.checked = this.checked;
             checkbox.onclick = ev => {
                 ev.preventDefault();
-                this.dispatchEvent(createCustomEvent("checkbox-toggled", {
-                    detail: { row: this.position.row },
-                    bubbles: true,
-                }));
+                this.messageService?.sendMessage({
+                    subject: "checkboxToggled",
+                    row: { value: this.position.row.toString() },
+                });
             };
             prefixItems.appendChild(checkbox);
         }
@@ -204,9 +210,15 @@ export class CellElement extends HTMLElement {
         );
 
         // Add styles
-        const textColor = this.cell.format.textColor;
+        let textColor = this.cell.format.textColor;
+        if (textColor.isDefault && this.columnInfo) {
+            textColor = this.columnInfo.defaultFormat.textColor;
+        }
         this.style.color = `rgb(${textColor.r},${textColor.g},${textColor.b})`;
-        const bgColor = this.cell.format.bgColor;
+        let bgColor = this.cell.format.bgColor;
+        if (bgColor.isDefault && this.columnInfo) {
+            bgColor = this.columnInfo.defaultFormat.bgColor;
+        }
         this.style.backgroundColor = `rgb(${bgColor.r},${bgColor.g},${bgColor.b})`;
 
         if (this.cell.format.editable) {
@@ -268,17 +280,26 @@ export class CellElement extends HTMLElement {
                 );
                 return;
             }
-            this.dispatchEvent(
-                createCustomEvent("cell-clicked", {
-                    detail: {
-                        ...this.position,
-                        isDoubleClick: ev.detail === 2,
-                        ctrlPressed: ev.ctrlKey,
-                        shiftPressed: ev.shiftKey,
-                    },
-                    bubbles: true,
-                }),
-            );
+            if (ev.detail === 2) { // is a double click
+                this.messageService?.sendMessage({
+                    subject: "cellDoubleClicked",
+                    col: this.position.col,
+                    row: { value: this.position.row.toString() },
+                });
+            } else {
+                let flags = SelectionFlags.kReplace;
+                if (ev.ctrlKey) {
+                    flags = SelectionFlags.kAdd;
+                } else if (ev.shiftKey) {
+                    flags = SelectionFlags.kRange;
+                }
+                this.messageService?.sendMessage({
+                    subject: "cellLeftClicked",
+                    col: this.position.col,
+                    row: { value: this.position.row.toString() },
+                    flags,
+                });
+            }
         }
         return null;
     };
@@ -307,8 +328,8 @@ namespace Styles {
         overflow: "hidden",
     });
     export const content = css({
-        height: "22px",
-        lineHeight: "22px",
+        height: `${CellElement.HEIGHT_PX}px`,
+        lineHeight: `${CellElement.HEIGHT_PX}px`,
         // We use 'grid' to allow treeinfo/checkbox items at the start, with the
         // label taking up the rest of the space.
         display: "grid",
@@ -334,7 +355,7 @@ namespace Styles {
         padding: "0px 12px",
         overflow: "hidden",
         textOverflow: "ellipsis",
-        whiteSpace: "nowrap",
+        whiteSpace: "preserve nowrap",
         wordBreak: "keep-all",
     });
     export const editable = css({

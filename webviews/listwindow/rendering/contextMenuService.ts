@@ -21,11 +21,11 @@ export class ContextMenuService {
     private pendingContextMenu: PendingContextMenu | undefined = undefined;
 
     constructor(
-        appElement: HTMLElement,
+        private readonly container: HTMLElement,
         private readonly messageService: MessageService,
     ) {
-        appElement.addEventListener("click", () => this.closeContextMenu());
-        // window.addEventListener("blur", () => this.closeContextMenu());
+        document.body.addEventListener("click", () => this.closeContextMenu());
+        window.addEventListener("blur", () => this.closeContextMenu());
 
         this.messageService.addMessageHandler(msg => {
             if (msg.subject === "contextMenuReply") {
@@ -34,20 +34,20 @@ export class ContextMenuService {
         });
     }
 
-    requestContextMenu(event: CellRightClickedEvent) {
+    requestContextMenu(event: CellRightClickedEvent["detail"]) {
         this.pendingContextMenu = {
-            position: event.detail.clickPosition,
+            position: event.clickPosition,
         };
         this.messageService.sendMessage({
             subject: "getContextMenu",
-            col: event.detail.col,
-            row: event.detail.row,
+            col: event.col,
+            row: { value: event.row.toString() },
         });
     }
 
     private resolvePendingContextMenu(menuItems: Serializable<MenuItem>[]) {
         if (this.element) {
-            document.body.removeChild(this.element);
+            this.container.removeChild(this.element);
             this.element = undefined;
         }
 
@@ -62,7 +62,7 @@ export class ContextMenuService {
                 this.element?.close();
                 this.closeContextMenu();
             });
-            document.body.appendChild(this.element);
+            this.container.appendChild(this.element);
 
             // Note that we cannot render the menu outside the view bounds (as a
             // "floating" window). It would just create a scrollbar for the entire
@@ -97,7 +97,7 @@ export class ContextMenuService {
 
     private closeContextMenu() {
         if (this.element) {
-            document.body.removeChild(this.element);
+            this.container.removeChild(this.element);
             this.element = undefined;
         }
         this.pendingContextMenu = undefined;

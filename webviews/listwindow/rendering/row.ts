@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { css } from "@emotion/css";
-import { Row, Target } from "../thrift/listwindow_types";
+import { Column, Row, Target } from "../thrift/listwindow_types";
 import { CellElement } from "./cell/cell";
 import { CellBorderVariables } from "./cell/cellBorders";
 import { DragDropService } from "./dragDropService";
@@ -12,6 +12,7 @@ import { Theming } from "./styles/theming";
 import { customElement } from "./utils";
 import { SharedStyles } from "./styles/sharedStyles";
 import { Serializable } from "../protocol";
+import { MessageService } from "../messageService";
 
 /**
  * A non-header row in a listwindow. This handles setting outlines and
@@ -20,14 +21,15 @@ import { Serializable } from "../protocol";
 @customElement("listwindow-row")
 export class RowElement extends HTMLElement {
     row?: Serializable<Row> = undefined;
-    index = -1;
+    columns?: Serializable<Column>[] = undefined;
+    index = -1n;
     selected = false;
     frozen = false;
     showCheckBoxes = false;
     addFillerCell = false;
     dragDropService: DragDropService | undefined = undefined;
-
     hoverService: HoverService | undefined = undefined;
+    messageService: MessageService | undefined = undefined;
 
     constructor() {
         super();
@@ -52,10 +54,12 @@ export class RowElement extends HTMLElement {
                     cellElem.checked = this.row.isChecked;
                 }
             }
+            cellElem.columnInfo = this.columns?.[x];
             cellElem.selected = this.selected;
             cellElem.position = { col: x, row: this.index };
             cellElem.hoverService = this.hoverService;
             cellElem.dragDropService = this.dragDropService;
+            cellElem.messageService = this.messageService;
 
             this.appendChild(cellElem);
         }

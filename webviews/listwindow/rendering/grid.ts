@@ -6,218 +6,225 @@ import { ColumnResizeMode, RenderParameters, Serializable } from "../protocol";
 import { HeaderElement } from "./header/header";
 import { RowElement } from "./row";
 import { HoverService } from "./hoverService";
-import { createCustomEvent } from "../events";
-import { customElement, toBigInt } from "./utils";
-import { CellElement } from "./cell/cell";
+import { toBigInt } from "./utils";
 import { DragDropService } from "./dragDropService";
-import { Target } from "../thrift/listwindow_types";
+import { ScrollOperation, SelectionFlags, Target } from "../thrift/listwindow_types";
 import { css } from "@emotion/css";
 import { SharedStyles } from "./styles/sharedStyles";
+import { VirtualList } from "./virtualList";
+import { CellEditService } from "./cell/cellEditService";
+import { MessageService } from "../messageService";
+import { TooltipService } from "./tooltipService";
+import { CellElement, CellPosition } from "./cell/cell";
+import { ContextMenuService } from "./contextMenuService";
 
 /**
  * A full listwindow grid, including headers but excluding any toolbar
  */
-@customElement("listwindow-grid")
-export class GridElement extends HTMLElement {
-    data?: Serializable<RenderParameters> = undefined;
-    initialColumnWidths: number[] | undefined = undefined;
-    resizeMode: ColumnResizeMode = "fixed";
+export class GridRenderer {
+    // An outer container which is the actual scrollable element. Besides the
+    // grid, this may contain tooltips, context menus, etc.
+    private readonly scroller: HTMLElement;
+    // The data grid, i.e. the header and cells. Cleared and redrawn on each
+    // render.
+    private readonly grid: HTMLElement;
+    // An transparent overlay used to dim the view when it is frozen.
+    private readonly overlay: HTMLElement;
 
-    hoverService: HoverService | undefined = undefined;
-    dragDropService: DragDropService | undefined = undefined;
-    headerElement: HeaderElement | undefined = undefined;
-    gridElement: HTMLDivElement | undefined = undefined;
-    hasToolbar = false;
+    private readonly listRenderer = new VirtualList();
+    private readonly cellEditService: CellEditService;
+    private readonly tooltipService: TooltipService;
+    private readonly contextMenuService: ContextMenuService;
 
-    connectedCallback() {
-        this.classList.add(Styles.self);
-        if (this.resizeMode === "fit") {
-            this.classList.add(Styles.fillWidth);
-        }
+    constructor(private readonly container: HTMLElement,
+        private readonly hoverService: HoverService,
+        private readonly dragDropService: DragDropService,
+        private readonly messageService: MessageService,
+    ) {
+        this.scroller = document.createElement("div");
+        container.appendChild(this.scroller);
+        this.scroller.classList.add(Styles.scroller);
+        this.scroller.classList.add(Styles.fillWidth);
 
-        if (!this.data) {
-            // TODO: render some placeholder
-            return;
-        }
-
-        if (this.initialColumnWidths === undefined) {
-            this.initialColumnWidths = this.data.columnInfo.map(col => col.width);
-        }
-
+        const resizeObserver = new ResizeObserver(() => {
+            messageService.sendMessage({
+                subject: "viewportChanged",
+                rowsInPage: this.listRenderer.getNumVisibleRows() ?? 0,
+            });
+        });
+        resizeObserver.observe(this.scroller);
+        this.scroller.addEventListener("wheel", e => {
+            if (e.deltaY !== 0) {
+                e.preventDefault();
+                this.messageService.sendMessage({
+                    subject: "scrollOperationPressed",
+                    operation: e.deltaY > 0 ? ScrollOperation.kScrollLineDown : ScrollOperation.kScrollLineUp,
+                });
+            }
+        });
+        this.scroller.onclick = ev => {
+            if (ev.target !== this.scroller) {
+                return;
+            }
+            this.messageService.sendMessage({
+                subject: "cellLeftClicked",
+                col: -1,
+                row: { value: "-1" },
+                flags: SelectionFlags.kReplace,
+            });
+        };
         this.dragDropService?.registerDropTarget(
-            this,
-            { col: -1, row: -1 },
+            this.container,
+            { col: -1, row: -1n },
             Target.kTargetAll,
         );
-        if (this.dragDropService?.currentFeedback.target === Target.kTargetAll) {
-            this.classList.add(SharedStyles.dropTarget);
+
+
+        this.grid = document.createElement("div");
+        this.scroller.appendChild(this.grid);
+        this.grid.classList.add(Styles.grid);
+
+        this.overlay = document.createElement("div");
+        this.overlay.classList.add(Styles.overlay);
+        container.appendChild(this.overlay);
+
+        this.cellEditService = new CellEditService(this.scroller, messageService);
+        this.container.addEventListener("cell-edit-requested", ev => {
+            this.cellEditService.requestCellEdit(ev.detail);
+        });
+        this.tooltipService = new TooltipService(this.scroller, messageService);
+        this.container.addEventListener("cell-hovered", ev => {
+            this.tooltipService.requestTooltip(ev);
+        });
+        this.contextMenuService = new ContextMenuService(this.scroller, messageService);
+        this.container.addEventListener("cell-right-clicked", ev => {
+            this.contextMenuService.requestContextMenu(ev.detail);
+        });
+    }
+
+    render(
+        params: Serializable<RenderParameters>,
+        resizeMode: ColumnResizeMode,
+        initialColumnWidths: number[] | undefined,
+    ) {
+        this.grid.replaceChildren();
+
+        if (resizeMode === "fit") {
+            this.grid.classList.add(Styles.fillWidth);
+        } else {
+            this.grid.classList.remove(Styles.fillWidth);
         }
 
-        this.gridElement = document.createElement("div");
-        this.gridElement.classList.add(Styles.grid);
-        this.appendChild(this.gridElement);
+        if (initialColumnWidths === undefined) {
+            initialColumnWidths = params.columnInfo.map(col => col.width);
+        }
+
+        if (
+            this.dragDropService?.currentFeedback.target === Target.kTargetAll
+        ) {
+            this.container.classList.add(SharedStyles.dropTarget);
+        } else {
+            this.container.classList.remove(SharedStyles.dropTarget);
+        }
 
         // Create header
-        this.headerElement = new HeaderElement();
-        this.headerElement.columns = this.data.columnInfo;
-        this.headerElement.columnWidths = this.initialColumnWidths;
-        this.headerElement.clickable = this.data.listSpec.canClickColumns;
-        this.headerElement.resizeMode = this.resizeMode;
-        this.headerElement.hasToolbar = this.hasToolbar;
-        this.gridElement.appendChild(this.headerElement);
+        const headerElement = new HeaderElement();
+        headerElement.columns = params.columnInfo;
+        headerElement.columnWidths = initialColumnWidths;
+        headerElement.clickable = params.listSpec.canClickColumns;
+        headerElement.resizeMode = resizeMode;
+        headerElement.messageService = this.messageService;
+        this.grid.appendChild(headerElement);
 
-        if (!this.data.listSpec.showHeader) {
-            this.headerElement.style.display = "none";
+        if (!params.listSpec.showHeader) {
+            headerElement.style.display = "none";
         }
 
         // Create body
-        const ranges = this.data.selection.map(range => {
+        const ranges = params.selection.map(range => {
             return {
                 first: toBigInt(range.first),
                 last: toBigInt(range.last),
             };
         });
-        for (const [y, row] of this.data.rows.entries()) {
+        const rows: HTMLElement[] = [];
+        for (const [y, row] of params.rows.entries()) {
             const rowElem = new RowElement();
             rowElem.row = row;
-            rowElem.index = y;
+            rowElem.columns = params.columnInfo;
+            const actualY = BigInt(y) + BigInt(params.offset.value);
+            rowElem.index = actualY;
             rowElem.selected = ranges.some(
-                range => range.first <= y && range.last >= y,
+                range => range.first <= actualY && range.last >= actualY,
             );
-            rowElem.frozen = this.data.frozen;
-            rowElem.showCheckBoxes = this.data.listSpec.showCheckBoxes;
-            rowElem.addFillerCell = this.resizeMode === "fixed";
+            rowElem.frozen = params.frozen;
+            rowElem.showCheckBoxes = params.listSpec.showCheckBoxes;
+            rowElem.addFillerCell = resizeMode === "fixed";
             rowElem.hoverService = this.hoverService;
             rowElem.dragDropService = this.dragDropService;
-            this.gridElement.appendChild(rowElem);
+            rowElem.messageService = this.messageService;
+            rows.push(rowElem);
         }
 
-        // The rest of the vertical space is taken up by a filler element that
-        // can be clicked to deselect everything
-        const fillerBottom = document.createElement("div");
-        fillerBottom.classList.add(Styles.fillerBottom);
-        this.appendChild(fillerBottom);
-        fillerBottom.onclick = (ev: MouseEvent) => {
-            this.dispatchEvent(
-                createCustomEvent("cell-clicked", {
-                    detail: {
-                        col: -1,
-                        row: -1,
-                        isDoubleClick: ev.detail === 2,
-                        ctrlPressed: false,
-                        shiftPressed: false,
-                    },
-                    bubbles: true,
-                }),
-            );
-        };
+        {
+            const fillerTop = document.createElement("div");
+            fillerTop.style.gridColumn = `span ${params.columnInfo.length}`;
+            const fillerBottom = document.createElement("div");
+            fillerBottom.style.gridColumn = `span ${params.columnInfo.length}`;
 
-        if (this.data.frozen) {
-            const overlay = document.createElement("div");
-            overlay.classList.add(Styles.overlay);
-            const isLightTheme = this.data.columnInfo[0]
-                ? this.data.columnInfo[0].defaultFormat.bgColor.r >
-                  this.data.columnInfo[0].defaultFormat.textColor.r
+            this.listRenderer.render({
+                container: this.grid,
+                items: rows,
+                fillerTop,
+                fillerBottom,
+                itemHeight:
+                    CellElement.HEIGHT_PX + (params.listSpec.showGrid ? 1 : 0),
+                scrollInfo: params.scrollInfo,
+            });
+        }
+
+        if (params.frozen) {
+            const isLightTheme = params.columnInfo[0]
+                ? params.columnInfo[0].defaultFormat.bgColor.r >
+                  params.columnInfo[0].defaultFormat.textColor.r
                 : false;
             if (isLightTheme) {
-                overlay.style.backgroundColor = "rgba(255, 255, 255, 0.3)";
+                this.overlay.style.backgroundColor = "rgba(255, 255, 255, 0.3)";
             } else {
-                overlay.style.backgroundColor = "rgba(0, 0, 0, 0.2)";
+                this.overlay.style.backgroundColor = "rgba(0, 0, 0, 0.2)";
             }
-            this.appendChild(overlay);
         }
-    }
-
-    override oncontextmenu = (ev: MouseEvent) => {
-        this.dispatchEvent(createCustomEvent("cell-right-clicked", {
-            detail: {
+        this.container.oncontextmenu = (ev: MouseEvent) => {
+            this.contextMenuService.requestContextMenu({
                 col: -1,
-                row: -1,
+                row: -1n,
                 clickPosition: ev,
-            },
-            bubbles: true,
-        }));
-    };
-
-    ensureRowVisible(row: number) {
-        if (row < 0) {
-            return;
-        }
-
-        // We use cells rather than rows to calculate Y positions, since rows
-        // use 'display: content' and thus have no bounds in the eyes of the
-        // layout engine.
-        const topmostCell = CellElement.lookupCell({ row: 0, col: 0 });
-        const targetCell = CellElement.lookupCell({ row, col: 0 });
-        if (!topmostCell || !targetCell) {
-            return;
-        }
-        // When calculating scroll position, we consider anything below the
-        // start of the first row to be the "viewport" (i.e. we subtract the
-        // height of any header from the viewport).
-        const headerHeight = topmostCell.getBoundingClientRect().top + window.scrollY;
-        const targetBounds = targetCell.getBoundingClientRect();
-        const isVisible =
-            targetBounds.top >= headerHeight &&
-            targetBounds.bottom <= document.documentElement.clientHeight;
-        if (!isVisible) {
-            // Place the target row in the middle of the viewport.
-            const rowY = targetBounds.top + window.scrollY;
-            const viewportHeight = document.documentElement.clientHeight - headerHeight;
-            const targetScroll =
-                rowY - headerHeight - (viewportHeight / 2 - targetBounds.height / 2);
-            window.scrollTo({ behavior: "smooth", top: targetScroll } );
-        }
+            });
+        };
     }
 
-    getRangeOfVisibleRows(): [number, number] | undefined {
-        const topmostCell = CellElement.lookupCell({ row: 0, col: 0 });
-        if (!topmostCell) {
-            return undefined;
-        }
+    getNumVisibleRows() {
+        return this.listRenderer.getNumVisibleRows();
+    }
 
-        // We assume all rows are the same height, and a row's height is the same
-        // as its cells' heights.
-        const rowHeight = topmostCell.getBoundingClientRect().height;
-        const firstVisible = Math.ceil(window.scrollY / rowHeight);
-        // We consider anything below the start of the first row to be the
-        // "viewport" (i.e. we subtract the height of any header from the
-        // viewport).
-        const viewportHeight =
-            document.documentElement.clientHeight -
-            (topmostCell.getBoundingClientRect().top + window.scrollY);
-        // Space taken up by any partially visible row at the top
-        const topMargin = firstVisible * rowHeight - window.scrollY;
-        const numVisible = Math.floor(
-            (viewportHeight - topMargin) / rowHeight,
-        );
-        let lastVisible = firstVisible + numVisible - 1;
-        if (this.data && this.data.rows.length - 1 < lastVisible) {
-            lastVisible = this.data.rows.length;
-        }
-        return [firstVisible, lastVisible];
+    requestCellEdit(pos: CellPosition) {
+        this.cellEditService.requestCellEdit(pos);
     }
 }
 
 namespace Styles {
-    export const self = css({
+    export const scroller = css({
         height: "100%",
-        display: "flex",
-        flexDirection: "column",
-    });
-    export const fillWidth = css({
-        width: "100%",
+        overflow: "auto",
+        position: "relative",
     });
     export const grid = css({
         // The grid-template-columns are set by the header element
         display: "grid",
-        flex: "0 0 auto",
+        gridAutoRows: "min-content",
     });
-    export const fillerBottom = css({
-        // We always want _some_ filler at the bottom, so there's an easy way to
-        // deselect everything.
-        height: "10px",
-        flex: "1 0 auto",
+    export const fillWidth = css({
+        width: "100%",
     });
     export const overlay = css({
         pointerEvents: "none",

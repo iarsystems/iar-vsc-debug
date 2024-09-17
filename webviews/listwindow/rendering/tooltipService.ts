@@ -25,7 +25,10 @@ export class TooltipService {
     private element: TooltipElement | undefined = undefined;
     private pendingTooltip: PendingTooltip | undefined = undefined;
 
-    constructor(private readonly messageService: MessageService) {
+    constructor(
+        private readonly container: HTMLElement,
+        private readonly messageService: MessageService,
+    ) {
         messageService.addMessageHandler(reply => {
             if (reply.subject === "tooltipReply") {
                 this.setTextForPendingTooltip(reply.text);
@@ -45,7 +48,7 @@ export class TooltipService {
         this.messageService.sendMessage({
             subject: "getTooltip",
             col: event.detail.col,
-            row: event.detail.row,
+            row: { value: event.detail.row.toString() },
         });
     }
 
@@ -64,7 +67,7 @@ export class TooltipService {
 
     private setTextForPendingTooltip(text: string | undefined) {
         if (this.element) {
-            document.body.removeChild(this.element);
+            this.container.removeChild(this.element);
             this.element = undefined;
         }
 
@@ -74,7 +77,7 @@ export class TooltipService {
                 this.element = new TooltipElement();
                 this.element.tooltipText = tooltipText;
                 this.element.position = this.pendingTooltip.position;
-                document.body.appendChild(this.element);
+                this.container.appendChild(this.element);
             }
         }
 
@@ -87,7 +90,7 @@ export class TooltipService {
             this.pendingTooltip = undefined;
         }
         if (this.element) {
-            document.body.removeChild(this.element);
+            this.container.removeChild(this.element);
             this.element = undefined;
         }
     };

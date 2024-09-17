@@ -11,6 +11,7 @@ import { SharedStyles } from "../styles/sharedStyles";
 import { Theming } from "../styles/theming";
 import { css } from "@emotion/css";
 import { ToolbarElement } from "../toolbar/toolbar";
+import { MessageService } from "../../messageService";
 
 /**
  * Emitted when the the user has resized a column
@@ -44,6 +45,7 @@ export class HeaderElement extends HTMLElement {
     columnWidths: number[] = [];
     clickable = false;
     resizeMode: ColumnResizeMode = "fixed";
+    messageService: MessageService | undefined = undefined;
     hasToolbar = false;
 
     private columnHeaders: HTMLElement[] = [];
@@ -72,12 +74,10 @@ export class HeaderElement extends HTMLElement {
             if (this.clickable) {
                 title.classList.add(Styles.clickable);
                 title.onclick = () => {
-                    this.dispatchEvent(
-                        createCustomEvent("column-clicked", {
-                            detail: { col: i },
-                            bubbles: true,
-                        }),
-                    );
+                    this.messageService?.sendMessage({
+                        subject: "columnClicked",
+                        col: i,
+                    });
                 };
             }
 

@@ -5,34 +5,34 @@
 import {
     Note,
     Row,
+    SelRange,
     What,
 } from "iar-vsc-common/thrift/bindings/listwindow_types";
 import * as ListWindowBackend from "iar-vsc-common/thrift/bindings/ListWindowBackend";
 import { RenderParameters } from "../../webviews/listwindow/protocol";
 import { Int64 } from "thrift";
+import { toBigInt, toInt64 } from "../utils";
 
 export class SimpleProxyCache {
-    private client: ListWindowBackend.Client | undefined = undefined;
     public cache: Map<bigint, Row> = new Map<bigint, Row>();
 
-    public connect(c: ListWindowBackend.Client) {
-        this.client = c;
-        this.cache.clear();
-    }
+    constructor(
+        private readonly client: ListWindowBackend.Client
+    ) {}
 
-    public async getRow(rowNo: Int64): Promise<Row> {
-        const bigIntNo = BigInt(rowNo.toString());
-        if (this.cache.has(bigIntNo)) {
-            return this.cache.get(bigIntNo) as Row;
+    public async getRow(rowNo: bigint): Promise<Row> {
+        if (this.cache.has(rowNo)) {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            return this.cache.get(rowNo)!;
         }
 
-        const row = await this.client?.getRow(new Int64(Number(rowNo)));
-        this.cache.set(bigIntNo, row as Row);
-        return row as Row;
+        const row = await this.client.getRow(toInt64(rowNo));
+        this.cache.set(rowNo, row);
+        return row;
     }
 
-    public DeleteRow(rowNo: Int64) {
-        const r = BigInt(rowNo.toNumber());
+    public deleteRow(rowNo: Int64) {
+        const r = toBigInt(rowNo);
         if (this.cache.has(r)) {
             return;
         }
@@ -47,17 +47,15 @@ export class SimpleProxyCache {
  */
 export class ListWindowProxy {
     // Start with a stupid cache.
-    private readonly cache: SimpleProxyCache = new SimpleProxyCache();
-    private client: ListWindowBackend.Client | undefined = undefined;
-    private noRows = 0;
-    private renderParams: RenderParameters =
+    private readonly cache: SimpleProxyCache;
+    private readonly renderParams: Omit<RenderParameters, "scrollInfo"> =
         ListWindowProxy.getDefaultRenderParameters();
 
-    // Swapping client.
-    connectToClient(newClient: ListWindowBackend.Client) {
-        this.client = newClient;
-        this.cache.connect(newClient);
-        this.renderParams = ListWindowProxy.getDefaultRenderParameters();
+    private readonly isSliding: Q.Promise<boolean>;
+
+    constructor(private readonly client: ListWindowBackend.Client) {
+        this.cache = new SimpleProxyCache(client);
+        this.isSliding = client.isSliding();
     }
 
     // callback from list window backend
@@ -68,7 +66,7 @@ export class ListWindowProxy {
                 break;
             }
             case What.kRowUpdate: {
-                this.cache.DeleteRow(note.row);
+                this.cache.deleteRow(note.row);
                 await this.updateSelection();
                 break;
             }
@@ -76,7 +74,6 @@ export class ListWindowProxy {
                 // Update the rows from scratch.
                 this.cache.cache.clear();
                 await this.updateSelection();
-                await this.updateNumberOfRows();
                 break;
             }
             case What.kFullUpdate: {
@@ -100,19 +97,27 @@ export class ListWindowProxy {
         return note;
     }
 
-    getRenderParameter(): RenderParameters {
-        return this.renderParams;
+    invalidateAllRows() {
+        this.cache.cache.clear();
     }
 
     async updateSelection(): Promise<void> {
         if (this.client) {
-            this.renderParams.selection = await this.client.getSelection();
-        }
-    }
-
-    async updateNumberOfRows(): Promise<void> {
-        if (this.client) {
-            this.noRows = (await this.client.getNumberOfRows()).toNumber();
+            if (await this.isSliding) {
+                const sel = await this.client.getSel();
+                if (sel.row === -1) {
+                    this.renderParams.selection = [];
+                } else {
+                    this.renderParams.selection = [
+                        new SelRange({
+                            first: new Int64(sel.row),
+                            last: new Int64(sel.row),
+                        }),
+                    ];
+                }
+            } else {
+                this.renderParams.selection = await this.client.getSelection();
+            }
         }
     }
 
@@ -136,26 +141,29 @@ export class ListWindowProxy {
     }
 
     async updateRenderParameters(
-        offset: number,
-        _noVisibleRows: number,
-    ): Promise<RenderParameters> {
+        offset: bigint,
+        noVisibleRows: number,
+    ): Promise<Omit<RenderParameters, "scrollInfo">> {
         if (!this.client || this.renderParams.frozen) {
             // No updates when the model is frozen.
             return this.renderParams;
         }
 
-        this.renderParams.selection = await this.client.getSelection();
+        await this.updateSelection();
         this.renderParams.rows = [];
 
-        for (let i = 0; i < this.noRows; i++) {
-            const rowNo = new Int64(i + offset);
-            this.renderParams.rows.push(await this.cache.getRow(rowNo));
+        for (let i = 0; i < noVisibleRows; i++) {
+            const rowNo = toInt64(BigInt(i) + offset);
+            this.renderParams.rows.push(
+                await this.cache.getRow(toBigInt(rowNo)),
+            );
         }
 
+        this.renderParams.offset = { value: offset.toString() };
         return this.renderParams;
     }
 
-    static getDefaultRenderParameters(): RenderParameters {
+    static getDefaultRenderParameters(): Omit<RenderParameters, "scrollInfo"> {
         const rows: Row[] = [];
         return {
             frozen: false,
@@ -175,6 +183,7 @@ export class ListWindowProxy {
                 showGrid: true,
                 showHeader: true,
             },
+            offset: { value: "0" },
         };
     }
 }

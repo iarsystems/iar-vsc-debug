@@ -8,8 +8,15 @@ import { CustomEvent, CustomRequest } from "../dap/customRequest";
 import { ThriftServiceRegistry } from "iar-vsc-common/thrift/thriftServiceRegistry";
 import { ServiceLocation } from "iar-vsc-common/thrift/bindings/ServiceRegistry_types";
 import { ListWindowBackendHandler } from "./listwindowBackend";
+import { logger } from "iar-vsc-common/logger";
 
-type ViewId = string;
+/** Describes a supported listwindow */
+interface ViewDefinition {
+    // The vscode view id to attach to
+    viewId: string;
+    // The cspyserver service name
+    serviceName: string;
+}
 
 /**
  * Sets up the listwindow webviews and manages the backend connections. This
@@ -20,26 +27,28 @@ type ViewId = string;
 export class ListwindowManager {
     // Each entry is a supported listwindow, consisting of a vscode view id and
     // a cspyserver service name
-    private static readonly VIEW_DEFINITIONS: Array<[ViewId, string]> = [
-        ["iar-autos", "WIN_AUTO"],
-        ["iar-quick-watch", "WIN_QUICK_WATCH"],
-        ["iar-reg-2", "WIN_REGISTER_2"]
+    private static readonly VIEW_DEFINITIONS: ViewDefinition[] = [
+        { viewId: "iar-autos", serviceName: "WIN_AUTO" },
+        { viewId: "iar-trace", serviceName: "WIN_SLIDING_TRACE_WINDOW" },
+        { viewId: "iar-quick-watch", serviceName: "WIN_QUICK_WATCH" },
+        { viewId: "iar-reg-2", serviceName: "WIN_REGISTER_2" },
     ];
 
     private readonly windows: ListWindowBackendHandler[];
     private readonly sessions: Map<string, ThriftServiceRegistry> = new Map();
     private activeSession: string | undefined = undefined;
 
-    // Connect all registered windows to the corresponding services using
-    // the given registry.
-    async connect(sessionId: string, registry: ThriftServiceRegistry) {
-        if (!this.sessions.has(sessionId)) {
-            this.sessions.set(sessionId, registry);
-        }
-
+    setActiveSession(sessionId: string | undefined) {
         this.activeSession = sessionId;
-        for (const window of this.windows) {
-            await window.connect(registry);
+        if (sessionId) {
+            for (const window of this.windows) {
+                try {
+                    window.setActiveSession(sessionId);
+                } catch {
+                    // This is normal, since not all listwindows are supported by
+                    // all drivers
+                }
+            }
         }
     }
 
@@ -62,36 +71,35 @@ export class ListwindowManager {
             return;
         }
 
-        if (this.isActiveSession(session.id)) {
-            // This is already the active session.
+        if (this.sessions.has(session.id)) {
+            logger.warn("Tried connecting the same listwindow session twice");
             return;
         }
 
-        let registry: ThriftServiceRegistry | null = null;
-        if (!this.sessions.has(session.id)) {
-            const location: CustomRequest.RegistryLocationResponse =
-                await session.customRequest(
-                    CustomRequest.Names.GET_REGISTRY_LOCATION,
-                );
-            registry = new ThriftServiceRegistry(new ServiceLocation(location));
-        } else {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            registry = this.sessions.get(session.id)!;
-        }
+        const location: CustomRequest.RegistryLocationResponse =
+            await session.customRequest(
+                CustomRequest.Names.GET_REGISTRY_LOCATION,
+            );
+        const registry = new ThriftServiceRegistry(new ServiceLocation(location));
 
-        if (registry) {
-            await this.connect(session.id, registry);
+        for (const window of this.windows) {
+            try {
+                await window.connect(session.id, registry);
+            } catch {
+                // This is normal, since not all listwindows are supported by
+                // all drivers
+            }
         }
     }
 
     constructor(context: vscode.ExtensionContext) {
         this.windows = ListwindowManager.VIEW_DEFINITIONS.map(
-            ([viewId, serviceName]) => {
+            definition => {
                 const view = new ListwindowViewProvider(
                     context.extensionUri,
-                    viewId,
+                    definition.viewId,
                 );
-                return new ListWindowBackendHandler(view, serviceName);
+                return new ListWindowBackendHandler(view, definition.serviceName);
             },
         );
 
@@ -110,29 +118,26 @@ export class ListwindowManager {
         );
 
         context.subscriptions.push(
-            vscode.debug.onDidTerminateDebugSession(session => {
+            vscode.debug.onDidTerminateDebugSession(async(session) => {
                 if (session.type !== "cspy") {
                     return;
                 }
-
                 if (this.isActiveSession(session.id)) {
-                    // Only forget this one if it's the active session.
-                    const registry = this.sessions.get(session.id);
-                    if (registry) {
-                        for (const window of this.windows) {
-                            window.forgetBackend();
-                        }
-                    }
+                    this.setActiveSession(undefined);
                 }
+
+                for (const window of this.windows) {
+                    await window.forgetSession(session.id);
+                }
+                const registry = this.sessions.get(session.id);
+                registry?.dispose();
                 this.sessions.delete(session.id);
             }),
         );
 
         context.subscriptions.push(
-            vscode.debug.onDidChangeActiveDebugSession(async session => {
-                if (session !== undefined) {
-                    await this.connectToSession(session);
-                }
+            vscode.debug.onDidChangeActiveDebugSession(session => {
+                this.setActiveSession(session?.id);
             }),
         );
     }

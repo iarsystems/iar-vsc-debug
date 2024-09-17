@@ -39,6 +39,18 @@ export async function setupTestEnvironment(): Promise<{
     dom.window.HTMLElement.prototype.scrollIntoView = function() {
         /* JSDOM doesn't implement this, so we mock it */
     };
+    dom.window["ResizeObserver"] = class ResizeObserver {
+        /* JSDOM doesn't implement this, so we mock it */
+        observe() {
+            /* */
+        }
+        unobserve() {
+            /* */
+        }
+        disconnect() {
+            /* */
+        }
+    };
     const user = userEvent.setup({ document: dom.window.document });
 
     const api = new MockVSCodeApi(dom);

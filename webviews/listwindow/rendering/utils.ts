@@ -19,6 +19,21 @@ export function customElement(
 }
 
 /**
+ * Gets the closest ancestor of a node that is scrollable vertically
+ */
+export function getScrollParent(node: HTMLElement): HTMLElement | null {
+    let parent = node.parentElement;
+    while (parent) {
+        const style = getComputedStyle(parent);
+        if (["auto", "scroll"].includes(style.overflowY)) {
+            return parent;
+        }
+        parent = parent.parentElement;
+    }
+    return null;
+}
+
+/**
  * Converts an int64 we've been sent from the extension into a bigint (which is
  * more practical to use for comparisons and such).
  */

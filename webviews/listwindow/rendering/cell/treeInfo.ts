@@ -3,9 +3,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { css } from "@emotion/css";
-import { createCustomEvent } from "../../events";
 import { Theming } from "../styles/theming";
 import { customElement } from "../utils";
+import { MessageService } from "../../messageService";
 
 /**
  * Emitted when the the user presses an expand or collapse button
@@ -13,7 +13,7 @@ import { customElement } from "../utils";
 export type RowExpansionToggledEvent = CustomEvent<RowExpansionToggledEvent.Detail>;
 export namespace RowExpansionToggledEvent {
     export interface Detail {
-        row: number;
+        row: bigint;
     }
 }
 /**
@@ -22,7 +22,7 @@ export namespace RowExpansionToggledEvent {
 export type MoreLessToggledEvent = CustomEvent<MoreLessToggledEvent.Detail>;
 export namespace MoreLessToggledEvent {
     export interface Detail {
-        row: number;
+        row: bigint;
     }
 }
 
@@ -33,7 +33,8 @@ export namespace MoreLessToggledEvent {
 @customElement("listwindow-tree-info")
 export class TreeInfoElement extends HTMLElement {
     treeinfo = "";
-    row = -1;
+    row = -1n;
+    messageService: MessageService | undefined = undefined;
 
     connectedCallback() {
         this.classList.add(Styles.self);
@@ -57,10 +58,10 @@ export class TreeInfoElement extends HTMLElement {
 
                 button.onclick = ev => {
                     if (ev.button === 0) {
-                        this.dispatchEvent(createCustomEvent("row-expansion-toggled", {
-                            detail: { row: this.row },
-                            bubbles: true,
-                        }));
+                        this.messageService?.sendMessage({
+                            subject: "rowExpansionToggled",
+                            row: { value: this.row.toString() },
+                        });
                         // Tell the cell to not also trigger a cell click
                         ev.preventDefault();
                     }
@@ -84,12 +85,10 @@ export class TreeInfoElement extends HTMLElement {
 
                     button.onclick = ev => {
                         if (ev.button === 0) {
-                            this.dispatchEvent(
-                                createCustomEvent("more-less-toggled", {
-                                    detail: { row: this.row },
-                                    bubbles: true,
-                                }),
-                            );
+                            this.messageService?.sendMessage({
+                                subject: "moreLessToggled",
+                                row: { value: this.row.toString() },
+                            });
                             // Tell the cell to not also trigger a cell click
                             ev.preventDefault();
                         }

@@ -3,24 +3,21 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import {
-    CellClickedEvent,
     CellEditRequestedEvent,
     CellHoveredEvent,
     CellRightClickedEvent,
-    CheckboxToggledEvent,
 } from "./rendering/cell/cell";
-import { MoreLessToggledEvent, RowExpansionToggledEvent } from "./rendering/cell/treeInfo";
 import { ContextMenuItemClickEvent } from "./rendering/contextMenuService";
-import {
-    ColumnsResizedEvent,
-    ColumnClickedEvent,
-} from "./rendering/header/header";
+import { ColumnsResizedEvent } from "./rendering/header/header";
 import {
     ResizeHandleDragBeginEvent,
     ResizeHandleDragEndEvent,
     ResizeHandleMovedEvent,
 } from "./rendering/header/resizeHandle";
-import { ToolbarItemEvent, ToolbarItemHoveredEvent } from "./rendering/toolbar/toolbarItem";
+import {
+    ToolbarItemEvent,
+    ToolbarItemHoveredEvent,
+} from "./rendering/toolbar/toolbarItem";
 
 /**
  * Defines custom DOM events ({@link CustomEvent})s available in the view, each
@@ -31,15 +28,10 @@ interface CustomEventTypeMap {
     "resize-handle-drag-end": ResizeHandleDragEndEvent.Detail;
     "resize-handle-moved": ResizeHandleMovedEvent.Detail;
     "columns-resized": ColumnsResizedEvent.Detail;
-    "column-clicked": ColumnClickedEvent.Detail,
-    "cell-clicked": CellClickedEvent.Detail;
-    "cell-right-clicked": CellRightClickedEvent.Detail;
     "cell-hovered": CellHoveredEvent.Detail;
     "cell-edit-requested": CellEditRequestedEvent.Detail;
     "cell-edit-submitted": string,
-    "row-expansion-toggled": RowExpansionToggledEvent.Detail;
-    "more-less-toggled": MoreLessToggledEvent.Detail;
-    "checkbox-toggled": CheckboxToggledEvent.Detail;
+    "cell-right-clicked": CellRightClickedEvent.Detail;
     "context-menu-item-clicked": ContextMenuItemClickEvent.Detail;
     "toolbar-item-interaction": ToolbarItemEvent.Detail;
     "toolbar-item-hovered": ToolbarItemHoveredEvent.Detail;
