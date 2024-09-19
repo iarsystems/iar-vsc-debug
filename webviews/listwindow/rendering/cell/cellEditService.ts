@@ -48,6 +48,13 @@ export class CellEditService {
         });
     }
 
+    /**
+     * Remove any active cell input field.
+     */
+    clearActiveEdit() {
+        this.cancelCellInput();
+    }
+
     private setEditableStringForPendingEdit(
         info: Serializable<EditInfo>,
         position: CellPosition,
@@ -103,8 +110,9 @@ export class CellEditService {
 
     private cancelCellInput() {
         if (this.activeCellEdit) {
-            this.container.removeChild(this.activeCellEdit.textField);
+            const edit = this.activeCellEdit;
             this.activeCellEdit = undefined;
+            this.container.removeChild(edit.textField);
         }
     }
 }

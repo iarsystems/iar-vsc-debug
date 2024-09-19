@@ -61,7 +61,7 @@ export interface SerializedBigInt { value: string }
  * A message from the extension to the listwindow view
  */
 export type ExtensionMessage =
-  | { subject: "render", params: RenderParameters, ensureRowVisible?: SerializedBigInt } // Render the given data
+  | { subject: "render", params: RenderParameters } // Render the given data
   | { subject: "renderToolbar", params: Serializable<PropertyTreeItem>} // Render the given data
   | { subject: "updateToolbarItem", id: string, state: Serializable<ToolbarItemState>} // Update the state of an item in the toolbar.
   | { subject: "setResizeMode", mode: ColumnResizeMode }
@@ -94,6 +94,7 @@ export type ViewMessage =
   | { subject: "contextItemClicked", command: number } // The user clicked a context menu item
   | { subject: "keyNavigationPressed", operation: KeyNavOperation }
   | { subject: "scrollOperationPressed", operation: ScrollOperation }
+  | { subject: "absoluteScrolled", fraction: number }
   | { subject: "keyPressed", code: number, repeat: number }
   | { subject: "toolbarRendered", ids: string[] }
   | { subject: "toolbarItemInteraction", id: string, properties: Serializable<PropertyTreeItem> } // The user has interacted with a toolbar item.

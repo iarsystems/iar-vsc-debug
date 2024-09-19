@@ -175,7 +175,7 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
                 break;
             }
             case "getContextMenu": {
-                this.activePromise = this.scheduleCall<MenuItem[]>(async() => {
+                this.scheduleCall<MenuItem[]>(async() => {
                     return await this.backend.service.getContextMenu(
                         toInt64(msg.row),
                         msg.col,
@@ -312,6 +312,14 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
                         0,
                     );
                     await this.updateAfterScroll();
+                });
+                break;
+            }
+            case "absoluteScrolled": {
+                this.activePromise = this.activePromise.then(async() => {
+                    if (await this.scrollAbs(msg.fraction)) {
+                        await this.updateAfterScroll();
+                    }
                 });
                 break;
             }

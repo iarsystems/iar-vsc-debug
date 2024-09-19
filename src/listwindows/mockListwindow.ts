@@ -77,7 +77,6 @@ export class MockListwindow implements vscode.Disposable {
                             ? Number(msg.row.value) + 2
                             : Number(msg.row.value),
                     ),
-                    ensureRowVisible: msg.row,
                 });
                 break;
             case "cellDoubleClicked":
@@ -231,6 +230,8 @@ export class MockListwindow implements vscode.Disposable {
             case "externalDrop":
                 break;
             case "keyNavigationPressed":
+                break;
+            case "absoluteScrolled":
                 break;
             case "scrollOperationPressed":
                 break;
