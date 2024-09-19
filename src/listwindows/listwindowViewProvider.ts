@@ -151,8 +151,8 @@ namespace Rendering {
         <div id="toolbar""></div>
         <!-- This is used to identify drag-and-drop operations, must be unique! -->
         <div id="app" viewId="${viewId}">
-        <div id="imageroot" root="${webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "images", "icons"))}">
         </div>
+        <div id="imageroot" root="${webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "images", "icons"))}">
         </div>
 
     </body>

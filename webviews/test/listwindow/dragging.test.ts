@@ -44,7 +44,7 @@ suite("Listwindow drag & drop", () => {
         const renderParams = TestUtils.generateRenderParameters(1);
         await TestUtils.render(api, renderParams);
 
-        const gridElem = dom.window.document.querySelector("#app")!.childNodes[0]!;
+        const gridElem = dom.window.document.querySelector("#app")!.children[0]!;
 
         const msgPromise = api.waitForMessage("externalDrop");
         const dropText = "Hello drop";
