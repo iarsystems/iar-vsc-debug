@@ -10,7 +10,6 @@ import { Column } from "../../thrift/listwindow_types";
 import { SharedStyles } from "../styles/sharedStyles";
 import { Theming } from "../styles/theming";
 import { css } from "@emotion/css";
-import { ToolbarElement } from "../toolbar/toolbar";
 import { MessageService } from "../../messageService";
 
 /**
@@ -46,19 +45,20 @@ export class HeaderElement extends HTMLElement {
     clickable = false;
     resizeMode: ColumnResizeMode = "fixed";
     messageService: MessageService | undefined = undefined;
-    hasToolbar = false;
 
     private columnHeaders: HTMLElement[] = [];
 
-    public addToolbarArea(): void {
-        this.classList.toggle(Styles.toolbarToggle);
+    /**
+     * Gets the height of the header row in pixels.
+     * Since the header row uses display: contents, it can't be measured the
+     * normal way with clientHeight/offsetHeight.
+     */
+    getHeight() {
+        return this.columnHeaders[0]?.offsetHeight ?? 0;
     }
 
     connectedCallback() {
         this.classList.add(Styles.self);
-        if (this.hasToolbar) {
-            this.addToolbarArea();
-        }
         this.columnHeaders = [];
 
         for (const [i, column] of this.columns.entries()) {
@@ -278,9 +278,7 @@ namespace Styles {
         },
         css`
             >* {
-                position: sticky;
-                top: 0;
-                z-index: ${SharedStyles.ZIndices.GridHeader};
+                position: relative;
                 width: 100%;
                 user-select: none;
                 overflow: hidden;
@@ -293,11 +291,6 @@ namespace Styles {
             }
         `,
     ]);
-    export const toolbarToggle = css`
-        >* {
-            top: ${ToolbarElement.TOOLBAR_HEIGHT}px;
-        }
-    `;
     export const title = css({
         overflow: "hidden",
         textOverflow: "ellipsis",

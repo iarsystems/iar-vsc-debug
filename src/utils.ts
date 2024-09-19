@@ -18,7 +18,7 @@ export function toBigInt(value: Int64): bigint {
     if ((value.buffer[0] & (1 << 7)) === 0) {
         return big;
     }
-    return big - BigInt(2) * (BigInt(1) << BigInt(63));
+    return big - 2n * (1n << 63n);
 }
 
 /**
@@ -28,5 +28,13 @@ export function toInt64(value: SerializedBigInt | bigint): Int64 {
     if (typeof value !== "bigint") {
         value = BigInt(value.value);
     }
+
+    // The string-based Int64 constructor is broken for negative numbers (it
+    // encodes them as signed 32-bit ints), so convert negative numbers to their
+    // unsigned 64-bit equivalent first.
+    if (value < 0n) {
+        value += 2n * (1n << 63n);
+    }
+
     return new Int64(value.toString(16));
 }

@@ -45,7 +45,6 @@ export namespace SharedStyles {
     // "z-index" values used by various elements. By defining them in one place,
     // it's easier to get an overview of how the elements stack.
     export enum ZIndices {
-        GridHeader = 1,
         Toolbar = 2,
         Tooltip = 3,
         ContextMenu = 3,

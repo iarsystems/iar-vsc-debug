@@ -32,35 +32,45 @@ export class StandardListwindowController extends ListwindowController {
         return false;
     }
 
-    scrollAbs(fraction: number) {
+    override async scrollAbs(fraction: number) {
         const fullRowsPerPage = BigInt(Math.floor(this.numberOfVisibleRows));
-        let first = BigInt(Math.floor(fraction * Number(this.numberOfRows)));
-        if (first + fullRowsPerPage > this.numberOfRows) {
-            first = this.numberOfRows - fullRowsPerPage;
+        const first = BigInt(Math.floor(fraction * Number(this.numberOfRows)));
+
+        // Try to place the scrolled-to position in the middle of the window.
+        const newOffset = this.adjustOffset(first - fullRowsPerPage / 2n);
+        if (newOffset === this.offset) {
+            return false;
         }
 
-        this.offset = first;
-        return this.scroll(
+        this.offset = newOffset;
+        await this.scroll(
             ScrollOperation.kScrollTrack,
             1,
         );
+        return true;
     }
 
-    getScrollInfo() {
-        const rowsInPage = BigInt(Math.ceil(this.numberOfVisibleRows));
+    override getScrollInfo() {
+        if (this.numberOfRows === 0n) {
+            return Promise.resolve({
+                fractionBefore: 0,
+                fractionInWin: 1,
+                fractionAfter: 0,
+            });
+        }
+        const fullRowsInPage = BigInt(Math.floor(this.numberOfVisibleRows));
         return Promise.resolve({
-            offset: { value: this.offset.toString() },
-            // We lose precision here if totalRows is very large, but these
-            // numbers don't need to be exact.
+            // We lose precision here if the number of rows is very large, but
+            // these numbers don't need to be exact.
             fractionBefore: Number(this.offset) / Number(this.numberOfRows),
-            fractionInWin: Math.ceil(this.numberOfVisibleRows) / Number(this.numberOfRows),
+            fractionInWin: Math.floor(this.numberOfVisibleRows) / Number(this.numberOfRows),
             fractionAfter:
-                Number(this.numberOfRows - (this.offset + rowsInPage) - 1n) /
+                Number(this.numberOfRows - (this.offset + fullRowsInPage)) /
                 Number(this.numberOfRows),
         });
     }
 
-    postUpdate(note: Note) {
+    override postUpdate(note: Note) {
         const row = toBigInt(note.ensureVisible);
         const offset = this.adjustOffset(this.offset);
 
@@ -76,7 +86,7 @@ export class StandardListwindowController extends ListwindowController {
         return Promise.resolve();
     }
 
-    async keyNavigate(
+    override async keyNavigate(
         op: KeyNavOperation,
         repeat: number,
         flags: number,

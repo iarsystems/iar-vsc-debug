@@ -208,7 +208,7 @@ export class SlidingListwindowController extends ListwindowController {
         const fullRowsInPage = Math.floor(this.numberOfVisibleRows);
         let scroll = Number(this.offset);
         if (rowToShow < scroll || rowToShow >= scroll + fullRowsInPage) {
-            scroll = rowToShow - fullRowsInPage / 2;
+            scroll = Math.floor(rowToShow - fullRowsInPage / 2);
         }
         const shiftAmount = await this.shiftAfterScroll(scroll, allowAdd);
         return rowToShow + shiftAmount;
