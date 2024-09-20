@@ -226,10 +226,21 @@ class ContextMenuItemElement extends HTMLElement {
         }
         this.appendChild(check);
 
+        // The item text *may* contain a shortcut key, separated by a tab character.
+        const labelParts = this.item.text.split("\t");
+
         const label = document.createElement("span");
-        label.textContent = this.item.text;
+        label.textContent = labelParts[0] ?? this.item.text;
         label.classList.add(Styles.menuItemLabel);
         this.appendChild(label);
+
+        const shortcut = labelParts[1];
+        if (shortcut) {
+            const shortcutSpan = document.createElement("span");
+            shortcutSpan.textContent = shortcut;
+            shortcutSpan.classList.add(Styles.menuItemShortcut);
+            this.appendChild(shortcutSpan);
+        }
 
         if (this.item.children.length > 0) {
             const indicator = document.createElement("span");
@@ -308,6 +319,12 @@ namespace Styles {
         padding: "0 26px",
         maxHeight: "100%",
         flex: "1 1 auto",
+    });
+    export const menuItemShortcut = css({
+        padding: "0 26px",
+        maxHeight: "100%",
+        flex: "2 1 auto",
+        textAlign: "right",
     });
     export const menuItemSeparator = css({
         margin: "5px 0 !important",
