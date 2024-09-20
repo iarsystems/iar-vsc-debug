@@ -195,7 +195,11 @@ class ContextMenuItemElement extends HTMLElement {
         if (!this.item) {
             return;
         }
-        this.classList.add(this.item.enabled ? Styles.menuItemEnabled : Styles.menuItemDisabled);
+        this.classList.add(
+            this.item.enabled || this.item.children.length > 0
+                ? Styles.menuItemEnabled
+                : Styles.menuItemDisabled,
+        );
 
         if (this.item.text === "") {
             const separator = document.createElement("span");
@@ -248,24 +252,22 @@ class ContextMenuItemElement extends HTMLElement {
             indicator.classList.add("codicon", "codicon-chevron-right");
             this.appendChild(indicator);
 
-            if (this.item.enabled) {
-                const subMenu = new ContextMenuElement();
-                subMenu.items = this.item.children;
-                this.appendChild(subMenu);
+            const subMenu = new ContextMenuElement();
+            subMenu.items = this.item.children;
+            this.appendChild(subMenu);
 
-                this.onmouseenter = () => {
-                    subMenu.beforeOpen();
-                    FloatingUi.computePosition(this, subMenu, {
-                        placement: "right-start",
-                        middleware: [FloatingUi.flip(), FloatingUi.shift()],
-                    }).then(({ x, y }) => {
-                        subMenu.open(x, y);
-                    });
-                };
-                this.onmouseleave = () => {
-                    subMenu.close();
-                };
-            }
+            this.onmouseenter = () => {
+                subMenu.beforeOpen();
+                FloatingUi.computePosition(this, subMenu, {
+                    placement: "right-start",
+                    middleware: [FloatingUi.flip(), FloatingUi.shift()],
+                }).then(({ x, y }) => {
+                    subMenu.open(x, y);
+                });
+            };
+            this.onmouseleave = () => {
+                subMenu.close();
+            };
         }
     }
 }
