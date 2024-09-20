@@ -391,7 +391,10 @@ class ContextMenuItemElement extends HTMLElement {
         const labelParts = this.item.text.split("\t");
 
         const label = document.createElement("span");
-        label.textContent = labelParts[0] ?? this.item.text;
+        const labelText = labelParts[0] ?? this.item.text;
+        // Ampersands are used to denote the shortcut key in the menu item text,
+        // but we don't support that here.
+        label.textContent = labelText.replaceAll("&", "");
         label.classList.add(Styles.menuItemLabel);
         this.appendChild(label);
 
