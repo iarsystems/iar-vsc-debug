@@ -3934,6 +3934,497 @@ ListWindowBackend_keyNav_result.prototype.write = function(output) {
   return;
 };
 
+var ListWindowBackend_getToolbarDefinition_args = function(args) {
+};
+ListWindowBackend_getToolbarDefinition_args.prototype = {};
+ListWindowBackend_getToolbarDefinition_args.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    input.skip(ftype);
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+ListWindowBackend_getToolbarDefinition_args.prototype.write = function(output) {
+  output.writeStructBegin('ListWindowBackend_getToolbarDefinition_args');
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var ListWindowBackend_getToolbarDefinition_result = function(args) {
+  this.success = null;
+  if (args) {
+    if (args.success !== undefined && args.success !== null) {
+      this.success = new shared_ttypes.PropertyTreeItem(args.success);
+    }
+  }
+};
+ListWindowBackend_getToolbarDefinition_result.prototype = {};
+ListWindowBackend_getToolbarDefinition_result.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 0:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.success = new shared_ttypes.PropertyTreeItem();
+        this.success.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+ListWindowBackend_getToolbarDefinition_result.prototype.write = function(output) {
+  output.writeStructBegin('ListWindowBackend_getToolbarDefinition_result');
+  if (this.success !== null && this.success !== undefined) {
+    output.writeFieldBegin('success', Thrift.Type.STRUCT, 0);
+    this.success.write(output);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var ListWindowBackend_setToolbarItemValue_args = function(args) {
+  this.id = null;
+  this.tree = null;
+  if (args) {
+    if (args.id !== undefined && args.id !== null) {
+      this.id = args.id;
+    }
+    if (args.tree !== undefined && args.tree !== null) {
+      this.tree = new shared_ttypes.PropertyTreeItem(args.tree);
+    }
+  }
+};
+ListWindowBackend_setToolbarItemValue_args.prototype = {};
+ListWindowBackend_setToolbarItemValue_args.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.STRING) {
+        this.id = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.tree = new shared_ttypes.PropertyTreeItem();
+        this.tree.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+ListWindowBackend_setToolbarItemValue_args.prototype.write = function(output) {
+  output.writeStructBegin('ListWindowBackend_setToolbarItemValue_args');
+  if (this.id !== null && this.id !== undefined) {
+    output.writeFieldBegin('id', Thrift.Type.STRING, 1);
+    output.writeString(this.id);
+    output.writeFieldEnd();
+  }
+  if (this.tree !== null && this.tree !== undefined) {
+    output.writeFieldBegin('tree', Thrift.Type.STRUCT, 2);
+    this.tree.write(output);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var ListWindowBackend_setToolbarItemValue_result = function(args) {
+  this.success = null;
+  if (args) {
+    if (args.success !== undefined && args.success !== null) {
+      this.success = args.success;
+    }
+  }
+};
+ListWindowBackend_setToolbarItemValue_result.prototype = {};
+ListWindowBackend_setToolbarItemValue_result.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 0:
+      if (ftype == Thrift.Type.BOOL) {
+        this.success = input.readBool().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+ListWindowBackend_setToolbarItemValue_result.prototype.write = function(output) {
+  output.writeStructBegin('ListWindowBackend_setToolbarItemValue_result');
+  if (this.success !== null && this.success !== undefined) {
+    output.writeFieldBegin('success', Thrift.Type.BOOL, 0);
+    output.writeBool(this.success);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var ListWindowBackend_getToolbarItemValue_args = function(args) {
+  this.id = null;
+  if (args) {
+    if (args.id !== undefined && args.id !== null) {
+      this.id = args.id;
+    }
+  }
+};
+ListWindowBackend_getToolbarItemValue_args.prototype = {};
+ListWindowBackend_getToolbarItemValue_args.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.STRING) {
+        this.id = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+ListWindowBackend_getToolbarItemValue_args.prototype.write = function(output) {
+  output.writeStructBegin('ListWindowBackend_getToolbarItemValue_args');
+  if (this.id !== null && this.id !== undefined) {
+    output.writeFieldBegin('id', Thrift.Type.STRING, 1);
+    output.writeString(this.id);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var ListWindowBackend_getToolbarItemValue_result = function(args) {
+  this.success = null;
+  if (args) {
+    if (args.success !== undefined && args.success !== null) {
+      this.success = args.success;
+    }
+  }
+};
+ListWindowBackend_getToolbarItemValue_result.prototype = {};
+ListWindowBackend_getToolbarItemValue_result.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 0:
+      if (ftype == Thrift.Type.STRING) {
+        this.success = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+ListWindowBackend_getToolbarItemValue_result.prototype.write = function(output) {
+  output.writeStructBegin('ListWindowBackend_getToolbarItemValue_result');
+  if (this.success !== null && this.success !== undefined) {
+    output.writeFieldBegin('success', Thrift.Type.STRING, 0);
+    output.writeString(this.success);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var ListWindowBackend_getToolbarItemState_args = function(args) {
+  this.id = null;
+  if (args) {
+    if (args.id !== undefined && args.id !== null) {
+      this.id = args.id;
+    }
+  }
+};
+ListWindowBackend_getToolbarItemState_args.prototype = {};
+ListWindowBackend_getToolbarItemState_args.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.STRING) {
+        this.id = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+ListWindowBackend_getToolbarItemState_args.prototype.write = function(output) {
+  output.writeStructBegin('ListWindowBackend_getToolbarItemState_args');
+  if (this.id !== null && this.id !== undefined) {
+    output.writeFieldBegin('id', Thrift.Type.STRING, 1);
+    output.writeString(this.id);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var ListWindowBackend_getToolbarItemState_result = function(args) {
+  this.success = null;
+  if (args) {
+    if (args.success !== undefined && args.success !== null) {
+      this.success = new ttypes.ToolbarItemState(args.success);
+    }
+  }
+};
+ListWindowBackend_getToolbarItemState_result.prototype = {};
+ListWindowBackend_getToolbarItemState_result.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 0:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.success = new ttypes.ToolbarItemState();
+        this.success.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+ListWindowBackend_getToolbarItemState_result.prototype.write = function(output) {
+  output.writeStructBegin('ListWindowBackend_getToolbarItemState_result');
+  if (this.success !== null && this.success !== undefined) {
+    output.writeFieldBegin('success', Thrift.Type.STRUCT, 0);
+    this.success.write(output);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var ListWindowBackend_getToolbarItemTooltip_args = function(args) {
+  this.id = null;
+  if (args) {
+    if (args.id !== undefined && args.id !== null) {
+      this.id = args.id;
+    }
+  }
+};
+ListWindowBackend_getToolbarItemTooltip_args.prototype = {};
+ListWindowBackend_getToolbarItemTooltip_args.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.STRING) {
+        this.id = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+ListWindowBackend_getToolbarItemTooltip_args.prototype.write = function(output) {
+  output.writeStructBegin('ListWindowBackend_getToolbarItemTooltip_args');
+  if (this.id !== null && this.id !== undefined) {
+    output.writeFieldBegin('id', Thrift.Type.STRING, 1);
+    output.writeString(this.id);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var ListWindowBackend_getToolbarItemTooltip_result = function(args) {
+  this.success = null;
+  if (args) {
+    if (args.success !== undefined && args.success !== null) {
+      this.success = args.success;
+    }
+  }
+};
+ListWindowBackend_getToolbarItemTooltip_result.prototype = {};
+ListWindowBackend_getToolbarItemTooltip_result.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 0:
+      if (ftype == Thrift.Type.STRING) {
+        this.success = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+ListWindowBackend_getToolbarItemTooltip_result.prototype.write = function(output) {
+  output.writeStructBegin('ListWindowBackend_getToolbarItemTooltip_result');
+  if (this.success !== null && this.success !== undefined) {
+    output.writeFieldBegin('success', Thrift.Type.STRING, 0);
+    output.writeString(this.success);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
 var ListWindowBackendClient = exports.Client = function(input, output) {
   this.input = input;
   this.output = (!output) ? input : output;
@@ -6164,4 +6655,292 @@ ListWindowBackendClient.prototype.recv_keyNav = function() {
     return result.success;
   }
   throw 'keyNav failed: unknown result';
+};
+
+ListWindowBackendClient.prototype.getToolbarDefinition = function(callback) {
+  this.send_getToolbarDefinition(callback); 
+  if (!callback) {
+    return this.recv_getToolbarDefinition();
+  }
+};
+
+ListWindowBackendClient.prototype.send_getToolbarDefinition = function(callback) {
+  var args = new ListWindowBackend_getToolbarDefinition_args();
+  try {
+    this.output.writeMessageBegin('getToolbarDefinition', Thrift.MessageType.CALL, this.seqid);
+    args.write(this.output);
+    this.output.writeMessageEnd();
+    if (callback) {
+      var self = this;
+      this.output.getTransport().flush(true, function() {
+        var result = null;
+        try {
+          result = self.recv_getToolbarDefinition();
+        } catch (e) {
+          result = e;
+        }
+        callback(result);
+      });
+    } else {
+      return this.output.getTransport().flush();
+    }
+  }
+  catch (e) {
+    if (typeof this.output.getTransport().reset === 'function') {
+      this.output.getTransport().reset();
+    }
+    throw e;
+  }
+};
+
+ListWindowBackendClient.prototype.recv_getToolbarDefinition = function() {
+  var ret = this.input.readMessageBegin();
+  var mtype = ret.mtype;
+  if (mtype == Thrift.MessageType.EXCEPTION) {
+    var x = new Thrift.TApplicationException();
+    x.read(this.input);
+    this.input.readMessageEnd();
+    throw x;
+  }
+  var result = new ListWindowBackend_getToolbarDefinition_result();
+  result.read(this.input);
+  this.input.readMessageEnd();
+
+  if (null !== result.success) {
+    return result.success;
+  }
+  throw 'getToolbarDefinition failed: unknown result';
+};
+
+ListWindowBackendClient.prototype.setToolbarItemValue = function(id, tree, callback) {
+  this.send_setToolbarItemValue(id, tree, callback); 
+  if (!callback) {
+    return this.recv_setToolbarItemValue();
+  }
+};
+
+ListWindowBackendClient.prototype.send_setToolbarItemValue = function(id, tree, callback) {
+  var params = {
+    id: id,
+    tree: tree
+  };
+  var args = new ListWindowBackend_setToolbarItemValue_args(params);
+  try {
+    this.output.writeMessageBegin('setToolbarItemValue', Thrift.MessageType.CALL, this.seqid);
+    args.write(this.output);
+    this.output.writeMessageEnd();
+    if (callback) {
+      var self = this;
+      this.output.getTransport().flush(true, function() {
+        var result = null;
+        try {
+          result = self.recv_setToolbarItemValue();
+        } catch (e) {
+          result = e;
+        }
+        callback(result);
+      });
+    } else {
+      return this.output.getTransport().flush();
+    }
+  }
+  catch (e) {
+    if (typeof this.output.getTransport().reset === 'function') {
+      this.output.getTransport().reset();
+    }
+    throw e;
+  }
+};
+
+ListWindowBackendClient.prototype.recv_setToolbarItemValue = function() {
+  var ret = this.input.readMessageBegin();
+  var mtype = ret.mtype;
+  if (mtype == Thrift.MessageType.EXCEPTION) {
+    var x = new Thrift.TApplicationException();
+    x.read(this.input);
+    this.input.readMessageEnd();
+    throw x;
+  }
+  var result = new ListWindowBackend_setToolbarItemValue_result();
+  result.read(this.input);
+  this.input.readMessageEnd();
+
+  if (null !== result.success) {
+    return result.success;
+  }
+  throw 'setToolbarItemValue failed: unknown result';
+};
+
+ListWindowBackendClient.prototype.getToolbarItemValue = function(id, callback) {
+  this.send_getToolbarItemValue(id, callback); 
+  if (!callback) {
+    return this.recv_getToolbarItemValue();
+  }
+};
+
+ListWindowBackendClient.prototype.send_getToolbarItemValue = function(id, callback) {
+  var params = {
+    id: id
+  };
+  var args = new ListWindowBackend_getToolbarItemValue_args(params);
+  try {
+    this.output.writeMessageBegin('getToolbarItemValue', Thrift.MessageType.CALL, this.seqid);
+    args.write(this.output);
+    this.output.writeMessageEnd();
+    if (callback) {
+      var self = this;
+      this.output.getTransport().flush(true, function() {
+        var result = null;
+        try {
+          result = self.recv_getToolbarItemValue();
+        } catch (e) {
+          result = e;
+        }
+        callback(result);
+      });
+    } else {
+      return this.output.getTransport().flush();
+    }
+  }
+  catch (e) {
+    if (typeof this.output.getTransport().reset === 'function') {
+      this.output.getTransport().reset();
+    }
+    throw e;
+  }
+};
+
+ListWindowBackendClient.prototype.recv_getToolbarItemValue = function() {
+  var ret = this.input.readMessageBegin();
+  var mtype = ret.mtype;
+  if (mtype == Thrift.MessageType.EXCEPTION) {
+    var x = new Thrift.TApplicationException();
+    x.read(this.input);
+    this.input.readMessageEnd();
+    throw x;
+  }
+  var result = new ListWindowBackend_getToolbarItemValue_result();
+  result.read(this.input);
+  this.input.readMessageEnd();
+
+  if (null !== result.success) {
+    return result.success;
+  }
+  throw 'getToolbarItemValue failed: unknown result';
+};
+
+ListWindowBackendClient.prototype.getToolbarItemState = function(id, callback) {
+  this.send_getToolbarItemState(id, callback); 
+  if (!callback) {
+    return this.recv_getToolbarItemState();
+  }
+};
+
+ListWindowBackendClient.prototype.send_getToolbarItemState = function(id, callback) {
+  var params = {
+    id: id
+  };
+  var args = new ListWindowBackend_getToolbarItemState_args(params);
+  try {
+    this.output.writeMessageBegin('getToolbarItemState', Thrift.MessageType.CALL, this.seqid);
+    args.write(this.output);
+    this.output.writeMessageEnd();
+    if (callback) {
+      var self = this;
+      this.output.getTransport().flush(true, function() {
+        var result = null;
+        try {
+          result = self.recv_getToolbarItemState();
+        } catch (e) {
+          result = e;
+        }
+        callback(result);
+      });
+    } else {
+      return this.output.getTransport().flush();
+    }
+  }
+  catch (e) {
+    if (typeof this.output.getTransport().reset === 'function') {
+      this.output.getTransport().reset();
+    }
+    throw e;
+  }
+};
+
+ListWindowBackendClient.prototype.recv_getToolbarItemState = function() {
+  var ret = this.input.readMessageBegin();
+  var mtype = ret.mtype;
+  if (mtype == Thrift.MessageType.EXCEPTION) {
+    var x = new Thrift.TApplicationException();
+    x.read(this.input);
+    this.input.readMessageEnd();
+    throw x;
+  }
+  var result = new ListWindowBackend_getToolbarItemState_result();
+  result.read(this.input);
+  this.input.readMessageEnd();
+
+  if (null !== result.success) {
+    return result.success;
+  }
+  throw 'getToolbarItemState failed: unknown result';
+};
+
+ListWindowBackendClient.prototype.getToolbarItemTooltip = function(id, callback) {
+  this.send_getToolbarItemTooltip(id, callback); 
+  if (!callback) {
+    return this.recv_getToolbarItemTooltip();
+  }
+};
+
+ListWindowBackendClient.prototype.send_getToolbarItemTooltip = function(id, callback) {
+  var params = {
+    id: id
+  };
+  var args = new ListWindowBackend_getToolbarItemTooltip_args(params);
+  try {
+    this.output.writeMessageBegin('getToolbarItemTooltip', Thrift.MessageType.CALL, this.seqid);
+    args.write(this.output);
+    this.output.writeMessageEnd();
+    if (callback) {
+      var self = this;
+      this.output.getTransport().flush(true, function() {
+        var result = null;
+        try {
+          result = self.recv_getToolbarItemTooltip();
+        } catch (e) {
+          result = e;
+        }
+        callback(result);
+      });
+    } else {
+      return this.output.getTransport().flush();
+    }
+  }
+  catch (e) {
+    if (typeof this.output.getTransport().reset === 'function') {
+      this.output.getTransport().reset();
+    }
+    throw e;
+  }
+};
+
+ListWindowBackendClient.prototype.recv_getToolbarItemTooltip = function() {
+  var ret = this.input.readMessageBegin();
+  var mtype = ret.mtype;
+  if (mtype == Thrift.MessageType.EXCEPTION) {
+    var x = new Thrift.TApplicationException();
+    x.read(this.input);
+    this.input.readMessageEnd();
+    throw x;
+  }
+  var result = new ListWindowBackend_getToolbarItemTooltip_result();
+  result.read(this.input);
+  this.input.readMessageEnd();
+
+  if (null !== result.success) {
+    return result.success;
+  }
+  throw 'getToolbarItemTooltip failed: unknown result';
 };

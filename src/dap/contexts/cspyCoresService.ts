@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
-import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
+import { ThriftServiceRegistry } from "iar-vsc-common/thrift/thriftServiceRegistry";
 import { DEBUGGER_SERVICE } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { Mutex } from "async-mutex";
 import Int64 = require("node-int64");
@@ -26,13 +26,13 @@ export class CSpyCoresService implements Disposable.Disposable {
      * {@link CSpyCoresService} instance per debug session/service manager (since it needs to be the single authority on
      * what core is focused).
      */
-    static async instantiate(serviceManager: ThriftServiceManager): Promise<CSpyCoresService> {
-        const dbgr = await serviceManager.findService(DEBUGGER_SERVICE, Debugger);
+    static async instantiate(serviceRegistry: ThriftServiceRegistry): Promise<CSpyCoresService> {
+        const dbgr = await serviceRegistry.findService(DEBUGGER_SERVICE, Debugger);
         const nCores = await dbgr.service.getNumberOfCores();
         dbgr.close();
         // We don't need the cores window if we're running single-core. This lets us support single-core debugging
         // when the cores window is unavailable (i.e. for some 8.X ide versions).
-        const coresWindow = nCores > 1 ? await ListWindowClient.instantiate(serviceManager, WindowNames.CORES, 1) : undefined;
+        const coresWindow = nCores > 1 ? await ListWindowClient.instantiate(serviceRegistry, WindowNames.CORES, 1) : undefined;
         return new CSpyCoresService(coresWindow);
     }
 

@@ -29,6 +29,21 @@ suite("Listwindow context menus", () => {
             menu[0]!.text,
         );
 
+        const shortcutItem = menu.find(item => item.text.includes("\t"));
+        Assert(shortcutItem);
+        const parts = shortcutItem.text.split("\t");
+        await queries.findByText(
+            dom.window.document.documentElement,
+            parts[0]!,
+            { exact: true },
+        );
+        await queries.findByText(
+            dom.window.document.documentElement,
+            parts[1]!,
+            { exact: true },
+        );
+
+
         const checkedItem = menu.find(item => item.checked);
         if (checkedItem) {
             const elem = await queries.findByText(
@@ -159,6 +174,12 @@ function getMockMenu(): MenuItem[] {
         new MenuItem({
             checked: true,
             text: "DisabledItem",
+            command: 0,
+            enabled: false,
+        }),
+        new MenuItem({
+            checked: true,
+            text: "WithShortcut\tShift+A",
             command: 0,
             enabled: false,
         }),

@@ -6,6 +6,14 @@
 import Int64 = require('node-int64');
 
 
+export declare class OptionsServiceError extends Thrift.TException {
+  description: string;
+
+    constructor(args?: { description: string; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
 export declare class CreateSessionRequest {
   projectPath: string;
   configurationName: string;
@@ -64,33 +72,6 @@ export declare class UpdateOptionValueResponse {
   optionId: string;
 
     constructor(args?: { sessionId: Id; result: Success; optionId: string; });
-  read(input: Object): void;
-  write(input: Object): void;
-}
-
-/**
- * Defines the data needed for committing the current changes.
- * 
- * This data is used for committing all the updated options to disk, if possible.
- */
-export declare class CommitChangesRequest {
-  sessionId: Id;
-
-    constructor(args?: { sessionId: Id; });
-  read(input: Object): void;
-  write(input: Object): void;
-}
-
-/**
- * Defines the response for commiting changed options
- */
-export declare class CommitChangesResponse {
-  sessionId: Id;
-  result: Success;
-  optionId: string;
-  value: string;
-
-    constructor(args?: { sessionId: Id; result: Success; optionId: string; value: string; });
   read(input: Object): void;
   write(input: Object): void;
 }
@@ -154,6 +135,61 @@ export declare class GetOptionTreeResponse {
   success: Success;
 
     constructor(args?: { sessionId: Id; tree: Tree; success: Success; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
+export declare class OptionValue {
+  optionDefinitionId: string;
+  data: string;
+
+    constructor(args?: { optionDefinitionId: string; data: string; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
+export declare class VerificationError {
+  optionDefinitionId: string;
+  errorMessage: string;
+
+    constructor(args?: { optionDefinitionId: string; errorMessage: string; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
+export declare class VerifyOptionStateRequest {
+  sessionId: Id;
+  optionValues: OptionValue[];
+
+    constructor(args?: { sessionId: Id; optionValues: OptionValue[]; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
+export declare class VerifyOptionStateResponse {
+  sessionId: Id;
+  tree: Tree;
+  success: Success;
+  verificationErrors: VerificationError[];
+
+    constructor(args?: { sessionId: Id; tree: Tree; success: Success; verificationErrors: VerificationError[]; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
+export declare class CommitOptionStateRequest {
+  sessionId: Id;
+
+    constructor(args?: { sessionId: Id; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
+export declare class CommitOptionStateResponse {
+  sessionId: Id;
+  success: Success;
+
+    constructor(args?: { sessionId: Id; success: Success; });
   read(input: Object): void;
   write(input: Object): void;
 }

@@ -4,7 +4,7 @@
 // DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
 //
 import Int64 = require('node-int64');
-
+import { Thrift } from 'thrift';
 
 /**
  * See DcResult in CoreUtil/include/DcCommon.h
@@ -218,6 +218,16 @@ export declare class Breakpoint {
   valid: boolean;
 
     constructor(args?: { id: number; ule: string; category: string; descriptor: string; description: string; enabled: boolean; isUleBased: boolean; accessType: AccessType; valid: boolean; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
+export declare class PropertyTreeItem {
+  key: string;
+  value: string;
+  children: PropertyTreeItem[];
+
+    constructor(args?: { key: string; value: string; children: PropertyTreeItem[]; });
   read(input: Object): void;
   write(input: Object): void;
 }

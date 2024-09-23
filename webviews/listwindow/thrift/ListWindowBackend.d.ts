@@ -176,4 +176,24 @@ export declare class Client extends HeartbeatService.Client {
   keyNav(op: KeyNavOperation, repeat: number, rowsInPage: number): Q.Promise<number>;
 
   keyNav(op: KeyNavOperation, repeat: number, rowsInPage: number, callback?: (data: number)=>void): void;
+
+  getToolbarDefinition(): Q.Promise<PropertyTreeItem>;
+
+  getToolbarDefinition(callback?: (data: PropertyTreeItem)=>void): void;
+
+  setToolbarItemValue(id: string, tree: PropertyTreeItem): Q.Promise<boolean>;
+
+  setToolbarItemValue(id: string, tree: PropertyTreeItem, callback?: (data: boolean)=>void): void;
+
+  getToolbarItemValue(id: string): Q.Promise<string>;
+
+  getToolbarItemValue(id: string, callback?: (data: string)=>void): void;
+
+  getToolbarItemState(id: string): Q.Promise<ToolbarItemState>;
+
+  getToolbarItemState(id: string, callback?: (data: ToolbarItemState)=>void): void;
+
+  getToolbarItemTooltip(id: string): Q.Promise<string>;
+
+  getToolbarItemTooltip(id: string, callback?: (data: string)=>void): void;
 }

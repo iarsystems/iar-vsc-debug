@@ -52,7 +52,6 @@ export class ThemeProvider implements vscode.WebviewViewProvider, vscode.Disposa
         this.disposables.push(
             vscode.debug.onDidReceiveDebugSessionCustomEvent(async ev => {
                 if (ev.event === CustomEvent.Names.THEME_REQUESTED) {
-                    console.log("Got " + ev.body.id);
                     const vars = await this.getCssVars();
 
                     const body: CustomRequest.ThemeResolvedArgs = {
@@ -82,7 +81,6 @@ export class ThemeProvider implements vscode.WebviewViewProvider, vscode.Disposa
                         },
                     };
 
-                    console.log("Resolving " + ev.body.id);
                     ev.session.customRequest(
                         CustomRequest.Names.THEME_RESOLVED,
                         body,

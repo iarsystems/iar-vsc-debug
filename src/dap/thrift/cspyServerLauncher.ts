@@ -7,16 +7,17 @@ import { logger } from "@vscode/debugadapter";
 import { LogLevel } from "@vscode/debugadapter/lib/logger";
 import { IarOsUtils } from "iar-vsc-common/osUtils";
 import { DEBUGGER_SERVICE } from "iar-vsc-common/thrift/bindings/cspy_types";
-import { ProcessMonitor, ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
+import { ProcessMonitor, ThriftServiceRegistryProcess } from "iar-vsc-common/thrift/thriftServiceRegistryProcess";
+import { ThriftServiceRegistry } from "iar-vsc-common/thrift/thriftServiceRegistry";
 import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
 
-export namespace CSpyServerServiceManager {
+export namespace CSpyServerLauncher {
 
     /**
-     * Starts CSpyServer using the given workbench, and returns a {@link ThriftServiceManager} which can be used to
+     * Starts CSpyServer using the given workbench, and returns a {@link ThriftServiceRegistryProcess} which can be used to
      * communicate with the CSpyServer process.
      */
-    export function fromWorkbench(workbenchPath: string, numCores: number): Promise<ThriftServiceManager> {
+    export function fromWorkbench(workbenchPath: string, numCores: number): Promise<ThriftServiceRegistryProcess> {
         const cspyServerPath = Path.join(workbenchPath, "common/bin/CSpyServer2" + IarOsUtils.executableExtension());
         const args = ["-standalone", "-sockets"];
         if (numCores > 1) {
@@ -27,11 +28,11 @@ export namespace CSpyServerServiceManager {
             stderr: data => logger.error(data),
             exit:   code => logger.log(`CSpyServer exited with code ${code}`, code === 0 ? LogLevel.Verbose : LogLevel.Error),
         };
-        const stopCspyService = async function(manager: ThriftServiceManager) {
-            const dbgr = await manager.findService(DEBUGGER_SERVICE, Debugger);
+        const stopCspyService = async function(registry: ThriftServiceRegistry) {
+            const dbgr = await registry.findService(DEBUGGER_SERVICE, Debugger);
             await dbgr.service.exit();
             dbgr.close();
         };
-        return ThriftServiceManager.launch(cspyServerPath, args, stopCspyService, DEBUGGER_SERVICE, processMonitor);
+        return ThriftServiceRegistryProcess.launch(cspyServerPath, args, stopCspyService, DEBUGGER_SERVICE, processMonitor);
     }
 }

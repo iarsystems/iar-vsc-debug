@@ -34,7 +34,7 @@ suite("Listwindow drag & drop", () => {
         });
         const msg = await msgPromise;
         Assert.strictEqual(msg.col, 0);
-        Assert.strictEqual(msg.row, 0);
+        Assert.strictEqual(msg.row.value, "0");
         Assert.strictEqual(msg.droppedText, dropText);
     });
 
@@ -44,7 +44,7 @@ suite("Listwindow drag & drop", () => {
         const renderParams = TestUtils.generateRenderParameters(1);
         await TestUtils.render(api, renderParams);
 
-        const gridElem = dom.window.document.querySelector("#app")!.childNodes[0]!;
+        const gridElem = dom.window.document.querySelector("#app")!.children[0]!;
 
         const msgPromise = api.waitForMessage("externalDrop");
         const dropText = "Hello drop";
@@ -56,7 +56,7 @@ suite("Listwindow drag & drop", () => {
         });
         const msg = await msgPromise;
         Assert.strictEqual(msg.col, -1);
-        Assert.strictEqual(msg.row, -1);
+        Assert.strictEqual(msg.row.value, "-1");
         Assert.strictEqual(msg.droppedText, dropText);
     });
 });

@@ -21,12 +21,15 @@ interface ActiveCellEdit {
 export class CellEditService {
     private activeCellEdit: ActiveCellEdit | undefined = undefined;
 
-    constructor(private readonly messageService: MessageService) {
+    constructor(
+        private readonly container: HTMLElement,
+        private readonly messageService: MessageService,
+    ) {
         this.messageService.addMessageHandler(msg => {
             if (msg.subject === "editableStringReply") {
                 this.setEditableStringForPendingEdit(msg.info, {
                     col: msg.col,
-                    row: msg.row,
+                    row: BigInt(msg.row.value),
                 });
             }
         });
@@ -41,8 +44,15 @@ export class CellEditService {
         this.messageService.sendMessage({
             subject: "getEditableString",
             col: position.col,
-            row: position.row,
+            row: { value: position.row.toString() },
         });
+    }
+
+    /**
+     * Remove any active cell input field.
+     */
+    clearActiveEdit() {
+        this.cancelCellInput();
     }
 
     private setEditableStringForPendingEdit(
@@ -70,15 +80,15 @@ export class CellEditService {
 
         textField.style.position = "absolute";
         // The cell bounds are in client (i.e. "viewport") coordinates, but we
-        // want them in page coordinates.
-        textField.style.left = rect.left + window.scrollX + "px";
-        textField.style.top = rect.top + window.scrollY + "px";
+        // want them relative to its offsetParent.
+        textField.style.left = cellElem.offsetLeft + "px";
+        textField.style.top = cellElem.offsetTop + "px";
         textField.style.width = rect.width + "px";
         textField.style.height = rect.height + "px";
         textField.width = rect.width;
         textField.height = rect.height;
 
-        document.body.appendChild(textField);
+        this.container.appendChild(textField);
 
         textField.addEventListener("canceled", () => this.cancelCellInput());
         textField.addEventListener("cell-edit-submitted", ev => {
@@ -86,7 +96,7 @@ export class CellEditService {
                 this.messageService.sendMessage({
                     subject: "cellEdited",
                     col: position.col,
-                    row: position.row,
+                    row: { value: position.row.toString() },
                     newValue: ev.detail,
                 });
             }
@@ -100,8 +110,9 @@ export class CellEditService {
 
     private cancelCellInput() {
         if (this.activeCellEdit) {
-            document.body.removeChild(this.activeCellEdit.textField);
+            const edit = this.activeCellEdit;
             this.activeCellEdit = undefined;
+            this.container.removeChild(edit.textField);
         }
     }
 }

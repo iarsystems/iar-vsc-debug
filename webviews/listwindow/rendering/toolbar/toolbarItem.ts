@@ -4,20 +4,23 @@
 
 import { css } from "@emotion/css";
 import { customElement } from "../utils";
-import { ToolbarItem, ToolbarItemType, TreeData } from "./toolbarConstants";
+import { ToolbarItem, ToolbarItemType } from "./toolbarConstants";
 import { createCustomEvent } from "../../events";
-import { packTree, VsCodeIconMap } from "./toolbarUtils";
 import { Checkbox } from "@vscode/webview-ui-toolkit/dist/checkbox";
 import { Button } from "@vscode/webview-ui-toolkit/dist/button";
 import { Dropdown } from "@vscode/webview-ui-toolkit/dist/dropdown";
 import { SharedStyles } from "../styles/sharedStyles";
 import { HoverService } from "../hoverService";
+import { ExtensionMessage, Serializable } from "../../protocol";
+import { ToolbarItemState } from "../../thrift/listwindow_types";
+import { IconMap } from "../icons";
+import { PropertyTreeItem } from "../../thrift/shared_types";
 
 export type ToolbarItemEvent = CustomEvent<ToolbarItemEvent.Detail>;
 export namespace ToolbarItemEvent {
     export interface Detail {
         id: string;
-        properties: string;
+        properties: Serializable<PropertyTreeItem>;
     }
 }
 
@@ -36,19 +39,15 @@ function addVsCodeIcon(
     iconId: string,
     defaultImage = "kebab-vertical",
 ): void {
-    let iconName = VsCodeIconMap.get(iconId);
-    if (iconName === undefined) {
-        iconName = defaultImage;
+    const iconSpec = IconMap.get(iconId);
+    if (iconSpec !== undefined) {
+        element.classList.add("codicon", `codicon-${iconSpec[0]}`);
+        if (iconSpec[1] !== undefined) {
+            element.style.color = iconSpec[1] as string;
+        }
+    } else {
+        element.classList.add("codicon", `codicon-${defaultImage}`);
     }
-    element.classList.add("codicon", `codicon-${iconName}`);
-}
-
-export interface State {
-    enabled: boolean;
-    visible: boolean;
-    on: boolean;
-    detail: number;
-    str: string;
 }
 
 export abstract class BasicToolbarItem extends HTMLElement {
@@ -56,7 +55,7 @@ export abstract class BasicToolbarItem extends HTMLElement {
     public hoverService: HoverService | undefined = undefined;
 
     // Implemented by subclass
-    abstract updateState(state: State): void;
+    abstract updateState(state: Serializable<ToolbarItemState>): void;
 
     addHover(element: HTMLElement): void {
         this.hoverService?.registerHoverElement(
@@ -80,6 +79,29 @@ export abstract class BasicToolbarItem extends HTMLElement {
         );
     }
 
+    public handleMessage(msg: ExtensionMessage) {
+        if (msg.subject === "updateToolbarItem") {
+            // Check if the id matches this id.
+            if (this.definition.id === msg.id) {
+                this.updateState(msg.state);
+            }
+        }
+    }
+
+    public packContent(
+        final: boolean,
+        content: string,
+    ): Serializable<PropertyTreeItem> {
+        return {
+            key: "ROOT",
+            value: "NONE",
+            children: [
+                { key: "int0", value: final ? "1" : "0", children: [] },
+                { key: "str0", value: content, children: [] },
+            ],
+        };
+    }
+
     constructor(def: ToolbarItem) {
         super();
         this.definition = def;
@@ -92,7 +114,7 @@ export class ToolbarItemSeparator extends BasicToolbarItem {
         super(def);
     }
 
-    updateState(_state: State): void {
+    updateState(_state: Serializable<ToolbarItemState>): void {
         // Do nothing.
     }
 
@@ -123,7 +145,7 @@ export class ToolbarItemText extends BasicToolbarItem {
         this.editable = isEditable;
     }
 
-    updateState(state: State): void {
+    updateState(state: Serializable<ToolbarItemState>): void {
         if (this.edit === undefined) {
             return;
         }
@@ -189,7 +211,7 @@ export class ToolbarItemText extends BasicToolbarItem {
                         createCustomEvent("toolbar-item-interaction", {
                             detail: {
                                 id: this.definition.id,
-                                properties: content as string,
+                                properties: this.packContent(true, content),
                             },
                             bubbles: true,
                         }),
@@ -223,7 +245,7 @@ export class ToolbarItemText extends BasicToolbarItem {
                         createCustomEvent("toolbar-item-interaction", {
                             detail: {
                                 id: this.definition.id,
-                                properties: element.textContent as string,
+                                properties: this.packContent(true, this.edit.value),
                             },
                             bubbles: true,
                         }),
@@ -285,7 +307,7 @@ export class ToolbarItemIconMenu extends BasicToolbarItem {
         super(def);
     }
 
-    updateState(state: State): void {
+    updateState(state: Serializable<ToolbarItemState>): void {
         if (this.btn === undefined) {
             return;
         }
@@ -323,7 +345,7 @@ export class ToolbarItemIconMenu extends BasicToolbarItem {
                     createCustomEvent("toolbar-item-interaction", {
                         detail: {
                             id: this.definition.id,
-                            properties: "",
+                            properties: this.packContent(true, value),
                         },
                         bubbles: true,
                     }),
@@ -358,7 +380,7 @@ export class ToolbarItemIconMenu extends BasicToolbarItem {
 export class ToolbarItemButton extends BasicToolbarItem {
     private btn: Button | undefined = undefined;
 
-    updateState(state: State): void {
+    updateState(state: Serializable<ToolbarItemState>): void {
         this.style.display = state.visible ? "block" : "none";
         if (this.btn) {
             this.btn.disabled = !state.enabled;
@@ -389,7 +411,7 @@ export class ToolbarItemButton extends BasicToolbarItem {
         this.btn.onclick = () => {
             this.dispatchEvent(
                 createCustomEvent("toolbar-item-interaction", {
-                    detail: { id: this.definition.id, properties: "" },
+                    detail: { id: this.definition.id, properties: {key: "ROOT", value: "NONE", children: []} },
                     bubbles: true, // Needs to bubble up to the root DOM.
                 }),
             );
@@ -405,7 +427,7 @@ export class ToolbarItemCombo extends BasicToolbarItem {
     private select: Dropdown | undefined = undefined;
     enabled = true;
 
-    updateState(state: State): void {
+    updateState(state: Serializable<ToolbarItemState>): void {
         this.style.display = state.visible ? "block" : "none";
         if (this.select) {
             this.select.disabled = !state.enabled;
@@ -428,17 +450,11 @@ export class ToolbarItemCombo extends BasicToolbarItem {
             this.select?.appendChild(option);
 
             option.onclick = _ev => {
-                // Pack the content.
-                const data: TreeData = {
-                    key: "TEXT",
-                    value: option.text,
-                    children: [],
-                };
                 this.dispatchEvent(
                     createCustomEvent("toolbar-item-interaction", {
                         detail: {
                             id: this.definition.id,
-                            properties: packTree(data, true),
+                            properties: this.packContent(true, option.text),
                         },
                         bubbles: true,
                     }),
@@ -455,7 +471,7 @@ export class ToolbarItemCombo extends BasicToolbarItem {
 export class ToolbarItemProgress extends BasicToolbarItem {
     private progressBar: HTMLProgressElement | undefined;
 
-    updateState(state: State): void {
+    updateState(state: Serializable<ToolbarItemState>): void {
         this.style.display = state.visible ? "block" : "none";
     }
 
@@ -481,10 +497,11 @@ export class ToolbarItemSimpleCheckBox extends BasicToolbarItem {
         super(def);
     }
 
-    updateState(state: State): void {
+    updateState(state: Serializable<ToolbarItemState>): void {
         this.style.display = state.visible ? "block" : "none";
         if (this.checkbox) {
             this.checkbox.disabled = !state.enabled;
+            this.checkbox.checked = state.on;
         }
     }
 
@@ -495,7 +512,7 @@ export class ToolbarItemSimpleCheckBox extends BasicToolbarItem {
                 createCustomEvent("toolbar-item-interaction", {
                     detail: {
                         id: this.definition.id,
-                        properties: "",
+                        properties: {key: "ROOT", value: "NONE", children: []},
                     },
                     bubbles: true,
                 }),
@@ -529,15 +546,29 @@ export class ToolbarItemCheckBox extends BasicToolbarItem {
         marginTop: "2px",
     });
 
-    updateState(state: State): void {
+    updateState(state: Serializable<ToolbarItemState>): void {
         this.style.display = state.visible ? "block" : "none";
         if (this.checkbox) {
             this.checkbox.disabled = !state.enabled;
+            this.checkbox.checked = state.on;
+            this.updateCheckbox();
         }
     }
 
     constructor(def: ToolbarItem) {
         super(def);
+    }
+
+    updateCheckbox() {
+        if (this.label && this.checkbox) {
+            if (this.checkbox?.checked) {
+                this.label.classList.remove(this.TOGGLE_OFF);
+                this.label.classList.add(this.TOGGLE_ON);
+            } else {
+                this.label.classList.remove(this.TOGGLE_ON);
+                this.label.classList.add(this.TOGGLE_OFF);
+            }
+        }
     }
 
     connectedCallback() {
@@ -550,7 +581,11 @@ export class ToolbarItemCheckBox extends BasicToolbarItem {
                 createCustomEvent("toolbar-item-interaction", {
                     detail: {
                         id: this.definition.id,
-                        properties: "",
+                        properties: {
+                            key: "ROOT",
+                            value: "NONE",
+                            children: [],
+                        },
                     },
                     bubbles: true,
                 }),
@@ -560,13 +595,7 @@ export class ToolbarItemCheckBox extends BasicToolbarItem {
                 return;
             }
 
-            if (this.checkbox?.checked) {
-                this.label.classList.remove(this.TOGGLE_OFF);
-                this.label.classList.add(this.TOGGLE_ON);
-            } else {
-                this.label.classList.remove(this.TOGGLE_ON);
-                this.label.classList.add(this.TOGGLE_OFF);
-            }
+            this.updateCheckbox();
         };
 
         // The trick is to hide the checkbox behind a label

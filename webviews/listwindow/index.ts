@@ -9,10 +9,9 @@ import {
     RenderParameters,
     Serializable,
 } from "./protocol";
-import { GridElement } from "./rendering/grid";
+import { GridRenderer } from "./rendering/grid";
 import { TooltipService } from "./rendering/tooltipService";
 import { PersistedState } from "./state";
-import { SelectionFlags } from "./thrift/listwindow_types";
 import { HoverService } from "./rendering/hoverService";
 import { Theming } from "./rendering/styles/theming";
 import {
@@ -22,15 +21,13 @@ import {
     vsCodeButton,
     vsCodeDropdown,
 } from "@vscode/webview-ui-toolkit";
-import { CellEditService } from "./rendering/cell/cellEditService";
 import { DragDropService } from "./rendering/dragDropService";
-import { ContextMenuService } from "./rendering/contextMenuService";
 import { MessageService } from "./messageService";
 import { KeyboardInput } from "./keyboardInput";
 import { css } from "@emotion/css";
 import { ToolbarElement } from "./rendering/toolbar/toolbar";
 import { toBigInt } from "./rendering/utils";
-import { SharedStyles } from "./rendering/styles/sharedStyles";
+import { PropertyTreeItem } from "./thrift/shared_types";
 
 provideVSCodeDesignSystem().register(
     vsCodeTextField(),
@@ -49,24 +46,24 @@ class ListwindowController {
     private readonly persistedState: PersistedState;
     private renderParams: Serializable<RenderParameters> | undefined =
         undefined;
-    private toolbarRenderParams: string | undefined = undefined;
+    private toolbarRenderParams: Serializable<PropertyTreeItem> | undefined =
+        undefined;
     private resizeMode: ColumnResizeMode = "fixed";
 
     private readonly messageService: MessageService;
-    private readonly tooltipService: TooltipService;
     private readonly hoverService = new HoverService();
-    private readonly contextMenuService;
-    private readonly cellEditService: CellEditService;
     private readonly dragDropService: DragDropService;
 
-    private grid: GridElement | undefined = undefined;
+    private readonly grid: GridRenderer;
+    private readonly toolbarTooltipService: TooltipService;
     private toolbar: ToolbarElement | undefined = undefined;
 
     constructor(
-        private readonly appElement: HTMLElement,
         private readonly toolbarElement: HTMLElement | undefined,
+        appElement: HTMLElement,
         vscode: WebviewApi<PersistedState.Data>,
     ) {
+        // Set up some global styles
         document.body.classList.add(css({
             padding: 0,
             // For some reason the webview iframe is sometimes one pixel narrower
@@ -75,18 +72,20 @@ class ListwindowController {
             height: "100%",
             color: "var(--vscode-sideBar-foreground, var(--vscode-foreground))",
             scrollbarColor: "var(--vscode-scrollbarSlider-background) transparent",
+            display: "grid",
+            gridTemplateRows: "max-content 1fr",
+            gridTemplateColumns: "100%",
         }));
         appElement.classList.add(css({
             padding: 0,
-            height: "100%",
+            overflow: "hidden",
         }));
 
+        // Initialize services
         this.persistedState = new PersistedState(vscode);
         this.messageService = new MessageService(vscode);
-        this.tooltipService = new TooltipService(this.messageService);
-        this.cellEditService = new CellEditService(this.messageService);
-        this.contextMenuService = new ContextMenuService(
-            this.appElement,
+        this.toolbarTooltipService = new TooltipService(
+            document.body,
             this.messageService,
         );
 
@@ -94,14 +93,18 @@ class ListwindowController {
         this.dragDropService = new DragDropService(viewId, this.messageService);
         this.dragDropService.onFeedbackChanged = () => this.render();
 
+        this.grid = new GridRenderer(appElement,
+            this.hoverService,
+            this.dragDropService,
+            this.messageService,
+        );
+
         Theming.initialize();
         Theming.setViewHasFocus(document.hasFocus());
         window.addEventListener("focus", () => Theming.setViewHasFocus(true));
         window.addEventListener("blur", () => Theming.setViewHasFocus(false));
 
-        KeyboardInput.initialize(this.messageService, () =>
-            this.grid?.getRangeOfVisibleRows(),
-        );
+        KeyboardInput.initialize(this.messageService);
         KeyboardInput.onCellEditRequested = () => {
             if (this.renderParams && this.renderParams.selection.length === 1) {
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -111,13 +114,17 @@ class ListwindowController {
                 if (start === end) {
                     // We do not yet know which column to edit. Sending '-1'
                     // tells the backend to choose which column to edit.
-                    this.cellEditService.requestCellEdit({
+                    this.grid.requestCellEdit({
                         col: -1,
-                        row: Number(start),
+                        row: start,
                     });
                 }
             }
         };
+
+        appElement.addEventListener("columns-resized", ev => {
+            this.persistedState.columnWidths = ev.detail.newColumnWidths;
+        });
 
         this.messageService.addMessageHandler(msg => this.handleMessage(msg));
         this.messageService.sendMessage({ subject: "loaded" });
@@ -126,15 +133,25 @@ class ListwindowController {
     /** Handle a message from the view provider in the extension code */
     private handleMessage(msg: ExtensionMessage) {
         switch (msg.subject) {
+            case "updateToolbarItem": {
+                //Handled by the items them-self
+                break;
+            }
             case "renderToolbar": {
                 this.toolbarRenderParams = msg.params;
                 this.renderToolbar();
-                this.messageService.sendMessage({ subject: "toolbarRendered" });
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                if (this.toolbar) {
+                    this.messageService.sendMessage({
+                        subject: "toolbarRendered",
+                        ids: this.toolbar.getItemIds(),
+                    });
+                }
                 break;
             }
             case "render": {
                 this.renderParams = msg.params;
-                this.render(msg.ensureRowVisible);
+                this.render();
                 this.messageService.sendMessage({ subject: "rendered" });
                 break;
             }
@@ -147,19 +164,23 @@ class ListwindowController {
             case "dumpHTML":
                 this.messageService.sendMessage({
                     subject: "HTMLDump",
-                    html: this.appElement.outerHTML,
+                    html: document.body.outerHTML,
                 });
                 break;
         }
     }
 
+
     private renderToolbar() {
         if (
             this.toolbarElement &&
             this.toolbarRenderParams &&
-            this.toolbarRenderParams.length > 0
+            this.toolbarRenderParams.children.length > 0
         ) {
-            this.toolbar = new ToolbarElement(this.toolbarRenderParams);
+            this.toolbar = new ToolbarElement(
+                this.toolbarRenderParams,
+                this.messageService,
+            );
             this.toolbar.hoverService = this.hoverService;
             this.toolbarElement.replaceChildren(this.toolbar);
             this.toolbarElement.classList.add(Styles.toolbarCanvas);
@@ -172,103 +193,15 @@ class ListwindowController {
                 });
             });
             this.toolbar.addEventListener("toolbar-item-hovered", ev => {
-                this.tooltipService.requestToolbarTooltip(ev);
+                this.toolbarTooltipService.requestToolbarTooltip(ev);
             });
-
-            // Re-position the position of the header to give
-            // room for the toolbar.
-            if (
-                this.grid !== undefined &&
-                this.grid.headerElement !== undefined
-            ) {
-                this.grid.headerElement.addToolbarArea();
-            }
         }
     }
 
-    private render(ensureRowVisible?: number) {
-        const scrollX = window.scrollX;
-        const scrollY = window.scrollY;
-
-        // Replace all contents of the appElement
-        this.grid = new GridElement();
-        this.grid.data = this.renderParams;
-        this.grid.resizeMode = this.resizeMode;
-        if (this.persistedState.columnWidths) {
-            this.grid.initialColumnWidths = this.persistedState.columnWidths;
+    private render() {
+        if (!this.renderParams) {
+            return;
         }
-        this.grid.hoverService = this.hoverService;
-        this.grid.dragDropService = this.dragDropService;
-
-        if (this.toolbar !== undefined && this.grid.headerElement) {
-            this.grid.headerElement.addToolbarArea();
-        }
-
-        this.appElement.replaceChildren(this.grid);
-
-        // Attach event listeners to the new elements
-        this.grid.addEventListener("columns-resized", ev => {
-            this.persistedState.columnWidths = ev.detail.newColumnWidths;
-        });
-        this.grid.addEventListener("column-clicked", ev => {
-            this.messageService.sendMessage({
-                subject: "columnClicked",
-                col: ev.detail.col,
-            });
-        });
-
-        this.grid.addEventListener("cell-clicked", ev => {
-            if (ev.detail.isDoubleClick) {
-                this.messageService.sendMessage({
-                    subject: "cellDoubleClicked",
-                    col: ev.detail.col,
-                    row: ev.detail.row,
-                });
-            } else {
-                let flags = SelectionFlags.kReplace;
-                if (ev.detail.ctrlPressed) {
-                    flags = SelectionFlags.kAdd;
-                } else if (ev.detail.shiftPressed) {
-                    flags = SelectionFlags.kRange;
-                }
-                this.messageService.sendMessage({
-                    subject: "cellLeftClicked",
-                    col: ev.detail.col,
-                    row: ev.detail.row,
-                    flags,
-                });
-            }
-        });
-        this.grid.addEventListener("cell-right-clicked", ev => {
-            this.contextMenuService.requestContextMenu(ev);
-        });
-        this.grid.addEventListener("cell-hovered", ev => {
-            this.tooltipService.requestTooltip(ev);
-        });
-        this.grid.addEventListener("row-expansion-toggled", ev => {
-            this.messageService.sendMessage({
-                subject: "rowExpansionToggled",
-                row: ev.detail.row,
-            });
-        });
-        this.grid.addEventListener("more-less-toggled", ev => {
-            this.messageService.sendMessage({
-                subject: "moreLessToggled",
-                row: ev.detail.row,
-            });
-        });
-        this.grid.addEventListener("checkbox-toggled", ev => {
-            this.messageService.sendMessage({
-                subject: "checkboxToggled",
-                row: ev.detail.row,
-            });
-        });
-        this.grid.addEventListener("cell-edit-requested", ev => {
-            if (!this.renderParams?.frozen) {
-                this.cellEditService.requestCellEdit(ev.detail);
-            }
-        });
-
         Theming.setGridLinesVisible(!!this.renderParams?.listSpec.showGrid);
 
         if (this.resizeMode === "fit") {
@@ -277,11 +210,12 @@ class ListwindowController {
             document.documentElement.classList.remove(ListwindowController.NO_OVERFLOW_X);
         }
 
-        window.scrollTo(scrollX, scrollY);
+        this.grid.render(
+            this.renderParams,
+            this.resizeMode,
+            this.persistedState.columnWidths,
+        );
 
-        if (ensureRowVisible !== undefined) {
-            this.grid.ensureRowVisible(ensureRowVisible);
-        }
     }
 }
 
@@ -302,15 +236,12 @@ window.addEventListener("load", () => {
     }
     const vscode = acquireVsCodeApi<PersistedState.Data>();
 
-    new ListwindowController(appElement, toolbarElement, vscode);
+    new ListwindowController(toolbarElement, appElement, vscode);
 });
 
 namespace Styles {
     export const toolbarCanvas = css({
-        position: "fixed",
-        top: 0,
         width: "100%",
-        zIndex: SharedStyles.ZIndices.Toolbar,
         backgroundColor: "var(--vscode-sideBar-background)",
     });
 }

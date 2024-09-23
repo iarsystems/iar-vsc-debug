@@ -24,7 +24,7 @@ suite("Listwindow tooltips", () => {
         user.hover(cellElem);
         const msg = await api.waitForMessage("getTooltip", 2000);
         Assert.strictEqual(msg.col, 0);
-        Assert.strictEqual(msg.row, 0);
+        Assert.strictEqual(msg.row.value, "0");
         const tooltipText = "hello tooltip";
         api.postMessage({
             subject: "tooltipReply",

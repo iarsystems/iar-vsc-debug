@@ -8,7 +8,7 @@ import * as SourceLookup from "iar-vsc-common/thrift/bindings/SourceLookup";
 import { DISASSEMBLY_SERVICE } from "iar-vsc-common/thrift/bindings/disassembly_types";
 import { ContextRef, ContextType, Location, Zone } from "iar-vsc-common/thrift/bindings/shared_types";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
-import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
+import { ThriftServiceRegistry } from "iar-vsc-common/thrift/thriftServiceRegistry";
 import { SOURCE_LOOKUP_SERVICE } from "iar-vsc-common/thrift/bindings/sourcelookup_types";
 import { Source } from "@vscode/debugadapter";
 import { Disposable } from "./utils";
@@ -26,13 +26,13 @@ import { logger } from "@vscode/debugadapter/lib/logger";
  * this a namespace of pure functions.
  */
 export class CspyDisassemblyService implements Disposable.Disposable {
-    static async instantiate(serviceMgr: ThriftServiceManager,
+    static async instantiate(serviceRegistry: ThriftServiceRegistry,
         clientLinesStartAt1: boolean,
         clientColumnsStartAt1: boolean,
     ): Promise<CspyDisassemblyService> {
         return new CspyDisassemblyService(
-            await serviceMgr.findService(DISASSEMBLY_SERVICE, Disassembly.Client),
-            await serviceMgr.findService(SOURCE_LOOKUP_SERVICE, SourceLookup.Client),
+            await serviceRegistry.findService(DISASSEMBLY_SERVICE, Disassembly.Client),
+            await serviceRegistry.findService(SOURCE_LOOKUP_SERVICE, SourceLookup.Client),
             clientLinesStartAt1,
             clientColumnsStartAt1,
         );

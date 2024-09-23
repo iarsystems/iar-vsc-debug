@@ -3,6 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { MessageService } from "../messageService";
+import { SerializedBigInt } from "../protocol";
 import { Target } from "../thrift/listwindow_types";
 import { CellElement, CellPosition } from "./cell/cell";
 
@@ -10,7 +11,7 @@ import { CellElement, CellPosition } from "./cell/cell";
 export interface DragDropFeedback {
     target: Target;
     col: number;
-    row: number;
+    row: bigint;
 }
 
 /**
@@ -19,7 +20,7 @@ export interface DragDropFeedback {
 interface DragSource {
     windowId: string;
     col: number;
-    row: number;
+    row: SerializedBigInt;
 }
 // Key for the DragSource data format on the event
 const DRAG_SOURCE_FORMAT = "application/listwindow-source";
@@ -67,7 +68,7 @@ export class DragDropService {
                 const source: DragSource = {
                     windowId: this.windowId,
                     col: elem.position.col,
-                    row: elem.position.row,
+                    row: { value: elem.position.row.toString() },
                 };
                 ev.dataTransfer.setData(
                     DRAG_SOURCE_FORMAT,
@@ -127,7 +128,7 @@ export class DragDropService {
                             srcCol: source.col,
                             srcRow: source.row,
                             dstCol: position.col,
-                            dstRow: position.row,
+                            dstRow: { value: position.row.toString() },
                         });
                         return;
                     } else {
@@ -141,7 +142,7 @@ export class DragDropService {
                     this.messageService.sendMessage({
                         subject: "externalDrop",
                         col: position.col,
-                        row: position.row,
+                        row: { value: position.row.toString() },
                         droppedText: dropText,
                     });
                 }
@@ -163,11 +164,11 @@ namespace DragDropFeedback {
         return {
             target: Target.kNoTarget,
             col: -1,
-            row: -1,
+            row: -1n,
         };
     }
 
     export function equals(f1: DragDropFeedback, f2: DragDropFeedback) {
-        return JSON.stringify(f1) === JSON.stringify(f2);
+        return f1.target === f2.target && f1.col === f2.col && f1.row === f2.row;
     }
 }

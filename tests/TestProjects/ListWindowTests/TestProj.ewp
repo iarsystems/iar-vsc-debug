@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+    <fileVersion>2</fileVersion>
+    <configuration>
+        <name>Debug</name>
+        <toolchain>
+            <name>ARM</name>
+        </toolchain>
+        <debug>1</debug>
+    </configuration>
+    <file>
+        <name>$PROJ_DIR$/main.c</name>
+    </file>
+</project>
