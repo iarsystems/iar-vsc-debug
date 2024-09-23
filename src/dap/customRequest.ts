@@ -273,6 +273,6 @@ export namespace CustomEvent {
         id: number;
     }
     export interface ListWindowsRequestedData {
-        sessionId: string;
+        supportsToolbars: boolean;
     }
 }

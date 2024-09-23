@@ -50,8 +50,6 @@ import { ThriftServiceRegistryProcess } from "iar-vsc-common/thrift/thriftServic
  * and this interface should always match that schema.
  */
 export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
-    /** The current debug session id. ADDED BY VSCODE -> DO NOT SET*/
-    __sessionId?: string
     /** The name of the target in lower case (e.g. arm) */
     target: string;
     /** An absolute path to the "program" to debug. */
@@ -101,6 +99,10 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
      * required to render listwindows properly, but can be disabled in tests.
      */
     enableThemeLookup?: boolean;
+    /** Hidden option. Enables the debug adapter to ask the client for a initilizing listwindows. This is
+     * required to render listwindows properly, but can be disabled in tests.
+     */
+    enableListWindowLookup?: boolean;
 }
 
 /**
@@ -377,19 +379,23 @@ export class CSpyDebugSession extends LoggingDebugSession {
             // the listwindows.
 
             // Register a callback to the listwindow setup completion.
-            if (args.__sessionId !== undefined) {
-                this.customRequestRegistry.registerCommand(
-                    CustomRequest.Names.LISTWINDOWS_RESOLVED,
-                    () => {
-                        this.listwindowsDone.notify();
-                    },
-                );
-                const body: CustomEvent.ListWindowsRequestedData = {
-                    sessionId: args.__sessionId as string,
-                };
-                this.sendEvent(
-                    new Event(CustomEvent.Names.LISTWINDOWS_REQUESTED, body),
-                );
+            this.customRequestRegistry.registerCommand(
+                CustomRequest.Names.LISTWINDOWS_RESOLVED,
+                () => {
+                    this.listwindowsDone.notify();
+                },
+            );
+            const body: CustomEvent.ListWindowsRequestedData = {
+                supportsToolbars: WorkbenchFeatures.supportsFeature(
+                    workbench,
+                    WorkbenchFeatures.GenericToolbars,
+                    args.target,
+                ),
+            };
+            this.sendEvent(
+                new Event(CustomEvent.Names.LISTWINDOWS_REQUESTED, body),
+            );
+            if (args.enableListWindowLookup) {
                 await this.listwindowsDone.wait();
             }
 

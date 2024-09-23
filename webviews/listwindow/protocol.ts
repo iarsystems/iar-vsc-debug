@@ -71,6 +71,15 @@ export type ExtensionMessage =
   | { subject: "editableStringReply", info: Serializable<EditInfo>, col: number, row: SerializedBigInt };
 
 /**
+ * Helper for selecting a specific variant of {@link ExtensionMessage}, e.g.
+ * ExtensionMessageVariant<"columnClicked"> === { subject: "columnClicked", col: number }
+ */
+export type ExtensionMessageVariant<
+    Subject extends ExtensionMessage["subject"],
+    Message extends ExtensionMessage = ExtensionMessage,
+> = Message extends unknown ? PickVariant<Message, Subject> : never;
+
+/**
  * A message from the listwindow view to the extension
  */
 export type ViewMessage =
@@ -115,6 +124,6 @@ export type ViewMessageVariant<
 > = Message extends unknown ? PickVariant<Message, Subject> : never;
 
 type PickVariant<
-    T extends ViewMessage,
-    Subject extends ViewMessage["subject"],
+    T extends ViewMessage | ExtensionMessage,
+    Subject extends T["subject"],
 > = T["subject"] extends Subject ? T : never;

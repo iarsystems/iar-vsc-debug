@@ -3,7 +3,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { Int64 } from "thrift";
-import { SerializedBigInt } from "../webviews/listwindow/protocol";
+import {
+    Serializable,
+    SerializedBigInt,
+} from "../webviews/listwindow/protocol";
+import { PropertyTreeItem } from "iar-vsc-common/thrift/bindings/shared_types";
 
 /**
  * Converts an Int64 to a bigint.
@@ -37,4 +41,23 @@ export function toInt64(value: SerializedBigInt | bigint): Int64 {
     }
 
     return new Int64(value.toString(16));
+}
+
+/**
+ * Convert a serialized tree to a real property tree
+ */
+export function unpackTree(
+    treeDescription: Serializable<PropertyTreeItem>,
+): PropertyTreeItem {
+    const item = new PropertyTreeItem();
+
+    item.key = treeDescription.key;
+    item.value = treeDescription.value;
+    item.children = treeDescription.children.map(
+        (element: Serializable<PropertyTreeItem>) => {
+            return unpackTree(element);
+        },
+    );
+
+    return item;
 }
