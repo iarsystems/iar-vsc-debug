@@ -501,6 +501,7 @@ export class ToolbarItemSimpleCheckBox extends BasicToolbarItem {
         this.style.display = state.visible ? "block" : "none";
         if (this.checkbox) {
             this.checkbox.disabled = !state.enabled;
+            this.checkbox.checked = state.on;
         }
     }
 
@@ -549,11 +550,25 @@ export class ToolbarItemCheckBox extends BasicToolbarItem {
         this.style.display = state.visible ? "block" : "none";
         if (this.checkbox) {
             this.checkbox.disabled = !state.enabled;
+            this.checkbox.checked = state.on;
+            this.updateCheckbox();
         }
     }
 
     constructor(def: ToolbarItem) {
         super(def);
+    }
+
+    updateCheckbox() {
+        if (this.label && this.checkbox) {
+            if (this.checkbox?.checked) {
+                this.label.classList.remove(this.TOGGLE_OFF);
+                this.label.classList.add(this.TOGGLE_ON);
+            } else {
+                this.label.classList.remove(this.TOGGLE_ON);
+                this.label.classList.add(this.TOGGLE_OFF);
+            }
+        }
     }
 
     connectedCallback() {
@@ -566,7 +581,11 @@ export class ToolbarItemCheckBox extends BasicToolbarItem {
                 createCustomEvent("toolbar-item-interaction", {
                     detail: {
                         id: this.definition.id,
-                        properties: {key: "ROOT", value: "NONE", children: []},
+                        properties: {
+                            key: "ROOT",
+                            value: "NONE",
+                            children: [],
+                        },
                     },
                     bubbles: true,
                 }),
@@ -576,13 +595,7 @@ export class ToolbarItemCheckBox extends BasicToolbarItem {
                 return;
             }
 
-            if (this.checkbox?.checked) {
-                this.label.classList.remove(this.TOGGLE_OFF);
-                this.label.classList.add(this.TOGGLE_ON);
-            } else {
-                this.label.classList.remove(this.TOGGLE_ON);
-                this.label.classList.add(this.TOGGLE_OFF);
-            }
+            this.updateCheckbox();
         };
 
         // The trick is to hide the checkbox behind a label

@@ -25,10 +25,9 @@ export namespace TestUtils {
      * * Builds the project
      * * Returns a launch config using the determined project and driver
      */
-    export function doSetup(): vscode.DebugConfiguration & CSpyLaunchRequestArguments {
+    export function doSetup(parameters: TestConfiguration = TestConfiguration.getConfiguration()): vscode.DebugConfiguration & CSpyLaunchRequestArguments {
         const workbench = getEwPath();
         assert(workbench, "Found no workbench to build with");
-        const parameters = TestConfiguration.getConfiguration();
 
         let program: string;
         let projectDir: string;

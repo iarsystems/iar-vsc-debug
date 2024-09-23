@@ -248,6 +248,27 @@
 					"name": "Quick Watch",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy"
+				},
+				{
+					"id": "iar-reg-2",
+					"contextualTitle": "Registers",
+					"name": "Registers",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy"
+				},
+				{
+					"id": "iar-symbolic-memory",
+					"contextualTitle": "Symbolic Memory",
+					"name": "Symbolic Memory",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy"
+				},
+				{
+					"id": "iar-stack-1",
+					"contextualTitle": "Stack",
+					"name": "Stack",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy"
 				}
 
 			]

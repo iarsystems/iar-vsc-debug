@@ -29,6 +29,7 @@ import { ListWindowProxy } from "./listwindowProxy";
 import { logger } from "iar-vsc-common/logger";
 import { PropertyTreeItem } from "iar-vsc-common/thrift/bindings/shared_types";
 import { Int64 } from "thrift";
+import { ToolbarInterface } from "./clients/listwindowBackendClient";
 
 /**
  * A function which a {@link ListwindowController} can use to send messages to
@@ -69,6 +70,7 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
 
     constructor(
         protected readonly backend: ThriftClient<ListWindowBackend.Client>,
+        protected readonly toolbarInterface: ToolbarInterface,
         /** The total number of rows in the window/chunk */
         protected numberOfVisibleRows: number,
     ) {
@@ -81,6 +83,12 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
 
         if (sendToView) {
             this.scheduleCall(() => this.redraw());
+            this.notifyToolbar(
+                new ToolbarNote({
+                    what: ToolbarWhat.kFullUpdate,
+                    focusOn: -1,
+                }),
+            );
         }
     }
 
@@ -343,7 +351,7 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
             }
             case "getToolbarToolTip": {
                 this.scheduleCall<string>(async() => {
-                    return await this.backend.service.getToolbarItemTooltip(
+                    return await this.toolbarInterface.getToolbarItemTooltip(
                         msg.id,
                     );
                 }).then(value => {
@@ -357,7 +365,7 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
             case "toolbarItemInteraction": {
                 const item = this.unpackTree(msg.properties);
                 this.scheduleCall(async() => {
-                    await this.backend.service.setToolbarItemValue(
+                    await this.toolbarInterface.setToolbarItemValue(
                         msg.id,
                         item,
                     );
@@ -383,7 +391,7 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
                 this.toolbarIds.forEach(id => {
                     this.scheduleCall(async() => {
                         const value =
-                            await this.backend.service.getToolbarItemState(id);
+                            await this.toolbarInterface.getToolbarItemState(id);
                         if (value) {
                             this.sendToView?.({
                                 subject: "updateToolbarItem",
@@ -398,7 +406,7 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
             case ToolbarWhat.kFullUpdate: {
                 this.scheduleCall(async() => {
                     const value =
-                        await this.backend.service.getToolbarDefinition();
+                        await this.toolbarInterface.getToolbarDefinition();
                     if (value && value.children.length > 0) {
                         this.sendToView?.({
                             subject: "renderToolbar",
@@ -475,7 +483,6 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
             scrollInfo,
         };
 
-        console.log("Posting render to view...");
         this.sendToView?.({
             subject: "render",
             params,

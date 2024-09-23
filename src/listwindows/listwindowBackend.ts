@@ -15,6 +15,9 @@ import { Int64 } from "thrift";
 import { ListwindowController } from "./listwindowController";
 import { SlidingListwindowController } from "./slidingListwindowController";
 import { StandardListwindowController } from "./standardListwindowController";
+import { CTor, ServiceClientFactory } from "./listwindowClientFactory";
+import {AbstractListwindowClient} from "./clients/listwindowBackendClient";
+
 
 /**
  * This class acts as the intermediary layer between the webview (ListwindowViewProvider)
@@ -26,19 +29,27 @@ import { StandardListwindowController } from "./standardListwindowController";
  * To increase responsiveness, a row-proxy is placed between the ListWindowBackendHandler
  * and cspyserver.
  */
-export class ListWindowBackendHandler {
-    private readonly view: ListwindowViewProvider;
-    private readonly serviceName: string;
+export class ListWindowBackendHandler<T extends ListWindowBackend.Client> {
+    public readonly view: ListwindowViewProvider;
+    public readonly serviceName: string;
 
     private numberOfVisibleRows = 0;
 
     // Maps session IDs to view controllers.
     private readonly sessions: Map<string, ListwindowController> = new Map();
-    private activeController: ListwindowController | undefined = undefined;
+    public activeController: ListwindowController | undefined = undefined;
 
-    constructor(view: ListwindowViewProvider, serviceName: string) {
+    private readonly clientFactory: CTor<AbstractListwindowClient<T>> | undefined =
+        undefined;
+
+    constructor(
+        view: ListwindowViewProvider,
+        serviceName: string,
+        cf: CTor<AbstractListwindowClient<T>> | undefined,
+    ) {
         this.view = view;
         this.serviceName = serviceName;
+        this.clientFactory = cf;
 
         // Connect the messages from this view to the the handler, which
         // directs the messages to cspyserver.
@@ -58,18 +69,32 @@ export class ListWindowBackendHandler {
         };
     }
 
-    async connect(sessionId: string, serviceRegistry: ThriftServiceRegistry): Promise<void> {
+    async connect(
+        sessionId: string,
+        serviceRegistry: ThriftServiceRegistry,
+        supportsGenericToolbars: boolean,
+    ): Promise<void> {
         // Connect to the backend to allow for calls to cspyserver
-        const backendClient = await serviceRegistry.findService(
-            this.serviceName,
-            ListWindowBackend.Client,
-        );
+        const [backendClient, toolbarInterface] =
+            await ServiceClientFactory.createServices(
+                this.serviceName,
+                serviceRegistry,
+                supportsGenericToolbars ? undefined : this.clientFactory,
+            );
 
         let controller: ListwindowController;
         if (await backendClient.service.isSliding()) {
-            controller = new SlidingListwindowController(backendClient, this.numberOfVisibleRows);
+            controller = new SlidingListwindowController(
+                backendClient,
+                toolbarInterface,
+                this.numberOfVisibleRows,
+            );
         } else {
-            controller = new StandardListwindowController(backendClient, this.numberOfVisibleRows);
+            controller = new StandardListwindowController(
+                backendClient,
+                toolbarInterface,
+                this.numberOfVisibleRows,
+            );
         }
 
         // Connect to the frontend to allow for notifications.
