@@ -68,6 +68,8 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
 
     private toolbarIds: string[] = [];
 
+    private lastRenderParams: RenderParameters | undefined = undefined;
+
     constructor(
         protected readonly backend: ThriftClient<ListWindowBackend.Client>,
         protected readonly toolbarInterface: ToolbarInterface,
@@ -75,11 +77,11 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
         protected numberOfVisibleRows: number,
     ) {
         this.proxy = new ListWindowProxy(backend.service);
-        this.numberOfVisibleRows = 10;
     }
 
     setMessageSink(sendToView: MessageSink | undefined) {
         this.sendToView = sendToView;
+        this.lastRenderParams = undefined;
 
         if (sendToView) {
             this.scheduleCall(() => this.redraw());
@@ -435,15 +437,25 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
             this.scheduleCall(async() => {
                 await this.proxy.notify(note);
                 await this.postUpdate(note);
+
+                if (this.sendToView === undefined) {
+                    return;
+                }
+
+                // VSC-477 There's no need to redraw if we have a newer note
+                // that will cause its own redraw. First, give the event loop a
+                // chance to process new notifications, *then* check if we
+                // should redraw.
+                await new Promise(resolve => setTimeout(resolve, 0));
                 this.currentSeq = toBigInt(note.seq);
                 if (
                     note.what !== What.kFreeze &&
                     note.what !== What.kThaw &&
                     this.currentSeq < this.latestSeq
                 ) {
-                    // Discard.
                     return;
                 }
+
                 if (note.what === What.kNormalUpdate) {
                     await this.updateNumberOfRows();
                 }
@@ -482,7 +494,13 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
             ...contents,
             scrollInfo,
         };
+        // VSC-477 For performance reasons, we avoid rendering the same thing
+        // twice.
+        if (JSON.stringify(params) === JSON.stringify(this.lastRenderParams)) {
+            return;
+        }
 
+        this.lastRenderParams = params;
         this.sendToView?.({
             subject: "render",
             params,
