@@ -56,7 +56,11 @@ export class GridRenderer {
             });
         });
         resizeObserver.observe(this.container);
-        this.container.addEventListener("wheel", e => {
+
+        this.grid = document.createElement("div");
+        this.container.appendChild(this.grid);
+        this.grid.classList.add(Styles.grid);
+        this.grid.addEventListener("wheel", e => {
             if (e.deltaY !== 0) {
                 e.preventDefault();
                 this.messageService.sendMessage({
@@ -68,10 +72,6 @@ export class GridRenderer {
                 });
             }
         });
-
-        this.grid = document.createElement("div");
-        this.container.appendChild(this.grid);
-        this.grid.classList.add(Styles.grid);
 
         this.grid.onclick = ev => {
             if (ev.target !== this.grid) {

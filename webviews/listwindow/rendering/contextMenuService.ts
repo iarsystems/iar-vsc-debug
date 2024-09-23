@@ -17,20 +17,34 @@ interface PendingContextMenu {
 }
 
 export class ContextMenuService {
-    private element: ContextMenuElement | undefined = undefined;
     private pendingContextMenu: PendingContextMenu | undefined = undefined;
+    private activeContextMenu: ContextMenu | undefined = undefined;
 
     constructor(
         private readonly container: HTMLElement,
         private readonly messageService: MessageService,
     ) {
-        document.body.addEventListener("click", () => this.closeContextMenu());
-        window.addEventListener("blur", () => this.closeContextMenu());
+        document.body.addEventListener("click", () => {
+            this.closeContextMenu();
+            this.pendingContextMenu = undefined;
+        });
+        window.addEventListener("blur", () => {
+            this.closeContextMenu();
+            this.pendingContextMenu = undefined;
+        });
 
         this.messageService.addMessageHandler(msg => {
             if (msg.subject === "contextMenuReply") {
                 this.resolvePendingContextMenu(msg.menu);
             }
+        });
+
+        container.addEventListener("context-menu-item-clicked", ev => {
+            this.messageService.sendMessage({
+                subject: "contextItemClicked",
+                command: ev.detail.command,
+            });
+            this.closeContextMenu();
         });
     }
 
@@ -46,76 +60,45 @@ export class ContextMenuService {
     }
 
     private resolvePendingContextMenu(menuItems: Serializable<MenuItem>[]) {
-        if (this.element) {
-            this.container.removeChild(this.element);
-            this.element = undefined;
-        }
+        this.closeContextMenu();
 
         if (this.pendingContextMenu) {
-            this.element = new ContextMenuElement();
-            this.element.items = toTree(menuItems);
-            this.element.addEventListener("context-menu-item-clicked", ev => {
-                this.messageService.sendMessage({
-                    subject: "contextItemClicked",
-                    command: ev.detail.command,
-                });
-                this.element?.close();
-                this.closeContextMenu();
-            });
-            this.container.appendChild(this.element);
-
-            // Note that we cannot render the menu outside the view bounds (as a
-            // "floating" window). It would just create a scrollbar for the entire
-            // view.
-            // Thus, we use the FloatingUI library to position & size the menu.
-            const position = this.pendingContextMenu.position;
-            const cursorElem: FloatingUi.VirtualElement = {
-                getBoundingClientRect: () => {
-                    return {
-                        width: 0,
-                        height: 0,
-                        x: position.x,
-                        y: position.y,
-                        left: position.x,
-                        top: position.y,
-                        right: position.x,
-                        bottom: position.y,
-                    };
-                },
-            };
-            this.element?.beforeOpen();
-            FloatingUi.computePosition(cursorElem, this.element, {
-                placement: "right-start",
-                middleware: [FloatingUi.flip(), FloatingUi.shift()],
-            }).then(({ x, y }) => {
-                this.element?.open(x, y);
-            });
+            const items = toTree(menuItems);
+            this.activeContextMenu = new ContextMenu(this.container, items);
+            this.activeContextMenu.open(this.pendingContextMenu.position);
         }
 
         this.pendingContextMenu = undefined;
     }
 
     private closeContextMenu() {
-        if (this.element) {
-            this.container.removeChild(this.element);
-            this.element = undefined;
+        if (this.activeContextMenu) {
+            this.activeContextMenu.close();
+            this.activeContextMenu = undefined;
         }
-        this.pendingContextMenu = undefined;
     }
 }
 
+/**
+ * Emitted by a {@link ContextMenuItemElement} when it is clicked.
+ */
 export namespace ContextMenuItemClickEvent {
     export interface Detail {
         command: number;
     }
 }
 
+/**
+ * A more usable version of {@link MenuItem} that represents the tree structures
+ * using references instead of string prefixes.
+ */
 interface MenuItemTree {
     text: string;
     checked: boolean;
     enabled: boolean;
     command: number;
     children: MenuItemTree[];
+    parent: MenuItemTree | undefined;
 }
 
 function toTree(items: Serializable<MenuItem>[]): MenuItemTree[] {
@@ -127,25 +110,203 @@ function toTree(items: Serializable<MenuItem>[]): MenuItemTree[] {
         if (!front || front.text.startsWith("<")) {
             return result;
         } else if (front.text.startsWith(">")) {
-            result.push({
+            const menuItem: MenuItemTree = {
                 text: front.text.substring(1),
                 checked: front.checked,
                 enabled: front.enabled,
                 command: front.command,
                 children: toTree(items),
-            });
+                parent: undefined,
+            };
+            menuItem.children.forEach(child => child.parent = menuItem);
+            result.push(menuItem);
         } else {
             result.push({
                 ...front,
                 children: [],
+                parent: undefined,
             });
+        }
+    }
+}
+
+interface SubmenuState {
+    // The menu item that opens the submenu
+    readonly parentElement: ContextMenuItemElement;
+    // The submenu itself (the list of subitems)
+    readonly element: ContextMenuElement;
+    parentHovered: boolean;
+    menuHovered: boolean;
+}
+
+/**
+ * Holds a single context menu and all its submenus. Handles opening and closing
+ * of submenus when hovering over menu items.
+ */
+class ContextMenu {
+    private readonly submenus: Map<MenuItemTree, SubmenuState> = new Map();
+    private readonly rootMenu: ContextMenuElement;
+
+    /**
+     * Creates a new context menu from the given items, adding all elements to
+     * the container.
+     */
+    constructor(private readonly container: HTMLElement, items: MenuItemTree[]) {
+        this.rootMenu = new ContextMenuElement();
+        container.appendChild(this.rootMenu);
+
+        const createMenuItem = (item: MenuItemTree, menu: ContextMenuElement) => {
+            const listItem = new ContextMenuItemElement();
+            listItem.item = item;
+            menu.appendChild(listItem);
+            if (item.children.length > 0) {
+                createSubmenu(item, listItem);
+            }
+        };
+        const createSubmenu = (parentItem: MenuItemTree, parentElem: ContextMenuItemElement) => {
+            parentElem.onmouseenter = () => {
+                this.setSubmenuState(parentItem, { parentHovered: true });
+            };
+            parentElem.onmouseleave = () => {
+                this.setSubmenuState(parentItem, { parentHovered: false });
+            };
+
+            const menu = new ContextMenuElement();
+            this.container.appendChild(menu);
+            menu.onmouseenter = () => {
+                this.setSubmenuState(parentItem, { menuHovered: true });
+            };
+            menu.onmouseleave = () => {
+                this.setSubmenuState(parentItem, { menuHovered: false });
+            };
+
+            this.submenus.set(parentItem, {
+                parentElement: parentElem,
+                element: menu,
+                menuHovered: false,
+                parentHovered: false,
+            });
+
+            for (const item of parentItem.children) {
+                createMenuItem(item, menu);
+            }
+        };
+
+        for (const item of items) {
+            createMenuItem(item, this.rootMenu);
+        }
+    }
+
+    /**
+     * Opens the context menu at the given position.
+     */
+    open(position: { x: number; y: number }) {
+        this.rootMenu.beforeOpen();
+
+        // Note that we cannot render the menu outside the view bounds (as a
+        // "floating" window). It would just create a scrollbar for the entire
+        // view.
+        // Thus, we use the FloatingUI library to position & size the menu.
+        const cursorElem: FloatingUi.VirtualElement = {
+            getBoundingClientRect: () => {
+                return {
+                    width: 0,
+                    height: 0,
+                    x: position.x,
+                    y: position.y,
+                    left: position.x,
+                    top: position.y,
+                    right: position.x,
+                    bottom: position.y,
+                };
+            },
+        };
+        const options = { padding: 5 };
+        FloatingUi.computePosition(cursorElem, this.rootMenu, {
+            placement: "right-start",
+            middleware: [FloatingUi.flip(options), FloatingUi.shift(options)],
+        }).then(({ x, y }) => {
+            this.rootMenu.open(x, y);
+        });
+    }
+
+    /**
+     * Closes the context menu and removes all its elements from the container.
+     */
+    close() {
+        this.container.removeChild(this.rootMenu);
+        for (const submenu of this.submenus.values()) {
+            this.container.removeChild(submenu.element);
+        }
+    }
+
+    /**
+     * Sets (part of) the hover state of a submenu, and opens/closes the submenu
+     * as appropriate. A submenu is opened if either the parent item or the menu
+     * itself is hovered.
+     */
+    private setSubmenuState(parent: MenuItemTree, state: Partial<Omit<SubmenuState, "element">>) {
+        const prevState = this.submenus.get(parent);
+        if (prevState) {
+            const newState: SubmenuState = {
+                ...prevState,
+                ...state,
+            };
+            this.submenus.set(parent, newState);
+
+            const shouldBeOpen = newState.parentHovered || newState.menuHovered;
+            if (shouldBeOpen) {
+                this.openSubmenu(parent);
+            } else {
+                this.closeSubmenu(parent);
+                if (parent.parent) {
+                    // This forces any ancestor submenus to re-check whether
+                    // they should still be open.
+                    this.setSubmenuState(parent.parent, {});
+                }
+            }
+        }
+    }
+
+    private openSubmenu(parent: MenuItemTree) {
+        const submenu = this.submenus.get(parent);
+        if (submenu) {
+            // Ensure that all ancestor submenus are open too.
+            if (parent.parent) {
+                this.openSubmenu(parent.parent);
+            }
+
+            if (submenu.element.isOpen) {
+                return;
+            }
+
+            submenu.element.beforeOpen();
+            const options = { padding: 5 };
+            FloatingUi.computePosition(submenu.parentElement, submenu.element, {
+                placement: "right-start",
+                middleware: [FloatingUi.flip(options), FloatingUi.shift(options)],
+            }).then(({ x, y }) => {
+                submenu.parentElement.setAttribute(ContextMenuItemElement.ATTR_SUBMENU_OPEN, "");
+                submenu.element.open(x, y);
+            });
+        }
+    }
+
+    private closeSubmenu(parent: MenuItemTree) {
+        const submenu = this.submenus.get(parent);
+        if (submenu && submenu.element.isOpen) {
+            for (const child of parent.children) {
+                this.closeSubmenu(child);
+            }
+            submenu.parentElement.removeAttribute(ContextMenuItemElement.ATTR_SUBMENU_OPEN);
+            submenu.element.close();
         }
     }
 }
 
 @customElement("context-menu")
 class ContextMenuElement extends HTMLElement {
-    items: MenuItemTree[] = [];
+    isOpen = false;
 
     // Ensures that the menu's size is calculated. Should be called before
     // calculating the menu's position.
@@ -154,6 +315,8 @@ class ContextMenuElement extends HTMLElement {
     }
 
     open(x: number, y: number) {
+        this.isOpen = true;
+
         Object.assign(this.style, {
             left: `${x}px`,
             top: `${y}px`,
@@ -165,29 +328,23 @@ class ContextMenuElement extends HTMLElement {
     }
 
     close() {
+        this.isOpen = false;
         this.style.opacity = "0";
         this.style.visibility = "hidden";
     }
 
     connectedCallback() {
-        this.classList.add(Styles.self);
+        this.classList.add(Styles.menu);
         this.style.opacity = "0";
         this.style.visibility = "hidden";
         this.style.display = "none";
-
-        const list = document.createElement("div");
-        list.classList.add(Styles.menu);
-        this.appendChild(list);
-
-        for (const item of this.items) {
-            const listItem = new ContextMenuItemElement();
-            listItem.item = item;
-            list.appendChild(listItem);
-        }
     }
 }
 @customElement("menu-item")
 class ContextMenuItemElement extends HTMLElement {
+    /** HTML attribute set when this item's submenu is open */
+    static readonly ATTR_SUBMENU_OPEN = "submenu-open";
+
     item: MenuItemTree | undefined = undefined;
 
     connectedCallback() {
@@ -195,7 +352,11 @@ class ContextMenuItemElement extends HTMLElement {
         if (!this.item) {
             return;
         }
-        this.classList.add(this.item.enabled ? Styles.menuItemEnabled : Styles.menuItemDisabled);
+        this.classList.add(
+            this.item.enabled || this.item.children.length > 0
+                ? Styles.menuItemEnabled
+                : Styles.menuItemDisabled,
+        );
 
         if (this.item.text === "") {
             const separator = document.createElement("span");
@@ -226,49 +387,44 @@ class ContextMenuItemElement extends HTMLElement {
         }
         this.appendChild(check);
 
+        // The item text *may* contain a shortcut key, separated by a tab character.
+        const labelParts = this.item.text.split("\t");
+
         const label = document.createElement("span");
-        label.textContent = this.item.text;
+        const labelText = labelParts[0] ?? this.item.text;
+        // Ampersands are used to denote the shortcut key in the menu item text,
+        // but we don't support that here.
+        label.textContent = labelText.replaceAll("&", "");
         label.classList.add(Styles.menuItemLabel);
         this.appendChild(label);
+
+        const shortcut = labelParts[1];
+        if (shortcut) {
+            const shortcutSpan = document.createElement("span");
+            shortcutSpan.textContent = shortcut;
+            shortcutSpan.classList.add(Styles.menuItemShortcut);
+            this.appendChild(shortcutSpan);
+        }
 
         if (this.item.children.length > 0) {
             const indicator = document.createElement("span");
             indicator.classList.add(Styles.icon, Styles.iconSubmenu);
             indicator.classList.add("codicon", "codicon-chevron-right");
             this.appendChild(indicator);
-
-            if (this.item.enabled) {
-                const subMenu = new ContextMenuElement();
-                subMenu.items = this.item.children;
-                this.appendChild(subMenu);
-
-                this.onmouseenter = () => {
-                    subMenu.beforeOpen();
-                    FloatingUi.computePosition(this, subMenu, {
-                        placement: "right-start",
-                        middleware: [FloatingUi.flip(), FloatingUi.shift()],
-                    }).then(({ x, y }) => {
-                        subMenu.open(x, y);
-                    });
-                };
-                this.onmouseleave = () => {
-                    subMenu.close();
-                };
-            }
         }
     }
 }
 
 namespace Styles {
-    export const self = css({
+    export const menu = css({
         position: "absolute",
         top: 0,
         left: 0,
         width: "max-content",
         transition: "opacity 0.1s ease-in-out",
         zIndex: SharedStyles.ZIndices.ContextMenu,
-    });
-    export const menu = css({
+        maxHeight: "90vh",
+        overflowY: "auto",
         outline: "1px solid var(--vscode-menu-border)",
         borderRadius: "5px",
         color: "var(--vscode-menu-foreground)",
@@ -276,7 +432,6 @@ namespace Styles {
         boxShadow: "0 2px 8px var(--vscode-widget-shadow)",
         padding: "4px 0",
         margin: 0,
-        listStyleType: "none",
     });
 
     export const menuItem = css({
@@ -297,7 +452,7 @@ namespace Styles {
     });
 
     export const menuItemEnabled = css`
-        &:hover {
+        &:hover, &[${ContextMenuItemElement.ATTR_SUBMENU_OPEN}] {
             color: var(--vscode-menu-selectionForeground);
             background-color: var(--vscode-menu-selectionBackground);
             outline: 1px solid var(--vscode-menu-selectionBorder);
@@ -308,6 +463,12 @@ namespace Styles {
         padding: "0 26px",
         maxHeight: "100%",
         flex: "1 1 auto",
+    });
+    export const menuItemShortcut = css({
+        padding: "0 26px",
+        maxHeight: "100%",
+        flex: "2 1 auto",
+        textAlign: "right",
     });
     export const menuItemSeparator = css({
         margin: "5px 0 !important",
