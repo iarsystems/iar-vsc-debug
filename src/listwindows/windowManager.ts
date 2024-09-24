@@ -43,6 +43,7 @@ export class ListwindowManager {
         { viewId: "iar-autos", serviceName: "WIN_AUTO" },
         { viewId: "iar-trace", serviceName: "WIN_SLIDING_TRACE_WINDOW", fallback: TraceClient },
         { viewId: "iar-quick-watch", serviceName: "WIN_QUICK_WATCH", fallback: QuickWatchClient },
+        { viewId: "iar-live-watch", serviceName: "WIN_STATIC_WATCH" },
         { viewId: "iar-reg-2", serviceName: "WIN_REGISTER_2", fallback: RegisterClient },
         { viewId: "iar-symbolic-memory", serviceName: "WIN_SYMBOLIC_MEMORY", fallback: SymbolicMemoryClient },
         { viewId: "iar-stack-1", serviceName: "WIN_STACK_1", fallback: StackClient },
