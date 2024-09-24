@@ -223,6 +223,11 @@ suite("Listwindow-Controller", () => {
         controller.setMessageSink(msg => {
             msgs.push(msg);
         });
+        // Ensure that the controller believes that we have some visible rows.
+        controller.handleMessageFromView({
+            subject: "viewportChanged",
+            rowsInPage: 10,
+        });
 
         msgs.length = 0; // Clear the msg-array
         const [_, toolbarTree] = await getState(controller);
@@ -262,6 +267,11 @@ suite("Listwindow-Controller", () => {
         controller.setMessageSink(msg => {
             msgs.push(msg);
         });
+        // Ensure that the controller believes that we have some visible rows.
+        controller.handleMessageFromView({
+            subject: "viewportChanged",
+            rowsInPage: 10,
+        });
 
         // Ensure that trace is on.
         // Start by getting the current state of the trace-on button.
@@ -282,7 +292,6 @@ suite("Listwindow-Controller", () => {
                 "on",
             );
             assert.ok(id);
-            await waitForMessage("render", 2000);
 
             msgs.length = 0;
             await activeSession.customRequest("next", {
@@ -291,10 +300,9 @@ suite("Listwindow-Controller", () => {
             });
             await waitForMessage("render", 4000);
 
-            // Ensure that the controller believes that we have some visible rows.
             controller.handleMessageFromView({
                 subject: "viewportChanged",
-                rowsInPage: 10,
+                rowsInPage: 5,
             });
             renderParams = await waitForContent(4000);
         }
