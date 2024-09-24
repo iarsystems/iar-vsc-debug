@@ -52,6 +52,8 @@ type MessageSink = (msg: ExtensionMessage) => void;
  * send messages to the webview.
  */
 export abstract class ListwindowController implements ThriftServiceHandler<ListWindowFrontend.Client> {
+    private static readonly FREEZE_DELAY_MS = 100;
+
     private sendToView: MessageSink | undefined = undefined;
 
     private readonly proxy: ListWindowProxy;
@@ -430,29 +432,33 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
         // This is the current sequence.
         this.latestSeq = toBigInt(note.seq);
 
-        // Create a call-chain able to perform the desired update. The update
-        // can be canceled if a newer sequence is seen before the update takes
-        // place.
-        return Q.resolve().then(() =>
-            this.scheduleCall(async() => {
+        return Q.resolve().then(async() => {
+            // First update the data according to what the note says.
+            await this.scheduleCall(async() => {
                 await this.proxy.notify(note);
                 await this.postUpdate(note);
 
+            });
+
+            // Then decide if we should redraw. We give some time for new notes to
+            // arrive; if there's a newer note, it will cause its own redraw and we
+            // can skip this one. Note that we give extra time for freeze notes to
+            // be skipped, since they are often shortly followed by a thaw note
+            // (e.g. when stepping) and will cause flickering if drawn immediately.
+            await new Promise(resolve =>
+                setTimeout(
+                    resolve,
+                    note.what === What.kFreeze
+                        ? ListwindowController.FREEZE_DELAY_MS
+                        : 0,
+                ),
+            );
+            await this.scheduleCall(async() => {
                 if (this.sendToView === undefined) {
                     return;
                 }
-
-                // VSC-477 There's no need to redraw if we have a newer note
-                // that will cause its own redraw. First, give the event loop a
-                // chance to process new notifications, *then* check if we
-                // should redraw.
-                await new Promise(resolve => setTimeout(resolve, 0));
                 this.currentSeq = toBigInt(note.seq);
-                if (
-                    note.what !== What.kFreeze &&
-                    note.what !== What.kThaw &&
-                    this.currentSeq < this.latestSeq
-                ) {
+                if (this.currentSeq < this.latestSeq) {
                     return;
                 }
 
@@ -461,8 +467,8 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
                 }
 
                 return this.redraw();
-            }),
-        );
+            });
+        });
     }
 
     protected async updateAfterScroll() {

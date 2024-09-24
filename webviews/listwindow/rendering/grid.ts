@@ -215,6 +215,8 @@ export class GridRenderer {
             } else {
                 this.overlay.style.backgroundColor = "rgba(0, 0, 0, 0.2)";
             }
+        } else {
+            this.overlay.style.backgroundColor = "transparent";
         }
 
         this.messageService.sendMessage({
