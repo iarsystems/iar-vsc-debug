@@ -131,6 +131,7 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
     handleMessageFromView(msg: ViewMessage) {
         switch (msg.subject) {
             case "loaded": {
+                this.lastRenderParams = undefined;
                 this.notify(
                     new Note({
                         what: What.kFullUpdate,
