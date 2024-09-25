@@ -27,7 +27,11 @@ export function toBigInt(int64: Serializable<Int64>): bigint {
     if ("data" in int64.buffer && Array.isArray(int64.buffer.data)) {
         let str = "0x";
         for (const num of int64.buffer.data) {
-            str += num.toString(16);
+            let byteStr = num.toString(16);
+            if (byteStr.length === 1) {
+                byteStr = "0" + byteStr;
+            }
+            str += byteStr;
         }
         const big = BigInt(str);
         // Int64s are signed, so if the most significant bit is set, we should
