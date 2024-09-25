@@ -176,6 +176,7 @@ export class CellElement extends HTMLElement {
         }
 
         const labelText = document.createElement("span");
+        labelText.classList.add(Styles.labelText);
         labelText.textContent = this.cell.text;
         label.appendChild(labelText);
         content.appendChild(label);
@@ -353,8 +354,14 @@ namespace Styles {
         gridColumn: 2,
         display: "flex",
         padding: "0px 12px",
+        width: "100%",
+        boxSizing: "border-box",
+        overflow: "hidden",
+    });
+    export const labelText = css({
         overflow: "hidden",
         textOverflow: "ellipsis",
+        width: "100%",
         whiteSpace: "preserve nowrap",
         wordBreak: "keep-all",
     });
