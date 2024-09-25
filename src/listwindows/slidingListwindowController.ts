@@ -141,12 +141,12 @@ export class SlidingListwindowController extends ListwindowController {
         _flags: number,
     ): Promise<void> {
         if (op === KeyNavOperation.kTopItem) {
-            this.navigateTo(0);
+            await this.navigateTo(0);
             await this.backend.service.setSel(0);
             return;
         }
         if (op === KeyNavOperation.kBottomItem) {
-            this.navigateTo(1);
+            await this.navigateTo(1);
             await this.backend.service.setSel(this.chunk.numberOfRows - 1);
             return;
         }
@@ -298,7 +298,7 @@ export class SlidingListwindowController extends ListwindowController {
             this.MIN_CHUNK_SIZE,
         );
         this.chunk = result.chunkInfo;
-        this.shiftIntoView(result.chunkPos, false);
+        await this.shiftIntoView(result.chunkPos, false);
     }
 }
 

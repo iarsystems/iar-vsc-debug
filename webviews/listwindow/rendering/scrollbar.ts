@@ -48,7 +48,7 @@ export class ScrollbarElement extends HTMLElement {
         if (ev.target === this) {
             // mouse down on the track (outside the thumb), scroll to the
             // clicked position immediately
-            const clickedFraction = ev.clientY / this.clientHeight;
+            const clickedFraction = ev.offsetY / this.offsetHeight;
             this.messageService?.sendMessage({
                 subject: "absoluteScrolled",
                 fraction: clamp(clickedFraction, 0, 1),

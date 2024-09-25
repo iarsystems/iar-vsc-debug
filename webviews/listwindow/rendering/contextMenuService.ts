@@ -224,7 +224,16 @@ class ContextMenu {
         const options = { padding: 5 };
         FloatingUi.computePosition(cursorElem, this.rootMenu, {
             placement: "right-start",
-            middleware: [FloatingUi.flip(options), FloatingUi.shift(options)],
+            middleware: [
+                FloatingUi.flip(options),
+                FloatingUi.shift(options),
+                FloatingUi.size({
+                    ...options,
+                    apply: params => {
+                        this.rootMenu.style.maxHeight = `${Math.max(0, params.availableHeight)}px`;
+                    },
+                }),
+            ],
         }).then(({ x, y }) => {
             this.rootMenu.open(x, y);
         });
@@ -284,9 +293,21 @@ class ContextMenu {
             const options = { padding: 5 };
             FloatingUi.computePosition(submenu.parentElement, submenu.element, {
                 placement: "right-start",
-                middleware: [FloatingUi.flip(options), FloatingUi.shift(options)],
+                middleware: [
+                    FloatingUi.flip(options),
+                    FloatingUi.shift(options),
+                    FloatingUi.size({
+                        ...options,
+                        apply: params => {
+                            submenu.element.style.maxHeight = `${Math.max(0, params.availableHeight)}px`;
+                        },
+                    }),
+                ],
             }).then(({ x, y }) => {
-                submenu.parentElement.setAttribute(ContextMenuItemElement.ATTR_SUBMENU_OPEN, "");
+                submenu.parentElement.setAttribute(
+                    ContextMenuItemElement.ATTR_SUBMENU_OPEN,
+                    "",
+                );
                 submenu.element.open(x, y);
             });
         }
@@ -420,6 +441,7 @@ namespace Styles {
         position: "absolute",
         top: 0,
         left: 0,
+        boxSizing: "border-box",
         width: "max-content",
         transition: "opacity 0.1s ease-in-out",
         zIndex: SharedStyles.ZIndices.ContextMenu,

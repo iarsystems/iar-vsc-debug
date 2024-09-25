@@ -72,7 +72,7 @@ export class TooltipService {
         }
 
         if (this.pendingTooltip) {
-            const tooltipText = text ?? this.pendingTooltip.fallbackText;
+            const tooltipText = text || this.pendingTooltip.fallbackText;
             if (tooltipText) {
                 this.element = new TooltipElement();
                 this.element.tooltipText = tooltipText;
