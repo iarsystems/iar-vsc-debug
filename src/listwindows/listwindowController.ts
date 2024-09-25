@@ -153,7 +153,19 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
                 const oldValue = this.numberOfVisibleRows;
                 this.numberOfVisibleRows = msg.rowsInPage;
                 if (Math.ceil(msg.rowsInPage) !== Math.ceil(oldValue)) {
-                    this.scheduleCall(() => this.redraw());
+                    this.scheduleCall(async() => {
+                        const unfilledSpace =
+                            this.numberOfVisibleRows -
+                            Number(this.numberOfRows - (this.offset));
+                        if (unfilledSpace >= 1 && this.offset !== 0n) {
+                            // We are at the bottom and can scroll down to fit
+                            // another row at the top. Do a kScrollTrack to make
+                            // the controller recalculate what scroll position
+                            // it wants.
+                            await this.scroll(ScrollOperation.kScrollTrack, 1);
+                        }
+                        await this.redraw();
+                    });
                 }
                 break;
             }
