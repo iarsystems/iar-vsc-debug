@@ -27,8 +27,6 @@ export function activate(context: vscode.ExtensionContext) {
     logger.init("IAR C-SPY Debug");
     logger.debug("Activating extension");
 
-    listwindowManager = new ListwindowManager(context);
-
     // register a configuration provider for 'cspy' debug type
     vscode.debug.registerDebugAdapterDescriptorFactory("cspy", {
         createDebugAdapterDescriptor(_session: vscode.DebugSession, _executable: vscode.DebugAdapterExecutable | undefined): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
@@ -39,6 +37,8 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", new InitialCSpyConfigurationProvider(), vscode.DebugConfigurationProviderTriggerKind.Initial));
     context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", new CSpyConfigurationsProvider(), vscode.DebugConfigurationProviderTriggerKind.Dynamic));
     context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", new DefaultCSpyConfigurationResolver()));
+
+    listwindowManager = new ListwindowManager(context);
 
     if (context.extensionMode === vscode.ExtensionMode.Development) {
         context.subscriptions.push(new MockListwindow(context.extensionUri));

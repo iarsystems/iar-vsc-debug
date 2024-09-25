@@ -52,6 +52,8 @@ type MessageSink = (msg: ExtensionMessage) => void;
  * send messages to the webview.
  */
 export abstract class ListwindowController implements ThriftServiceHandler<ListWindowFrontend.Client> {
+    private static readonly FREEZE_DELAY_MS = 100;
+
     private sendToView: MessageSink | undefined = undefined;
 
     private readonly proxy: ListWindowProxy;
@@ -68,6 +70,8 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
 
     private toolbarIds: string[] = [];
 
+    private lastRenderParams: RenderParameters | undefined = undefined;
+
     constructor(
         protected readonly backend: ThriftClient<ListWindowBackend.Client>,
         protected readonly toolbarInterface: ToolbarInterface,
@@ -75,11 +79,11 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
         protected numberOfVisibleRows: number,
     ) {
         this.proxy = new ListWindowProxy(backend.service);
-        this.numberOfVisibleRows = 10;
     }
 
     setMessageSink(sendToView: MessageSink | undefined) {
         this.sendToView = sendToView;
+        this.lastRenderParams = undefined;
 
         if (sendToView) {
             this.scheduleCall(() => this.redraw());
@@ -127,6 +131,7 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
     handleMessageFromView(msg: ViewMessage) {
         switch (msg.subject) {
             case "loaded": {
+                this.lastRenderParams = undefined;
                 this.notify(
                     new Note({
                         what: What.kFullUpdate,
@@ -428,29 +433,43 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
         // This is the current sequence.
         this.latestSeq = toBigInt(note.seq);
 
-        // Create a call-chain able to perform the desired update. The update
-        // can be canceled if a newer sequence is seen before the update takes
-        // place.
-        return Q.resolve().then(() =>
-            this.scheduleCall(async() => {
+        return Q.resolve().then(async() => {
+            // First update the data according to what the note says.
+            await this.scheduleCall(async() => {
                 await this.proxy.notify(note);
                 await this.postUpdate(note);
-                this.currentSeq = toBigInt(note.seq);
-                if (
-                    note.what !== What.kFreeze &&
-                    note.what !== What.kThaw &&
-                    this.currentSeq < this.latestSeq
-                ) {
-                    // Discard.
+
+            });
+
+            // Then decide if we should redraw. We give some time for new notes to
+            // arrive; if there's a newer note, it will cause its own redraw and we
+            // can skip this one. Note that we give extra time for freeze notes to
+            // be skipped, since they are often shortly followed by a thaw note
+            // (e.g. when stepping) and will cause flickering if drawn immediately.
+            await new Promise(resolve =>
+                setTimeout(
+                    resolve,
+                    note.what === What.kFreeze
+                        ? ListwindowController.FREEZE_DELAY_MS
+                        : 0,
+                ),
+            );
+            await this.scheduleCall(async() => {
+                if (this.sendToView === undefined) {
                     return;
                 }
+                this.currentSeq = toBigInt(note.seq);
+                if (this.currentSeq < this.latestSeq) {
+                    return;
+                }
+
                 if (note.what === What.kNormalUpdate) {
                     await this.updateNumberOfRows();
                 }
 
                 return this.redraw();
-            }),
-        );
+            });
+        });
     }
 
     protected async updateAfterScroll() {
@@ -482,7 +501,13 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
             ...contents,
             scrollInfo,
         };
+        // VSC-477 For performance reasons, we avoid rendering the same thing
+        // twice.
+        if (JSON.stringify(params) === JSON.stringify(this.lastRenderParams)) {
+            return;
+        }
 
+        this.lastRenderParams = params;
         this.sendToView?.({
             subject: "render",
             params,

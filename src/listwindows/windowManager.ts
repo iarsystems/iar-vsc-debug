@@ -43,6 +43,7 @@ export class ListwindowManager {
         { viewId: "iar-autos", serviceName: "WIN_AUTO" },
         { viewId: "iar-trace", serviceName: "WIN_SLIDING_TRACE_WINDOW", fallback: TraceClient },
         { viewId: "iar-quick-watch", serviceName: "WIN_QUICK_WATCH", fallback: QuickWatchClient },
+        { viewId: "iar-live-watch", serviceName: "WIN_STATIC_WATCH" },
         { viewId: "iar-reg-2", serviceName: "WIN_REGISTER_2", fallback: RegisterClient },
         { viewId: "iar-symbolic-memory", serviceName: "WIN_SYMBOLIC_MEMORY", fallback: SymbolicMemoryClient },
         { viewId: "iar-stack-1", serviceName: "WIN_STACK_1", fallback: StackClient },
@@ -59,6 +60,8 @@ export class ListwindowManager {
     private readonly windows: ListWindowBackendHandler<ListWindowBackend.Client>[];
     private readonly sessions: Map<string, ThriftServiceRegistry> = new Map();
     private activeSession: string | undefined = undefined;
+    // This is set when a session is in progress of connecting to its listwindows.
+    private connectingTask: Promise<unknown> | undefined = undefined;
 
     setActiveSession(sessionId: string | undefined) {
         this.activeSession = sessionId;
@@ -104,14 +107,13 @@ export class ListwindowManager {
             );
         const registry = new ThriftServiceRegistry(new ServiceLocation(location));
 
-        for (const window of this.windows) {
-            try {
-                await window.connect(session.id, registry, supportsGenericToolbars);
-            } catch {
-                // This is normal, since not all listwindows are supported by
-                // all drivers
-            }
-        }
+        // It's normal for 'connect' to fail, since not all windows are
+        // supported by all drivers.
+        await Promise.allSettled(
+            this.windows.map(window =>
+                window.connect(session.id, registry, supportsGenericToolbars),
+            ),
+        );
     }
 
     constructor(context: vscode.ExtensionContext) {
@@ -141,7 +143,18 @@ export class ListwindowManager {
         context.subscriptions.push(
             vscode.debug.onDidReceiveDebugSessionCustomEvent(async ev => {
                 if (ev.event === CustomEvent.Names.LISTWINDOWS_REQUESTED) {
-                    await this.connectToSession(ev.session, ev.body.supportsToolbars);
+                    const connectingTask = Promise.allSettled([
+                        this.connectingTask,
+                        this.connectToSession(ev.session, ev.body.supportsToolbars),
+                    ]);
+                    connectingTask.finally(() => {
+                        if (this.connectingTask === connectingTask) {
+                            this.connectingTask = undefined;
+                        }
+                    });
+                    this.connectingTask = connectingTask;
+
+                    await connectingTask;
                     await ev.session.customRequest(
                         CustomRequest.Names.LISTWINDOWS_RESOLVED,
                     );
@@ -168,7 +181,13 @@ export class ListwindowManager {
         );
 
         context.subscriptions.push(
-            vscode.debug.onDidChangeActiveDebugSession(session => {
+            vscode.debug.onDidChangeActiveDebugSession(async(session) => {
+                // Wait until all listwindow connections have been established,
+                // sometimes we end up here before the session has been fully
+                // launched.
+                while (this.connectingTask) {
+                    await this.connectingTask;
+                }
                 this.setActiveSession(session?.id);
             }),
         );

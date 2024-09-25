@@ -250,6 +250,13 @@
 					"when": "inDebugMode && debugType == cspy"
 				},
 				{
+					"id": "iar-live-watch",
+					"contextualTitle": "Live Watch",
+					"name": "Live Watch",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy"
+				},
+				{
 					"id": "iar-reg-2",
 					"contextualTitle": "Registers",
 					"name": "Registers",
