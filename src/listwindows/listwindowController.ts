@@ -352,11 +352,9 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
             }
             case "keyPressed": {
                 this.scheduleCall(async() => {
-                    await this.backend.service.handleKeyDown(
+                    await this.backend.service.handleChar(
                         msg.code,
                         msg.repeat,
-                        false, // TO-DO
-                        false, // TO-DO
                     );
                 });
                 break;
