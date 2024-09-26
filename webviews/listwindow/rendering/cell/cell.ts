@@ -346,14 +346,13 @@ namespace Styles {
         margin: 0,
     });
     export const icon = css({
-        marginInline: "2px",
         display: "inline-flex",
         alignItems: "center",
     });
     export const label = css({
         gridColumn: 2,
         display: "flex",
-        padding: "0px 12px",
+        padding: "0px 6px",
         width: "100%",
         boxSizing: "border-box",
         overflow: "hidden",

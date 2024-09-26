@@ -295,7 +295,7 @@ namespace Styles {
         overflow: "hidden",
         textOverflow: "ellipsis",
         textWrap: "nowrap",
-        padding: "0px 12px",
+        padding: "0px 6px",
         boxSizing: "border-box",
         maxWidth: "100%",
     });
