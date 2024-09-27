@@ -25,6 +25,7 @@ export class TestListwindow implements vscode.Disposable {
             extensionUri,
             TestListwindow.VIEW_ID,
         );
+        this.view.setEnabled(true);
         this.view.onMessageReceived = (msg) => this.handleMessageFromView(msg);
     }
 
@@ -35,8 +36,8 @@ export class TestListwindow implements vscode.Disposable {
     /**
      * Force focus to this view.
      */
-    async show() {
-        await this.view.show();
+    async focus() {
+        await this.view.focus();
     }
 
     async render(params: RenderParameters) {

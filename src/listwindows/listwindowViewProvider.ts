@@ -85,7 +85,21 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider, vscod
         );
     }
 
-    async show() {
+    /**
+     * Set whether the view is available to the user. If disabled, the view is
+     * removed from all parts of the UI, and thus cannot be opened by the user.
+     * Note that an enabled view is not necessarily *visible*, since it mey be
+     * hidden or collapsed by the user.
+     */
+    setEnabled(visible: boolean) {
+        vscode.commands.executeCommand("setContext", `${this.viewId}.visible`, visible);
+    }
+
+    /**
+     * Raises the view by opening the panel it is in, opening the view if it is
+     * closed, and giving input focus to the view.
+     */
+    async focus() {
         await vscode.commands.executeCommand(`${this.viewId}.focus`);
     }
 

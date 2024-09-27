@@ -140,8 +140,10 @@ export class ListWindowBackendHandler<T extends ListWindowBackend.Client> {
 
         const controller = this.sessions.get(sessionId);
         if (!controller) {
-            throw new Error("Tried setting active session without connecting to it first");
+            this.view.setEnabled(false);
+            return;
         }
+        this.view.setEnabled(true);
         this.activeController = controller;
         controller.setMessageSink(msg => {
             this.view.postMessageToView(msg);

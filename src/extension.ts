@@ -41,12 +41,11 @@ export function activate(context: vscode.ExtensionContext) {
     listwindowManager = new ListwindowManager(context);
 
     if (context.extensionMode === vscode.ExtensionMode.Development) {
-        context.subscriptions.push(new MockListwindow(context.extensionUri));
-        vscode.commands.executeCommand("setContext", "iar-debug.showMockView", true);
+        const mockWindow = new MockListwindow(context.extensionUri);
+        context.subscriptions.push(mockWindow);
     } else {
         testListwindow = new TestListwindow(context.extensionUri);
         context.subscriptions.push(testListwindow);
-        vscode.commands.executeCommand("setContext", "iar-debug.showTestView", true);
     }
 
     context.subscriptions.push(new ThemeProvider());
