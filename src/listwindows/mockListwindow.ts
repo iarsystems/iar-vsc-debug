@@ -41,6 +41,7 @@ export class MockListwindow implements vscode.Disposable {
             extensionUri,
             MockListwindow.VIEW_ID,
         );
+        this.view.setEnabled(true);
         this.view.onMessageReceived = (msg) => this.handleMessageFromView(msg);
     }
 

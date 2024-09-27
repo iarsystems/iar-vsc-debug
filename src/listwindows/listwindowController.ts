@@ -465,9 +465,6 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
                 ),
             );
             await this.scheduleCall(async() => {
-                if (this.sendToView === undefined) {
-                    return;
-                }
                 this.currentSeq = toBigInt(note.seq);
                 if (this.currentSeq < this.latestSeq) {
                     return;
@@ -502,6 +499,10 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
     }
 
     private async redraw() {
+        if (this.sendToView === undefined) {
+            return;
+        }
+
         const contents = await this.proxy.updateRenderParameters(
             this.offset,
             Math.min(this.numberOfVisibleRows, Number(this.numberOfRows)),

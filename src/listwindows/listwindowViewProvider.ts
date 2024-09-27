@@ -21,6 +21,11 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider, vscod
     private disposables: vscode.Disposable[] = [];
 
     onMessageReceived: ((message: ViewMessage) => void) | undefined = undefined;
+    onVisibilityChanged: ((visible: boolean) => void) | undefined = undefined;
+
+    get visible() {
+        return this.view?.visible ?? false;
+    }
 
     /**
      * Creates a new view and registers it.
@@ -57,7 +62,11 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider, vscod
         this.view = webviewView;
         this.view.onDidDispose(() => {
             this.view = undefined;
+            this.onVisibilityChanged?.(false);
         });
+        this.view.onDidChangeVisibility(() =>
+            this.onVisibilityChanged?.(webviewView.visible),
+        );
 
         this.view.webview.options = {
             enableScripts: true,
@@ -83,9 +92,25 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider, vscod
             this.extensionUri,
             this.viewId,
         );
+
+        this.onVisibilityChanged?.(true);
     }
 
-    async show() {
+    /**
+     * Set whether the view is available to the user. If disabled, the view is
+     * removed from all parts of the UI, and thus cannot be opened by the user.
+     * Note that an enabled view is not necessarily *visible*, since it mey be
+     * hidden or collapsed by the user.
+     */
+    setEnabled(visible: boolean) {
+        vscode.commands.executeCommand("setContext", `${this.viewId}.visible`, visible);
+    }
+
+    /**
+     * Raises the view by opening the panel it is in, opening the view if it is
+     * closed, and giving input focus to the view.
+     */
+    async focus() {
         await vscode.commands.executeCommand(`${this.viewId}.focus`);
     }
 

@@ -28,7 +28,7 @@ suite("Listwindow Rendering", () => {
         Assert(ext, "Extension is not installed, did its name change?");
         await ext.activate();
         Assert(testListwindow);
-        await testListwindow.show();
+        await testListwindow.focus();
         // VS Code may need some time to actually instantiate the view after
         // we've focused it.
         await new Promise(res => setTimeout(res, 2000));

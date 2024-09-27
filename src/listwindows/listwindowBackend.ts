@@ -67,6 +67,15 @@ export class ListWindowBackendHandler<T extends ListWindowBackend.Client> {
             // Other messages are only relevant to the visible session.
             this.activeController?.handleMessageFromView(msg);
         };
+        this.view.onVisibilityChanged = visible => {
+            if (!visible) {
+                this.activeController?.setMessageSink(undefined);
+            } else {
+                this.activeController?.setMessageSink(msg => {
+                    this.view.postMessageToView(msg);
+                });
+            }
+        };
     }
 
     async connect(
@@ -140,12 +149,16 @@ export class ListWindowBackendHandler<T extends ListWindowBackend.Client> {
 
         const controller = this.sessions.get(sessionId);
         if (!controller) {
-            throw new Error("Tried setting active session without connecting to it first");
+            this.view.setEnabled(false);
+            return;
         }
+        this.view.setEnabled(true);
         this.activeController = controller;
-        controller.setMessageSink(msg => {
-            this.view.postMessageToView(msg);
-        });
+        if (this.view.visible) {
+            controller.setMessageSink(msg => {
+                this.view.postMessageToView(msg);
+            });
+        }
     }
 
     forgetSession(sessionId: string) {
