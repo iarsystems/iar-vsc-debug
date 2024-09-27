@@ -21,6 +21,11 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider, vscod
     private disposables: vscode.Disposable[] = [];
 
     onMessageReceived: ((message: ViewMessage) => void) | undefined = undefined;
+    onVisibilityChanged: ((visible: boolean) => void) | undefined = undefined;
+
+    get visible() {
+        return this.view?.visible ?? false;
+    }
 
     /**
      * Creates a new view and registers it.
@@ -57,7 +62,11 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider, vscod
         this.view = webviewView;
         this.view.onDidDispose(() => {
             this.view = undefined;
+            this.onVisibilityChanged?.(false);
         });
+        this.view.onDidChangeVisibility(() =>
+            this.onVisibilityChanged?.(webviewView.visible),
+        );
 
         this.view.webview.options = {
             enableScripts: true,
@@ -83,6 +92,8 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider, vscod
             this.extensionUri,
             this.viewId,
         );
+
+        this.onVisibilityChanged?.(true);
     }
 
     /**
