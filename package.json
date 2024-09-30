@@ -52,7 +52,7 @@
 		"async-mutex": "^0.3.2",
 		"await-notify": "1.0.1",
 		"color": "^4.2.3",
-		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#e08b8d02",
+		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#e7bbf1bb",
 		"thrift": "^0.12.0",
 		"xmlbuilder2": "^3.0.2",
 		"fast-xml-parser": "4.4.1"
@@ -276,6 +276,20 @@
 					"name": "Stack",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-stack-1.visible"
+				},
+				{
+					"id": "iar-code-coverage",
+					"contextualTitle": "iar",
+					"name": "Code Coverage",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-code-coverage.visible"
+				},
+				{
+					"id": "iar-profiling",
+					"contextualTitle": "iar",
+					"name": "Profiling",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-profiling.visible"
 				}
 
 			]

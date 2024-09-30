@@ -117,16 +117,30 @@ export class CellElement extends HTMLElement {
         this.setAttribute(CellElement.ATTR_COL, this.position.col.toString());
         this.setAttribute(CellElement.ATTR_ROW, this.position.row.toString());
 
-        // Add content
-        const content = document.createElement("div");
-        content.classList.add(Styles.content);
-        this.appendChild(content);
-
-        this.appendChild(new CellBordersElement);
-
         if (!this.cell) {
             return;
         }
+
+        // Add content
+        this.appendChild(new CellBordersElement);
+
+        const { fraction, cellText } = parseBarFraction(this.cell);
+        if (fraction > 0) {
+            const progressBar = document.createElement("div");
+            progressBar.classList.add(Styles.progressBar);
+            progressBar.style.width = `${fraction * 100}%`;
+            this.appendChild(progressBar);
+
+            let barColor = this.cell.format.barColor;
+            if (barColor.isDefault && this.columnInfo) {
+                barColor = this.columnInfo.defaultFormat.barColor;
+            }
+            progressBar.style.backgroundColor = `rgb(${barColor.r},${barColor.g},${barColor.b})`;
+        }
+
+        const content = document.createElement("div");
+        content.classList.add(Styles.content);
+        this.appendChild(content);
 
         const prefixItems = document.createElement("div");
         prefixItems.classList.add(Styles.prefixItems);
@@ -177,7 +191,7 @@ export class CellElement extends HTMLElement {
 
         const labelText = document.createElement("span");
         labelText.classList.add(Styles.labelText);
-        labelText.textContent = this.cell.text;
+        labelText.textContent = cellText;
         label.appendChild(labelText);
         content.appendChild(label);
 
@@ -321,6 +335,32 @@ export class CellElement extends HTMLElement {
     };
 
 }
+// See OB-843, some IDE versions encode the progress value inside {{double braces}} in
+// the cell text.
+const barPattern = /^\{\{([\d.]*)\}\}(.*)$/;
+
+function parseBarFraction(cell: Serializable<Cell>): { fraction: number, cellText: string } {
+    // barFraction is null for older IDE versions that do not support it
+    if (cell.format.barFraction !== null) {
+        return {
+            fraction: cell.format.barFraction,
+            cellText: cell.text,
+        };
+    }
+
+    const match = cell.text.match(barPattern);
+    if (match && match[1] && match[2]) {
+        return {
+            fraction: parseFloat(match[1]),
+            cellText: match[2],
+        };
+    }
+
+    return {
+        fraction: 0,
+        cellText: cell.text,
+    };
+}
 
 namespace Styles {
     export const self = css({
@@ -334,9 +374,16 @@ namespace Styles {
         // We use 'grid' to allow treeinfo/checkbox items at the start, with the
         // label taking up the rest of the space.
         display: "grid",
+        position: "relative",
         gridTemplateColumns: "max-content auto",
         alignItems: "center",
         userSelect: "none",
+    });
+    export const progressBar = css({
+        position: "absolute",
+        left: 0,
+        top: 0,
+        bottom: 0,
     });
     export const prefixItems = css({
         display: "flex",

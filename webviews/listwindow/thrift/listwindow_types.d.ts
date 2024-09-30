@@ -104,8 +104,9 @@ export declare class Format {
   textColor: Color;
   bgColor: Color;
   barColor: Color;
+  barFraction: number;
 
-    constructor(args?: { align: Alignment; style: TextStyle; editable: boolean; icons: string[]; transp: Color; textColor: Color; bgColor: Color; barColor: Color; });
+    constructor(args?: { align: Alignment; style: TextStyle; editable: boolean; icons: string[]; transp: Color; textColor: Color; bgColor: Color; barColor: Color; barFraction: number; });
   read(input: Object): void;
   write(input: Object): void;
 }
