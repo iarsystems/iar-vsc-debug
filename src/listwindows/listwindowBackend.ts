@@ -1,6 +1,9 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+import * as vscode from "vscode";
+import * as fs from "fs/promises";
+import * as path from "path";
 import {
     Note,
     ToolbarNote,
@@ -43,6 +46,7 @@ export class ListWindowBackendHandler<T extends ListWindowBackend.Client> {
         undefined;
 
     constructor(
+        private readonly context: vscode.ExtensionContext,
         view: ListwindowViewProvider,
         serviceName: string,
         cf: CTor<AbstractListwindowClient<T>> | undefined,
@@ -79,7 +83,7 @@ export class ListWindowBackendHandler<T extends ListWindowBackend.Client> {
     }
 
     async connect(
-        sessionId: string,
+        session: vscode.DebugSession,
         serviceRegistry: ThriftServiceRegistry,
         supportsGenericToolbars: boolean,
     ): Promise<void> {
@@ -90,6 +94,9 @@ export class ListWindowBackendHandler<T extends ListWindowBackend.Client> {
                 serviceRegistry,
                 supportsGenericToolbars ? undefined : this.clientFactory,
             );
+        await backendClient.service.setContentStorageFile(
+            await this.getContentStorageFile(session),
+        );
 
         let controller: ListwindowController;
         if (await backendClient.service.isSliding()) {
@@ -115,7 +122,7 @@ export class ListWindowBackendHandler<T extends ListWindowBackend.Client> {
         await backendClient.service.connect(frontendLocation);
         await backendClient.service.show(true);
 
-        this.sessions.set(sessionId, controller);
+        this.sessions.set(session.id, controller);
 
         // Pass a full update to the system to update columns, headers etc. It
         // is important that this happens here, when we know the model is not
@@ -171,4 +178,16 @@ export class ListWindowBackendHandler<T extends ListWindowBackend.Client> {
         }
 
     }
+
+    private async getContentStorageFile(session: vscode.DebugSession) {
+        await fs.mkdir(this.context.globalStorageUri.fsPath, { recursive: true });
+        // Use a file unique to the debug configuration name. For e.g. quick
+        // watch history, we probably don't want the data to be shared between
+        // debug sessions.
+        const sessionName = session.name.replace(ILLEGAL_PATH_CHARS, "");
+        const filename = "content-storage-" + this.serviceName + "-" + sessionName + ".json";
+        return path.join(this.context.globalStorageUri.fsPath, filename);
+    }
 }
+
+const ILLEGAL_PATH_CHARS = /[<>:"/\\|?*]/g;

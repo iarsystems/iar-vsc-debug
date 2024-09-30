@@ -111,7 +111,7 @@ export class ListwindowManager {
         // supported by all drivers.
         await Promise.allSettled(
             this.windows.map(window =>
-                window.connect(session.id, registry, supportsGenericToolbars),
+                window.connect(session, registry, supportsGenericToolbars),
             ),
         );
     }
@@ -123,6 +123,7 @@ export class ListwindowManager {
                 definition.viewId,
             );
             return new ListWindowBackendHandler(
+                context,
                 view,
                 definition.serviceName,
                 definition.fallback ?? NullClient,
