@@ -88,7 +88,7 @@ export type ViewMessage =
   | { subject: "HTMLDump", html: string } // Response to a dumpHTML message, contains the full HTML of the view
   | { subject: "viewportChanged", rowsInPage: number } // The user has scrolled or resize the view
   | { subject: "columnClicked", col: number }
-  | { subject: "cellLeftClicked", col: number, row: SerializedBigInt, flags: SelectionFlags }
+  | { subject: "cellClicked", col: number, row: SerializedBigInt, flags: SelectionFlags }
   | { subject: "cellDoubleClicked", col: number, row: SerializedBigInt }
   | { subject: "getContextMenu", col: number, row: SerializedBigInt } // The user right-clicked a cell. The extension should reply with "contextMenuReply"
   | { subject: "getTooltip", col: number, row: SerializedBigInt } // The user is hovering a cell. The extension should reply with "tooltipReply"

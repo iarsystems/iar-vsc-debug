@@ -69,7 +69,7 @@ export class MockListwindow implements vscode.Disposable {
                 break;
             case "columnClicked":
                 break;
-            case "cellLeftClicked":
+            case "cellClicked":
                 this.view.postMessageToView({
                     subject: "render",
                     params: getMockRenderParams(

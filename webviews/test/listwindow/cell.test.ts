@@ -40,18 +40,19 @@ suite("Listwindow cells", () => {
         );
         user.click(cell);
 
-        const msg = await api.waitForMessage("cellLeftClicked");
+        const msg = await api.waitForMessage("cellClicked");
         Assert.strictEqual(msg.row.value, "0");
         Assert.strictEqual(msg.col, 1);
     });
 
-    test("Sends message on right click", async() => {
+    test("Sends messages on right click", async() => {
         const { api, dom } = await setupTestEnvironment();
 
         const renderParams = TestUtils.generateRenderParameters(1);
         await TestUtils.render(api, renderParams);
 
-        const msgPromise = api.waitForMessage("getContextMenu");
+        const msgPromise = api.waitForMessage("cellClicked");
+        const msgPromise2 = api.waitForMessage("getContextMenu");
         const cell = queries.getByText(
             dom.window.document.documentElement,
             renderParams.rows[0]!.cells[1]!.text,
@@ -61,6 +62,9 @@ suite("Listwindow cells", () => {
         const msg = await msgPromise;
         Assert.strictEqual(msg.row.value, "0");
         Assert.strictEqual(msg.col, 1);
+        const msg2 = await msgPromise2;
+        Assert.strictEqual(msg2.row.value, "0");
+        Assert.strictEqual(msg2.col, 1);
     });
 
     test("Can edit cells by clicking", async() => {
@@ -186,7 +190,7 @@ suite("Listwindow cells", () => {
             const button = cell.querySelector("button");
             Assert(button);
 
-            const cellClickMsgPromise = api.waitForMessage("cellLeftClicked", 100);
+            const cellClickMsgPromise = api.waitForMessage("cellClicked", 100);
             user.click(button);
             const expectedMsg = expectedMessages[row]!;
             const msg = await api.waitForMessage(expectedMsg.subject);

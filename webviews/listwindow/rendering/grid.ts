@@ -78,7 +78,7 @@ export class GridRenderer {
                 return;
             }
             this.messageService.sendMessage({
-                subject: "cellLeftClicked",
+                subject: "cellClicked",
                 col: -1,
                 row: { value: "-1" },
                 flags: SelectionFlags.kReplace,
@@ -120,6 +120,13 @@ export class GridRenderer {
             this.contextMenuService.requestContextMenu(ev.detail);
         });
         this.container.addEventListener("contextmenu", (ev: MouseEvent) => {
+            // Both EW and eclipse do a 'click' on right click, so let's do the same
+            this.messageService.sendMessage({
+                subject: "cellClicked",
+                col: -1,
+                row: { value: "-1" },
+                flags: SelectionFlags.kReplace,
+            });
             this.contextMenuService.requestContextMenu({
                 col: -1,
                 row: -1n,
