@@ -180,7 +180,7 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
                 });
                 break;
             }
-            case "cellLeftClicked": {
+            case "cellClicked": {
                 this.scheduleCall(async() => {
                     await this.backend.service.click(
                         toInt64(msg.row),

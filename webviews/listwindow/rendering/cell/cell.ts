@@ -195,7 +195,7 @@ export class CellElement extends HTMLElement {
                         },
                         cellContent: {
                             text: this.cell?.text,
-                            isTruncated: label.scrollWidth > label.clientWidth,
+                            isTruncated: labelText.scrollWidth > labelText.clientWidth,
                         },
                     },
                     bubbles: true,
@@ -288,14 +288,9 @@ export class CellElement extends HTMLElement {
                     row: { value: this.position.row.toString() },
                 });
             } else {
-                let flags = SelectionFlags.kReplace;
-                if (ev.ctrlKey) {
-                    flags = SelectionFlags.kAdd;
-                } else if (ev.shiftKey) {
-                    flags = SelectionFlags.kRange;
-                }
+                const flags = getSelectionFlags(ev);
                 this.messageService?.sendMessage({
-                    subject: "cellLeftClicked",
+                    subject: "cellClicked",
                     col: this.position.col,
                     row: { value: this.position.row.toString() },
                     flags,
@@ -307,6 +302,15 @@ export class CellElement extends HTMLElement {
 
     override oncontextmenu = (ev: MouseEvent) => {
         ev.stopPropagation();
+
+        const flags = getSelectionFlags(ev);
+        this.messageService?.sendMessage({
+            subject: "cellClicked",
+            col: this.position.col,
+            row: { value: this.position.row.toString() },
+            flags,
+        });
+
         const event = createCustomEvent("cell-right-clicked", {
             detail: {
                 ...this.position,
@@ -320,6 +324,15 @@ export class CellElement extends HTMLElement {
         this.dispatchEvent(event);
     };
 
+}
+
+function getSelectionFlags(ev: MouseEvent): SelectionFlags {
+    if (ev.ctrlKey) {
+        return SelectionFlags.kAdd;
+    } else if (ev.shiftKey) {
+        return SelectionFlags.kRange;
+    }
+    return SelectionFlags.kReplace;
 }
 
 namespace Styles {
