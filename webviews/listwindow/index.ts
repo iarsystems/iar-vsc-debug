@@ -41,8 +41,6 @@ provideVSCodeDesignSystem().register(
  * input events.
  */
 class ListwindowController {
-    private static readonly NO_OVERFLOW_X = css({ overflowX: "hidden" });
-
     private readonly persistedState: PersistedState;
     private renderParams: Serializable<RenderParameters> | undefined =
         undefined;
@@ -64,6 +62,9 @@ class ListwindowController {
         vscode: WebviewApi<PersistedState.Data>,
     ) {
         // Set up some global styles
+        document.documentElement.classList.add(css({
+            overflow: "hidden",
+        }));
         document.body.classList.add(css({
             padding: 0,
             // For some reason the webview iframe is sometimes one pixel narrower
@@ -203,12 +204,6 @@ class ListwindowController {
             return;
         }
         Theming.setGridLinesVisible(!!this.renderParams?.listSpec.showGrid);
-
-        if (this.resizeMode === "fit") {
-            document.documentElement.classList.add(ListwindowController.NO_OVERFLOW_X);
-        } else {
-            document.documentElement.classList.remove(ListwindowController.NO_OVERFLOW_X);
-        }
 
         this.grid.render(
             this.renderParams,
