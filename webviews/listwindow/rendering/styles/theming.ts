@@ -61,7 +61,7 @@ export namespace Theming {
     // Applied when 'showGrid' is enabled in the ListSpec
     const GRID_LINES_VISIBLE_STYLES = css({
         [Variables.GridLineColor]:
-            "var(--vscode-widget-border, var(--vscode-sideBar-border, var(--vscode-panel-border, var(--vscode-list-deemphasizedForeground, transparent))))",
+            "var(--vscode-widget-border, var(--vscode-sideBar-border, var(--vscode-editorWidget-border, var(--vscode-panel-border, var(--vscode-list-deemphasizedForeground, transparent)))))",
         [Variables.GridLineStyle]:
             "solid",
     });
