@@ -140,14 +140,13 @@ class TooltipElement extends HTMLElement {
         FloatingUi.computePosition(cursorElem, this, {
             placement: "bottom-start",
             middleware: [
-                FloatingUi.shift({ padding }),
-                FloatingUi.flip({ padding }),
+                FloatingUi.flip({ padding, crossAxis: true }),
+                FloatingUi.shift({ padding, crossAxis: true }),
                 FloatingUi.size({
                     padding,
-                    apply({ availableWidth, availableHeight, elements }) {
+                    apply({ availableWidth, elements }) {
                         Object.assign(elements.floating.style, {
                             maxWidth: `${availableWidth}px`,
-                            maxHeight: `${availableHeight}px`,
                         });
                     },
                 }),
