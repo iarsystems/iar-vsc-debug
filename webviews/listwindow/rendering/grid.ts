@@ -92,6 +92,7 @@ export class GridRenderer {
 
         this.scrollbar = new ScrollbarElement();
         this.scrollbar.messageService = messageService;
+        this.scrollbar.style.display = "none";
         this.container.appendChild(this.scrollbar);
 
         this.overlay = document.createElement("div");
