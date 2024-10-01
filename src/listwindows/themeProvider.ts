@@ -76,7 +76,7 @@ export class ThemeProvider implements vscode.WebviewViewProvider, vscode.Disposa
                             ) ?? Colors.WHITE,
                             pc: Colors.cssToRgb(
                                 vars,
-                                "--vscode-debugIcon-breakpointCurrentStackframeForeground",
+                                "--vscode-inputValidation-warningBackground",
                             ) ?? Colors.RED,
                         },
                     };
