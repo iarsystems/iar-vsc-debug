@@ -388,7 +388,7 @@ class ContextMenuItemElement extends HTMLElement {
 
         this.classList.add(Styles.menuItem);
         this.onclick = () => {
-            if (this.item && this.item.enabled && this.item.command !== 0) {
+            if (this.item && this.item.enabled) {
                 this.dispatchEvent(
                     createCustomEvent("context-menu-item-clicked", {
                         detail: {

@@ -293,7 +293,7 @@ class DialogServiceInstance implements vscode.Disposable {
             // A list of extensions (e.g. '*.txt;*.pdf')
             const filterSpecification = fields[i+1];
             if (!filterName || !filterSpecification) continue;
-            results[filterName] = filterSpecification.split(";").map(ext => ext.replace(/^\*\./, ""));
+            results[filterName] = filterSpecification.split(";").map(ext => ext.replace(/^\*\.?/, ""));
         }
         return results;
     }

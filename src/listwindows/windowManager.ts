@@ -17,6 +17,7 @@ import { RegisterClient } from "./clients/registersLegacyClient";
 import { SymbolicMemoryClient } from "./clients/symbolicMemoryLegacyClient";
 import { StackClient } from "./clients/stackLegacyClient";
 import { CSpyLaunchRequestArguments } from "../dap/cspyDebug";
+import { CodeCoverageClient } from "./clients/codeCoverageLegacyClient";
 
 
 /** Describes a supported listwindow */
@@ -47,6 +48,8 @@ export class ListwindowManager {
         { viewId: "iar-reg-2", serviceName: "WIN_REGISTER_2", fallback: RegisterClient },
         { viewId: "iar-symbolic-memory", serviceName: "WIN_SYMBOLIC_MEMORY", fallback: SymbolicMemoryClient },
         { viewId: "iar-stack-1", serviceName: "WIN_STACK_1", fallback: StackClient },
+        { viewId: "iar-code-coverage", serviceName: "WIN_CODECOVERAGE", fallback: CodeCoverageClient },
+        { viewId: "iar-profiling", serviceName: "WIN_PROFILING2" },
     ];
 
     getBackendHandler(

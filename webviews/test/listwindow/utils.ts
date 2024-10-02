@@ -51,6 +51,7 @@ export namespace TestUtils {
         style: TextStyle.kProportionalPlain,
         textColor: black,
         transp: black,
+        barFraction: 0,
     });
 
     /**
