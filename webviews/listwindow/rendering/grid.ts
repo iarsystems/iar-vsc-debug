@@ -92,6 +92,7 @@ export class GridRenderer {
 
         this.scrollbar = new ScrollbarElement();
         this.scrollbar.messageService = messageService;
+        this.scrollbar.style.display = "none";
         this.container.appendChild(this.scrollbar);
 
         this.overlay = document.createElement("div");
@@ -106,14 +107,14 @@ export class GridRenderer {
             this.cellEditService.requestCellEdit(ev.detail);
         });
         this.tooltipService = new TooltipService(
-            this.container,
+            document.body,
             messageService,
         );
         this.container.addEventListener("cell-hovered", ev => {
             this.tooltipService.requestTooltip(ev);
         });
         this.contextMenuService = new ContextMenuService(
-            this.container,
+            document.body,
             messageService,
         );
         this.container.addEventListener("cell-right-clicked", ev => {
@@ -237,7 +238,7 @@ export class GridRenderer {
         // (since we don't know e.g. whether there is a header and/or grid).
 
         const headerHeight = this.lastRender?.header.getHeight() ?? 0;
-        const availableHeight = this.container.clientHeight - headerHeight;
+        const availableHeight = this.grid.clientHeight - headerHeight;
         const rowHeight =
             CellElement.HEIGHT_PX +
             (this.lastRender?.params.listSpec.showGrid ? 1 : 0);

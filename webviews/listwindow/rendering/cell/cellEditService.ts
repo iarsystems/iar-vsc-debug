@@ -9,6 +9,7 @@ import {  CellElement, CellPosition } from "./cell";
 import { MessageService } from "../../messageService";
 import { EditInfo } from "../../thrift/listwindow_types";
 import { Serializable } from "../../protocol";
+import { css } from "@emotion/css";
 
 interface ActiveCellEdit {
     textField: TextFieldElement;
@@ -136,6 +137,7 @@ class TextFieldElement extends HTMLElement {
         }
 
         const input = document.createElement("vscode-text-field") as TextField;
+        input.classList.add(Styles.textField);
         input.autofocus = true;
         input.value = this.defaultValue;
         // The vscode-text-field doesn't seem to create its children immediately,
@@ -174,4 +176,10 @@ class TextFieldElement extends HTMLElement {
             this.dispatchEvent(new CustomEvent("canceled"));
         }
     }
+}
+
+namespace Styles {
+    export const textField = css({
+        width: "100%",
+    });
 }
