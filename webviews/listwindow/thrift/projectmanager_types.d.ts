@@ -33,15 +33,16 @@ export declare enum NodeType {
   Group = 1,
   File = 2,
   ControlFile = 3,
+  ExternBinary = 4,
 }
 
 /**
  * An option type describes which control should be used to manipulate the option in a GUI
  * 
- * These currently match the class names in the SWTD option system, as that is the
- * only option type system which is widely used.
- * TBD: This might change in future versions of this service to match more abstract control types
- * (e.g. Edit is a text box, EditB is actually a tree-like structure).
+ * Most of these currently match the class names in the SWTD option system, as that is the
+ * only option type system which is widely used. However, DeviceSelection represents both
+ * EditMenu and CMSIS Pack device selectors.
+ * 
  */
 export declare enum OptionType {
   Check = 0,
@@ -51,6 +52,8 @@ export declare enum OptionType {
   Radio = 4,
   CheckList = 5,
   BuildActions = 6,
+  DeviceSelection = 7,
+  CMSISDevice = 8,
 }
 
 /**
@@ -161,7 +164,13 @@ export declare class WorkspaceContext {
 }
 
 /**
- * Corresponds to a project on disk
+ * Corresponds to a project on disk.
+ * 
+ * This type is both copiable and serializable, as the project manager
+ * will always try to reconstruct the project by its path.
+ * Therefore it is desirable to copy context instances instead of
+ * holding references or pointers to an existing context owned by
+ * another class, which might disappear and crash the application.
  */
 export declare class ProjectContext {
   filename: string;

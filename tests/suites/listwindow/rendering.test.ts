@@ -67,6 +67,7 @@ const format = new Format({
     style: TextStyle.kProportionalPlain,
     textColor: black,
     transp: black,
+    barFraction: 0,
 });
 
 function getBaseParameters(): RenderParameters {

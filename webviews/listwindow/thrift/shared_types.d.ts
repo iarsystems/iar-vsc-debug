@@ -6,6 +6,7 @@
 import Int64 = require('node-int64');
 import { Thrift } from 'thrift';
 
+
 /**
  * See DcResult in CoreUtil/include/DcCommon.h
  */

@@ -10,6 +10,10 @@ export const IconMap = new Map<string, [string, string | undefined]>([
     ["CSPY_CODE_COVERED_NONE", ["star-empty", "red"]],
     ["CSPY_CODE_COVERED_MEDIUM", ["star-half", "yellow"]],
     ["CSPY_CODE_COVERED_FULL", ["star-full", "green"]],
+    ["IDI_CODECOV_ENABLE", ["play-circle", undefined]],
+    ["IDI_CODECOV_CLEAR", ["clear-all", undefined]],
+    ["IDI_CODECOV_SAVE_SESSION", ["sign-in", undefined]],
+    ["IDI_CODECOV_RESTORE_SESSION", ["sign-out", undefined]],
     // Images window
     ["IDI_DBG_IMAGES_ON_FOCUSED", ["pass-filled", undefined]],
     ["IDI_DBG_IMAGES_ON_UNFOCUSED", ["pass", undefined]],
