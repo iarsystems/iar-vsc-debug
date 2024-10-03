@@ -4,7 +4,7 @@
 
 import { css } from "@emotion/css";
 import { createCustomEvent } from "../../events";
-import { Cell, Column, TextStyle } from "../../thrift/listwindow_types";
+import { Cell, Color, Column, TextStyle } from "../../thrift/listwindow_types";
 import { DragDropService } from "../dragDropService";
 import { HoverService } from "../hoverService";
 import { SharedStyles } from "../styles/sharedStyles";
@@ -125,17 +125,12 @@ export class CellElement extends HTMLElement {
         this.appendChild(new CellBordersElement);
 
         const { fraction, cellText } = parseBarFraction(this.cell);
+        const progressBar = document.createElement("div");
+        progressBar.classList.add(Styles.progressBar);
+        progressBar.style.width = `${fraction * 100}%`;
         if (fraction > 0) {
-            const progressBar = document.createElement("div");
-            progressBar.classList.add(Styles.progressBar);
-            progressBar.style.width = `${fraction * 100}%`;
             this.appendChild(progressBar);
 
-            let barColor = this.cell.format.barColor;
-            if (barColor.isDefault && this.columnInfo) {
-                barColor = this.columnInfo.defaultFormat.barColor;
-            }
-            progressBar.style.backgroundColor = `rgb(${barColor.r},${barColor.g},${barColor.b})`;
         }
 
         const content = document.createElement("div");
@@ -229,12 +224,23 @@ export class CellElement extends HTMLElement {
         if (textColor.isDefault && this.columnInfo) {
             textColor = this.columnInfo.defaultFormat.textColor;
         }
-        this.style.color = `rgb(${textColor.r},${textColor.g},${textColor.b})`;
         let bgColor = this.cell.format.bgColor;
         if (bgColor.isDefault && this.columnInfo) {
             bgColor = this.columnInfo.defaultFormat.bgColor;
         }
-        this.style.backgroundColor = `rgb(${bgColor.r},${bgColor.g},${bgColor.b})`;
+        let barColor = this.cell.format.barColor;
+        if (barColor.isDefault && this.columnInfo) {
+            barColor = this.columnInfo.defaultFormat.barColor;
+        }
+
+        // VSC-486 Some older workbenches have no theme support, and send
+        // black-on-black colors to cspyserver clients.
+        const ignoreFormatColors = isBlack(textColor) && isBlack(bgColor);
+        if (!ignoreFormatColors) {
+            this.style.color = `rgb(${textColor.r},${textColor.g},${textColor.b})`;
+            this.style.backgroundColor = `rgb(${bgColor.r},${bgColor.g},${bgColor.b})`;
+            progressBar.style.backgroundColor = `rgb(${barColor.r},${barColor.g},${barColor.b})`;
+        }
 
         if (this.cell.format.editable) {
             content.classList.add(Styles.editable);
@@ -375,6 +381,10 @@ function getSelectionFlags(ev: MouseEvent): SelectionFlags {
     return SelectionFlags.kReplace;
 }
 
+function isBlack(color: Serializable<Color>): boolean {
+    return color.r === 0 && color.g === 0 && color.b === 0;
+}
+
 namespace Styles {
     export const self = css({
         padding: 0,
@@ -397,6 +407,8 @@ namespace Styles {
         left: 0,
         top: 0,
         bottom: 0,
+        // This is a fallback color, for older workbenches with no theme support
+        backgroundColor: "var(--vscode-badge-background)",
     });
     export const prefixItems = css({
         display: "flex",
