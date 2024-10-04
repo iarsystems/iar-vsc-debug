@@ -8,7 +8,7 @@ import * as ContextManager from "iar-vsc-common/thrift/bindings/ContextManager";
 import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
 import { StackFrame, Source, Scope, Handles, Variable, logger } from "@vscode/debugadapter";
 import { basename } from "path";
-import { CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE, ExprValue } from "iar-vsc-common/thrift/bindings/cspy_types";
+import { CONTEXT_MANAGER_SERVICE, DEBUGGER_SERVICE, DkNotifyConstant, ExprValue } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { Disposable } from "../utils";
 import { ThriftServiceRegistry } from "iar-vsc-common/thrift/thriftServiceRegistry";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
@@ -19,6 +19,7 @@ import { DebugProtocol } from "@vscode/debugprotocol";
 import { RegistersVariablesProvider } from "./registersVariablesProvider";
 import { RegisterInformationService } from "../registerInformationService";
 import { CSpyCoresService } from "./cspyCoresService";
+import { DebugEventListenerHandler } from "../debugEventListenerHandler";
 
 /**
  * Describes a scope, i.e. a C-SPY context used to access the scope,
@@ -55,6 +56,13 @@ class EvalExpressionReference {
     ) { }
 }
 
+export interface SourceLocation {
+    source: Source,
+    startLine: number,
+    startColumn: number,
+    endLine: number,
+    endColumn: number,
+}
 
 /**
  * Takes care of managing stack contexts, and allows to perform operations
@@ -68,8 +76,14 @@ export class CSpyContextService implements Disposable.Disposable {
      * @param coresService The cores service belonging to the session. This class does not take ownership of the
      *      service, and is not responsible for disposing of it.
      * @param regInfoGen A registry information service to help provide register variables
+     * @param eventListener The session's cspy event bus
      */
-    static async instantiate(serviceRegistry: ThriftServiceRegistry, coresService: CSpyCoresService, regInfoGen: RegisterInformationService): Promise<CSpyContextService> {
+    static async instantiate(
+        serviceRegistry: ThriftServiceRegistry,
+        coresService: CSpyCoresService,
+        regInfoGen: RegisterInformationService,
+        eventListener: DebugEventListenerHandler,
+    ): Promise<CSpyContextService> {
         const onProviderUnavailable = (reason: unknown) => {
             logger.error("Failed to initialize variables provider: " + reason);
             return undefined;
@@ -82,6 +96,7 @@ export class CSpyContextService implements Disposable.Disposable {
             await ListWindowVariablesProvider.instantiate(serviceRegistry, WindowNames.STATICS, 0, 1, 3, 2).catch(onProviderUnavailable),
             // Registers need a special implementation to handle all the register groups
             await RegistersVariablesProvider.instantiate(serviceRegistry, regInfoGen).catch(onProviderUnavailable),
+            eventListener,
         );
     }
 
@@ -92,13 +107,30 @@ export class CSpyContextService implements Disposable.Disposable {
     private readonly scopeAndVariableHandles = new Handles<ScopeReference | VariableReference | EvalExpressionReference>();
     // Provides unique references to stack contexts (valid until the core starts again)
     private readonly stackFrameHandles = new Handles<ContextRef>();
+    // See {@link onContextChanged}
+    private readonly contextChangeCallbacks: Array<(frame: SourceLocation) => void> = [];
+    // We use this to suppress expected/uninteresting kDkInspectionContextChanged events
+    private readonly contextChangeSuppressor = new BooleanWithTimer(500);
 
     private constructor(private readonly contextManager: ThriftClient<ContextManager.Client>,
                         private readonly dbgr: ThriftClient<Debugger.Client>,
                         private readonly coresService: CSpyCoresService,
                         private readonly localsProvider: ListWindowVariablesProvider | undefined,
                         private readonly staticsProvider: ListWindowVariablesProvider | undefined,
-                        private readonly registersProvider: RegistersVariablesProvider | undefined) {
+                        private readonly registersProvider: RegistersVariablesProvider | undefined,
+                        debugEventListener: DebugEventListenerHandler) {
+        debugEventListener.observeDebugEvents(DkNotifyConstant.kDkCoreStopped, () => {
+            this.contextChangeSuppressor.setActiveWithTimeout();
+        });
+        debugEventListener.observeDebugEvents(DkNotifyConstant.kDkInspectionContextChanged, () => {
+            if (!this.contextChangeSuppressor.isActive()) {
+                this.getCurrentInspectionLocation().then(context => {
+                    if (context) {
+                        this.contextChangeCallbacks.forEach(cb => cb(context));
+                    }
+                });
+            }
+        });
     }
 
     /**
@@ -270,6 +302,19 @@ export class CSpyContextService implements Disposable.Disposable {
         });
     }
 
+    /**
+     * Register a callback to run when C-SPY's inspection context changes
+     * spontaneously, i.e. not as a result of a DAP request (fetching variables,
+     * for instance, implicitly change the context but does not call this
+     * callback).
+     * Typically this happens when the user is browsing through the trace
+     * window, and C-SPY thus wants to jump to some previous execution point
+     * that is different from the current stack frame(s).
+     */
+    onInspectionContextChanged(callback: (inspectedLocation: SourceLocation) => void) {
+        this.contextChangeCallbacks.push(callback);
+    }
+
     async dispose() {
         await this.localsProvider?.dispose();
         await this.staticsProvider?.dispose();
@@ -279,6 +324,9 @@ export class CSpyContextService implements Disposable.Disposable {
     }
 
     private withContext<T>(context: ContextRef, task: () => Promise<T>): Promise<T> {
+        // This will cause one ore more kDkInspectionContextChanged events,
+        // ignore them so they don't cause the text editor to jump.
+        this.contextChangeSuppressor.setActive();
         return this.coresService.performOnCore(context.core, async() => {
             // Tell the variable windows to wait for an update before providing any variables
             this.localsProvider?.notifyUpdateImminent();
@@ -286,7 +334,10 @@ export class CSpyContextService implements Disposable.Disposable {
             this.registersProvider?.notifyUpdateImminent();
 
             await this.contextManager.service.setInspectionContext(context);
-            return task();
+            return task().finally(() => {
+                // Ignore events that arrive a little late too
+                this.contextChangeSuppressor.setActiveWithTimeout();
+            });
         });
     }
 
@@ -300,5 +351,58 @@ export class CSpyContextService implements Disposable.Disposable {
             return variable;
         }
         return variable;
+    }
+
+    private async getCurrentInspectionLocation(): Promise<SourceLocation | undefined> {
+        const context = new ContextRef({ core: 0, level: 0, task: 0, type: ContextType.CurrentInspection });
+        const info = await this.contextManager.service.getContextInfo(context);
+        if (info.sourceRanges[0] === undefined) {
+            return undefined;
+        }
+        const filename = info.sourceRanges[0].filename;
+        return {
+            source: new Source(basename(filename), filename),
+            startLine: info.sourceRanges[0].first.line,
+            startColumn: info.sourceRanges[0].first.col,
+            endLine: info.sourceRanges[0].last.line,
+            endColumn: info.sourceRanges[0].last.col,
+        };
+    }
+
+
+}
+
+/**
+ * Helper for setting a boolean and turning it off after a certain time.
+ * Used to ignore kDkInspectionContextChanged events during a certain time frame.
+ */
+class BooleanWithTimer {
+    private active = true;
+    private timer: NodeJS.Timeout | undefined = undefined;
+
+    constructor(private readonly timeoutMs: number) {}
+
+    isActive() {
+        return this.active;
+    }
+
+    setActive() {
+        this.active = true;
+        if (this.timer) {
+            clearTimeout(this.timer);
+        }
+        this.timer = undefined;
+    }
+
+    setActiveWithTimeout() {
+        this.active = true;
+
+        if (this.timer) {
+            clearTimeout(this.timer);
+        }
+        this.timer = setTimeout(() => {
+            this.active = false;
+            this.timer = undefined;
+        }, this.timeoutMs);
     }
 }

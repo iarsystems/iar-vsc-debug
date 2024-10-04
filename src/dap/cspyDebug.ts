@@ -323,7 +323,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.teardown.pushDisposable(coresService);
 
             const registerInfoGenerator = new RegisterInformationService(args.driverOptions, await cspyProcess.serviceRegistry.findService(DEBUGGER_SERVICE, Debugger));
-            const contextService = await CSpyContextService.instantiate(cspyProcess.serviceRegistry, coresService, registerInfoGenerator);
+            const contextService = await CSpyContextService.instantiate(cspyProcess.serviceRegistry, coresService, registerInfoGenerator, this.cspyEventHandler);
             this.teardown.pushDisposable(contextService);
 
             const runControlService = await CSpyRunControlService.instantiate(cspyProcess.serviceRegistry, coresService, this.cspyEventHandler, this.libSupportHandler);
@@ -433,6 +433,17 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
         this.sendEvent(new OutputEvent("Session started\n"));
         this.sendResponse(response);
+
+        this.services.contextService.onInspectionContextChanged(frame => {
+            const body: CustomEvent.ContextChangedData = {
+                file: frame.source,
+                startLine: this.convertDebuggerLineToClient(frame.startLine),
+                startColumn: this.convertDebuggerColumnToClient(frame.startColumn),
+                endLine: this.convertDebuggerLineToClient(frame.endLine),
+                endColumn: this.convertDebuggerColumnToClient(frame.endColumn),
+            };
+            this.sendEvent(new Event(CustomEvent.Names.CONTEXT_CHANGED, body));
+        });
 
         // Perform any initial run-to action if needed
         let doStop: boolean;

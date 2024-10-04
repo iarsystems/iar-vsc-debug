@@ -5,6 +5,7 @@
 import { MsgIcon, MsgKind, MsgResult } from "iar-vsc-common/thrift/bindings/frontend_types";
 import { BreakpointType } from "./breakpoints/cspyBreakpointService";
 import { Protocol, Transport } from "iar-vsc-common/thrift/bindings/ServiceRegistry_types";
+import { Source } from "@vscode/debugadapter";
 
 /**
  * Custom requests can be sent from a DAP client to the DAP server. Basically, these are C-SPY specific extensions to
@@ -188,6 +189,10 @@ export namespace CustomEvent {
      * Holds the names of all supported custom events or "reverse requests".
      */
     export enum Names {
+        /** Sent when cspy's inspection context (e.g. inspected stack frame)
+        * changes for a reason other than as a result of a DAP request (e.g.
+        * because the user pressed something in a listwindow) */
+        CONTEXT_CHANGED             = "contextChanged",
         /// most events here correspond to events sent to {@link FrontendHandler}.
         MESSAGE_BOX_CREATED         = "messageBoxCreated",
         OPEN_DIALOG_CREATED         = "openDialogCreated",
@@ -200,6 +205,14 @@ export namespace CustomEvent {
         FILE_OPENED                 = "fileOpened",
         THEME_REQUESTED             = "themeRequested",
         LISTWINDOWS_REQUESTED       = "listwindowRequested"
+    }
+
+    export interface ContextChangedData {
+        file: Source;
+        startLine: number;
+        startColumn: number;
+        endLine: number;
+        endColumn: number;
     }
 
     export interface MessageBoxCreatedData {
