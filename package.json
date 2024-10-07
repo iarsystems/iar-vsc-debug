@@ -207,7 +207,39 @@
 				}
 			}
 		],
+		"viewsContainers": {
+			"panel": [
+				{
+					"icon": "debug",
+					"id": "iar-debug",
+					"title": "iar Debug"
+				}
+			]
+		},
 		"views": {
+			"iar-debug": [
+				{
+					"id": "iar-trace",
+					"contextualTitle": "iar",
+					"name": "Trace",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-trace.enabled"
+				},
+				{
+					"id": "iar-code-coverage",
+					"contextualTitle": "iar",
+					"name": "Code Coverage",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-code-coverage.enabled"
+				},
+				{
+					"id": "iar-profiling",
+					"contextualTitle": "iar",
+					"name": "Profiling",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-profiling.enabled"
+				}
+			],
 			"debug": [
 				{
 					"id": "iar-theme-detector",
@@ -219,77 +251,56 @@
 					"id": "iar-test-listwindow",
 					"name": "Test Listwindow (for running tests only)",
 					"type": "webview",
-					"when": "iar-test-listwindow.visible"
+					"when": "iar-test-listwindow.enabled"
 				},
 				{
 					"id": "iar-mock-listwindow",
 					"contextualTitle": "iar",
 					"name": "Mock Listwindow (dev only)",
 					"type": "webview",
-					"when": "iar-mock-listwindow.visible"
+					"when": "iar-mock-listwindow.enabled"
 				},
 				{
 					"id": "iar-autos",
 					"contextualTitle": "Autos",
 					"name": "Autos",
 					"type": "webview",
-					"when": "inDebugMode && debugType == cspy && iar-autos.visible"
-				},
-				{
-					"id": "iar-trace",
-					"contextualTitle": "iar",
-					"name": "Trace",
-					"type": "webview",
-					"when": "inDebugMode && debugType == cspy && iar-trace.visible"
+					"when": "inDebugMode && debugType == cspy && iar-autos.enabled"
 				},
 				{
 					"id": "iar-quick-watch",
 					"contextualTitle": "iar",
 					"name": "Quick Watch",
 					"type": "webview",
-					"when": "inDebugMode && debugType == cspy && iar-quick-watch.visible"
+					"when": "inDebugMode && debugType == cspy && iar-quick-watch.enabled"
 				},
 				{
 					"id": "iar-live-watch",
 					"contextualTitle": "iar",
 					"name": "Live Watch",
 					"type": "webview",
-					"when": "inDebugMode && debugType == cspy && iar-live-watch.visible"
+					"when": "inDebugMode && debugType == cspy && iar-live-watch.enabled"
 				},
 				{
 					"id": "iar-reg-2",
 					"contextualTitle": "iar",
 					"name": "Registers",
 					"type": "webview",
-					"when": "inDebugMode && debugType == cspy && iar-reg-2.visible"
+					"when": "inDebugMode && debugType == cspy && iar-reg-2.enabled"
 				},
 				{
 					"id": "iar-symbolic-memory",
 					"contextualTitle": "iar",
 					"name": "Symbolic Memory",
 					"type": "webview",
-					"when": "inDebugMode && debugType == cspy && iar-symbolic-memory.visible"
+					"when": "inDebugMode && debugType == cspy && iar-symbolic-memory.enabled"
 				},
 				{
 					"id": "iar-stack-1",
 					"contextualTitle": "iar",
 					"name": "Stack",
 					"type": "webview",
-					"when": "inDebugMode && debugType == cspy && iar-stack-1.visible"
-				},
-				{
-					"id": "iar-code-coverage",
-					"contextualTitle": "iar",
-					"name": "Code Coverage",
-					"type": "webview",
-					"when": "inDebugMode && debugType == cspy && iar-code-coverage.visible"
-				},
-				{
-					"id": "iar-profiling",
-					"contextualTitle": "iar",
-					"name": "Profiling",
-					"type": "webview",
-					"when": "inDebugMode && debugType == cspy && iar-profiling.visible"
+					"when": "inDebugMode && debugType == cspy && iar-stack-1.enabled"
 				}
 
 			]

@@ -102,8 +102,8 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider, vscod
      * Note that an enabled view is not necessarily *visible*, since it mey be
      * hidden or collapsed by the user.
      */
-    setEnabled(visible: boolean) {
-        vscode.commands.executeCommand("setContext", `${this.viewId}.visible`, visible);
+    setEnabled(enabled: boolean) {
+        vscode.commands.executeCommand("setContext", `${this.viewId}.enabled`, enabled);
     }
 
     /**
