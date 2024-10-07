@@ -144,7 +144,6 @@ export class ToolbarItemText extends BasicToolbarItem {
     private readonly editable;
     private historyCanvas: HTMLDivElement | undefined;
     private readonly NO_HISTORY_ELEMS = 10;
-    private history: string[] = [];
     private readonly historyElements: HTMLAnchorElement[] = [];
 
     constructor(def: ToolbarItem, isEditable = false) {
@@ -161,25 +160,17 @@ export class ToolbarItemText extends BasicToolbarItem {
             this.edit.contentEditable = state.enabled ? "true" : "false";
         }
         this.edit.textContent = state.str;
-    }
 
-    updateHistory(element: string): void {
-        // Places the element first in the list.
-        const index = this.history.indexOf(element);
-        if (index !== -1) {
-            this.history.splice(index, 1);
-        }
-        this.history.unshift(element);
-
+        let history = state.str.split("\t");
         // Drop overflowing history.
-        if (this.history.length > this.NO_HISTORY_ELEMS) {
-            this.history = this.history.slice(this.NO_HISTORY_ELEMS - 1);
+        if (history.length > this.NO_HISTORY_ELEMS) {
+            history = history.slice(this.NO_HISTORY_ELEMS - 1);
         }
 
         for (let i = 0; i < this.NO_HISTORY_ELEMS; i++) {
             let content: string | undefined = "";
-            if (i < this.history.length) {
-                content = this.history[i];
+            if (i < history.length) {
+                content = history[i];
             }
             const hElement = this.historyElements[i];
             if (hElement) {
@@ -216,9 +207,6 @@ export class ToolbarItemText extends BasicToolbarItem {
                     if (!content || content.length === 0) {
                         return;
                     }
-
-                    //Insert the element into history.
-                    this.updateHistory(content as string);
 
                     this.dispatchEvent(
                         createCustomEvent("toolbar-item-interaction", {
@@ -444,6 +432,7 @@ export class ToolbarItemCombo extends BasicToolbarItem {
         this.style.display = state.visible ? "block" : "none";
         if (this.select) {
             this.select.disabled = !state.enabled;
+            this.select.selectedIndex = Number(toBigInt(state.detail));
         }
     }
 
