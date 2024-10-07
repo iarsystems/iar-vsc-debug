@@ -28,6 +28,7 @@ import { css } from "@emotion/css";
 import { ToolbarElement } from "./rendering/toolbar/toolbar";
 import { toBigInt } from "./rendering/utils";
 import { PropertyTreeItem } from "./thrift/shared_types";
+import { SharedStyles } from "./rendering/styles/sharedStyles";
 
 provideVSCodeDesignSystem().register(
     vsCodeTextField(),
@@ -237,6 +238,7 @@ window.addEventListener("load", () => {
 namespace Styles {
     export const toolbarCanvas = css({
         width: "100%",
+        zIndex: SharedStyles.ZIndices.Toolbar,
         backgroundColor: "var(--vscode-sideBar-background)",
     });
 }
