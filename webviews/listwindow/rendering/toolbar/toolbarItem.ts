@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { css } from "@emotion/css";
-import { customElement } from "../utils";
+import { customElement, toBigInt } from "../utils";
 import { ToolbarItem, ToolbarItemType } from "./toolbarConstants";
 import { createCustomEvent } from "../../events";
 import { Checkbox } from "@vscode/webview-ui-toolkit/dist/checkbox";
@@ -547,8 +547,9 @@ export class ToolbarItemSimpleCheckBox extends BasicToolbarItem {
 // the state visualizer.
 @customElement("listwindow-toolbar-checkbox")
 export class ToolbarItemCheckBox extends BasicToolbarItem {
-    private checkbox: HTMLInputElement | undefined;
     private label: HTMLLabelElement | undefined;
+    private checked = false;
+    private enabled = true;
 
     private readonly TOGGLE_ON = css({
         background: "var(--vscode-button-background)",
@@ -564,11 +565,9 @@ export class ToolbarItemCheckBox extends BasicToolbarItem {
 
     updateState(state: Serializable<ToolbarItemState>): void {
         this.style.display = state.visible ? "block" : "none";
-        if (this.checkbox) {
-            this.checkbox.disabled = !state.enabled;
-            this.checkbox.checked = state.on;
-            this.updateCheckbox();
-        }
+        this.checked = state.on;
+        this.enabled = state.enabled;
+        this.updateCheckbox();
     }
 
     constructor(def: ToolbarItem) {
@@ -576,8 +575,8 @@ export class ToolbarItemCheckBox extends BasicToolbarItem {
     }
 
     updateCheckbox() {
-        if (this.label && this.checkbox) {
-            if (this.checkbox?.checked) {
+        if (this.label) {
+            if (this.checked) {
                 this.label.classList.remove(this.TOGGLE_OFF);
                 this.label.classList.add(this.TOGGLE_ON);
             } else {
@@ -588,11 +587,11 @@ export class ToolbarItemCheckBox extends BasicToolbarItem {
     }
 
     connectedCallback() {
-        this.checkbox = document.createElement("input");
-        this.checkbox.type = "checkbox";
-        this.checkbox.id = this.definition.id;
+        this.onclick = _ev => {
+            if (!this.enabled) {
+                return;
+            }
 
-        this.checkbox.onclick = _ev => {
             this.dispatchEvent(
                 createCustomEvent("toolbar-item-interaction", {
                     detail: {
@@ -632,11 +631,9 @@ export class ToolbarItemCheckBox extends BasicToolbarItem {
         this.addHover(this.label);
         this.label.classList.add(this.TOGGLE_OFF);
 
-        this.checkbox.classList.add(Styles.checkbox);
         this.label.classList.add(Styles.clickable);
 
         this.appendChild(this.label);
-        this.appendChild(this.checkbox);
     }
 }
 
@@ -748,16 +745,6 @@ namespace Styles {
     export const simpleCheckbox = css({
         height: "16px",
         marginTop: "6px",
-    });
-    export const checkbox = css({
-        display: "none",
-        background: "var(--vscode-checkbox-background)",
-        color: "var(--vscode-checkbox-foreground)",
-        border: "1px solid var(--vscode-checkbox-border)",
-        height: `${String(Constants.ItemHeight - 3)}px`,
-        width: `${String(Constants.ItemHeight - 3)}px !important`,
-        marginTop: "2px",
-        borderRadius: "2px",
     });
     export const checkboxLabel = css(
         {
