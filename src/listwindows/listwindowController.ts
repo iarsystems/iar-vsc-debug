@@ -384,6 +384,13 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
                         msg.id,
                         item,
                     );
+                }).then(() => {
+                    this.notifyToolbar(
+                        new ToolbarNote({
+                            what: ToolbarWhat.kNormalUpdate,
+                            focusOn: -1,
+                        }),
+                    );
                 });
                 break;
             }
@@ -470,10 +477,7 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
                     return;
                 }
 
-                if (note.what === What.kNormalUpdate) {
-                    await this.updateNumberOfRows();
-                }
-
+                await this.updateNumberOfRows();
                 return this.redraw();
             });
         });

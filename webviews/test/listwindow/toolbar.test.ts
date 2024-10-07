@@ -184,6 +184,7 @@ suite("Listwindow Toolbar", () => {
         Assert.strictEqual(item.id, "select");
         Assert.ok(!item.properties.children[1]?.value.includes("item1"));
         Assert.ok(item.properties.children[1]?.value.includes("item2"));
+        Assert.strictEqual(item.properties.children[0]?.value, "1");
     }),
     test("Icon dropdown...", async() => {
         const { api, dom, user } = await setupTestEnvironment();

@@ -92,11 +92,18 @@ export abstract class BasicToolbarItem extends HTMLElement {
         final: boolean,
         content: string,
     ): Serializable<PropertyTreeItem> {
+        return this.packContentWithInt(final ? 1 : 0, content);
+    }
+
+    public packContentWithInt(
+        int: number,
+        content: string,
+    ): Serializable<PropertyTreeItem> {
         return {
             key: "ROOT",
             value: "NONE",
             children: [
-                { key: "int0", value: final ? "1" : "0", children: [] },
+                { key: "int0", value: int.toString(), children: [] },
                 { key: "str0", value: content, children: [] },
             ],
         };
@@ -443,7 +450,7 @@ export class ToolbarItemCombo extends BasicToolbarItem {
         this.select = document.createElement("vscode-dropdown") as Dropdown;
         this.select.classList.add(Styles.combo);
         this.select.id = this.definition.id;
-        this.definition.stringList.forEach((value: string) => {
+        this.definition.stringList.forEach((value: string, index) => {
             const option = document.createElement("option");
             option.text = value;
             option.value = value;
@@ -454,7 +461,7 @@ export class ToolbarItemCombo extends BasicToolbarItem {
                     createCustomEvent("toolbar-item-interaction", {
                         detail: {
                             id: this.definition.id,
-                            properties: this.packContent(true, option.text),
+                            properties: this.packContentWithInt(index, option.text),
                         },
                         bubbles: true,
                     }),
