@@ -165,6 +165,10 @@ export class ToolbarItemText extends BasicToolbarItem {
 
     updateHistory(element: string): void {
         // Places the element first in the list.
+        const index = this.history.indexOf(element);
+        if (index !== -1) {
+            this.history.splice(index, 1);
+        }
         this.history.unshift(element);
 
         // Drop overflowing history.
