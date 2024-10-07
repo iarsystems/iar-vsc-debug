@@ -384,13 +384,15 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
                         msg.id,
                         item,
                     );
-                }).then(() => {
-                    this.notifyToolbar(
-                        new ToolbarNote({
-                            what: ToolbarWhat.kNormalUpdate,
-                            focusOn: -1,
-                        }),
-                    );
+                    const value =
+                        await this.toolbarInterface.getToolbarItemState(msg.id);
+                    if (value) {
+                        this.sendToView?.({
+                            subject: "updateToolbarItem",
+                            id: msg.id,
+                            state: value,
+                        });
+                    }
                 });
                 break;
             }
@@ -410,18 +412,8 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
     notifyToolbar(note: ToolbarNote): Q.Promise<void> {
         switch (note.what) {
             case ToolbarWhat.kNormalUpdate: {
-                this.toolbarIds.forEach(id => {
-                    this.scheduleCall(async() => {
-                        const value =
-                            await this.toolbarInterface.getToolbarItemState(id);
-                        if (value) {
-                            this.sendToView?.({
-                                subject: "updateToolbarItem",
-                                id: id,
-                                state: value,
-                            });
-                        }
-                    });
+                this.scheduleCall(() => {
+                    return this.updateToolbarStates();
                 });
                 break;
             }
@@ -435,6 +427,7 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
                             params: value,
                         });
                     }
+                    await this.updateToolbarStates();
                 });
                 break;
             }
@@ -527,6 +520,20 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
             subject: "render",
             params,
         });
+    }
+
+    private async updateToolbarStates() {
+        for (const id of this.toolbarIds) {
+            const value =
+                await this.toolbarInterface.getToolbarItemState(id);
+            if (value) {
+                this.sendToView?.({
+                    subject: "updateToolbarItem",
+                    id: id,
+                    state: value,
+                });
+            }
+        }
     }
 
     private async updateNumberOfRows() {

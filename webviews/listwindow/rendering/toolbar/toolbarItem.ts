@@ -251,8 +251,6 @@ export class ToolbarItemText extends BasicToolbarItem {
                             bubbles: true,
                         }),
                     );
-
-                    this.updateHistory(element.textContent as string);
                 };
                 element.classList.add(Styles.dropdownLabel);
 
