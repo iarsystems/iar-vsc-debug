@@ -192,10 +192,12 @@ export class ToolbarItemText extends BasicToolbarItem {
         const canvas = document.createElement("div");
         canvas.classList.add(Styles.twoGrid);
 
-        const label = document.createElement("div");
-        label.textContent = this.definition.text;
-        label.classList.add(Styles.basicText);
-        canvas.appendChild(label);
+        if (this.definition.text !== "") {
+            const label = document.createElement("div");
+            label.textContent = this.definition.text;
+            label.classList.add(Styles.basicText);
+            canvas.appendChild(label);
+        }
 
         if (this.editable) {
             const editCanvas = document.createElement("div");
@@ -720,7 +722,6 @@ namespace Styles {
             color: "var(--vscode-foreground)",
             background: "var(--vscode-sideBar-background)",
             height: `${String(Constants.ItemHeight - 1)}px`,
-            width: "40%",
             padding: "2px 12px",
             overflow: "hidden",
             textOverflow: "ellipsis",
