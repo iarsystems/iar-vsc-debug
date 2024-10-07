@@ -486,6 +486,9 @@ export class ToolbarItemProgress extends BasicToolbarItem {
 
     updateState(state: Serializable<ToolbarItemState>): void {
         this.style.display = state.visible ? "block" : "none";
+        if (this.progressBar) {
+            this.progressBar.value = Number(toBigInt(state.detail));
+        }
     }
 
     constructor(def: ToolbarItem) {
@@ -494,8 +497,8 @@ export class ToolbarItemProgress extends BasicToolbarItem {
 
     connectedCallback() {
         this.progressBar = document.createElement("progress");
-        this.progressBar.value = parseInt(this.definition.text);
-        this.progressBar.max = parseInt(this.definition.text2);
+        // It seems all windows use 10000 as max by convention.
+        this.progressBar.max = 10000;
         this.addHover(this.progressBar);
         this.appendChild(this.progressBar);
     }
