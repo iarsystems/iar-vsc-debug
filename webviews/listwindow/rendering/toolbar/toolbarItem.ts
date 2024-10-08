@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { css } from "@emotion/css";
-import { customElement } from "../utils";
+import { customElement, toBigInt } from "../utils";
 import { ToolbarItem, ToolbarItemType } from "./toolbarConstants";
 import { createCustomEvent } from "../../events";
 import { Checkbox } from "@vscode/webview-ui-toolkit/dist/checkbox";
@@ -92,11 +92,18 @@ export abstract class BasicToolbarItem extends HTMLElement {
         final: boolean,
         content: string,
     ): Serializable<PropertyTreeItem> {
+        return this.packContentWithInt(final ? 1 : 0, content);
+    }
+
+    public packContentWithInt(
+        int: number,
+        content: string,
+    ): Serializable<PropertyTreeItem> {
         return {
             key: "ROOT",
             value: "NONE",
             children: [
-                { key: "int0", value: final ? "1" : "0", children: [] },
+                { key: "int0", value: int.toString(), children: [] },
                 { key: "str0", value: content, children: [] },
             ],
         };
@@ -137,7 +144,6 @@ export class ToolbarItemText extends BasicToolbarItem {
     private readonly editable;
     private historyCanvas: HTMLDivElement | undefined;
     private readonly NO_HISTORY_ELEMS = 10;
-    private history: string[] = [];
     private readonly historyElements: HTMLAnchorElement[] = [];
 
     constructor(def: ToolbarItem, isEditable = false) {
@@ -154,21 +160,17 @@ export class ToolbarItemText extends BasicToolbarItem {
             this.edit.contentEditable = state.enabled ? "true" : "false";
         }
         this.edit.textContent = state.str;
-    }
 
-    updateHistory(element: string): void {
-        // Places the element first in the list.
-        this.history.unshift(element);
-
+        let history = state.str.split("\t");
         // Drop overflowing history.
-        if (this.history.length > this.NO_HISTORY_ELEMS) {
-            this.history = this.history.slice(this.NO_HISTORY_ELEMS - 1);
+        if (history.length > this.NO_HISTORY_ELEMS) {
+            history = history.slice(this.NO_HISTORY_ELEMS - 1);
         }
 
         for (let i = 0; i < this.NO_HISTORY_ELEMS; i++) {
             let content: string | undefined = "";
-            if (i < this.history.length) {
-                content = this.history[i];
+            if (i < history.length) {
+                content = history[i];
             }
             const hElement = this.historyElements[i];
             if (hElement) {
@@ -181,10 +183,12 @@ export class ToolbarItemText extends BasicToolbarItem {
         const canvas = document.createElement("div");
         canvas.classList.add(Styles.twoGrid);
 
-        const label = document.createElement("div");
-        label.textContent = this.definition.text;
-        label.classList.add(Styles.basicText);
-        canvas.appendChild(label);
+        if (this.definition.text !== "") {
+            const label = document.createElement("div");
+            label.textContent = this.definition.text;
+            label.classList.add(Styles.basicText);
+            canvas.appendChild(label);
+        }
 
         if (this.editable) {
             const editCanvas = document.createElement("div");
@@ -203,9 +207,6 @@ export class ToolbarItemText extends BasicToolbarItem {
                     if (!content || content.length === 0) {
                         return;
                     }
-
-                    //Insert the element into history.
-                    this.updateHistory(content as string);
 
                     this.dispatchEvent(
                         createCustomEvent("toolbar-item-interaction", {
@@ -250,8 +251,6 @@ export class ToolbarItemText extends BasicToolbarItem {
                             bubbles: true,
                         }),
                     );
-
-                    this.updateHistory(element.textContent as string);
                 };
                 element.classList.add(Styles.dropdownLabel);
 
@@ -431,6 +430,7 @@ export class ToolbarItemCombo extends BasicToolbarItem {
         this.style.display = state.visible ? "block" : "none";
         if (this.select) {
             this.select.disabled = !state.enabled;
+            this.select.selectedIndex = Number(toBigInt(state.detail));
         }
     }
 
@@ -443,7 +443,7 @@ export class ToolbarItemCombo extends BasicToolbarItem {
         this.select = document.createElement("vscode-dropdown") as Dropdown;
         this.select.classList.add(Styles.combo);
         this.select.id = this.definition.id;
-        this.definition.stringList.forEach((value: string) => {
+        this.definition.stringList.forEach((value: string, index) => {
             const option = document.createElement("option");
             option.text = value;
             option.value = value;
@@ -454,7 +454,7 @@ export class ToolbarItemCombo extends BasicToolbarItem {
                     createCustomEvent("toolbar-item-interaction", {
                         detail: {
                             id: this.definition.id,
-                            properties: this.packContent(true, option.text),
+                            properties: this.packContentWithInt(index, option.text),
                         },
                         bubbles: true,
                     }),
@@ -473,6 +473,9 @@ export class ToolbarItemProgress extends BasicToolbarItem {
 
     updateState(state: Serializable<ToolbarItemState>): void {
         this.style.display = state.visible ? "block" : "none";
+        if (this.progressBar) {
+            this.progressBar.value = Number(toBigInt(state.detail));
+        }
     }
 
     constructor(def: ToolbarItem) {
@@ -481,8 +484,8 @@ export class ToolbarItemProgress extends BasicToolbarItem {
 
     connectedCallback() {
         this.progressBar = document.createElement("progress");
-        this.progressBar.value = parseInt(this.definition.text);
-        this.progressBar.max = parseInt(this.definition.text2);
+        // It seems all windows use 10000 as max by convention.
+        this.progressBar.max = 10000;
         this.addHover(this.progressBar);
         this.appendChild(this.progressBar);
     }
@@ -531,8 +534,9 @@ export class ToolbarItemSimpleCheckBox extends BasicToolbarItem {
 // the state visualizer.
 @customElement("listwindow-toolbar-checkbox")
 export class ToolbarItemCheckBox extends BasicToolbarItem {
-    private checkbox: HTMLInputElement | undefined;
     private label: HTMLLabelElement | undefined;
+    private checked = false;
+    private enabled = true;
 
     private readonly TOGGLE_ON = css({
         background: "var(--vscode-button-background)",
@@ -548,11 +552,9 @@ export class ToolbarItemCheckBox extends BasicToolbarItem {
 
     updateState(state: Serializable<ToolbarItemState>): void {
         this.style.display = state.visible ? "block" : "none";
-        if (this.checkbox) {
-            this.checkbox.disabled = !state.enabled;
-            this.checkbox.checked = state.on;
-            this.updateCheckbox();
-        }
+        this.checked = state.on;
+        this.enabled = state.enabled;
+        this.updateCheckbox();
     }
 
     constructor(def: ToolbarItem) {
@@ -560,8 +562,8 @@ export class ToolbarItemCheckBox extends BasicToolbarItem {
     }
 
     updateCheckbox() {
-        if (this.label && this.checkbox) {
-            if (this.checkbox?.checked) {
+        if (this.label) {
+            if (this.checked) {
                 this.label.classList.remove(this.TOGGLE_OFF);
                 this.label.classList.add(this.TOGGLE_ON);
             } else {
@@ -572,11 +574,11 @@ export class ToolbarItemCheckBox extends BasicToolbarItem {
     }
 
     connectedCallback() {
-        this.checkbox = document.createElement("input");
-        this.checkbox.type = "checkbox";
-        this.checkbox.id = this.definition.id;
+        this.onclick = _ev => {
+            if (!this.enabled) {
+                return;
+            }
 
-        this.checkbox.onclick = _ev => {
             this.dispatchEvent(
                 createCustomEvent("toolbar-item-interaction", {
                     detail: {
@@ -616,11 +618,9 @@ export class ToolbarItemCheckBox extends BasicToolbarItem {
         this.addHover(this.label);
         this.label.classList.add(this.TOGGLE_OFF);
 
-        this.checkbox.classList.add(Styles.checkbox);
         this.label.classList.add(Styles.clickable);
 
         this.appendChild(this.label);
-        this.appendChild(this.checkbox);
     }
 }
 
@@ -709,7 +709,6 @@ namespace Styles {
             color: "var(--vscode-foreground)",
             background: "var(--vscode-sideBar-background)",
             height: `${String(Constants.ItemHeight - 1)}px`,
-            width: "40%",
             padding: "2px 12px",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -733,16 +732,6 @@ namespace Styles {
     export const simpleCheckbox = css({
         height: "16px",
         marginTop: "6px",
-    });
-    export const checkbox = css({
-        display: "none",
-        background: "var(--vscode-checkbox-background)",
-        color: "var(--vscode-checkbox-foreground)",
-        border: "1px solid var(--vscode-checkbox-border)",
-        height: `${String(Constants.ItemHeight - 3)}px`,
-        width: `${String(Constants.ItemHeight - 3)}px !important`,
-        marginTop: "2px",
-        borderRadius: "2px",
     });
     export const checkboxLabel = css(
         {
