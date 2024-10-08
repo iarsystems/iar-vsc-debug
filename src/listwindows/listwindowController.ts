@@ -384,15 +384,6 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
                         msg.id,
                         item,
                     );
-                    const value =
-                        await this.toolbarInterface.getToolbarItemState(msg.id);
-                    if (value) {
-                        this.sendToView?.({
-                            subject: "updateToolbarItem",
-                            id: msg.id,
-                            state: value,
-                        });
-                    }
                 });
                 break;
             }
