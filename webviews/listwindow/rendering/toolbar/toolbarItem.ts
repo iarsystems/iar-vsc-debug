@@ -534,7 +534,7 @@ export class ToolbarItemSimpleCheckBox extends BasicToolbarItem {
 // the state visualizer.
 @customElement("listwindow-toolbar-checkbox")
 export class ToolbarItemCheckBox extends BasicToolbarItem {
-    private label: HTMLLabelElement | undefined;
+    private label: HTMLElement | undefined;
     private checked = false;
     private enabled = true;
 
@@ -602,7 +602,7 @@ export class ToolbarItemCheckBox extends BasicToolbarItem {
 
         // The trick is to hide the checkbox behind a label
         // that has the look that we want.
-        this.label = document.createElement("label");
+        this.label = document.createElement("div");
         this.label.classList.add(Styles.checkboxLabel);
         const addText = this.definition.type !== ToolbarItemType.kKindIconCheck;
         if (!addText) {
