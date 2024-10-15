@@ -13,8 +13,6 @@ import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { DescriptorWriter } from "./descriptors/descriptorWriter";
 import { CSpyDriver } from "./cspyDriver";
 import { logger } from "@vscode/debugadapter/lib/logger";
-import { DescriptorReader } from "./descriptors/descriptorReader";
-import { LocOnlyDescriptor } from "./descriptors/locOnlyDescriptor";
 import { LocEtcDescriptor } from "./descriptors/locEtcDescriptor";
 import { BreakpointDescriptor } from "./descriptors/breakpointDescriptor";
 import { AccessType } from "./descriptors/accessType";
@@ -118,11 +116,11 @@ export class CSpyBreakpointService implements Disposable.Disposable {
                 let actualLine = dapBp.line;
                 let actualCol = dapBp.column;
                 try {
-                    const reader = new DescriptorReader(result.descriptor);
-                    const descriptor = new LocOnlyDescriptor(reader);
-                    [, actualLine, actualCol] = this.parseSourceUle(descriptor.ule);
-                    actualLine = this.convertDebuggerLineToClient(actualLine);
-                    actualCol = this.convertDebuggerColumnToClient(actualCol);
+                    if (result.isUleBased) {
+                        [, actualLine, actualCol] = this.parseSourceUle(result.ule);
+                        actualLine = this.convertDebuggerLineToClient(actualLine);
+                        actualCol = this.convertDebuggerColumnToClient(actualCol);
+                    }
                 } catch (_) {}
                 return {
                     verified: result.valid,
