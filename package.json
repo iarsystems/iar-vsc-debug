@@ -786,7 +786,7 @@
 							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
 							"projectPath": "^\"\\${command:iar-config.project-file}\"",
 							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
-							"driver": "J-Link",
+							"driver": "J-Link/J-Trace",
 							"driverOptions": [
 								"--endian=little",
 								"--cpu=${3:Cortex-M4}",
