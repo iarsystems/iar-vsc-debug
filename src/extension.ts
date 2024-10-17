@@ -12,6 +12,7 @@ import { CustomRequest } from "./dap/customRequest";
 import { logger } from "iar-vsc-common/logger";
 import { DialogService } from "./dialogService";
 import { MulticoreLockstepModeFrontend } from "./multicoreLockstepModeFrontend";
+import { CustomCommandsFrontend } from "./customCommandsFrontend";
 
 let sessionTracker: DebugSessionTracker | undefined;
 
@@ -32,6 +33,7 @@ export function activate(context: vscode.ExtensionContext) {
     sessionTracker = new DebugSessionTracker(context);
     MulticoreLockstepModeFrontend.initialize(context, sessionTracker);
     BreakpointTypesFrontend.initialize(context, sessionTracker);
+    CustomCommandsFrontend.initialize(context, sessionTracker);
 
     // Generate and locate an svd for the session, so that the register view is populated
     vscode.debug.onDidChangeActiveDebugSession(async(session) => {
