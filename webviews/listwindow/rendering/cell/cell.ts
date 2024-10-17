@@ -3,18 +3,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { css } from "@emotion/css";
-import { createCustomEvent } from "../../events";
-import { Cell, Color, Column, TextStyle } from "../../thrift/listwindow_types";
+import { createCustomEvent } from "../../../shared/events";
+import { Cell, Color, Column, TextStyle } from "../../../shared/thrift/listwindow_types";
 import { DragDropService } from "../dragDropService";
 import { HoverService } from "../hoverService";
 import { SharedStyles } from "../styles/sharedStyles";
-import { customElement } from "../utils";
+import { customElement } from "../../../shared/utils";
 import { CellBordersElement } from "./cellBorders";
 import { TreeInfoElement } from "./treeInfo";
-import { Serializable } from "../../protocol";
+import { Serializable } from "../../../shared/protocol";
 import { Checkbox } from "@vscode/webview-ui-toolkit";
-import { MessageService } from "../../messageService";
-import { SelectionFlags } from "../../thrift/listwindow_types";
+import { MessageService } from "../../../shared/messageService";
+import { SelectionFlags } from "../../../shared/thrift/listwindow_types";
 import { IconMap } from "../icons";
 
 export interface CellPosition {

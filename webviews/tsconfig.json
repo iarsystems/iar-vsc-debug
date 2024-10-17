@@ -3,7 +3,8 @@
     "compilerOptions": {
         "module": "ESNext",
         "moduleResolution": "Node",
-        "experimentalDecorators": true
+        "experimentalDecorators": true,
+        "sourceMap": true
     },
     "include": [
         "**/*"

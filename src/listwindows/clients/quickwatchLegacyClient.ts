@@ -8,7 +8,7 @@ import {
     LegacyToolbarItem,
 } from "./listwindowBackendClient";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
-import { ToolbarItemType } from "../../../webviews/listwindow/rendering/toolbar/toolbarConstants";
+import { ToolbarItemType } from "../../../webviews/shared/rendering/toolbar/toolbarConstants";
 import { PropertyTreeItem } from "iar-vsc-common/thrift/bindings/shared_types";
 import * as Q from "q";
 import * as ListWindowBackend from "iar-vsc-common/thrift/bindings/ListWindowBackend";

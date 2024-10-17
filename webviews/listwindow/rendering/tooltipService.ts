@@ -2,11 +2,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { MessageService } from "../messageService";
+import { MessageService } from "../../shared/messageService";
 import { CellHoveredEvent } from "./cell/cell";
-import { ToolbarItemHoveredEvent } from "./toolbar/toolbarItem";
+import { ToolbarItemHoveredEvent } from "../../shared/rendering/toolbar/toolbarItem";
 import { SharedStyles } from "./styles/sharedStyles";
-import { customElement } from "./utils";
+import { customElement } from "../../shared/utils";
 import { css } from "@emotion/css";
 import * as FloatingUi from "@floating-ui/dom";
 

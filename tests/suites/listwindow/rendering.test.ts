@@ -6,7 +6,7 @@ import * as Vscode from "vscode";
 import * as Assert from "assert";
 import { testListwindow } from "../../../src/extension";
 import { JSDOM } from "jsdom";
-import { RenderParameters } from "../../../webviews/listwindow/protocol";
+import { RenderParameters } from "../../../webviews/shared/protocol";
 import {
     Alignment,
     Color,

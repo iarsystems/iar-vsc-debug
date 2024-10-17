@@ -256,4 +256,14 @@ export declare class Client extends HeartbeatService.Client {
    * Resolve the current theme that is used by the client.
    */
   getActiveTheme(callback?: (data: { [k: number /*ThriftDisplayElement*/]: ColorSchema; })=>void): void;
+
+  /**
+   * Invoke a generic dialog.
+   */
+  invokeDialog(id: string, title: string, entries: PropertyTreeItem): Q.Promise<GenericDialogResults>;
+
+  /**
+   * Invoke a generic dialog.
+   */
+  invokeDialog(id: string, title: string, entries: PropertyTreeItem, callback?: (data: GenericDialogResults)=>void): void;
 }

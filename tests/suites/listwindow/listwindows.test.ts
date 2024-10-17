@@ -7,7 +7,7 @@ import {
     ExtensionMessage,
     ExtensionMessageVariant,
     RenderParameters,
-} from "../../../webviews/listwindow/protocol";
+} from "../../../webviews/shared/protocol";
 import * as vscode from "vscode";
 import { TestUtils } from "../testUtils";
 import { listwindowManager } from "../../../src/extension";
@@ -18,7 +18,7 @@ import { ListwindowController } from "../../../src/listwindows/listwindowControl
 import {
     Tags,
     ToolbarItemType,
-} from "../../../webviews/listwindow/rendering/toolbar/toolbarConstants";
+} from "../../../webviews/shared/rendering/toolbar/toolbarConstants";
 import { SlidingListwindowController } from "../../../src/listwindows/slidingListwindowController";
 import { isStringObject } from "util/types";
 

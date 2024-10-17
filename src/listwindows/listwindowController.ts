@@ -9,6 +9,7 @@ import {
     MenuItem,
     Note,
     ScrollOperation,
+    ToolbarItemState,
     ToolbarNote,
     ToolbarWhat,
     Tooltip,
@@ -21,7 +22,7 @@ import {
     RenderParameters,
     Serializable,
     ViewMessage,
-} from "../../webviews/listwindow/protocol";
+} from "../../webviews/shared/protocol";
 import { toBigInt, toInt64 } from "../utils";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { ThriftServiceHandler } from "iar-vsc-common/thrift/thriftUtils";
@@ -51,7 +52,8 @@ type MessageSink = (msg: ExtensionMessage) => void;
  * {@link handleMessageFromView}), and will not have a {@link MessageSink} to
  * send messages to the webview.
  */
-export abstract class ListwindowController implements ThriftServiceHandler<ListWindowFrontend.Client> {
+export abstract class ListwindowController
+implements ThriftServiceHandler<ListWindowFrontend.Client> {
     private static readonly FREEZE_DELAY_MS = 100;
 
     private sendToView: MessageSink | undefined = undefined;
@@ -106,9 +108,7 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
         repeat: number,
     ): Promise<boolean>;
 
-    public abstract scrollAbs(
-        fraction: number,
-    ): Promise<boolean>;
+    public abstract scrollAbs(fraction: number): Promise<boolean>;
 
     public abstract getScrollInfo(): Promise<RenderParameters["scrollInfo"]>;
 
@@ -161,7 +161,7 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
                     this.scheduleCall(async() => {
                         const unfilledSpace =
                             this.numberOfVisibleRows -
-                            Number(this.numberOfRows - (this.offset));
+                            Number(this.numberOfRows - this.offset);
                         if (unfilledSpace >= 1 && this.offset !== 0n) {
                             // We are at the bottom and can scroll down to fit
                             // another row at the top. Do a kScrollTrack to make
@@ -331,11 +331,7 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
             case "keyNavigationPressed": {
                 this.activePromise = this.activePromise.then(async() => {
                     // TODO: flags
-                    await this.keyNavigate(
-                        msg.operation,
-                        1,
-                        0,
-                    );
+                    await this.keyNavigate(msg.operation, 1, 0);
                     await this.updateAfterScroll();
                 });
                 break;
@@ -357,10 +353,7 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
             }
             case "keyPressed": {
                 this.scheduleCall(async() => {
-                    await this.backend.service.handleChar(
-                        msg.code,
-                        msg.repeat,
-                    );
+                    await this.backend.service.handleChar(msg.code, msg.repeat);
                 });
                 break;
             }
@@ -380,10 +373,14 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
             case "toolbarItemInteraction": {
                 const item = this.unpackTree(msg.properties);
                 this.scheduleCall(async() => {
+                    // Look the toolbar
+                    this.allowToolbarInteraction(false);
                     await this.toolbarInterface.setToolbarItemValue(
                         msg.id,
                         item,
                     );
+                    // Unlock the toolbar
+                    this.allowToolbarInteraction(true);
                 });
                 break;
             }
@@ -439,7 +436,6 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
             await this.scheduleCall(async() => {
                 await this.proxy.notify(note);
                 await this.postUpdate(note);
-
             });
 
             // Then decide if we should redraw. We give some time for new notes to
@@ -515,15 +511,26 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
 
     private async updateToolbarStates() {
         for (const id of this.toolbarIds) {
-            const value =
-                await this.toolbarInterface.getToolbarItemState(id);
+            const value = await this.toolbarInterface.getToolbarItemState(id);
             if (value) {
                 this.sendToView?.({
                     subject: "updateToolbarItem",
                     id: id,
                     state: value,
+                    type: "normal",
                 });
             }
+        }
+    }
+
+    private allowToolbarInteraction(allow: boolean) {
+        for (const id of this.toolbarIds) {
+            this.sendToView?.({
+                subject: "updateToolbarItem",
+                id: id,
+                state: new ToolbarItemState(),
+                type: allow ? "thaw" : "freeze",
+            });
         }
     }
 
@@ -553,6 +560,4 @@ export abstract class ListwindowController implements ThriftServiceHandler<ListW
         );
         return item;
     }
-
-
 }

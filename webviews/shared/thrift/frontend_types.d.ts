@@ -65,6 +65,12 @@ export declare enum FileDialogOptions {
   kAllowReturningReadOnlyFile = 3,
 }
 
+export declare enum GenericDialogReturnType {
+  kOk = 0,
+  kCancel = 1,
+  kUnknown = 2,
+}
+
 /**
  * Small helper struct for filters. The display name is
  * the readable name of the filter and the files allowed
@@ -75,6 +81,15 @@ export declare class FileDialogFilter {
   filtering: string[];
 
     constructor(args?: { displayName: string; filtering: string[]; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
+
+export declare class GenericDialogResults {
+  type: GenericDialogReturnType;
+  items: PropertyTreeItem;
+
+    constructor(args?: { type: GenericDialogReturnType; items: PropertyTreeItem; });
   read(input: Object): void;
   write(input: Object): void;
 }

@@ -119,8 +119,12 @@ export class ListWindowBackendHandler<T extends ListWindowBackend.Client> {
             ListWindowFrontend,
             controller,
         );
+
         await backendClient.service.connect(frontendLocation);
         await backendClient.service.show(true);
+        // Connect the controller to the toolbar interface.
+        // This allows legacy toolbars to simulate toolbar events.
+        toolbarInterface.connectController(controller);
 
         this.sessions.set(session.id, controller);
 

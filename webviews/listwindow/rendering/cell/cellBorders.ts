@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { css } from "@emotion/css";
-import { customElement } from "../utils";
+import { customElement } from "../../../shared/utils";
 
 export enum CellBorderVariables {
     Style = "--cell-border-style",

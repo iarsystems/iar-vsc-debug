@@ -3,12 +3,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { TextField } from "@vscode/webview-ui-toolkit";
-import { createCustomEvent } from "../../events";
-import { customElement, toNumber } from "../utils";
+import { createCustomEvent } from "../../../shared/events";
+import { customElement, toNumber } from "../../../shared/utils";
 import {  CellElement, CellPosition } from "./cell";
-import { MessageService } from "../../messageService";
-import { EditInfo } from "../../thrift/listwindow_types";
-import { Serializable } from "../../protocol";
+import { MessageService } from "../../../shared/messageService";
+import { EditInfo } from "../../../shared/thrift/listwindow_types";
+import { Serializable } from "../../../shared/protocol";
 import { css } from "@emotion/css";
 
 interface ActiveCellEdit {

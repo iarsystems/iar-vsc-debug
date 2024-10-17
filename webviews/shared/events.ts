@@ -6,14 +6,14 @@ import {
     CellEditRequestedEvent,
     CellHoveredEvent,
     CellRightClickedEvent,
-} from "./rendering/cell/cell";
-import { ContextMenuItemClickEvent } from "./rendering/contextMenuService";
-import { ColumnsResizedEvent } from "./rendering/header/header";
+} from "../listwindow/rendering/cell/cell";
+import { ContextMenuItemClickEvent } from "../listwindow/rendering/contextMenuService";
+import { ColumnsResizedEvent } from "../listwindow/rendering/header/header";
 import {
     ResizeHandleDragBeginEvent,
     ResizeHandleDragEndEvent,
     ResizeHandleMovedEvent,
-} from "./rendering/header/resizeHandle";
+} from "../listwindow/rendering/header/resizeHandle";
 import {
     ToolbarItemEvent,
     ToolbarItemHoveredEvent,

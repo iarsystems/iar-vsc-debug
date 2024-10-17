@@ -3,14 +3,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { css } from "@emotion/css";
-import { createCustomEvent } from "../events";
-import { MessageService } from "../messageService";
-import { MenuItem } from "../thrift/listwindow_types";
+import { createCustomEvent } from "../../shared/events";
+import { MessageService } from "../../shared/messageService";
+import { MenuItem } from "../../shared/thrift/listwindow_types";
 import { CellRightClickedEvent } from "./cell/cell";
 import { SharedStyles } from "./styles/sharedStyles";
-import { customElement } from "./utils";
+import { customElement } from "../../shared/utils";
 import * as FloatingUi from "@floating-ui/dom";
-import { Serializable } from "../protocol";
+import { Serializable } from "../../shared/protocol";
 
 interface PendingContextMenu {
     position: { x: number; y: number };

@@ -14,12 +14,12 @@ import {
     Cell,
     Target,
 } from "iar-vsc-common/thrift/bindings/listwindow_types";
-import { RenderParameters, Serializable } from "../../listwindow/protocol";
+import { RenderParameters, Serializable } from "../../shared/protocol";
 import Int64 = require("node-int64");
 import { MockVSCodeApi } from "./testEnvironment";
 import { waitFor } from "@testing-library/dom";
 import * as Assert from "assert";
-import { PropertyTreeItem } from "../../listwindow/thrift/shared_types";
+import { PropertyTreeItem } from "../../shared/thrift/shared_types";
 
 export namespace TestUtils {
     /**

@@ -2,22 +2,22 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { ColumnResizeMode, RenderParameters, Serializable } from "../protocol";
+import { ColumnResizeMode, RenderParameters, Serializable } from "../../shared/protocol";
 import { HeaderElement } from "./header/header";
 import { RowElement } from "./row";
 import { HoverService } from "./hoverService";
-import { toBigInt } from "./utils";
+import { toBigInt } from "../../shared/utils";
 import { DragDropService } from "./dragDropService";
-import { SelectionFlags, Target } from "../thrift/listwindow_types";
+import { SelectionFlags, Target } from "../../shared/thrift/listwindow_types";
 import { css } from "@emotion/css";
 import { SharedStyles } from "./styles/sharedStyles";
 import { ScrollbarElement } from "./scrollbar";
 import { CellEditService } from "./cell/cellEditService";
-import { MessageService } from "../messageService";
+import { MessageService } from "../../shared/messageService";
 import { TooltipService } from "./tooltipService";
 import { CellElement, CellPosition } from "./cell/cell";
 import { ContextMenuService } from "./contextMenuService";
-import { ScrollOperation } from "../thrift/listwindow_types";
+import { ScrollOperation } from "../../shared/thrift/listwindow_types";
 
 /**
  * A full listwindow grid, including headers but excluding any toolbar

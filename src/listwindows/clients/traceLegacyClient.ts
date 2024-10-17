@@ -3,17 +3,31 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { ThriftServiceRegistry } from "iar-vsc-common/thrift/thriftServiceRegistry";
-import { LegacyListwindowClient, LegacyToolbarItem } from "./listwindowBackendClient";
+import {
+    LegacyListwindowClient,
+    LegacyToolbarItem,
+} from "./listwindowBackendClient";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
-import { ToolbarItemType } from "../../../webviews/listwindow/rendering/toolbar/toolbarConstants";
-import { ToolbarItemState } from "iar-vsc-common/thrift/bindings/listwindow_types";
+import { ToolbarItemType } from "../../../webviews/shared/rendering/toolbar/toolbarConstants";
+import {
+    ToolbarItemState,
+    TraceFindParams,
+} from "iar-vsc-common/thrift/bindings/listwindow_types";
 import { Int64 } from "thrift";
 import { PropertyTreeItem } from "iar-vsc-common/thrift/bindings/shared_types";
 import * as Q from "q";
 import * as ListWindowBackend from "iar-vsc-common/thrift/bindings/ListWindowBackend";
 import * as Trace from "iar-vsc-common/thrift/bindings/TraceListWindowBackend";
 import * as vscode from "vscode";
-
+import {
+    Callbacks,
+    LegacyFormItems,
+    LegacyFormViewBackend,
+} from "../../forms/dialogsClient";
+import { listwindowManager } from "../../extension";
+import { LegacyUtils } from "./legacyUtils";
+import { unpackTree } from "../../utils";
+import { GenericDialogReturnType } from "iar-vsc-common/thrift/bindings/frontend_types";
 
 export class TraceClient extends LegacyListwindowClient<Trace.Client> {
     public connectToBackend(
@@ -116,6 +130,9 @@ export class TraceClient extends LegacyListwindowClient<Trace.Client> {
             stringList: [],
             text2: "",
             tooltip: "Find in trace",
+            callback: _tree => {
+                return this.find();
+            },
         },
         {
             id: "save",
@@ -234,28 +251,280 @@ export class TraceClient extends LegacyListwindowClient<Trace.Client> {
     }
 
     public save() {
-        return Q.resolve(true).then(() => {
-            return vscode.window.showSaveDialog().then(
-                path => {
-                    if (path !== undefined && this.client) {
-                        return this.client.service.
-                            save(path.fsPath).
-                            then(() => Q.resolve(true));
-                    }
-                    return Q.resolve(false);
-                },
-                () => {
-                    return Q.resolve(false);
-                },
-            );
+        return Q.Promise<boolean>(async resolve => {
+            const path = await vscode.window.showSaveDialog();
+            if (path !== undefined && this.client) {
+                this.client.service.save(path.fsPath);
+                resolve(true);
+            }
+            resolve(false);
         });
-    }
-
-    public find() {
-        vscode.window.showInputBox({});
     }
 
     getDescription(): Q.Promise<LegacyToolbarItem[]> {
         return Q.resolve(this.def);
+    }
+
+    // Find form
+    private readonly kTextSearch = "i1";
+    private readonly kSearchFor = "i2";
+    private readonly kMatchCase = "i3";
+    private readonly kMatchWholeWord = "i4";
+    private readonly kSearchOnlyOneColumn = "i5";
+    private readonly kColumn = "i6";
+    private readonly kUseAddressRange = "i7";
+    private readonly kAddressStart = "i8";
+    private readonly kAddressEnd = "i9";
+
+    private readonly findFormDef: LegacyFormItems[] = [
+        {
+            id: this.kTextSearch,
+            type: ToolbarItemType.kKindTextCheck,
+            text: "Search text",
+            bool: true,
+            itemKey: "",
+            stringList: [],
+            text2: "",
+            checked: false,
+            enabled: true,
+            value: "",
+            update: Callbacks.checkCallback,
+        },
+        {
+            id: this.kSearchFor,
+            type: ToolbarItemType.kKindEditText,
+            text: "",
+            bool: true,
+            itemKey: "",
+            stringList: [],
+            text2: "",
+            checked: false,
+            enabled: false,
+            value: "",
+            update: Callbacks.valueCallback,
+        },
+        {
+            id: this.kMatchCase,
+            type: ToolbarItemType.kKindTextCheck,
+            text: "Match case",
+            bool: true,
+            itemKey: "",
+            stringList: [],
+            text2: "",
+            checked: false,
+            enabled: true,
+            value: "",
+            update: Callbacks.checkCallback,
+        },
+        {
+            id: this.kMatchWholeWord,
+            type: ToolbarItemType.kKindTextCheck,
+            text: "Match whole word",
+            bool: true,
+            itemKey: "",
+            stringList: [],
+            text2: "",
+            checked: false,
+            enabled: true,
+            value: "",
+            update: Callbacks.checkCallback,
+        },
+        {
+            id: this.kSearchOnlyOneColumn,
+            type: ToolbarItemType.kKindTextCheck,
+            text: "Only search in one column",
+            bool: true,
+            itemKey: "",
+            stringList: [],
+            text2: "",
+            checked: false,
+            enabled: true,
+            value: "",
+            update: Callbacks.checkCallback,
+        },
+        {
+            id: this.kColumn,
+            type: ToolbarItemType.kKindSelectMenu,
+            text: "",
+            bool: true,
+            itemKey: "",
+            stringList: [],
+            text2: "",
+            checked: false,
+            enabled: false,
+            value: "",
+            update: Callbacks.valueCallback,
+        },
+        {
+            id: this.kUseAddressRange,
+            type: ToolbarItemType.kKindTextCheck,
+            text: "Address range",
+            bool: true,
+            itemKey: "",
+            stringList: [],
+            text2: "",
+            checked: false,
+            enabled: true,
+            value: "",
+            update: Callbacks.checkCallback,
+        },
+        {
+            id: this.kAddressStart,
+            type: ToolbarItemType.kKindEditText,
+            text: "Start",
+            bool: true,
+            itemKey: "",
+            stringList: [],
+            text2: "",
+            checked: false,
+            enabled: false,
+            value: "",
+            update: Callbacks.valueCallback,
+        },
+        {
+            id: this.kAddressEnd,
+            type: ToolbarItemType.kKindEditText,
+            text: "End",
+            bool: true,
+            itemKey: "",
+            stringList: [],
+            text2: "",
+            checked: false,
+            enabled: false,
+            value: "",
+            update: Callbacks.valueCallback,
+        },
+    ];
+
+    public find(): Q.Promise<boolean> {
+        return Q.Promise<boolean>(async resolve => {
+            const traceSearchParams = new TraceFindParams();
+            if (
+                this.client &&
+                listwindowManager &&
+                listwindowManager.formView
+            ) {
+                const columns = await this.client.service.getColumnInfo();
+                const dropDown = this.findFormDef.find(i => {
+                    return i.id === this.kColumn;
+                });
+                if (dropDown) {
+                    dropDown.stringList = columns.map(c => {
+                        return c.title;
+                    });
+                }
+
+                const backend = new LegacyFormViewBackend(
+                    this.findFormDef,
+                    keeper => {
+                        const textSearchEnabled = keeper.getItem(
+                            this.kTextSearch,
+                        )?.checked as boolean;
+                        const rangeSearchEnabled = keeper.getItem(
+                            this.kUseAddressRange,
+                        )?.checked as boolean;
+                        const onlyOneCol = keeper.getItem(
+                            this.kSearchOnlyOneColumn,
+                        )?.checked as boolean;
+
+                        keeper.updateEnabled(
+                            [this.kTextSearch],
+                            !rangeSearchEnabled,
+                        );
+                        keeper.updateEnabled(
+                            [
+                                this.kSearchFor,
+                                this.kMatchCase,
+                                this.kMatchWholeWord,
+                                this.kSearchOnlyOneColumn,
+                            ],
+                            textSearchEnabled && !rangeSearchEnabled,
+                        );
+                        keeper.updateEnabled(
+                            [this.kColumn],
+                            textSearchEnabled &&
+                                !rangeSearchEnabled &&
+                                onlyOneCol,
+                        );
+                        keeper.updateEnabled(
+                            [this.kAddressStart, this.kAddressEnd],
+                            rangeSearchEnabled,
+                        );
+                    },
+                );
+                const form = await listwindowManager.formView.createForm(
+                    "findInTrace",
+                    "Find in trace",
+                    unpackTree(LegacyUtils.packDescription(this.findFormDef)),
+                    backend,
+                );
+                const res = await form.showForm();
+                if (res.type !== GenericDialogReturnType.kOk) {
+                    resolve(false);
+                }
+
+                traceSearchParams.textSearch = LegacyUtils.CollectBoolValue(
+                    this.kSearchFor,
+                    false,
+                    res.items,
+                );
+                traceSearchParams.findWhat = LegacyUtils.CollectStr0Value(
+                    this.kSearchFor,
+                    "",
+                    res.items,
+                );
+                traceSearchParams.matchCase = LegacyUtils.CollectBoolValue(
+                    this.kMatchCase,
+                    false,
+                    res.items,
+                );
+                traceSearchParams.matchWord = LegacyUtils.CollectBoolValue(
+                    this.kMatchWholeWord,
+                    false,
+                    res.items,
+                );
+                traceSearchParams.useRange = LegacyUtils.CollectBoolValue(
+                    this.kUseAddressRange,
+                    false,
+                    res.items,
+                );
+
+                if (
+                    LegacyUtils.CollectBoolValue(
+                        this.kSearchOnlyOneColumn,
+                        false,
+                        res.items,
+                    )
+                ) {
+                    traceSearchParams.columnName = LegacyUtils.CollectStr0Value(
+                        this.kColumn,
+                        "",
+                        res.items,
+                    );
+                    traceSearchParams.searchColumn = columns.findIndex(c => {
+                        return c.title === traceSearchParams.columnName;
+                    });
+                } else {
+                    traceSearchParams.searchColumn = -1;
+                }
+                traceSearchParams.rangeStart = new Int64(
+                    LegacyUtils.CollectStr0Value(
+                        this.kAddressStart,
+                        "0",
+                        res.items,
+                    ),
+                );
+                traceSearchParams.rangeEnd = new Int64(
+                    LegacyUtils.CollectStr0Value(
+                        this.kAddressEnd,
+                        "0",
+                        res.items,
+                    ),
+                );
+
+                await this.client.service.find(traceSearchParams);
+            }
+            resolve(true);
+        });
     }
 }

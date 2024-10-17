@@ -65,6 +65,14 @@ ttypes.FileDialogOptions = {
   '3' : 'kAllowReturningReadOnlyFile',
   'kAllowReturningReadOnlyFile' : 3
 };
+ttypes.GenericDialogReturnType = {
+  '0' : 'kOk',
+  'kOk' : 0,
+  '1' : 'kCancel',
+  'kCancel' : 1,
+  '2' : 'kUnknown',
+  'kUnknown' : 2
+};
 var FileDialogFilter = module.exports.FileDialogFilter = function(args) {
   this.displayName = null;
   this.filtering = null;
@@ -136,6 +144,70 @@ FileDialogFilter.prototype.write = function(output) {
       }
     }
     output.writeListEnd();
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var GenericDialogResults = module.exports.GenericDialogResults = function(args) {
+  this.type = null;
+  this.items = null;
+  if (args) {
+    if (args.type !== undefined && args.type !== null) {
+      this.type = args.type;
+    }
+    if (args.items !== undefined && args.items !== null) {
+      this.items = new shared_ttypes.PropertyTreeItem(args.items);
+    }
+  }
+};
+GenericDialogResults.prototype = {};
+GenericDialogResults.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.I32) {
+        this.type = input.readI32().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.items = new shared_ttypes.PropertyTreeItem();
+        this.items.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+GenericDialogResults.prototype.write = function(output) {
+  output.writeStructBegin('GenericDialogResults');
+  if (this.type !== null && this.type !== undefined) {
+    output.writeFieldBegin('type', Thrift.Type.I32, 1);
+    output.writeI32(this.type);
+    output.writeFieldEnd();
+  }
+  if (this.items !== null && this.items !== undefined) {
+    output.writeFieldBegin('items', Thrift.Type.STRUCT, 2);
+    this.items.write(output);
     output.writeFieldEnd();
   }
   output.writeFieldStop();
