@@ -17,6 +17,7 @@ import { TestListwindow } from "./listwindows/testListwindow";
 import { ListwindowManager } from "./listwindows/windowManager";
 import { ThemeProvider } from "./listwindows/themeProvider";
 import { ContextChangedHandler } from "./contextChangedHandler";
+import { CustomCommandsFrontend } from "./customCommandsFrontend";
 
 let sessionTracker: DebugSessionTracker | undefined;
 export let listwindowManager: ListwindowManager | undefined;
@@ -55,6 +56,7 @@ export function activate(context: vscode.ExtensionContext) {
     MulticoreLockstepModeFrontend.initialize(context, sessionTracker);
     BreakpointTypesFrontend.initialize(context, sessionTracker);
     ContextChangedHandler.initialize();
+    CustomCommandsFrontend.initialize(context, sessionTracker);
 
     // Generate and locate an svd for the session, so that the register view is populated
     vscode.debug.onDidChangeActiveDebugSession(async(session) => {
