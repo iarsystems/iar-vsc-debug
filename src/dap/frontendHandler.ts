@@ -7,7 +7,7 @@ import * as Thrift from "thrift";
 import * as Path from "path";
 import * as FrontendTypes from "iar-vsc-common/thrift/bindings/frontend_types";
 import * as Frontend from "iar-vsc-common/thrift/bindings/Frontend";
-import { SourceLocation } from "iar-vsc-common/thrift/bindings/shared_types";
+import { PropertyTreeItem, SourceLocation } from "iar-vsc-common/thrift/bindings/shared_types";
 import * as Q from "q";
 import { CustomEvent, CustomRequest } from "./customRequest";
 import { Event, logger } from "@vscode/debugadapter";
@@ -15,6 +15,8 @@ import { CommandRegistry } from "./commandRegistry";
 import {DapEventSink, Disposable, Utils} from "./utils";
 import { ThriftServiceHandler } from "iar-vsc-common/thrift/thriftUtils";
 import { ColorSchema, ThriftDisplayElement } from "iar-vsc-common/thrift/bindings/themes_types";
+import { GenericDialogResults } from "iar-vsc-common/thrift/bindings/frontend_types";
+import { unpackTree } from "../utils";
 
 /**
  * A (handler for a) thrift service that provides various types dialogs to C-SPY. These may be used e.g. to display
@@ -33,6 +35,7 @@ export class FrontendHandler implements ThriftServiceHandler<Frontend.Client>, D
     private readonly openElementSelectionDialogs: Map<number, (choice: number) => void> = new Map();
     private readonly openMultiElementSelectionDialogs: Map<number, (choices: number[]) => void> = new Map();
     private readonly themeRequests: Map<number, (theme: CustomRequest.ThemeResolvedArgs) => void> = new Map();
+    private readonly genericDialogRequests: Map<number, (dialogResults: GenericDialogResults) => void> = new Map();
 
     // Stores whether the progress bar with a given id has been canceled
     private readonly openProgressBars: Map<number, boolean> = new Map();
@@ -84,6 +87,19 @@ export class FrontendHandler implements ThriftServiceHandler<Frontend.Client>, D
             args => {
                 this.themeRequests.get(args.id)?.(args);
                 this.themeRequests.delete(args.id);
+            });
+        requestRegistry.registerCommandWithTypeCheck(CustomRequest.Names.GENRIC_DIALOG_RESOLVED, CustomRequest.isGenericDialogResolvedArgs,
+            args => {
+                const resolver = this.genericDialogRequests.get(args.id);
+                if (resolver) {
+                    resolver(
+                        new GenericDialogResults({
+                            items: unpackTree(args.items),
+                            type: args.results,
+                        }),
+                    );
+                    this.genericDialogRequests.delete(args.id);
+                }
             });
     }
 
@@ -217,7 +233,9 @@ export class FrontendHandler implements ThriftServiceHandler<Frontend.Client>, D
     }
 
     // We can't support this since we don't have any custom views yet
-    showView(_id: string): Q.Promise<void> {
+    showView(id: string): Q.Promise<void> {
+        const body: CustomEvent.ShowViewRequestData = { viewId: id};
+        this.eventSink.sendEvent(new Event(CustomEvent.Names.SHOW_VIEW_REQUEST, body));
         return Q.resolve();
     }
 
@@ -276,6 +294,24 @@ export class FrontendHandler implements ThriftServiceHandler<Frontend.Client>, D
 
     openFileExplorer(_filePath: string): Q.Promise<void> {
         return Q.resolve();
+    }
+
+    invokeDialog(
+        id: string,
+        title: string,
+        properties: PropertyTreeItem,
+    ): Q.Promise<GenericDialogResults> {
+        const resultId = this.nextId++;
+        return Q.Promise((resolve, _) => {
+            this.genericDialogRequests.set(resultId, resolve);
+            const body: CustomEvent.ShowGenericDialogRequestData = {
+                id: resultId,
+                dialogId: id,
+                items: properties,
+                title: title,
+            };
+            this.eventSink.sendEvent(new Event(CustomEvent.Names.DO_GENERIC_DIALOG_REQUEST, body));
+        });
     }
 
     getActiveTheme(): Q.Promise<Record<ThriftDisplayElement, ColorSchema>> {

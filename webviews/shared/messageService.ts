@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { WebviewApi } from "vscode-webview";
-import { ExtensionMessage, ViewMessage } from "./protocol";
+import { ExtensionMessage, ViewMessage } from "../shared/protocol";
 
 type MessageHandler = (msg: ExtensionMessage) => void;
 

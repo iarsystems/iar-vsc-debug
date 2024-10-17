@@ -4,7 +4,7 @@
 
 
 import { css } from "@emotion/css";
-import { Alignment } from "../../thrift/listwindow_types";
+import { Alignment } from "../../../shared/thrift/listwindow_types";
 
 /**
  * Classes and styles that are shared across components.

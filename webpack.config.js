@@ -49,7 +49,8 @@ const extensionConfig = {
 // Add an entry for each webview here. '"X": "./A/B.ts"' will bundle './A/B.ts'
 // and generate 'out/webviews/X.js'
 const webviewEntries = {
-  "listwindow": "./webviews/listwindow/index.ts",
+  listwindow: "./webviews/listwindow/index.ts",
+  form: "./webviews/form/index.ts",
 };
 
 /**@type {webpack.Configuration}*/

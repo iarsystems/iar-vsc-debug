@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import * as vscode from "vscode";
 import { logger } from "iar-vsc-common/logger";
-import { ViewMessage, ExtensionMessage, ColumnResizeMode } from "../../webviews/listwindow/protocol";
+import { ViewMessage, ExtensionMessage, ColumnResizeMode } from "../../webviews/shared/protocol";
 import { SettingsConstants } from "../settingsConstants";
 
 /**

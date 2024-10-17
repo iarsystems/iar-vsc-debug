@@ -5,26 +5,25 @@
             "request": "launch",
             "name": "BasicDebugging.Debug22",
             "target": "arm",
-            "program": "${workspaceFolder}\\Debug2\\Exe\\BasicDebugging.out",
+            "program": "${workspaceFolder}\\Debug\\Exe\\BasicDebugging.out",
             "driver": "sim2",
             "stopOnEntry": false,
-            "workbenchPath": "${command:iar-settings.toolchain}",
-            "projectPath": "e:\\repos\\VSCode\\iar-vsc-debug\\samples\\GettingStarted",
+            "workbenchPath": "D:\\iar\\ewarm-9.60.2",
             "projectConfiguration": "Debug2",
             "driverOptions": [
                 "--endian=little",
                 "--cpu=Cortex-A9",
                 "--fpu=VFPv3Neon",
                 "-p",
-                "E:\\Build\\master2\\StageWin64_16\\Release\\arm\\CONFIG\\debugger\\NXP\\MCIMX6QP.ddf",
+                "D:\\iar\\ewarm-9.60.2\\arm\\CONFIG\\debugger\\NXP\\MCIMX6QP.ddf",
                 "--semihosting",
                 "--device=MCIMX6QP",
                 "--multicore_nr_of_cores=1"
             ],
             "download": {
                 "deviceMacros": [
-                    "E:\\Build\\master2\\StageWin64_16\\Release\\arm\\config\\debugger\\NXP\\iMX6.dmac",
-                    "E:\\Build\\master2\\StageWin64_16\\Release\\arm\\config\\debugger\\NXP\\iMX6Q_Trace.dmac"
+                    "D:\\iar\\ewarm-9.60.2\\arm\\config\\debugger\\NXP\\iMX6.dmac",
+                    "D:\\iar\\ewarm-9.60.2\\arm\\config\\debugger\\NXP\\iMX6Q_Trace.dmac"
                 ]
             }
         },

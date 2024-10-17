@@ -2,15 +2,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { createCustomEvent } from "../../events";
-import { ColumnResizeMode, Serializable } from "../../protocol";
+import { createCustomEvent } from "../../../shared/events";
+import { ColumnResizeMode, Serializable } from "../../../shared/protocol";
 import { ResizeHandleElement } from "./resizeHandle";
-import { customElement } from "../utils";
-import { Column } from "../../thrift/listwindow_types";
+import { customElement } from "../../../shared/utils";
+import { Column } from "../../../shared/thrift/listwindow_types";
 import { SharedStyles } from "../styles/sharedStyles";
 import { Theming } from "../styles/theming";
 import { css } from "@emotion/css";
-import { MessageService } from "../../messageService";
+import { MessageService } from "../../../shared/messageService";
 
 /**
  * Emitted when the the user has resized a column

@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { MessageService } from "./messageService";
-import { KeyNavOperation, ScrollOperation } from "./thrift/listwindow_types";
+import { MessageService } from "../shared/messageService";
+import { KeyNavOperation, ScrollOperation } from "../shared/thrift/listwindow_types";
 
 /**
  * Listens for "global" keyboard input, such as pressing the arrow keys to

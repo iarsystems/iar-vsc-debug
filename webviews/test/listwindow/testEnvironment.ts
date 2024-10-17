@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { JSDOM } from "jsdom";
-import { ExtensionMessage, ViewMessage, ViewMessageVariant } from "../../listwindow/protocol";
+import { ExtensionMessage, ViewMessage, ViewMessageVariant } from "../../shared/protocol";
 import * as fs from "fs";
 import * as path from "path";
 import userEvent, { UserEvent } from "@testing-library/user-event";

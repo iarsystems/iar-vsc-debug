@@ -3,16 +3,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { css } from "@emotion/css";
-import { customElement } from "../utils";
+import { customElement } from "../../utils";
 import * as Items from "./toolbarItem";
 import {
     ToolbarItem,
     ToolbarItemType,
     Tags,
 } from "./toolbarConstants";
-import { HoverService } from "../hoverService";
+import { HoverService } from "../../../listwindow/rendering/hoverService";
 import { BasicToolbarItem } from "./toolbarItem";
-import { MessageService } from "../../messageService";
+import { MessageService } from "../../../shared/messageService";
 import { PropertyTreeItem } from "../../thrift/shared_types";
 import { Serializable } from "../../protocol";
 
@@ -34,14 +34,21 @@ export class ToolbarElement extends HTMLElement {
 
     hoverService: HoverService | undefined = undefined;
     private toolbarContent: HTMLElement | undefined = undefined;
+    private readonly toolbarItems: BasicToolbarItem[] = [];
 
-    private readonly messageService: MessageService;
+    private readonly messageService: MessageService | undefined;
     private readonly definition: Serializable<PropertyTreeItem>;
+    private readonly useVerticalLayout: boolean;
 
-    constructor(def: Serializable<PropertyTreeItem>, msgService: MessageService) {
+    constructor(
+        def: Serializable<PropertyTreeItem>,
+        msgService: MessageService | undefined,
+        useVertialLayout = false,
+    ) {
         super();
         this.messageService = msgService;
         this.definition = def;
+        this.useVerticalLayout = useVertialLayout;
     }
 
     public getItemIds(): string[] {
@@ -54,13 +61,18 @@ export class ToolbarElement extends HTMLElement {
 
     connectedCallback() {
         this.toolbarContent = document.createElement("div");
-        this.toolbarContent.classList.add(Styles.content);
+        this.toolbarContent.classList.add(
+            this.useVerticalLayout
+                ? Styles.vertialContent
+                : Styles.horizontalContent,
+        );
 
         this.items = this.parseDescription(this.definition);
-        if (this.items.length > 0) {
+        if (this.items.length > 0 && !this.useVerticalLayout) {
             this.toolbarContent.appendChild(this.separator);
         }
 
+        this.toolbarItems.length = 0;
         for (const item of this.items) {
             let newItem: BasicToolbarItem | undefined = undefined;
 
@@ -79,16 +91,28 @@ export class ToolbarElement extends HTMLElement {
                     break;
                 }
                 case ToolbarItemType.kKindEditText: {
-                    newItem = new Items.ToolbarItemText(item, true);
+                    newItem = new Items.ToolbarItemText(
+                        item,
+                        true,
+                        this.useVerticalLayout ? "start" : undefined,
+                    );
                     break;
                 }
                 case ToolbarItemType.kKindEditTextDyn: {
-                    newItem = new Items.ToolbarItemText(item, true);
+                    newItem = new Items.ToolbarItemText(
+                        item,
+                        true,
+                        this.useVerticalLayout ? "start" : undefined,
+                    );
                     break;
                 }
                 case ToolbarItemType.kKindDisplayTextDyn:
                 case ToolbarItemType.kKindDisplayText: {
-                    newItem = new Items.ToolbarItemText(item, false);
+                    newItem = new Items.ToolbarItemText(
+                        item,
+                        false,
+                        this.useVerticalLayout ? "start" : undefined,
+                    );
                     break;
                 }
                 case ToolbarItemType.kKindTextMenu:
@@ -122,10 +146,13 @@ export class ToolbarElement extends HTMLElement {
             if (newItem !== undefined) {
                 newItem.hoverService = this.hoverService;
                 this.toolbarContent.appendChild(newItem);
+                this.toolbarItems.push(newItem);
                 // Add handler for the messages.
-                this.messageService.addMessageHandler(msg => {
-                    newItem?.handleMessage(msg);
-                });
+                if (this.messageService) {
+                    this.messageService.addMessageHandler(msg => {
+                        newItem?.handleMessage(msg);
+                    });
+                }
             }
         }
 
@@ -147,6 +174,16 @@ export class ToolbarElement extends HTMLElement {
             items.push(newItem);
         });
         return items;
+    }
+
+    collectContent(): Serializable<PropertyTreeItem> {
+        return {
+            key: "ROOT",
+            value: "NONE",
+            children: this.toolbarItems.map(item => {
+                return item.packForForm();
+            }),
+        };
     }
 
     unpackItem(item: Serializable<PropertyTreeItem>): ToolbarItem {
@@ -201,7 +238,7 @@ export class ToolbarElement extends HTMLElement {
 }
 
 namespace Styles {
-    export const content = css({
+    export const horizontalContent = css({
         width: "100%",
         height: `${ToolbarElement.TOOLBAR_HEIGHT}px`,
         display: "flex",
@@ -209,5 +246,13 @@ namespace Styles {
         alignItems: "center",
         columnGap: "4px",
         justifyContent: "flex-start",
+    });
+    export const vertialContent = css({
+        width: "100%",
+        display: "grid",
+        alignItems: "start",
+        marginLeft: "10px",
+        marginRight: "10px",
+        rowGap: "5px",
     });
 }

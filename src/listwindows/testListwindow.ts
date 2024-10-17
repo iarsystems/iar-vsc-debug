@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import * as vscode from "vscode";
-import { ViewMessage, RenderParameters } from "../../webviews/listwindow/protocol";
+import { ViewMessage, RenderParameters } from "../../webviews/shared/protocol";
 import { ListwindowViewProvider } from "./listwindowViewProvider";
 
 /**

@@ -4,13 +4,13 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
 import * as Assert from "assert";
-import { TreeData } from "../../listwindow/rendering/toolbar/toolbarConstants";
+import { TreeData } from "../../shared/rendering/toolbar/toolbarConstants";
 import { setupTestEnvironment } from "./testEnvironment";
 import { TestUtils } from "./utils";
 import { fireEvent, queries } from "@testing-library/dom";
 import { Checkbox } from "@vscode/webview-ui-toolkit";
-import { PropertyTreeItem } from "../../listwindow/thrift/shared_types";
-import { Serializable } from "../../listwindow/protocol";
+import { PropertyTreeItem } from "../../shared/thrift/shared_types";
+import { Serializable } from "../../shared/protocol";
 
 export function FindItemValue(
     start: TreeData,

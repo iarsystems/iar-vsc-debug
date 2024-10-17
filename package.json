@@ -52,7 +52,7 @@
 		"async-mutex": "^0.3.2",
 		"await-notify": "1.0.1",
 		"color": "^4.2.3",
-		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#e7bbf1bb",
+		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#e08b8d02",
 		"thrift": "^0.12.0",
 		"xmlbuilder2": "^3.0.2",
 		"fast-xml-parser": "4.4.1"
@@ -266,6 +266,13 @@
 					"name": "Autos",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-autos.enabled"
+				},
+				{
+					"id": "iar-find-in-trace",
+					"contextualTitle": "Find In Trace",
+					"name": "Find In Trace",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-find-in-trace.enabled"
 				},
 				{
 					"id": "iar-quick-watch",

@@ -17,6 +17,7 @@ import { RegisterClient } from "./clients/registersLegacyClient";
 import { SymbolicMemoryClient } from "./clients/symbolicMemoryLegacyClient";
 import { StackClient } from "./clients/stackLegacyClient";
 import { CSpyLaunchRequestArguments } from "../dap/cspyDebug";
+import { FormViewProvider } from "../forms/formViewProvider";
 import { CodeCoverageClient } from "./clients/codeCoverageLegacyClient";
 
 
@@ -48,6 +49,7 @@ export class ListwindowManager {
         { viewId: "iar-reg-2", serviceName: "WIN_REGISTER_2", fallback: RegisterClient },
         { viewId: "iar-symbolic-memory", serviceName: "WIN_SYMBOLIC_MEMORY", fallback: SymbolicMemoryClient },
         { viewId: "iar-stack-1", serviceName: "WIN_STACK_1", fallback: StackClient },
+        { viewId: "iar-find-in-trace", serviceName: "WIN_FIND_IN_SLIDING_TRACE"},
         { viewId: "iar-code-coverage", serviceName: "WIN_CODECOVERAGE", fallback: CodeCoverageClient },
         { viewId: "iar-profiling", serviceName: "WIN_PROFILING2" },
     ];
@@ -60,11 +62,18 @@ export class ListwindowManager {
         });
     }
 
+    public getViewId(serviceName: string): string | undefined {
+        return ListwindowManager.VIEW_DEFINITIONS.find(val => {
+            return val.serviceName === serviceName;
+        })?.viewId;
+    }
+
     private readonly windows: ListWindowBackendHandler<ListWindowBackend.Client>[];
     private readonly sessions: Map<string, ThriftServiceRegistry> = new Map();
     private activeSession: string | undefined = undefined;
     // This is set when a session is in progress of connecting to its listwindows.
     private connectingTask: Promise<unknown> | undefined = undefined;
+    public formView: FormViewProvider;
 
     setActiveSession(sessionId: string | undefined) {
         this.activeSession = sessionId;
@@ -132,6 +141,8 @@ export class ListwindowManager {
             );
         });
 
+        this.formView = new FormViewProvider(context);
+
         vscode.debug.registerDebugConfigurationProvider("cspy", {
             resolveDebugConfiguration(_folder, debugConfiguration: vscode.DebugConfiguration & Partial<CSpyLaunchRequestArguments>) {
                 // This tells the debug adapter that we can respond to listwindow requests.
@@ -148,7 +159,10 @@ export class ListwindowManager {
                 if (ev.event === CustomEvent.Names.LISTWINDOWS_REQUESTED) {
                     const connectingTask = Promise.allSettled([
                         this.connectingTask,
-                        this.connectToSession(ev.session, ev.body.supportsToolbars),
+                        this.connectToSession(
+                            ev.session,
+                            ev.body.supportsToolbars,
+                        ),
                     ]);
                     connectingTask.finally(() => {
                         if (this.connectingTask === connectingTask) {
@@ -161,6 +175,14 @@ export class ListwindowManager {
                     await ev.session.customRequest(
                         CustomRequest.Names.LISTWINDOWS_RESOLVED,
                     );
+                } else if (ev.event === CustomEvent.Names.SHOW_VIEW_REQUEST) {
+                    // Translate the backend name into the vs-code id.
+                    const id = ListwindowManager.VIEW_DEFINITIONS.find(val => {
+                        return val.serviceName === ev.body.viewId;
+                    })?.viewId;
+                    if (id) {
+                        await vscode.commands.executeCommand(`${id}.focus`);
+                    }
                 }
             }),
         );

@@ -2,9 +2,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { MessageService } from "../messageService";
-import { SerializedBigInt } from "../protocol";
-import { Target } from "../thrift/listwindow_types";
+import { MessageService } from "../../shared/messageService";
+import { SerializedBigInt } from "../../shared/protocol";
+import { Target } from "../../shared/thrift/listwindow_types";
 import { CellElement, CellPosition } from "./cell/cell";
 
 /** Feedback about an in-progress (i.e. "hovering") drag */

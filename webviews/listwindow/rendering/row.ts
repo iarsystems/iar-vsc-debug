@@ -3,16 +3,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { css } from "@emotion/css";
-import { Column, Row, Target } from "../thrift/listwindow_types";
+import { Column, Row, Target } from "../../shared/thrift/listwindow_types";
 import { CellElement } from "./cell/cell";
 import { CellBorderVariables } from "./cell/cellBorders";
 import { DragDropService } from "./dragDropService";
 import { HoverService } from "./hoverService";
 import { Theming } from "./styles/theming";
-import { customElement } from "./utils";
+import { customElement } from "../../shared/utils";
 import { SharedStyles } from "./styles/sharedStyles";
-import { Serializable } from "../protocol";
-import { MessageService } from "../messageService";
+import { Serializable } from "../../shared/protocol";
+import { MessageService } from "../../shared/messageService";
 
 /**
  * A non-header row in a listwindow. This handles setting outlines and

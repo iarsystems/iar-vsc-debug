@@ -10,6 +10,8 @@ export namespace Tags {
     export const kKeyItemId = "ID";
     export const kKeyItemStringList = "STRINGLIST";
     export const kKeyItemBool = "BOOL";
+    export const kValTrue = "TRUE";
+    export const kValFalse = "FALSE";
     export const kValSpacingLess = "LESS";
     export const kValSpacingMore = "MORE";
     export const kValProgressSmall = "SMALL";

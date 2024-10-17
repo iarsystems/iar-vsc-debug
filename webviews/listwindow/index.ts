@@ -8,7 +8,7 @@ import {
     ExtensionMessage,
     RenderParameters,
     Serializable,
-} from "./protocol";
+} from "../shared/protocol";
 import { GridRenderer } from "./rendering/grid";
 import { TooltipService } from "./rendering/tooltipService";
 import { PersistedState } from "./state";
@@ -22,12 +22,12 @@ import {
     vsCodeDropdown,
 } from "@vscode/webview-ui-toolkit";
 import { DragDropService } from "./rendering/dragDropService";
-import { MessageService } from "./messageService";
+import { MessageService } from "../shared/messageService";
 import { KeyboardInput } from "./keyboardInput";
 import { css } from "@emotion/css";
-import { ToolbarElement } from "./rendering/toolbar/toolbar";
-import { toBigInt } from "./rendering/utils";
-import { PropertyTreeItem } from "./thrift/shared_types";
+import { ToolbarElement } from "../shared/rendering/toolbar/toolbar";
+import { toBigInt } from "../shared/utils";
+import { PropertyTreeItem } from "../shared/thrift/shared_types";
 import { SharedStyles } from "./rendering/styles/sharedStyles";
 
 provideVSCodeDesignSystem().register(

@@ -6,7 +6,7 @@ import {
     ViewMessage,
     RenderParameters,
     Serializable,
-} from "../../webviews/listwindow/protocol";
+} from "../../webviews/shared/protocol";
 import {
     Alignment,
     Cell,
@@ -20,9 +20,9 @@ import {
     TextStyle,
 } from "iar-vsc-common/thrift/bindings/listwindow_types";
 import Int64 = require("node-int64");
-import { EditInfo, MenuItem, SelectionFlags } from "../../webviews/listwindow/thrift/listwindow_types";
+import { EditInfo, MenuItem, SelectionFlags } from "../../webviews/shared/thrift/listwindow_types";
 import { ListwindowViewProvider } from "./listwindowViewProvider";
-import { PropertyTreeItem } from "../../webviews/listwindow/thrift/shared_types";
+import { PropertyTreeItem } from "../../webviews/shared/thrift/shared_types";
 
 /**
  * A listwindow that renders mock data and is able to fake some user interaction.
@@ -252,6 +252,8 @@ export class MockListwindow implements vscode.Disposable {
             case "toolbarRendered":
                 break;
             case "keyPressed":
+                break;
+            case "formClosed":
                 break;
             default: {
                 // Makes TS check that all message variants are handled

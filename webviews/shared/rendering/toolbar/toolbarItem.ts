@@ -3,17 +3,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { css } from "@emotion/css";
-import { customElement, toBigInt } from "../utils";
-import { ToolbarItem, ToolbarItemType } from "./toolbarConstants";
+import { customElement, toBigInt } from "../../utils";
+import { Tags, ToolbarItem, ToolbarItemType } from "./toolbarConstants";
 import { createCustomEvent } from "../../events";
 import { Checkbox } from "@vscode/webview-ui-toolkit/dist/checkbox";
 import { Button } from "@vscode/webview-ui-toolkit/dist/button";
 import { Dropdown } from "@vscode/webview-ui-toolkit/dist/dropdown";
-import { SharedStyles } from "../styles/sharedStyles";
-import { HoverService } from "../hoverService";
+import { SharedStyles } from "../../../listwindow/rendering/styles/sharedStyles";
+import { HoverService } from "../../../listwindow/rendering/hoverService";
 import { ExtensionMessage, Serializable } from "../../protocol";
 import { ToolbarItemState } from "../../thrift/listwindow_types";
-import { IconMap } from "../icons";
+import { IconMap } from "../../../listwindow/rendering/icons";
 import { PropertyTreeItem } from "../../thrift/shared_types";
 
 export type ToolbarItemEvent = CustomEvent<ToolbarItemEvent.Detail>;
@@ -53,8 +53,11 @@ function addVsCodeIcon(
 export abstract class BasicToolbarItem extends HTMLElement {
     protected readonly definition: ToolbarItem;
     public hoverService: HoverService | undefined = undefined;
+    protected currentState: Serializable<ToolbarItemState> | undefined =
+        undefined;
 
     // Implemented by subclass
+    abstract updateState(state: Serializable<ToolbarItemState>): void;
     abstract updateState(state: Serializable<ToolbarItemState>): void;
 
     addHover(element: HTMLElement): void {
@@ -81,9 +84,32 @@ export abstract class BasicToolbarItem extends HTMLElement {
 
     public handleMessage(msg: ExtensionMessage) {
         if (msg.subject === "updateToolbarItem") {
-            // Check if the id matches this id.
-            if (this.definition.id === msg.id) {
-                this.updateState(msg.state);
+            if (this.definition.id !== msg.id) {
+                return;
+            }
+
+            switch (msg.type) {
+                case "freeze": {
+                    const frozenState = msg.state;
+                    if (this.currentState) {
+                        frozenState.detail = this.currentState.detail;
+                        frozenState.on = this.currentState.on;
+                        frozenState.str = this.currentState.str;
+                        frozenState.visible = this.currentState.visible;
+                    }
+                    frozenState.enabled = false;
+                    this.updateState(frozenState);
+                    break;
+                }
+                case "normal": {
+                    this.currentState = msg.state;
+                    this.updateState(msg.state);
+                    break;
+                }
+                case "thaw": {
+                    this.updateState(this.currentState ?? msg.state);
+                    break;
+                }
             }
         }
     }
@@ -107,6 +133,26 @@ export abstract class BasicToolbarItem extends HTMLElement {
                 { key: "str0", value: content, children: [] },
             ],
         };
+    }
+
+    public packForForm(): Serializable<PropertyTreeItem> {
+        return {
+            key: "ID",
+            value: this.definition.id,
+            children: [
+                { key: "int0", value: "1", children: [] },
+                { key: "str0", value: this.getValue() ?? "", children: [] },
+            ],
+        };
+    }
+
+    // Get the current value of the item.
+    getValue(): string | undefined {
+        return undefined;
+    }
+    // Get the current enabled state of the item.
+    getState(): boolean | undefined {
+        return undefined;
     }
 
     constructor(def: ToolbarItem) {
@@ -145,10 +191,16 @@ export class ToolbarItemText extends BasicToolbarItem {
     private historyCanvas: HTMLDivElement | undefined;
     private readonly NO_HISTORY_ELEMS = 10;
     private readonly historyElements: HTMLAnchorElement[] = [];
+    private readonly align: string | undefined;
 
-    constructor(def: ToolbarItem, isEditable = false) {
+    constructor(
+        def: ToolbarItem,
+        isEditable = false,
+        align: string | undefined = undefined,
+    ) {
         super(def);
         this.editable = isEditable;
+        this.align = align;
     }
 
     updateState(state: Serializable<ToolbarItemState>): void {
@@ -156,8 +208,18 @@ export class ToolbarItemText extends BasicToolbarItem {
             return;
         }
         this.edit.style.display = state.visible ? "block" : "none";
-        if (this.editable) {
-            this.edit.contentEditable = state.enabled ? "true" : "false";
+        if (this.editable && this.edit instanceof HTMLInputElement) {
+            if (state.enabled) {
+                this.edit.removeAttribute("disabled");
+                this.edit.style.background =
+                    "var(--vscode-dropdown-background)";
+                this.edit.style.color = "var(--vscode-dropdown-foreground)";
+            } else {
+                this.edit.style.color =
+                    "var(--vscode-radio-inactiveForeground)";
+                this.edit.style.background = "var(--vscode-radio-background)";
+                this.edit.setAttribute("disabled", "true");
+            }
         }
         this.edit.textContent = state.str;
 
@@ -179,15 +241,33 @@ export class ToolbarItemText extends BasicToolbarItem {
         }
     }
 
+    override getValue(): string | undefined {
+        if (this.edit && this.edit instanceof HTMLInputElement) {
+            return this.edit.value;
+        } else {
+            return undefined;
+        }
+    }
+
+    override getState(): boolean | undefined {
+        return this.edit?.contentEditable === "true";
+    }
+
     connectedCallback() {
         const canvas = document.createElement("div");
-        canvas.classList.add(Styles.twoGrid);
 
-        if (this.definition.text !== "") {
+        if (this.definition.text.length > 0) {
+            canvas.classList.add(Styles.twoGrid);
             const label = document.createElement("div");
             label.textContent = this.definition.text;
             label.classList.add(Styles.basicText);
+            if (this.align) {
+                canvas.style.justifyContent = this.align;
+                label.style.width = "40px";
+            }
             canvas.appendChild(label);
+        } else {
+            canvas.classList.add(Styles.oneGrid);
         }
 
         if (this.editable) {
@@ -227,48 +307,51 @@ export class ToolbarItemText extends BasicToolbarItem {
             this.edit.classList.add(Styles.clickable);
             editCanvas.appendChild(this.edit);
 
-            // The history canvas
-            this.historyCanvas = document.createElement("div");
-            // Create the dropdown menu
-            for (let i = 0; i < this.NO_HISTORY_ELEMS; i++) {
-                const element = document.createElement("a");
-                element.onmousedown = ev => {
-                    if (
-                        ev.button !== 0 || // only accept right clicks
-                        this.edit === undefined ||
-                        element.textContent === "" ||
-                        !(this.edit instanceof HTMLInputElement)
-                    ) {
-                        return;
-                    }
-                    this.edit.value = element.textContent as string;
-                    this.dispatchEvent(
-                        createCustomEvent("toolbar-item-interaction", {
-                            detail: {
-                                id: this.definition.id,
-                                properties: this.packContent(true, this.edit.value),
-                            },
-                            bubbles: true,
-                        }),
-                    );
-                };
-                element.classList.add(Styles.dropdownLabel);
+            if (!this.align) {
+                // The history canvas
+                this.historyCanvas = document.createElement("div");
+                // Create the dropdown menu
+                for (let i = 0; i < this.NO_HISTORY_ELEMS; i++) {
+                    const element = document.createElement("a");
+                    element.onmousedown = ev => {
+                        if (
+                            ev.button !== 0 || // only accept right clicks
+                            this.edit === undefined ||
+                            element.textContent === "" ||
+                            !(this.edit instanceof HTMLInputElement)
+                        ) {
+                            return;
+                        }
+                        this.edit.value = element.textContent as string;
+                        this.dispatchEvent(
+                            createCustomEvent("toolbar-item-interaction", {
+                                detail: {
+                                    id: this.definition.id,
+                                    properties: this.packContent(
+                                        true,
+                                        this.edit.value,
+                                    ),
+                                },
+                                bubbles: true,
+                            }),
+                        );
+                    };
+                    element.classList.add(Styles.dropdownLabel);
 
-                this.historyElements.push(element);
-                this.historyCanvas.appendChild(element);
+                    this.historyElements.push(element);
+                    this.historyCanvas.appendChild(element);
+                }
+
+                this.historyCanvas.classList.add(Styles.dropdownContent);
+                editCanvas.appendChild(this.historyCanvas);
             }
-
-            this.historyCanvas.classList.add(Styles.dropdownContent);
-            editCanvas.appendChild(this.historyCanvas);
-
-            canvas.appendChild(editCanvas);
 
             this.edit.onfocus = _ev => {
                 if (this.historyCanvas !== undefined) {
                     this.historyCanvas.style.display = "block";
-                    if (this.edit) {
-                        this.edit.style.outline = `1px solid var(--vscode-focusBorder)`;
-                    }
+                }
+                if (this.edit) {
+                    this.edit.style.outline = `1px solid var(--vscode-focusBorder)`;
                 }
             };
 
@@ -284,6 +367,8 @@ export class ToolbarItemText extends BasicToolbarItem {
                 },
                 false,
             );
+
+            canvas.appendChild(editCanvas);
         } else {
             this.edit = document.createElement("div");
             this.edit.textContent = this.definition.text2;
@@ -410,7 +495,14 @@ export class ToolbarItemButton extends BasicToolbarItem {
         this.btn.onclick = () => {
             this.dispatchEvent(
                 createCustomEvent("toolbar-item-interaction", {
-                    detail: { id: this.definition.id, properties: {key: "ROOT", value: "NONE", children: []} },
+                    detail: {
+                        id: this.definition.id,
+                        properties: {
+                            key: "ROOT",
+                            value: "NONE",
+                            children: [],
+                        },
+                    },
                     bubbles: true, // Needs to bubble up to the root DOM.
                 }),
             );
@@ -438,6 +530,14 @@ export class ToolbarItemCombo extends BasicToolbarItem {
         super(def);
     }
 
+    override getValue(): string | undefined {
+        return this.select?.value as string;
+    }
+
+    override getState(): boolean | undefined {
+        return !this.select?.disabled;
+    }
+
     connectedCallback() {
         // Create the select item.
         this.select = document.createElement("vscode-dropdown") as Dropdown;
@@ -454,7 +554,10 @@ export class ToolbarItemCombo extends BasicToolbarItem {
                     createCustomEvent("toolbar-item-interaction", {
                         detail: {
                             id: this.definition.id,
-                            properties: this.packContentWithInt(index, option.text),
+                            properties: this.packContentWithInt(
+                                index,
+                                option.text,
+                            ),
                         },
                         bubbles: true,
                     }),
@@ -508,6 +611,17 @@ export class ToolbarItemSimpleCheckBox extends BasicToolbarItem {
         }
     }
 
+    override getValue(): string {
+        if (this.checkbox) {
+            return this.checkbox.checked ? Tags.kValTrue : Tags.kValFalse;
+        }
+        return Tags.kValFalse;
+    }
+
+    override getState(): boolean | undefined {
+        return !this.checkbox?.disabled;
+    }
+
     connectedCallback() {
         this.checkbox = document.createElement("vscode-checkbox") as Checkbox;
         this.checkbox.onclick = _ev => {
@@ -515,7 +629,13 @@ export class ToolbarItemSimpleCheckBox extends BasicToolbarItem {
                 createCustomEvent("toolbar-item-interaction", {
                     detail: {
                         id: this.definition.id,
-                        properties: {key: "ROOT", value: "NONE", children: []},
+                        properties: this.packContent(
+                            true,
+                            // Flip this checked, as the actual check occures after.
+                            this.checkbox?.checked
+                                ? Tags.kValFalse
+                                : Tags.kValTrue,
+                        ),
                     },
                     bubbles: true,
                 }),
@@ -570,7 +690,17 @@ export class ToolbarItemCheckBox extends BasicToolbarItem {
                 this.label.classList.remove(this.TOGGLE_ON);
                 this.label.classList.add(this.TOGGLE_OFF);
             }
+
+            if (this.enabled) {
+                this.label.classList.add(Styles.clickable);
+            } else {
+                this.label.classList.remove(Styles.clickable);
+            }
         }
+    }
+
+    override getValue(): string {
+        return this.checked ? Tags.kValTrue : Tags.kValFalse;
     }
 
     connectedCallback() {
@@ -583,11 +713,10 @@ export class ToolbarItemCheckBox extends BasicToolbarItem {
                 createCustomEvent("toolbar-item-interaction", {
                     detail: {
                         id: this.definition.id,
-                        properties: {
-                            key: "ROOT",
-                            value: "NONE",
-                            children: [],
-                        },
+                        properties: this.packContent(
+                            true,
+                            this.checked ? Tags.kValFalse : Tags.kValTrue,
+                        ),
                     },
                     bubbles: true,
                 }),
@@ -652,20 +781,28 @@ namespace Styles {
 
     export const combo = css({
         height: `${String(Constants.ItemHeight)}px`,
-        width: "100% !important",
+        width: "98% !important",
         resize: "none",
         minWidth: "100px",
         marginBottom: "0px",
         zIndex: SharedStyles.ZIndices.ContextMenu,
     });
 
+    export const oneGrid = css({
+        display: "block",
+        height: `${String(Constants.ItemHeight)}px`,
+        flexWrap: "nowrap",
+        justifyContent: "start",
+        width: "100%",
+        background: "inherit",
+    });
     export const twoGrid = css({
         display: "flex",
         height: `${String(Constants.ItemHeight)}px`,
         flexWrap: "nowrap",
         justifyContent: "end",
         width: "100%",
-        background: Constants.Background,
+        background: "inherit",
     });
     export const dropdown = css({
         background: Constants.Background,
@@ -707,8 +844,9 @@ namespace Styles {
     export const basicText = css(
         {
             color: "var(--vscode-foreground)",
-            background: "var(--vscode-sideBar-background)",
+            background: "inherit",
             height: `${String(Constants.ItemHeight - 1)}px`,
+            width: "auto",
             padding: "2px 12px",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -755,6 +893,7 @@ namespace Styles {
         borderRadius: "2px",
         marginTop: "1px",
         resize: "none",
+        width: "92%",
     });
     export const editCenter = css(
         {
@@ -767,7 +906,7 @@ namespace Styles {
         editableText,
     );
     export const editLeft = css(
-        { textAlign: "left", padding: "0px 12px" },
+        { textAlign: "left", paddingLeft: "4%" },
         editableText,
     );
 

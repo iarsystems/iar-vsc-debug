@@ -2,10 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { MsgIcon, MsgKind, MsgResult } from "iar-vsc-common/thrift/bindings/frontend_types";
+import { GenericDialogReturnType, MsgIcon, MsgKind, MsgResult } from "iar-vsc-common/thrift/bindings/frontend_types";
 import { BreakpointType } from "./breakpoints/cspyBreakpointService";
 import { Protocol, Transport } from "iar-vsc-common/thrift/bindings/ServiceRegistry_types";
 import { Source } from "@vscode/debugadapter";
+import { Serializable } from "../../webviews/shared/protocol";
+import { PropertyTreeItem } from "iar-vsc-common/thrift/bindings/shared_types";
 
 /**
  * Custom requests can be sent from a DAP client to the DAP server. Basically, these are C-SPY specific extensions to
@@ -36,6 +38,7 @@ export namespace CustomRequest {
         MULTIELEMENT_SELECTED    = "multiElementSelected",
         THEME_RESOLVED           = "themeResolved",
         LISTWINDOWS_RESOLVED     = "listwindowResolved",
+        GENRIC_DIALOG_RESOLVED   = "genericDialogResolved"
     }
 
     /**
@@ -178,6 +181,19 @@ export namespace CustomRequest {
         }
         return false;
     }
+
+    export interface GenericDialogResolvedArgs{
+        id: number,
+        items: Serializable<PropertyTreeItem>
+        results: GenericDialogReturnType
+    }
+    export function isGenericDialogResolvedArgs(obj: unknown): obj is GenericDialogResolvedArgs {
+        if (typeof(obj) === "object") {
+            const args = obj as GenericDialogResolvedArgs;
+            return args.id !== undefined && args.results !== undefined;
+        }
+        return false;
+    }
 }
 
 /**
@@ -204,7 +220,9 @@ export namespace CustomEvent {
         MULTIELEMENT_SELECT_CREATED = "multiElementSelectCreated",
         FILE_OPENED                 = "fileOpened",
         THEME_REQUESTED             = "themeRequested",
-        LISTWINDOWS_REQUESTED       = "listwindowRequested"
+        LISTWINDOWS_REQUESTED       = "listwindowRequested",
+        SHOW_VIEW_REQUEST           = "showView",
+        DO_GENERIC_DIALOG_REQUEST   = "showGenericDialog"
     }
 
     export interface ContextChangedData {
@@ -287,5 +305,14 @@ export namespace CustomEvent {
     }
     export interface ListWindowsRequestedData {
         supportsToolbars: boolean;
+    }
+    export interface ShowGenericDialogRequestData{
+        id: number,
+        dialogId: string,
+        title: string,
+        items: Serializable<PropertyTreeItem>
+    }
+    export interface ShowViewRequestData{
+        viewId: string;
     }
 }

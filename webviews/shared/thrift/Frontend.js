@@ -2320,6 +2320,137 @@ Frontend_getActiveTheme_result.prototype.write = function(output) {
   return;
 };
 
+var Frontend_invokeDialog_args = function(args) {
+  this.id = null;
+  this.title = null;
+  this.entries = null;
+  if (args) {
+    if (args.id !== undefined && args.id !== null) {
+      this.id = args.id;
+    }
+    if (args.title !== undefined && args.title !== null) {
+      this.title = args.title;
+    }
+    if (args.entries !== undefined && args.entries !== null) {
+      this.entries = new shared_ttypes.PropertyTreeItem(args.entries);
+    }
+  }
+};
+Frontend_invokeDialog_args.prototype = {};
+Frontend_invokeDialog_args.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.STRING) {
+        this.id = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 2:
+      if (ftype == Thrift.Type.STRING) {
+        this.title = input.readString().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 3:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.entries = new shared_ttypes.PropertyTreeItem();
+        this.entries.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+Frontend_invokeDialog_args.prototype.write = function(output) {
+  output.writeStructBegin('Frontend_invokeDialog_args');
+  if (this.id !== null && this.id !== undefined) {
+    output.writeFieldBegin('id', Thrift.Type.STRING, 1);
+    output.writeString(this.id);
+    output.writeFieldEnd();
+  }
+  if (this.title !== null && this.title !== undefined) {
+    output.writeFieldBegin('title', Thrift.Type.STRING, 2);
+    output.writeString(this.title);
+    output.writeFieldEnd();
+  }
+  if (this.entries !== null && this.entries !== undefined) {
+    output.writeFieldBegin('entries', Thrift.Type.STRUCT, 3);
+    this.entries.write(output);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var Frontend_invokeDialog_result = function(args) {
+  this.success = null;
+  if (args) {
+    if (args.success !== undefined && args.success !== null) {
+      this.success = new ttypes.GenericDialogResults(args.success);
+    }
+  }
+};
+Frontend_invokeDialog_result.prototype = {};
+Frontend_invokeDialog_result.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 0:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.success = new ttypes.GenericDialogResults();
+        this.success.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+Frontend_invokeDialog_result.prototype.write = function(output) {
+  output.writeStructBegin('Frontend_invokeDialog_result');
+  if (this.success !== null && this.success !== undefined) {
+    output.writeFieldBegin('success', Thrift.Type.STRUCT, 0);
+    this.success.write(output);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
 var FrontendClient = exports.Client = function(input, output) {
   this.input = input;
   this.output = (!output) ? input : output;
@@ -3302,4 +3433,64 @@ FrontendClient.prototype.recv_getActiveTheme = function() {
     return result.success;
   }
   throw 'getActiveTheme failed: unknown result';
+};
+
+FrontendClient.prototype.invokeDialog = function(id, title, entries, callback) {
+  this.send_invokeDialog(id, title, entries, callback); 
+  if (!callback) {
+    return this.recv_invokeDialog();
+  }
+};
+
+FrontendClient.prototype.send_invokeDialog = function(id, title, entries, callback) {
+  var params = {
+    id: id,
+    title: title,
+    entries: entries
+  };
+  var args = new Frontend_invokeDialog_args(params);
+  try {
+    this.output.writeMessageBegin('invokeDialog', Thrift.MessageType.CALL, this.seqid);
+    args.write(this.output);
+    this.output.writeMessageEnd();
+    if (callback) {
+      var self = this;
+      this.output.getTransport().flush(true, function() {
+        var result = null;
+        try {
+          result = self.recv_invokeDialog();
+        } catch (e) {
+          result = e;
+        }
+        callback(result);
+      });
+    } else {
+      return this.output.getTransport().flush();
+    }
+  }
+  catch (e) {
+    if (typeof this.output.getTransport().reset === 'function') {
+      this.output.getTransport().reset();
+    }
+    throw e;
+  }
+};
+
+FrontendClient.prototype.recv_invokeDialog = function() {
+  var ret = this.input.readMessageBegin();
+  var mtype = ret.mtype;
+  if (mtype == Thrift.MessageType.EXCEPTION) {
+    var x = new Thrift.TApplicationException();
+    x.read(this.input);
+    this.input.readMessageEnd();
+    throw x;
+  }
+  var result = new Frontend_invokeDialog_result();
+  result.read(this.input);
+  this.input.readMessageEnd();
+
+  if (null !== result.success) {
+    return result.success;
+  }
+  throw 'invokeDialog failed: unknown result';
 };

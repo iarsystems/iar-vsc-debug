@@ -8,10 +8,12 @@ import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { ThriftServiceRegistry } from "iar-vsc-common/thrift/thriftServiceRegistry";
 import { Int64, TClientConstructor } from "thrift";
 import { PropertyTreeItem } from "iar-vsc-common/thrift/bindings/shared_types";
-import { ToolbarItemState } from "iar-vsc-common/thrift/bindings/listwindow_types";
-import { Serializable } from "../../../webviews/listwindow/protocol";
-import { ToolbarItem, Tags } from "../../../webviews/listwindow/rendering/toolbar/toolbarConstants";
+import { ToolbarItemState, ToolbarNote, ToolbarWhat } from "iar-vsc-common/thrift/bindings/listwindow_types";
+import { Serializable } from "../../../webviews/shared/protocol";
+import { ToolbarItem } from "../../../webviews/shared/rendering/toolbar/toolbarConstants";
 import { unpackTree } from "../../utils";
+import { LegacyUtils } from "./legacyUtils";
+import { ListwindowController } from "../listwindowController";
 
 
 /**
@@ -35,6 +37,8 @@ export abstract class ToolbarInterface {
     ): Q.Promise<ToolbarItemState>;
     /** The tooltip to show when hovering a toolbar item. */
     public abstract getToolbarItemTooltip(id: string): Q.Promise<string>;
+    /** Connect a controller to the toolbar */
+    public abstract connectController(controller: ListwindowController): void;
 }
 
 /**
@@ -121,6 +125,9 @@ export class GenericListwindowClient extends AbstractListwindowClient<ListWindow
             return c.service.getToolbarItemTooltip(id);
         }, "");
     }
+    override connectController(_controller: ListwindowController) {
+        // Never used...
+    }
 }
 
 // Helper interface for defining items to generate when running
@@ -147,8 +154,13 @@ export abstract class LegacyListwindowClient<
     T extends ListWindowBackend.Client,
 > extends AbstractListwindowClient<T> {
     protected toolbarItems: LegacyToolbarItem[] = [];
+    protected controller: ListwindowController | undefined = undefined;
     constructor() {
         super();
+    }
+
+    override connectController(controller: ListwindowController) {
+        this.controller = controller;
     }
 
     // Pack the given description into something that
@@ -157,59 +169,7 @@ export abstract class LegacyListwindowClient<
         toolbarItems: LegacyToolbarItem[],
     ): Serializable<PropertyTreeItem> {
         this.toolbarItems = toolbarItems;
-
-        const root: Serializable<PropertyTreeItem> = {
-            key: "ROOT",
-            value: "NONE",
-            children: [],
-        };
-
-        toolbarItems.forEach((item, index) => {
-            const it: Serializable<PropertyTreeItem> = {
-                key: Tags.kKeyIndexBase + index.toString(),
-                value: "NONE",
-                children: [],
-            };
-            it.children.push({
-                key: Tags.kKeyItemId,
-                value: item.id,
-                children: [],
-            });
-            it.children.push({
-                key: Tags.kKeyItemKind,
-                value: item.type,
-                children: [],
-            });
-            it.children.push({
-                key: Tags.kKeyItemStr,
-                value: item.text,
-                children: [],
-            });
-            it.children.push({
-                key: Tags.kKeyItemStr2,
-                value: item.text2,
-                children: [],
-            });
-
-            if (item.stringList.length > 0) {
-                const stringList: Serializable<PropertyTreeItem> = {
-                    key: Tags.kKeyItemStringList,
-                    value: "NONE",
-                    children: [],
-                };
-                item.stringList.forEach((val, index) => {
-                    stringList.children.push({
-                        key: index.toString(),
-                        value: val,
-                        children: [],
-                    });
-                });
-                it.children.push(stringList);
-            }
-            root.children.push(it);
-        });
-
-        return root;
+        return LegacyUtils.packDescription(toolbarItems);
     }
 
     public getToolbarItemTooltip(id: string): Q.Promise<string> {
@@ -238,7 +198,14 @@ export abstract class LegacyListwindowClient<
             return item.id === id;
         });
         if (item !== undefined && item.callback !== undefined) {
-            return item.callback(tree);
+            const res = item.callback(tree);
+            this.controller?.notifyToolbar(
+                new ToolbarNote({
+                    what: ToolbarWhat.kNormalUpdate,
+                    focusOn: -1,
+                }),
+            );
+            return res;
         }
         return Q.resolve(false);
     }

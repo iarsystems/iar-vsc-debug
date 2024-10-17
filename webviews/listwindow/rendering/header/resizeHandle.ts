@@ -3,8 +3,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { css } from "@emotion/css";
-import { createCustomEvent } from "../../events";
-import { customElement } from "../utils";
+import { createCustomEvent } from "../../../shared/events";
+import { customElement } from "../../../shared/utils";
 
 /**
  * Emitted when the user starts dragging the resize handle

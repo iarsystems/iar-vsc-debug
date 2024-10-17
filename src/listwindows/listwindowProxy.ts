@@ -9,7 +9,7 @@ import {
     What,
 } from "iar-vsc-common/thrift/bindings/listwindow_types";
 import * as ListWindowBackend from "iar-vsc-common/thrift/bindings/ListWindowBackend";
-import { RenderParameters } from "../../webviews/listwindow/protocol";
+import { RenderParameters } from "../../webviews/shared/protocol";
 import { Int64 } from "thrift";
 import { toBigInt, toInt64 } from "../utils";
 

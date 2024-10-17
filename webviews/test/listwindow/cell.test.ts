@@ -7,7 +7,7 @@ import Int64 = require("node-int64");
 import { fireEvent, queries } from "@testing-library/dom";
 import { TestUtils } from "./utils";
 import { setupTestEnvironment } from "./testEnvironment";
-import { ViewMessage } from "../../listwindow/protocol";
+import { ViewMessage } from "../../shared/protocol";
 import { SelRange } from "iar-vsc-common/thrift/bindings/listwindow_types";
 
 suite("Listwindow cells", () => {

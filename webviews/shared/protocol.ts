@@ -46,6 +46,11 @@ export type RenderParameters = Serializable<{
 
 
 /**
+ * Controls the state of the toolbaritems
+ */
+export type UpdateType = "normal" | "freeze" | "thaw";
+
+/**
  * Controls whether to auto-fill the grid to the width of the view, see the
  * "Fit contents to view width" setting.
  */
@@ -62,8 +67,8 @@ export interface SerializedBigInt { value: string }
  */
 export type ExtensionMessage =
   | { subject: "render", params: RenderParameters } // Render the given data
-  | { subject: "renderToolbar", params: Serializable<PropertyTreeItem>} // Render the given data
-  | { subject: "updateToolbarItem", id: string, state: Serializable<ToolbarItemState>} // Update the state of an item in the toolbar.
+  | { subject: "renderToolbar", id?: string, params: Serializable<PropertyTreeItem>} // Render the given data
+  | { subject: "updateToolbarItem", id: string, state: Serializable<ToolbarItemState>, type: UpdateType} // Update the state of an item in the toolbar.
   | { subject: "setResizeMode", mode: ColumnResizeMode }
   | { subject: "dumpHTML" } // Send a message back with the current full HTML of the view (useful for testing)
   | { subject: "contextMenuReply", menu: Serializable<MenuItem>[] }
@@ -107,7 +112,8 @@ export type ViewMessage =
   | { subject: "keyPressed", code: number, repeat: number }
   | { subject: "toolbarRendered", ids: string[] }
   | { subject: "toolbarItemInteraction", id: string, properties: Serializable<PropertyTreeItem> } // The user has interacted with a toolbar item.
-  | { subject: "getToolbarToolTip", id: string }; // The user is hovering a toolbar item.
+  | { subject: "getToolbarToolTip", id: string } // The user is hovering a toolbar item.
+  | { subject: "formClosed", isCanceled: boolean, form: Serializable<PropertyTreeItem>}; // Close and hide the view.
 
 
 /**

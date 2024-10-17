@@ -6,7 +6,7 @@ import { Int64 } from "thrift";
 import {
     Serializable,
     SerializedBigInt,
-} from "../webviews/listwindow/protocol";
+} from "../webviews/shared/protocol";
 import { PropertyTreeItem } from "iar-vsc-common/thrift/bindings/shared_types";
 
 /**

@@ -4,8 +4,8 @@
 
 import { css } from "@emotion/css";
 import { Theming } from "../styles/theming";
-import { customElement } from "../utils";
-import { MessageService } from "../../messageService";
+import { customElement } from "../../../shared/utils";
+import { MessageService } from "../../../shared/messageService";
 
 /**
  * Emitted when the the user presses an expand or collapse button

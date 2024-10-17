@@ -3,8 +3,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { css } from "@emotion/css";
-import { MessageService } from "../messageService";
-import { customElement } from "./utils";
+import { MessageService } from "../../shared/messageService";
+import { customElement } from "../../shared/utils";
 
 /**
  * A vertical scrollbar for a listwindow. This doesn't actually perform any
