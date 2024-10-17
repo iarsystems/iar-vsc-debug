@@ -396,7 +396,7 @@
                 </option>
                 <option>
                     <name>IccLang</name>
-                    <state>0</state>
+                    <state>2</state>
                 </option>
                 <option>
                     <name>IccCDialect</name>
@@ -1447,7 +1447,7 @@
                 </option>
                 <option>
                     <name>IccLang</name>
-                    <state>0</state>
+                    <state>2</state>
                 </option>
                 <option>
                     <name>IccCDialect</name>
@@ -2111,5 +2111,8 @@
     </file>
     <file>
         <name>$PROJ_DIR$\Utilities.c</name>
+    </file>
+    <file>
+        <name>$PROJ_DIR$\Stl.cpp</name>
     </file>
 </project>

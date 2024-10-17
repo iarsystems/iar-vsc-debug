@@ -39,7 +39,7 @@ debugAdapterSuite("Stepping", (dc, dbgConfig, fibonacciFile, utilsFile) => {
 
                         const res = await dc().scopesRequest({frameId: stack[1]!.id});
                         const vars = (await dc().variablesRequest({variablesReference: res.body.scopes[0]!.variablesReference})).body.variables;
-                        Assert.strictEqual(vars.length, 1);
+                        Assert.strictEqual(vars.length, 1, `Found variables: ${vars.map(v => v.name).join(", ")}`);
                         Assert.strictEqual(vars[0]!.name, "fib");
                         Assert(vars[0]!.value === "<unavailable>" || vars[0]!.value === "1");
                     })

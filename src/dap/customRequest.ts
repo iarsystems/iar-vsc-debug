@@ -2,8 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { MsgIcon, MsgKind, MsgResult } from "iar-vsc-common/thrift/bindings/frontend_types";
+import { GenericDialogReturnType, MsgIcon, MsgKind, MsgResult } from "iar-vsc-common/thrift/bindings/frontend_types";
 import { BreakpointType } from "./breakpoints/cspyBreakpointService";
+import { Protocol, Transport } from "iar-vsc-common/thrift/bindings/ServiceRegistry_types";
+import { Source } from "@vscode/debugadapter";
+import { Serializable } from "../../webviews/shared/protocol";
+import { PropertyTreeItem } from "iar-vsc-common/thrift/bindings/shared_types";
 
 /**
  * Custom requests can be sent from a DAP client to the DAP server. Basically, these are C-SPY specific extensions to
@@ -14,6 +18,7 @@ export namespace CustomRequest {
      * Holds the names of all supported custom requests (i.e. the string values used to perform the requests).
      */
     export enum Names {
+        GET_REGISTRY_LOCATION     = "getRegistryLocation",
         USE_AUTO_BREAKPOINTS      = "useAutoBreakpoints",
         USE_HARDWARE_BREAKPOINTS  = "useHardwareBreakpoints",
         USE_SOFTWARE_BREAKPOINTS  = "useSoftwareBreakpoints",
@@ -31,6 +36,19 @@ export namespace CustomRequest {
         PROGRESS_BAR_CANCELED    = "progressBarCanceled",
         ELEMENT_SELECTED         = "elementSelected",
         MULTIELEMENT_SELECTED    = "multiElementSelected",
+        THEME_RESOLVED           = "themeResolved",
+        LISTWINDOWS_RESOLVED     = "listwindowResolved",
+        GENRIC_DIALOG_RESOLVED   = "genericDialogResolved"
+    }
+
+    /**
+     * Response data to a {@link CustomRequest.Names.GET_REGISTRY_LOCATION} request.
+     */
+    export interface RegistryLocationResponse {
+        host: string;
+        port: number;
+        transport: Transport;
+        protocol: Protocol;
     }
 
     /**
@@ -138,6 +156,44 @@ export namespace CustomRequest {
         }
         return false;
     }
+
+    /**
+     * All channels are 0-255.
+     */
+    export interface ThemeColor { r: number, g: number, b: number }
+    /**
+     * Request arguments/parameters for a {@link CustomRequest.THEME_RESOLVED} request.
+     */
+    export interface ThemeResolvedArgs {
+        id: number;
+        theme: {
+            bg: ThemeColor;
+            fg: ThemeColor;
+            disabledFg: ThemeColor;
+            highlightedFg: ThemeColor;
+            pc: ThemeColor;
+        };
+    }
+    export function isThemeResolvedArgs(obj: unknown): obj is ThemeResolvedArgs {
+        if (typeof(obj) === "object") {
+            const args = obj as ThemeResolvedArgs;
+            return args.id !== undefined && args.theme !== undefined;
+        }
+        return false;
+    }
+
+    export interface GenericDialogResolvedArgs{
+        id: number,
+        items: Serializable<PropertyTreeItem>
+        results: GenericDialogReturnType
+    }
+    export function isGenericDialogResolvedArgs(obj: unknown): obj is GenericDialogResolvedArgs {
+        if (typeof(obj) === "object") {
+            const args = obj as GenericDialogResolvedArgs;
+            return args.id !== undefined && args.results !== undefined;
+        }
+        return false;
+    }
 }
 
 /**
@@ -149,6 +205,10 @@ export namespace CustomEvent {
      * Holds the names of all supported custom events or "reverse requests".
      */
     export enum Names {
+        /** Sent when cspy's inspection context (e.g. inspected stack frame)
+        * changes for a reason other than as a result of a DAP request (e.g.
+        * because the user pressed something in a listwindow) */
+        CONTEXT_CHANGED             = "contextChanged",
         /// most events here correspond to events sent to {@link FrontendHandler}.
         MESSAGE_BOX_CREATED         = "messageBoxCreated",
         OPEN_DIALOG_CREATED         = "openDialogCreated",
@@ -159,6 +219,18 @@ export namespace CustomEvent {
         ELEMENT_SELECT_CREATED      = "elementSelectCreated",
         MULTIELEMENT_SELECT_CREATED = "multiElementSelectCreated",
         FILE_OPENED                 = "fileOpened",
+        THEME_REQUESTED             = "themeRequested",
+        LISTWINDOWS_REQUESTED       = "listwindowRequested",
+        SHOW_VIEW_REQUEST           = "showView",
+        DO_GENERIC_DIALOG_REQUEST   = "showGenericDialog"
+    }
+
+    export interface ContextChangedData {
+        file: Source;
+        startLine: number;
+        startColumn: number;
+        endLine: number;
+        endColumn: number;
     }
 
     export interface MessageBoxCreatedData {
@@ -227,5 +299,20 @@ export namespace CustomEvent {
         path: string;
         line: number,
         col: number,
+    }
+    export interface ThemeRequestedData {
+        id: number;
+    }
+    export interface ListWindowsRequestedData {
+        supportsToolbars: boolean;
+    }
+    export interface ShowGenericDialogRequestData{
+        id: number,
+        dialogId: string,
+        title: string,
+        items: Serializable<PropertyTreeItem>
+    }
+    export interface ShowViewRequestData{
+        viewId: string;
     }
 }

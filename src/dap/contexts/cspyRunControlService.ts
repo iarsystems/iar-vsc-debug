@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { DebugEventListenerHandler } from "../debugEventListenerHandler";
-import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
+import { ThriftServiceRegistry } from "iar-vsc-common/thrift/thriftServiceRegistry";
 import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
 import { DEBUGGER_SERVICE, DkCoreStatusConstants, DkNotifyConstant } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
@@ -27,12 +27,12 @@ type CoresStoppedCallback = (events: CoreStoppedEvent[]) => void;
 export class CSpyRunControlService implements Disposable.Disposable {
 
     static async instantiate(
-        serviceManager: ThriftServiceManager,
+        serviceRegistry: ThriftServiceRegistry,
         coresService: CSpyCoresService,
         eventListener: DebugEventListenerHandler,
         libSupportHandler: LibSupportHandler,
     ): Promise<CSpyRunControlService> {
-        const dbgr = await serviceManager.findService(DEBUGGER_SERVICE, Debugger);
+        const dbgr = await serviceRegistry.findService(DEBUGGER_SERVICE, Debugger);
         const nCores = await dbgr.service.getNumberOfCores();
         return new CSpyRunControlService(dbgr, nCores, coresService, eventListener, libSupportHandler);
     }
@@ -175,7 +175,6 @@ export class CSpyRunControlService implements Disposable.Disposable {
     private async handleCoreStopped() {
         const nCores = await this.dbgr.service.getNumberOfCores();
         const coreIds = Array.from({ length: nCores }, (_, i) => i);
-        await new Promise(res => setTimeout(res, 500));
         const stoppedCores = await Promise.all(coreIds.map(async i => {
             let isStopped = false;
             // VSC-367 If there is only a single core, we know it is the one that stopped. This lets us avoid

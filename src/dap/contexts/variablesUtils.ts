@@ -67,21 +67,21 @@ export namespace VariablesUtils {
             }
             let joinOperator: string;
             switch (prevItem.val.basicType) {
-            case BasicExprType.Array:
-                joinOperator = "";
-                break;
-            case BasicExprType.Pointer:
-                joinOperator = "->";
-                break;
-            case BasicExprType.Unknown:
-            case BasicExprType.Basic:
-            case BasicExprType.Composite:
-            case BasicExprType.Enumeration:
-            case BasicExprType.Function:
-            case BasicExprType.Custom:
-            default:
-                joinOperator = ".";
-                break;
+                case BasicExprType.Array:
+                    joinOperator = "";
+                    break;
+                case BasicExprType.Pointer:
+                    joinOperator = "->";
+                    break;
+                case BasicExprType.Unknown:
+                case BasicExprType.Basic:
+                case BasicExprType.Composite:
+                case BasicExprType.Enumeration:
+                case BasicExprType.Function:
+                case BasicExprType.Custom:
+                default:
+                    joinOperator = ".";
+                    break;
             }
             evaluateName = `(${evaluateName})${joinOperator}${item.exprName}`;
             prevItem = item;

@@ -1,0 +1,12 @@
+{
+    "extends": "../tsconfig.json",
+    "compilerOptions": {
+        "module": "CommonJS",
+        "lib": ["es2021"],
+        "skipLibCheck": true
+    },
+    "include": [
+        "**/*"
+    ],
+    "exclude": []
+}

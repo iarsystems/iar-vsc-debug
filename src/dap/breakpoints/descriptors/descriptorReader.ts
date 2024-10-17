@@ -43,65 +43,65 @@ export class DescriptorReader {
         while (running) {
             const nextChar = this.consume(1);
             switch (nextChar) {
-            case "":
-                throw new Error("Incomplete descriptor found");
-            case DescriptorConstants.GUARD_CHAR:
-                {
-                    const next = this.consume(1);
-                    switch (next) {
-                    case DescriptorConstants.STRING_DELIMITER: // double quotes
-                        result += next;
-                        break;
-                    case DescriptorConstants.GUARD_CHAR: // '%'
-                        result += nextChar;
-                        break;
-                    case "a":
-                        // Bell
-                        result += "\u0007";
-                        break;
-                    case "b":
-                        // Backspace
-                        result += "\b";
-                        break;
-                    case "f":
-                        // Form feed
-                        result += "\f";
-                        break;
-                    case "n":
-                        // New line
-                        result += "\n";
-                        break;
-                    case "v":
-                        // Vertical TAB
-                        result += "\u000b";
-                        break;
-                    case "t":
-                        // TAB
-                        result += "\t";
-                        break;
-                    case "r":
-                        // New line
-                        result += "\r";
-                        break;
+                case "":
+                    throw new Error("Incomplete descriptor found");
+                case DescriptorConstants.GUARD_CHAR:
+                    {
+                        const next = this.consume(1);
+                        switch (next) {
+                            case DescriptorConstants.STRING_DELIMITER: // double quotes
+                                result += next;
+                                break;
+                            case DescriptorConstants.GUARD_CHAR: // '%'
+                                result += nextChar;
+                                break;
+                            case "a":
+                                // Bell
+                                result += "\u0007";
+                                break;
+                            case "b":
+                                // Backspace
+                                result += "\b";
+                                break;
+                            case "f":
+                                // Form feed
+                                result += "\f";
+                                break;
+                            case "n":
+                                // New line
+                                result += "\n";
+                                break;
+                            case "v":
+                                // Vertical TAB
+                                result += "\u000b";
+                                break;
+                            case "t":
+                                // TAB
+                                result += "\t";
+                                break;
+                            case "r":
+                                // New line
+                                result += "\r";
+                                break;
 
-                    default:
-                        // No guard, insert escape character in result
-                        result += nextChar;
-                        result += next;
+                            default:
+                                // No guard, insert escape character in result
+                                result += nextChar;
+                                result += next;
 
-                    } // switch(next) ends here
+                        } // switch(next) ends here
 
-                }
-                break; // case ESCAPE_CHAR ends here
-            case DescriptorConstants.STRING_DELIMITER:
-                if (result.endsWith("% "))
-                    result = result.substring(0, result.length - 1);
+                    }
+                    break; // case ESCAPE_CHAR ends here
+                case DescriptorConstants.STRING_DELIMITER:
+                    if (result.endsWith("% "))
+                        result = result.substring(0, result.length - 1);
 
-                running = false;
-                break;
-            default:
-                result += nextChar;
-                break;
+                    running = false;
+                    break;
+                default:
+                    result += nextChar;
+                    break;
             }
         }
         return result;

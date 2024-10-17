@@ -157,16 +157,16 @@ export namespace CSpyConfigurationSupplier {
 
     export function toErrorMessage(reason: CSpyConfigurationSupplier.ErrorReason): string {
         switch (reason) {
-        case CSpyConfigurationSupplier.ErrorReason.buildExtensionNotInstalled:
-            return "IAR: Unable to provide automatic debug configurations: The IAR Build extension is not installed.";
-        case CSpyConfigurationSupplier.ErrorReason.noConfigurationsAvailable:
-            return "IAR: Unable to provide automatic debug configuration(s): Please debug the project in Embedded Workbench once and then try again.";
-        case CSpyConfigurationSupplier.ErrorReason.noProjectSelected:
-            return "IAR: Unable to provide automatic debug configuration(s): Please select a project in the IAR Build extension.";
-        case CSpyConfigurationSupplier.ErrorReason.noProjectConfigSelected:
-            return "IAR: Unable to provide automatic debug configuration(s): Please select a project configuration in the IAR Build extension.";
-        default:
-            return "IAR: Unable to provide automatic debug configurations: An unknown error occured.";
+            case CSpyConfigurationSupplier.ErrorReason.buildExtensionNotInstalled:
+                return "IAR: Unable to provide automatic debug configurations: The IAR Build extension is not installed.";
+            case CSpyConfigurationSupplier.ErrorReason.noConfigurationsAvailable:
+                return "IAR: Unable to provide automatic debug configuration(s): Please debug the project in Embedded Workbench once and then try again.";
+            case CSpyConfigurationSupplier.ErrorReason.noProjectSelected:
+                return "IAR: Unable to provide automatic debug configuration(s): Please select a project in the IAR Build extension.";
+            case CSpyConfigurationSupplier.ErrorReason.noProjectConfigSelected:
+                return "IAR: Unable to provide automatic debug configuration(s): Please select a project configuration in the IAR Build extension.";
+            default:
+                return "IAR: Unable to provide automatic debug configurations: An unknown error occured.";
         }
     }
 

@@ -7,14 +7,16 @@ import * as Thrift from "thrift";
 import * as Path from "path";
 import * as FrontendTypes from "iar-vsc-common/thrift/bindings/frontend_types";
 import * as Frontend from "iar-vsc-common/thrift/bindings/Frontend";
-import { SourceLocation } from "iar-vsc-common/thrift/bindings/shared_types";
+import { PropertyTreeItem, SourceLocation } from "iar-vsc-common/thrift/bindings/shared_types";
 import * as Q from "q";
 import { CustomEvent, CustomRequest } from "./customRequest";
 import { Event, logger } from "@vscode/debugadapter";
 import { CommandRegistry } from "./commandRegistry";
 import {DapEventSink, Disposable, Utils} from "./utils";
 import { ThriftServiceHandler } from "iar-vsc-common/thrift/thriftUtils";
-import { ColorSchema } from "iar-vsc-common/thrift/bindings/themes_types";
+import { ColorSchema, ThriftDisplayElement } from "iar-vsc-common/thrift/bindings/themes_types";
+import { GenericDialogResults } from "iar-vsc-common/thrift/bindings/frontend_types";
+import { unpackTree } from "../utils";
 
 /**
  * A (handler for a) thrift service that provides various types dialogs to C-SPY. These may be used e.g. to display
@@ -32,6 +34,8 @@ export class FrontendHandler implements ThriftServiceHandler<Frontend.Client>, D
     private readonly openSaveDialogs: Map<number, (paths: string[]) => void> = new Map();
     private readonly openElementSelectionDialogs: Map<number, (choice: number) => void> = new Map();
     private readonly openMultiElementSelectionDialogs: Map<number, (choices: number[]) => void> = new Map();
+    private readonly themeRequests: Map<number, (theme: CustomRequest.ThemeResolvedArgs) => void> = new Map();
+    private readonly genericDialogRequests: Map<number, (dialogResults: GenericDialogResults) => void> = new Map();
 
     // Stores whether the progress bar with a given id has been canceled
     private readonly openProgressBars: Map<number, boolean> = new Map();
@@ -41,12 +45,14 @@ export class FrontendHandler implements ThriftServiceHandler<Frontend.Client>, D
      * handler.
      * @param eventSink Used to send DAP events to the frontend
      * @param sourceFileMap A set of path mappings/translations to use to resolve nonexistent source files
+     * @param clientSupportsThemes Whether the client can handle the {@link CustomEvent.Names.THEME_REQUESTED} request from the debug adapter
      * @param requestRegistry The registry where this handler should register the DAP requests it can handle
      */
     constructor(
         private readonly eventSink: DapEventSink,
         private readonly sourceFileMap: Record<string, string>,
-        requestRegistry: CommandRegistry<unknown, unknown>
+        private readonly clientSupportsThemes: boolean,
+        requestRegistry: CommandRegistry<unknown, unknown>,
     ) {
         requestRegistry.registerCommandWithTypeCheck(CustomRequest.Names.MESSAGE_BOX_CLOSED, CustomRequest.isMessageBoxClosedArgs,
             args => {
@@ -76,6 +82,24 @@ export class FrontendHandler implements ThriftServiceHandler<Frontend.Client>, D
             args => {
                 this.openMultiElementSelectionDialogs.get(args.id)?.(args.selectedIndices);
                 this.openMultiElementSelectionDialogs.delete(args.id);
+            });
+        requestRegistry.registerCommandWithTypeCheck(CustomRequest.Names.THEME_RESOLVED, CustomRequest.isThemeResolvedArgs,
+            args => {
+                this.themeRequests.get(args.id)?.(args);
+                this.themeRequests.delete(args.id);
+            });
+        requestRegistry.registerCommandWithTypeCheck(CustomRequest.Names.GENRIC_DIALOG_RESOLVED, CustomRequest.isGenericDialogResolvedArgs,
+            args => {
+                const resolver = this.genericDialogRequests.get(args.id);
+                if (resolver) {
+                    resolver(
+                        new GenericDialogResults({
+                            items: unpackTree(args.items),
+                            type: args.results,
+                        }),
+                    );
+                    this.genericDialogRequests.delete(args.id);
+                }
             });
     }
 
@@ -209,7 +233,9 @@ export class FrontendHandler implements ThriftServiceHandler<Frontend.Client>, D
     }
 
     // We can't support this since we don't have any custom views yet
-    showView(_id: string): Q.Promise<void> {
+    showView(id: string): Q.Promise<void> {
+        const body: CustomEvent.ShowViewRequestData = { viewId: id};
+        this.eventSink.sendEvent(new Event(CustomEvent.Names.SHOW_VIEW_REQUEST, body));
         return Q.resolve();
     }
 
@@ -270,7 +296,97 @@ export class FrontendHandler implements ThriftServiceHandler<Frontend.Client>, D
         return Q.resolve();
     }
 
-    getActiveTheme(): Q.Promise<{ [k: number]: ColorSchema }> {
-        return Q.reject(new Error("Not supported"));
+    invokeDialog(
+        id: string,
+        title: string,
+        properties: PropertyTreeItem,
+    ): Q.Promise<GenericDialogResults> {
+        const resultId = this.nextId++;
+        return Q.Promise((resolve, _) => {
+            this.genericDialogRequests.set(resultId, resolve);
+            const body: CustomEvent.ShowGenericDialogRequestData = {
+                id: resultId,
+                dialogId: id,
+                items: properties,
+                title: title,
+            };
+            this.eventSink.sendEvent(new Event(CustomEvent.Names.DO_GENERIC_DIALOG_REQUEST, body));
+        });
+    }
+
+    getActiveTheme(): Q.Promise<Record<ThriftDisplayElement, ColorSchema>> {
+        if (!this.clientSupportsThemes) {
+            return Q.reject(new Error("Themes are not supported"));
+        }
+
+        function toCspyTheme(vscodeTheme: CustomRequest.ThemeResolvedArgs["theme"]) {
+            function toColorSchema(color: CustomRequest.ThemeColor) {
+                return new ColorSchema({ R: color.r, B: color.b, G: color.g });
+            }
+
+            const bg            = toColorSchema(vscodeTheme.bg);
+            const fg            = toColorSchema(vscodeTheme.fg);
+            const disabledFg    = toColorSchema(vscodeTheme.disabledFg);
+            const highlightedFg = toColorSchema(vscodeTheme.highlightedFg);
+            const pc            = toColorSchema(vscodeTheme.pc);
+            const theme: Partial<Record<ThriftDisplayElement, ColorSchema>> = {
+                // Backgrounds
+                [ThriftDisplayElement.kWindowBg]:           bg,
+                [ThriftDisplayElement.kMdiClientBg]:        bg,
+                [ThriftDisplayElement.kWatchFamilyBg]:      bg,
+                [ThriftDisplayElement.kStackFamilyBg]:      bg,
+                [ThriftDisplayElement.kDisasmFamilyBg]:     bg,
+                [ThriftDisplayElement.kMemoryFamilyBg]:     bg,
+                [ThriftDisplayElement.kBreakpointFamilyBg]: bg,
+                [ThriftDisplayElement.kTraceFamilyBg]:      bg,
+                [ThriftDisplayElement.kProfilerFamilyBg]:   bg,
+                [ThriftDisplayElement.kInterruptFamilyBg]:  bg,
+                [ThriftDisplayElement.kStateFamilyBg]:      bg,
+                [ThriftDisplayElement.kDataLogFamilyBg]:    bg,
+                [ThriftDisplayElement.kPowerLogFamilyBg]:   bg,
+                [ThriftDisplayElement.kEventLogFamilyBg]:   bg,
+                [ThriftDisplayElement.kRegisterFamilyBg]:   bg,
+                [ThriftDisplayElement.kSideMargin]:         bg,
+
+                // Foregrounds
+                [ThriftDisplayElement.kText]:         fg,
+                [ThriftDisplayElement.kDistinctText]: fg,
+                [ThriftDisplayElement.kGrayText]:     disabledFg,
+                [ThriftDisplayElement.kDisabledText]: disabledFg,
+                [ThriftDisplayElement.kValueChangedText]: highlightedFg,
+
+                // Pc
+                [ThriftDisplayElement.kCurrentPc]:              pc,
+                [ThriftDisplayElement.kCurrentPcStatementOnly]: pc,
+                [ThriftDisplayElement.kAlternativePc]:          pc,
+            };
+            // Fill in the rest with a noticeable color (red). These are either
+            // only used by the MFC/QT frontends, or only used by windows we do
+            // not support (e.g. disassembly or memory), so they *should* never
+            // be used.
+            for (const value of Object.keys(ThriftDisplayElement).
+                map(v => Number(v)).
+                filter(v => !isNaN(v))) {
+                if (!(value in theme)) {
+                    theme[value as ThriftDisplayElement] = new ColorSchema({
+                        R: 255,
+                        G: 0,
+                        B: 0,
+                    });
+                }
+            }
+            return theme as Record<ThriftDisplayElement, ColorSchema>;
+        }
+
+        const id = this.nextId++;
+        return Q.Promise(resolve => {
+            this.themeRequests.set(id, response => {
+                resolve(toCspyTheme(response.theme));
+            });
+            const body: CustomEvent.ThemeRequestedData = { id };
+            this.eventSink.sendEvent(
+                new Event(CustomEvent.Names.THEME_REQUESTED, body),
+            );
+        });
     }
 }

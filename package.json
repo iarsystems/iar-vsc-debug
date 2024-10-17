@@ -43,15 +43,24 @@
 	],
 	"private": true,
 	"dependencies": {
+		"@emotion/css": "^11.11.2",
+		"@floating-ui/dom": "^1.6.7",
+		"@vscode/codicons": "^0.0.36",
 		"@vscode/debugadapter": "^1.57.0",
 		"@vscode/debugprotocol": "^1.57.0",
+		"@vscode/webview-ui-toolkit": "^1.4.0",
 		"async-mutex": "^0.3.2",
 		"await-notify": "1.0.1",
-		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#fbe3aae9",
+		"color": "^4.2.3",
+		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#4572a541",
 		"thrift": "^0.12.0",
-		"xmlbuilder2": "^3.0.2"
+		"xmlbuilder2": "^3.0.2",
+		"fast-xml-parser": "4.4.1"
 	},
 	"devDependencies": {
+		"@testing-library/dom": "^10.3.2",
+		"@testing-library/user-event": "^14.5.2",
+		"@types/color": "^3.0.6",
 		"@types/jsdom": "^16.2.14",
 		"@types/mocha": "^9.1.0",
 		"@types/node": "^15.6.0",
@@ -64,13 +73,15 @@
 		"@typescript/lib-dom": "npm:@types/web@^0.0.69",
 		"@vscode/debugadapter-testsupport": "^1.57.0",
 		"copy-webpack-plugin": "^12.0.2",
-		"eslint": "^8.1.0",
+		"eslint": "^8.56.0",
 		"eslint-plugin-deprecation": "^1.3.2",
 		"husky": "^7.0.4",
 		"jsdom": "^19.0.0",
-		"lint-staged": "^15.2.5",
+		"lint-staged": "^15.2.9",
 		"markdownlint-cli": "^0.35.0",
 		"mocha": "^9.1.0",
+		"prettier": "^3.3.2",
+		"prettier-eslint": "^16.3.0",
 		"ts-loader": "^9.2.6",
 		"typescript": "^4.3.0",
 		"webpack": "^5.68.0",
@@ -78,7 +89,7 @@
 	},
 	"lint-staged": {
 		"*.md": "markdownlint",
-		"*.ts": "eslint --max-warnings 0"
+		"!(*d).ts": "eslint --max-warnings 0"
 	},
 	"scripts": {
 		"lint": "eslint . --ext .ts && markdownlint **/*.md --ignore node_modules",
@@ -86,11 +97,13 @@
 		"webpack": "webpack --mode development --config-name extension --config-name webviews",
 		"webpack-watch": "webpack --mode development --watch --config-name extension --config-name webviews",
 		"package": "webpack --mode production --devtool hidden-source-map --config-name extension --config-name webviews",
-		"test-compile": "npm run webpack && tsc -p ./src",
-		"webview-tests-junit": "",
+		"test-compile": "tsc -p ./src && tsc -p ./webviews/test && npm run webpack",
+		"webview-tests-compile": "cp ./webviews/listwindow/thrift ./out/webviews/listwindow/thrift -r && npm run test-compile",
+		"webview-tests": "npm run test-compile && node node_modules/mocha/bin/mocha --ui tdd out/webviews/**/*.test.js",
+		"webview-tests-junit": "npm run test-compile && node node_modules/mocha/bin/mocha --ui tdd out/webviews/**/*.test.js --reporter mocha-junit-reporter -reporter-options mochaFile=./test-results-webviews.xml --reporter-options rootSuiteTitle=Webviews --reporter-options useFullSuiteTitle=true --report-options jenkinsMode=true",
 		"prepare": "husky install"
 	},
-	"main": "./dist/extension",
+	"main": "./out/src/extension.js",
 	"activationEvents": [
 		"onDebugResolve:cspy",
 		"onDebugDynamicConfigurations:cspy",
@@ -100,6 +113,11 @@
 		"configuration": {
 			"title": "IAR C-SPY Debug",
 			"properties": {
+				"iar-debug.fitContentToViewWidth": {
+					"default": true,
+					"description": "Automatically resize the contents of IAR debug views to fit the width of the view. When disabled, the width of the content stays the same when the view is resized, and a scrollbar appears if the content is wider than the view.",
+					"type": "boolean"
+				},
 				"iar-debug.breakpointType": {
 					"default": "Auto",
 					"description": "Whether to set hardware- or software breakpoints. This only affects drivers that support it. Changing this setting will not affect already installed breakpoints in active sessions.",
@@ -195,6 +213,111 @@
 				"enablement": "debugType == cspy"
 			}
 		],
+		"viewsContainers": {
+			"panel": [
+				{
+					"icon": "debug",
+					"id": "iar-debug",
+					"title": "iar Debug"
+				}
+			]
+		},
+		"views": {
+			"iar-debug": [
+				{
+					"id": "iar-trace",
+					"contextualTitle": "iar",
+					"name": "Trace",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-trace.enabled"
+				},
+				{
+					"id": "iar-code-coverage",
+					"contextualTitle": "iar",
+					"name": "Code Coverage",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-code-coverage.enabled"
+				},
+				{
+					"id": "iar-profiling",
+					"contextualTitle": "iar",
+					"name": "Profiling",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-profiling.enabled"
+				}
+			],
+			"debug": [
+				{
+					"id": "iar-theme-detector",
+					"name": "Theme Detector",
+					"type": "webview",
+					"when": "iar-debug.showThemeDetector"
+				},
+				{
+					"id": "iar-test-listwindow",
+					"name": "Test Listwindow (for running tests only)",
+					"type": "webview",
+					"when": "iar-test-listwindow.enabled"
+				},
+				{
+					"id": "iar-mock-listwindow",
+					"contextualTitle": "iar",
+					"name": "Mock Listwindow (dev only)",
+					"type": "webview",
+					"when": "iar-mock-listwindow.enabled"
+				},
+				{
+					"id": "iar-autos",
+					"contextualTitle": "Autos",
+					"name": "Autos",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-autos.enabled"
+				},
+				{
+					"id": "iar-find-in-trace",
+					"contextualTitle": "Find In Trace",
+					"name": "Find In Trace",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-find-in-trace.enabled"
+				},
+				{
+					"id": "iar-quick-watch",
+					"contextualTitle": "iar",
+					"name": "Quick Watch",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-quick-watch.enabled"
+				},
+				{
+					"id": "iar-live-watch",
+					"contextualTitle": "iar",
+					"name": "Live Watch",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-live-watch.enabled"
+				},
+				{
+					"id": "iar-reg-2",
+					"contextualTitle": "iar",
+					"name": "Registers",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-reg-2.enabled"
+				},
+				{
+					"id": "iar-symbolic-memory",
+					"contextualTitle": "iar",
+					"name": "Symbolic Memory",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-symbolic-memory.enabled"
+				},
+				{
+					"id": "iar-stack-1",
+					"contextualTitle": "iar",
+					"name": "Stack",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-stack-1.enabled"
+				}
+
+			]
+		},
 		"breakpoints": [
 			{
 				"language": "c"

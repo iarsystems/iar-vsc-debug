@@ -2,8 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import { DebugProtocol } from "@vscode/debugprotocol";
-import { CSpyServerServiceManager } from "./thrift/cspyServerServiceManager";
-import { ThriftServiceManager } from "iar-vsc-common/thrift/thriftServiceManager";
+import { CSpyServerLauncher } from "./thrift/cspyServerLauncher";
 import { LoggingDebugSession, OutputEvent, InitializedEvent, logger, Logger, Thread, TerminatedEvent, InvalidatedEvent, Event, ExitedEvent } from "@vscode/debugadapter";
 import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
 import * as DebugEventListener from "iar-vsc-common/thrift/bindings/DebugEventListener";
@@ -28,7 +27,7 @@ import { CommandRegistry } from "./commandRegistry";
 import { Disposable, Utils } from "./utils";
 import { CspyDisassemblyService } from "./cspyDisassemblyService";
 import { CspyMemoryService } from "./cspyMemoryService";
-import { CustomRequest } from "./customRequest";
+import { CustomEvent, CustomRequest } from "./customRequest";
 import { RegisterInformationService } from "./registerInformationService";
 import { FrontendHandler } from "./frontendHandler";
 import { FRONTEND_SERVICE } from "iar-vsc-common/thrift/bindings/frontend_types";
@@ -40,6 +39,7 @@ import { CSpyRunControlService } from "./contexts/cspyRunControlService";
 import { MulticoreProtocolExtension } from "./multicoreProtocolExtension";
 import { BreakpointTypeProtocolExtension } from "./breakpoints/breakpointTypeProtocolExtension";
 import { WorkbenchFeatures} from "iar-vsc-common/workbenchfeatureregistry";
+import { ThriftServiceRegistryProcess } from "iar-vsc-common/thrift/thriftServiceRegistryProcess";
 
 
 /**
@@ -95,6 +95,14 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     leaveTargetRunning?: boolean
     /** Hidden option. Allows starting sessions with any target (although it might not work) */
     bypassTargetRestriction?: boolean;
+    /** Hidden option. Enables the debug adapter to ask the client for a theme definition. This is
+     * required to render listwindows properly, but can be disabled in tests.
+     */
+    enableThemeLookup?: boolean;
+    /** Hidden option. Enables the debug adapter to ask the client for a initilizing listwindows. This is
+     * required to render listwindows properly, but can be disabled in tests.
+     */
+    enableListWindowLookup?: boolean;
 }
 
 /**
@@ -115,7 +123,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     // Various services that are initialized when launching a session (i.e. when handling a launch request)
     private services: undefined | {
-        serviceManager: ThriftServiceManager;
+        cspyProcess: ThriftServiceRegistryProcess;
         cspyDebugger: ThriftClient<Debugger.Client>;
 
         // Wrappers/abstractions around CSpyServer services
@@ -140,6 +148,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     private readonly customRequestRegistry: CommandRegistry<unknown, unknown> = new CommandRegistry();
 
     private readonly configurationDone = new Subject();
+    private readonly listwindowsDone = new Subject();
 
     // Need to keep track of this for when we initialize the breakpoint manager
     private clientLinesStartAt1 = false;
@@ -152,7 +161,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
      */
     public constructor() {
         super();
-
         this.setDebuggerLinesStartAt1(true);
         this.setDebuggerColumnsStartAt1(true);
     }
@@ -233,14 +241,14 @@ export class CSpyDebugSession extends LoggingDebugSession {
             }
 
             // -- Launch all our thrift services so that they are available to CSpyServer --
-            const serviceManager = await CSpyServerServiceManager.fromWorkbench(workbench.path, this.numCores);
-            this.teardown.pushDisposable(serviceManager);
-            serviceManager.addCrashHandler(code => {
+            const cspyProcess = await CSpyServerLauncher.fromWorkbench(workbench.path, this.numCores);
+            this.teardown.pushDisposable(cspyProcess);
+            cspyProcess.addCrashHandler(code => {
                 this.sendEvent(new OutputEvent(`The debugger backend crashed (code ${code}).`));
                 this.sendEvent(new TerminatedEvent());
             });
 
-            await serviceManager.startService(DEBUGEVENT_SERVICE, DebugEventListener, this.cspyEventHandler);
+            await cspyProcess.serviceRegistry.startService(DEBUGEVENT_SERVICE, DebugEventListener, this.cspyEventHandler);
             this.cspyEventHandler.observeLogEvents(event => {
                 if (!event.text.endsWith("\n")) {
                     event.text += "\n";
@@ -266,17 +274,17 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.libSupportHandler.observeInputRequest(() => {
                 this.sendEvent(new OutputEvent("Debugee requested terminal input:"));
             });
-            serviceManager.startService(LIBSUPPORT_SERVICE, LibSupportService2, this.libSupportHandler);
+            cspyProcess.serviceRegistry.startService(LIBSUPPORT_SERVICE, LibSupportService2, this.libSupportHandler);
 
-            const frontendHandler = new FrontendHandler(this, args.sourceFileMap ?? {}, this.customRequestRegistry);
+            const frontendHandler = new FrontendHandler(this, args.sourceFileMap ?? {}, args.enableThemeLookup ?? false, this.customRequestRegistry);
             this.teardown.pushDisposable(frontendHandler);
-            serviceManager.startService(FRONTEND_SERVICE, Frontend, frontendHandler);
+            cspyProcess.serviceRegistry.startService(FRONTEND_SERVICE, Frontend, frontendHandler);
             const timelineFrontendHandler = new TimelineFrontendHandler();
-            serviceManager.startService(TIMELINE_FRONTEND_SERVICE, TimelineFrontend, timelineFrontendHandler);
+            cspyProcess.serviceRegistry.startService(TIMELINE_FRONTEND_SERVICE, TimelineFrontend, timelineFrontendHandler);
 
             // -- Start the CSpyServer session (incl. loading macros & flashing) --
             const sessionConfig: SessionConfiguration = await new LaunchArgumentConfigurationResolver().resolveLaunchArguments(args);
-            const cspyDebugger = await serviceManager.findService(DEBUGGER_SERVICE, Debugger);
+            const cspyDebugger = await cspyProcess.serviceRegistry.findService(DEBUGGER_SERVICE, Debugger);
             this.teardown.pushFunction(() => cspyDebugger.close());
             this.sendEvent(new OutputEvent("Using C-SPY version: " + await cspyDebugger.service.getVersionString() + "\n"));
 
@@ -311,14 +319,14 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
             // -- Connect to CSpyServer services --
             // note that some services (most listwindows) are launched by loadModule, so we *have* to do this afterwards
-            const coresService = await CSpyCoresService.instantiate(serviceManager);
+            const coresService = await CSpyCoresService.instantiate(cspyProcess.serviceRegistry);
             this.teardown.pushDisposable(coresService);
 
-            const registerInfoGenerator = new RegisterInformationService(args.driverOptions, await serviceManager.findService(DEBUGGER_SERVICE, Debugger));
-            const contextService = await CSpyContextService.instantiate(serviceManager, coresService, registerInfoGenerator);
+            const registerInfoGenerator = new RegisterInformationService(args.driverOptions, await cspyProcess.serviceRegistry.findService(DEBUGGER_SERVICE, Debugger));
+            const contextService = await CSpyContextService.instantiate(cspyProcess.serviceRegistry, coresService, registerInfoGenerator, this.cspyEventHandler);
             this.teardown.pushDisposable(contextService);
 
-            const runControlService = await CSpyRunControlService.instantiate(serviceManager, coresService, this.cspyEventHandler, this.libSupportHandler);
+            const runControlService = await CSpyRunControlService.instantiate(cspyProcess.serviceRegistry, coresService, this.cspyEventHandler, this.libSupportHandler);
             this.teardown.pushDisposable(runControlService);
             runControlService.onCoreStopped(stoppedEvents => {
                 // Prefer to batch all events into a single one with the 'allThreadsStopped' flag, since it allows
@@ -335,21 +343,25 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 }
             });
 
-            const memoryManager = await CspyMemoryService.instantiate(serviceManager);
+            const memoryManager = await CspyMemoryService.instantiate(cspyProcess.serviceRegistry);
             this.teardown.pushDisposable(memoryManager);
-            const disassemblyManager = await CspyDisassemblyService.instantiate(serviceManager,
+            const disassemblyManager = await CspyDisassemblyService.instantiate(cspyProcess.serviceRegistry,
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1);
             this.teardown.pushDisposable(disassemblyManager);
 
             const driver = CSpyDriver.driverFromName(args.driver, args.target, args.driverOptions);
-            const breakpointManager = await CSpyBreakpointService.instantiate(serviceManager,
+            const breakpointManager = await CSpyBreakpointService.instantiate(cspyProcess.serviceRegistry,
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1,
                 driver);
             this.teardown.pushDisposable(breakpointManager);
 
             // --- Set up custom DAP requests ---
+            this.customRequestRegistry.registerCommand(
+                CustomRequest.Names.GET_REGISTRY_LOCATION,
+                () => cspyProcess.serviceRegistry.registryLocation,
+            );
             const breakpointTypeExtension = new BreakpointTypeProtocolExtension(driver, this, args.breakpointType,
                 this.customRequestRegistry, this.consoleCommandRegistry);
             this.customRequestRegistry.registerCommand(CustomRequest.Names.REGISTERS, async(): Promise<CustomRequest.RegistersResponse> => {
@@ -361,9 +373,35 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 multicoreExtension = new MulticoreProtocolExtension(args.multicoreLockstepModeEnabled ?? true, this.customRequestRegistry);
             }
 
+            // -- Launch all the listwindows --
+            // This needs to be done before starting the target to avoid
+            // any collisions with the state of the core when setting up
+            // the listwindows.
+
+            // Register a callback to the listwindow setup completion.
+            this.customRequestRegistry.registerCommand(
+                CustomRequest.Names.LISTWINDOWS_RESOLVED,
+                () => {
+                    this.listwindowsDone.notify();
+                },
+            );
+            const body: CustomEvent.ListWindowsRequestedData = {
+                supportsToolbars: WorkbenchFeatures.supportsFeature(
+                    workbench,
+                    WorkbenchFeatures.GenericToolbars,
+                    args.target,
+                ),
+            };
+            this.sendEvent(
+                new Event(CustomEvent.Names.LISTWINDOWS_REQUESTED, body),
+            );
+            if (args.enableListWindowLookup) {
+                await this.listwindowsDone.wait();
+            }
+
             // -- Store everything needed to be able to handle requests --
             this.services = {
-                serviceManager,
+                cspyProcess,
                 cspyDebugger,
                 coresService,
                 registerInfoService: registerInfoGenerator,
@@ -375,8 +413,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 multicoreExtension,
                 breakpointTypeExtension,
             };
-            this.teardown.pushFunction(() => this.services = undefined);
-
+            this.teardown.pushFunction(() => (this.services = undefined));
         } catch (e) {
             await this.endSession();
             response.success = false;
@@ -396,6 +433,17 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
         this.sendEvent(new OutputEvent("Session started\n"));
         this.sendResponse(response);
+
+        this.services.contextService.onInspectionContextChanged(frame => {
+            const body: CustomEvent.ContextChangedData = {
+                file: frame.source,
+                startLine: this.convertDebuggerLineToClient(frame.startLine),
+                startColumn: this.convertDebuggerColumnToClient(frame.startColumn),
+                endLine: this.convertDebuggerLineToClient(frame.endLine),
+                endColumn: this.convertDebuggerColumnToClient(frame.endColumn),
+            };
+            this.sendEvent(new Event(CustomEvent.Names.CONTEXT_CHANGED, body));
+        });
 
         // Perform any initial run-to action if needed
         let doStop: boolean;

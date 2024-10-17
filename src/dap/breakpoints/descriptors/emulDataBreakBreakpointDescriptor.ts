@@ -81,12 +81,12 @@ export class EmulDataBreakBreakpointDescriptor extends LocOnlyDescriptor {
 // Matches the constants in RX's TdEmu.h
 function AccessTypeToInt(type: AccessType) {
     switch (type) {
-    case AccessType.ReadWrite:
-        return 2;
-    case AccessType.Write:
-        return 1;
-    case AccessType.Read:
-    default:
-        return 0;
+        case AccessType.ReadWrite:
+            return 2;
+        case AccessType.Write:
+            return 1;
+        case AccessType.Read:
+        default:
+            return 0;
     }
 }

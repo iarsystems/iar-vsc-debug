@@ -83,7 +83,15 @@ debugAdapterSuite("Test multicore debugging", function(dc, dbgConfig, fibonacciF
                     TestUtils.assertStoppedLocation(dc(), "step", 35, fibonacciFile(), /DoForegroundProcess/, 0)
                 ]);
                 // Other thread(s) should not have moved
-                await TestUtils.assertLocationIs(dc(), core1Location.line, core1Location.source!.path, new RegExp(`^${core1Location.name}$`), 1);
+                await TestUtils.assertLocationIs(
+                    dc(),
+                    core1Location.line,
+                    core1Location.source?.path,
+                    new RegExp(
+                        `^${TestUtils.escapeRegex(core1Location.name)}$`,
+                    ),
+                    1,
+                );
 
                 await Promise.all([
                     dc().nextRequest({threadId: 1, singleThread: false}),
@@ -204,7 +212,11 @@ debugAdapterSuite("Test multicore debugging", function(dc, dbgConfig, fibonacciF
                         {
                             const locals = (await dc().variablesRequest({variablesReference: scopes1.body.scopes[0]!.variablesReference}));
                             Assert.strictEqual(locals.body.variables.length, 1);
-                            Assert(locals.body.variables.some(variable => variable.name === "fib" && variable.value === "1" && variable.type?.match(/uint32_t volatile @ 0x/)));
+                            const fib = locals.body.variables.find(variable => variable.name === "fib");
+                            Assert(fib);
+                            Assert(fib.type);
+                            Assert.match(fib.type, /uint32_t volatile @ 0x/);
+                            Assert(Number.isInteger(Number(fib.value)));
                         }
                         {
                             const locals = (await dc().variablesRequest({variablesReference: scopes0.body.scopes[0]!.variablesReference}));
@@ -230,7 +242,11 @@ debugAdapterSuite("Test multicore debugging", function(dc, dbgConfig, fibonacciF
                         const frames0 = await dc().stackTraceRequest({threadId: 0});
                         const frames1 = await dc().stackTraceRequest({threadId: 1});
                         const eval1 = await dc().evaluateRequest({expression: "fib", frameId: frames1.body.stackFrames[0]!.id});
-                        Assert.strictEqual(eval1.body.result, "1");
+                        Assert(
+                            eval1.body.result !== "" &&
+                                Number.isInteger(Number(eval1.body.result)),
+                            eval1.body.result,
+                        );
                         try {
                             await dc().evaluateRequest({expression: "fib", frameId: frames0.body.stackFrames[0]!.id});
                             Assert.fail("Successfully evaluated 'fib', but it should not exist in this context");

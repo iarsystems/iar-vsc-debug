@@ -4,3 +4,12 @@
 
 // Get the VS Code webview API typings globally (e.g. acquireVsCodeApi)
 import "vscode-webview";
+
+declare module 'csstype' {
+    interface PropertiesFallback {
+      borderTopStyle?: StandardPropertiesFallback["borderTopStyle"] | `var(${string})`;
+      borderRightStyle?: StandardPropertiesFallback["borderRightStyle"] | `var(${string})`;
+      borderBottomStyle?: StandardPropertiesFallback["borderBottomStyle"] | `var(${string})`;
+      borderLeftStyle?: StandardPropertiesFallback["borderLeftStyle"] | `var(${string})`;
+    }
+  }

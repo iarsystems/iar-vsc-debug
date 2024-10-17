@@ -2,9 +2,14 @@
     "extends": "../tsconfig.base.json",
     "compilerOptions": {
         "module": "ESNext",
-        "moduleResolution": "Node"
+        "moduleResolution": "Node",
+        "experimentalDecorators": true,
+        "sourceMap": true
     },
     "include": [
         "**/*"
+    ],
+    "exclude": [
+        "test/**/*"
     ]
 }
