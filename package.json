@@ -187,6 +187,12 @@
 					"dark": "images/icons/DgCoresLockstepOff_dark.svg",
 					"light": "images/icons/DgCoresLockstepOff_light.svg"
 				}
+			},
+			{
+				"command": "iar.customRestart",
+				"category": "IAR Debug",
+				"title": "Restart the session without running prelaunch tasks",
+				"enablement": "debugType == cspy"
 			}
 		],
 		"breakpoints": [
