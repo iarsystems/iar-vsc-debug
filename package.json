@@ -39,7 +39,8 @@
 		"Debuggers"
 	],
 	"extensionDependencies": [
-		"ms-vscode.vscode-embedded-tools"
+		"ms-vscode.vscode-embedded-tools",
+		"eclipse-cdt.memory-inspector"
 	],
 	"private": true,
 	"dependencies": {
