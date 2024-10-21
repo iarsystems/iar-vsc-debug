@@ -12,6 +12,7 @@ import { ConfigResolutionCommon } from "../../../src/configproviders/supplier/co
 import { BuildExtensionConfigurationProvider } from "../../../src/configproviders/supplier/buildExtensionConfigurationSupplier";
 import { CSpyConfigurationSupplier } from "../../../src/configproviders/supplier/supplier";
 import { TestConfiguration } from "../testConfiguration";
+import { ProjectConfiguration } from "iar-vsc-common/buildExtension";
 
 /**
  * This test suite tests our ability to generate a launch configuration based on the xcl files
@@ -22,6 +23,8 @@ suite("Configuration tests", () => {
 
     // The current workspace.
     let rootFolder: vscode.WorkspaceFolder;
+    let configurations: ProjectConfiguration[] | undefined = undefined;
+    let commandline: string[] | undefined = undefined;
 
     suiteSetup(function() {
         if (TestConfiguration.getConfiguration().smokeTestsOnly) {
@@ -45,14 +48,20 @@ suite("Configuration tests", () => {
                 return Promise.resolve(undefined);
             },
             getSelectedConfiguration() {
-                return Promise.resolve({name: "Debug", target: "ARM"});
+                return Promise.resolve({ name: "Debug", target: "ARM" });
             },
             getProjectConfigurations() {
+                if (configurations) {
+                    return Promise.resolve(configurations);
+                }
                 return Promise.reject(new Error());
             },
             getCSpyCommandline() {
+                if (commandline) {
+                    return Promise.resolve(commandline);
+                }
                 return Promise.resolve(undefined);
-            }
+            },
         });
     });
 
@@ -215,5 +224,31 @@ suite("Configuration tests", () => {
         assert.deepStrictEqual(configTest["download"]?.["deviceMacros"], ["devmacro1"]);
         assert.deepStrictEqual(configTest["download"]?.["flashLoader"], "flash.ddf");
 
+    });
+
+
+    /**
+	 * Test that we're able to handle a partial launch
+	 */
+    test("Test generate configuration from build extension api", async()=>{
+        const ew = path.join("path", "to", "ew");
+        const project = path.join("project", "proj.ewp");
+        const wsDir = "root";
+        const program = path.join("output", "exe", "foo.out");
+
+        configurations = [{name: "1", target: "arm"}, {name: "2", target: "arm"}];
+        commandline = ["/driver", "arm/bin/armijet.dll", "/file", path.resolve(wsDir, program), "/plugin", "bat.dll", "/plugin", "test1",
+            "/setup", "macro1", "/setup", "macro2", "/devicesetup", "devmacro1", "/flashboard", "flash.ddf", "/runto", "mymain"];
+
+        let config = await CSpyConfigurationSupplier.supplyDefaultLaunchConfigForProject(ew, project, "1");
+        assert.ok(typeof config !== "number");
+        assert.deepStrictEqual(config.target, "arm");
+        assert.deepStrictEqual(config.workbenchPath, ew);
+        assert.deepStrictEqual(config.projectPath, project);
+        assert.strictEqual(config.driver,  "I-jet");
+
+        config = await CSpyConfigurationSupplier.supplyDefaultLaunchConfigForProject(ew, project, "3");
+        assert.ok(typeof config === "number");
+        assert.ok(config === CSpyConfigurationSupplier.ErrorReason.noTargetSpecified);
     });
 });

@@ -338,11 +338,7 @@
 				],
 				"configurationAttributes": {
 					"attach": {"required": [
-						"target",
-						"program",
-						"workbenchPath",
-						"driver",
-						"driverOptions"
+						"workbenchPath"
 					],
 					"properties": {
 						"target": {
@@ -507,11 +503,7 @@
 				},
 					"launch": {
 						"required": [
-							"target",
-							"program",
-							"workbenchPath",
-							"driver",
-							"driverOptions"
+							"workbenchPath"
 						],
 						"properties": {
 							"target": {
@@ -694,6 +686,19 @@
 				},
 				"initialConfigurations": [],
 				"configurationSnippets": [
+					{
+						"label": "C-SPY: Debug active .ewp project",
+						"description": "A generic debug configuration for debugging the active project with C-SPY.",
+						"body": {
+							"type": "cspy",
+							"request": "launch",
+							"name": "Debug the active IAR Project with C-SPY",
+							"preLaunchTask": "iar: Build Project",
+							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
+							"projectPath": "^\"\\${command:iar-config.project-file}\"",
+							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\""
+						}
+					},
 					{
 						"label": "C-SPY: Debug .ewp project",
 						"description": "A new configuration for debugging a program with C-SPY that is using the iar-build extension.",

@@ -4,7 +4,8 @@
 import { Workbench } from "iar-vsc-common/workbench";
 import * as vscode from "vscode";
 import { CSpyDriver } from "../dap/breakpoints/cspyDriver";
-import { CSpyConfigurationSupplier as LaunchConfigurationSupplier } from "./supplier/supplier";
+import { CSpyConfigurationSupplier, CSpyConfigurationSupplier as LaunchConfigurationSupplier } from "./supplier/supplier";
+import { CSpyLaunchRequestArguments } from "../dap/cspyDebug";
 
 /**
  * Provides a list of automatic launch.json configurations from a workspace folder containing .ewp projects
@@ -19,6 +20,39 @@ export class CSpyConfigurationsProvider implements vscode.DebugConfigurationProv
             return supplierResult;
         }
         return [];
+    }
+}
+
+/**
+ *  Resolves the driver options and debugconfigurations from the ewp-file.
+ */
+export class PartialCSpyConfigurationProvider
+implements vscode.DebugConfigurationProvider {
+    async resolveDebugConfigurationWithSubstitutedVariables?(
+        _folder: vscode.WorkspaceFolder | undefined,
+        debugConfiguration: vscode.DebugConfiguration &
+            Partial<CSpyLaunchRequestArguments>,
+        _?: vscode.CancellationToken,
+    ): Promise<vscode.DebugConfiguration | null | undefined> {
+        if (
+            (!debugConfiguration.driverOptions || !debugConfiguration.driver) &&
+            debugConfiguration.projectPath &&
+            debugConfiguration.projectConfiguration && debugConfiguration.workbenchPath
+        ) {
+            const supplierResult =
+                await CSpyConfigurationSupplier.supplyDefaultLaunchConfigForProject(
+                    debugConfiguration.workbenchPath,
+                    debugConfiguration.projectPath,
+                    debugConfiguration.projectConfiguration,
+                    debugConfiguration.target,
+                );
+            if (typeof supplierResult === "number") {
+                vscode.window.showErrorMessage(CSpyConfigurationSupplier.toErrorMessage(supplierResult));
+            } else {
+                debugConfiguration = { ...supplierResult, ...debugConfiguration };
+            }
+        }
+        return debugConfiguration;
     }
 }
 
