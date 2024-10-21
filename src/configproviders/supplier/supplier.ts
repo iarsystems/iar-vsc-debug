@@ -23,9 +23,59 @@ export namespace CSpyConfigurationSupplier {
         noProjectSelected,
         /** No project configuration is selected in the build extension UI */
         noProjectConfigSelected,
-        /** The build extension is installed but could not provide any configurations (probably because of an older workench),
+        /** The build extension is installed but could not provide any configurations (probably because of an older workbench),
          * and there are no .xcl files to fall back on */
         noConfigurationsAvailable,
+        /** Failed to detemine the target, either from option or from build extension API*/
+        noTargetSpecified,
+    }
+
+    /**
+     * Generate a launch configuration based for the given project and configuration which
+     * uses the given workbench. If target is omitted, tries to resolve it from the build
+     * extension.
+     * @param workbenchPath Path to the workbench to use.
+     * @param projectPath   Absolute path to the project
+     * @param configuration Name the configuration
+     * @param target        Name of the target, e.g., ARM.
+     * @returns
+     */
+    export async function supplyDefaultLaunchConfigForProject(
+        workbenchPath: string,
+        projectPath: string,
+        configuration: string,
+        target?: string
+    ): Promise<CspyLaunchJsonConfiguration | ErrorReason> {
+        const buildExtension = await getBuildExtensionApi();
+        if (buildExtension === undefined) {
+            return ErrorReason.buildExtensionNotInstalled;
+        }
+
+        let wantedTarget = target;
+        if (!target) {
+            const configs =
+                await buildExtension.getProjectConfigurations(projectPath);
+            const projectConfig = configs?.find(c => {
+                return c.name === configuration;
+            });
+            wantedTarget = projectConfig?.target;
+        }
+
+        if (wantedTarget) {
+            const commands = await collectCSpyCommandline(
+                buildExtension,
+                projectPath,
+                configuration,
+                wantedTarget,
+                workbenchPath,
+            );
+            if (typeof commands !== "number") {
+                //Replace this with the wanted path.
+                commands.workbenchPath = workbenchPath;
+            }
+            return commands;
+        }
+        return ErrorReason.noTargetSpecified;
     }
 
     /**
@@ -49,27 +99,64 @@ export namespace CSpyConfigurationSupplier {
 
         const workbenchPath = await buildExtension.getSelectedWorkbench();
 
-        // First try the more robust thrift-based supplier. Use the xcl-based version as a fallback.
+        return collectCSpyCommandline(
+            buildExtension,
+            project,
+            config.name,
+            config.target,
+            workbenchPath,
+            workspaceFolder
+        );
+    }
+
+    export async function collectCSpyCommandline(
+        buildExtension: BuildExtensionApi,
+        project: string,
+        config: string,
+        target: string,
+        workbenchPath?: string,
+        wsDir?: vscode.WorkspaceFolder
+    ): Promise<CspyLaunchJsonConfiguration | ErrorReason> {
         try {
-            const cmds = await buildExtension.getCSpyCommandline(project, config.name);
+            const timeout = new Promise<undefined>((_, reject) => {
+                setTimeout(() => {
+                    reject(
+                        new Error("Timeout while collecting cspy commandline"),
+                    );
+                }, 10000);
+            });
+            const cmds = await Promise.race([
+                timeout,
+                buildExtension.getCSpyCommandline(project, config),
+            ]);
             if (!cmds) {
                 throw new Error("Could not get C-SPY cmdline");
             }
             logger.debug("Got C-SPY command line: " + cmds);
-            const partialConfig = BuildExtensionConfigurationSupplier.provideDebugConfigurationFor(cmds, project, config.name, config.target);
-            return ConfigResolutionCommon.toLaunchJsonConfiguration(
-                partialConfig,
-                workspaceFolder?.uri.fsPath,
-                workbenchPath);
+            const partialConfig =
+                BuildExtensionConfigurationSupplier.provideDebugConfigurationFor(
+                    cmds,
+                    project,
+                    config,
+                    target,
+                );
+            const debugConfig =
+                ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfig, wsDir?.uri.path, workbenchPath);
+            return debugConfig;
         } catch (e) {
-            logger.debug("Failed to generate config from build extension: " + e);
+            logger.debug(
+                "Failed to generate config from build extension: " + e,
+            );
         }
         try {
-            const partialConfig = XclConfigurationSupplier.provideDebugConfigurationFor(project, config.name);
-            return ConfigResolutionCommon.toLaunchJsonConfiguration(
-                partialConfig,
-                workspaceFolder?.uri.fsPath,
-                workbenchPath);
+            const partialConfig =
+                XclConfigurationSupplier.provideDebugConfigurationFor(
+                    project,
+                    config,
+                );
+            const debugConfig =
+                ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfig);
+            return debugConfig;
         } catch (e) {
             logger.debug("Failed to generate config from .xcl files: " + e);
         }
@@ -165,6 +252,10 @@ export namespace CSpyConfigurationSupplier {
                 return "IAR: Unable to provide automatic debug configuration(s): Please select a project in the IAR Build extension.";
             case CSpyConfigurationSupplier.ErrorReason.noProjectConfigSelected:
                 return "IAR: Unable to provide automatic debug configuration(s): Please select a project configuration in the IAR Build extension.";
+            case CSpyConfigurationSupplier.ErrorReason.noTargetSpecified:
+                return `IAR: Unable to provide automatic debug configuration(s):
+                       Please add the "target" entry to the partial configuration or
+                       set the project as active.`;
             default:
                 return "IAR: Unable to provide automatic debug configurations: An unknown error occured.";
         }

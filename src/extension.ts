@@ -7,7 +7,7 @@ import * as vscode from "vscode";
 import { CSpyDebugSession } from "./dap/cspyDebug";
 import { DebugSessionTracker } from "./debugSessionTracker";
 import { BreakpointTypesFrontend } from "./breakpointTypesFrontend";
-import { DefaultCSpyConfigurationResolver, CSpyConfigurationsProvider, InitialCSpyConfigurationProvider } from "./configproviders/cspyConfigurationProviders";
+import { DefaultCSpyConfigurationResolver, CSpyConfigurationsProvider, InitialCSpyConfigurationProvider, PartialCSpyConfigurationProvider } from "./configproviders/cspyConfigurationProviders";
 import { CustomRequest } from "./dap/customRequest";
 import { logger } from "iar-vsc-common/logger";
 import { DialogService } from "./dialogService";
@@ -39,6 +39,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", new InitialCSpyConfigurationProvider(), vscode.DebugConfigurationProviderTriggerKind.Initial));
     context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", new CSpyConfigurationsProvider(), vscode.DebugConfigurationProviderTriggerKind.Dynamic));
     context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", new DefaultCSpyConfigurationResolver()));
+    context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", new PartialCSpyConfigurationProvider(), vscode.DebugConfigurationProviderTriggerKind.Initial));
 
     listwindowManager = new ListwindowManager(context);
 
