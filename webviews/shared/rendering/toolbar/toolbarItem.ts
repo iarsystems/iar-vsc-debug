@@ -354,6 +354,26 @@ export class ToolbarItemText extends BasicToolbarItem {
                     this.edit.style.outline = `1px solid var(--vscode-focusBorder)`;
                 }
             };
+            this.edit.onblur = () => {
+                if (
+                    this.edit === undefined ||
+                    !(this.edit instanceof HTMLInputElement)
+                ) {
+                    return;
+                }
+                this.dispatchEvent(
+                    createCustomEvent("toolbar-item-interaction", {
+                        detail: {
+                            id: this.definition.id,
+                            properties: this.packContent(
+                                false,
+                                this.edit.value,
+                            ),
+                        },
+                        bubbles: true,
+                    }),
+                );
+            };
 
             this.edit.addEventListener(
                 "focusout",
