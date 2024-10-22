@@ -303,6 +303,13 @@
 					"when": "inDebugMode && debugType == cspy && iar-reg-2.enabled"
 				},
 				{
+					"id": "iar-reg-groups",
+					"contextualTitle": "iar",
+					"name": "Register User Groups Setup",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-reg-groups.enabled"
+				},
+				{
 					"id": "iar-symbolic-memory",
 					"contextualTitle": "iar",
 					"name": "Symbolic Memory",

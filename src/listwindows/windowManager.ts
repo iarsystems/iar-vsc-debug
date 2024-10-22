@@ -47,6 +47,7 @@ export class ListwindowManager {
         { viewId: "iar-quick-watch", serviceName: "WIN_QUICK_WATCH", fallback: QuickWatchClient },
         { viewId: "iar-live-watch", serviceName: "WIN_STATIC_WATCH" },
         { viewId: "iar-reg-2", serviceName: "WIN_REGISTER_2", fallback: RegisterClient },
+        { viewId: "iar-reg-groups", serviceName: "WIN_REGISTER_GROUPS" },
         { viewId: "iar-symbolic-memory", serviceName: "WIN_SYMBOLIC_MEMORY", fallback: SymbolicMemoryClient },
         { viewId: "iar-stack-1", serviceName: "WIN_STACK_1", fallback: StackClient },
         { viewId: "iar-find-in-trace", serviceName: "WIN_FIND_IN_SLIDING_TRACE"},
