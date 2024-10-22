@@ -46,7 +46,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (context.extensionMode === vscode.ExtensionMode.Development) {
         const mockWindow = new MockListwindow(context.extensionUri);
         context.subscriptions.push(mockWindow);
-    } else {
+    } else if (context.extensionMode === vscode.ExtensionMode.Test) {
         testListwindow = new TestListwindow(context.extensionUri);
         context.subscriptions.push(testListwindow);
     }
