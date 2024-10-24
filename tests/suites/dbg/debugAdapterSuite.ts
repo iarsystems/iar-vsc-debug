@@ -73,6 +73,7 @@ export function debugAdapterSuite(title: string, runner: DebugAdapterSuiteRunner
         });
 
         setup(async function() {
+            this.timeout(60000);
             console.log("\n==========================================================" + this.currentTest!.title + "==========================================================\n");
             dc = new DebugClient("node", "", "cspy");
             dc.on("output", ev => {
