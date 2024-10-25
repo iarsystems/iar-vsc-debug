@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { GenericDialogReturnType, MsgIcon, MsgKind, MsgResult } from "iar-vsc-common/thrift/bindings/frontend_types";
-import { BreakpointType } from "./breakpoints/cspyBreakpointService";
+import { BreakpointModes, CodeBreakpointMode } from "./breakpoints/breakpointMode";
 import { Protocol, Transport } from "iar-vsc-common/thrift/bindings/ServiceRegistry_types";
 import { Source } from "@vscode/debugadapter";
 import { Serializable } from "../../webviews/shared/protocol";
@@ -19,11 +19,9 @@ export namespace CustomRequest {
      */
     export enum Names {
         GET_REGISTRY_LOCATION     = "getRegistryLocation",
-        USE_AUTO_BREAKPOINTS      = "useAutoBreakpoints",
-        USE_HARDWARE_BREAKPOINTS  = "useHardwareBreakpoints",
-        USE_SOFTWARE_BREAKPOINTS  = "useSoftwareBreakpoints",
         REGISTERS                 = "registers",
-        GET_BREAKPOINT_TYPES      = "getBreakpointTypes",
+        GET_BREAKPOINT_MODES      = "getBreakpointModes",
+        SET_BREAKPOINT_MODE       = "setBreakpointMode",
         SET_LOCKSTEP_MODE_ENABLED = "setLockstepMode",
 
         /// Frontend service requests, used by {@link FrontendHandler}. Even though these are DAP "requests", they are
@@ -59,9 +57,17 @@ export namespace CustomRequest {
     }
 
     /**
-     * Response data to a {@link CustomRequest.GET_BREAKPOINT_TYPES} request.
+     * Response data to a {@link CustomRequest.GET_BREAKPOINT_MODES} request.
      */
-    export type BreakpointTypesResponse = BreakpointType[];
+    export type GetBreakpointModesResponse = CodeBreakpointMode[];
+
+    /**
+     * Request arguments/parameters for a {@link CustomRequest.SET_BREAKPOINT_MODE} request.
+     */
+    export type SetBreakpointModeArgs = CodeBreakpointMode;
+    export function isSetBreakpointModeArgs(obj: unknown): obj is CodeBreakpointMode {
+        return typeof(obj) === "string" && BreakpointModes.isBreakpointMode(obj);
+    }
 
     /**
      * Request arguments/parameters for a {@link CustomRequest.SET_LOCKSTEP_MODE_ENABLED} request.
