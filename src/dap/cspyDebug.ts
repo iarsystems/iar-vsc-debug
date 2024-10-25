@@ -41,6 +41,7 @@ import { BreakpointModeProtocolExtension } from "./breakpoints/breakpointModePro
 import { WorkbenchFeatures} from "iar-vsc-common/workbenchfeatureregistry";
 import { ThriftServiceRegistryProcess } from "iar-vsc-common/thrift/thriftServiceRegistryProcess";
 import { BreakpointModes } from "./breakpoints/breakpointMode";
+import { ExceptionBreakpoints } from "./breakpoints/exceptionBreakpoint";
 
 
 /**
@@ -195,6 +196,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         response.body.supportsDataBreakpoints = true;
         response.body.supportsLogPoints = true;
         response.body.breakpointModes = BreakpointModes.getBreakpointModes();
+        response.body.exceptionBreakpointFilters = ExceptionBreakpoints.getExceptionFilters();
 
         this.clientLinesStartAt1 = args.linesStartAt1 || false;
         this.clientColumnsStartAt1 = args.columnsStartAt1 || false;
@@ -291,6 +293,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.sendEvent(new OutputEvent("Using C-SPY version: " + await cspyDebugger.service.getVersionString() + "\n"));
 
             await cspyDebugger.service.startSession(sessionConfig);
+            if (await cspyDebugger.service.supportsExceptions())
+                await cspyDebugger.service.setBreakOnThrow(true);
 
             if (args.download) {
                 await Utils.loadMacros(cspyDebugger.service, args.download.deviceMacros ?? []);
@@ -607,6 +611,13 @@ export class CSpyDebugSession extends LoggingDebugSession {
                     canPersist: true,
                 };
             }
+        });
+        this.sendResponse(response);
+    }
+    protected override async setExceptionBreakPointsRequest(response: DebugProtocol.SetExceptionBreakpointsResponse, args: DebugProtocol.SetExceptionBreakpointsArguments) {
+        await this.tryWithServices(response, async services => {
+            await ExceptionBreakpoints.setEnabledExceptionFilters(
+                args.filters, services.cspyDebugger.service);
         });
         this.sendResponse(response);
     }
