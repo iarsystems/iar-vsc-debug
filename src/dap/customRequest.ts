@@ -8,6 +8,7 @@ import { Protocol, Transport } from "iar-vsc-common/thrift/bindings/ServiceRegis
 import { Source } from "@vscode/debugadapter";
 import { Serializable } from "../../webviews/shared/protocol";
 import { PropertyTreeItem } from "iar-vsc-common/thrift/bindings/shared_types";
+import { VariablesUtils } from "./contexts/variablesUtils";
 
 /**
  * Custom requests can be sent from a DAP client to the DAP server. Basically, these are C-SPY specific extensions to
@@ -18,13 +19,14 @@ export namespace CustomRequest {
      * Holds the names of all supported custom requests (i.e. the string values used to perform the requests).
      */
     export enum Names {
-        GET_REGISTRY_LOCATION     = "getRegistryLocation",
-        USE_AUTO_BREAKPOINTS      = "useAutoBreakpoints",
-        USE_HARDWARE_BREAKPOINTS  = "useHardwareBreakpoints",
-        USE_SOFTWARE_BREAKPOINTS  = "useSoftwareBreakpoints",
-        REGISTERS                 = "registers",
-        GET_BREAKPOINT_TYPES      = "getBreakpointTypes",
-        SET_LOCKSTEP_MODE_ENABLED = "setLockstepMode",
+        GET_REGISTRY_LOCATION          = "getRegistryLocation",
+        USE_AUTO_BREAKPOINTS           = "useAutoBreakpoints",
+        USE_HARDWARE_BREAKPOINTS       = "useHardwareBreakpoints",
+        USE_SOFTWARE_BREAKPOINTS       = "useSoftwareBreakpoints",
+        REGISTERS                      = "registers",
+        GET_BREAKPOINT_TYPES           = "getBreakpointTypes",
+        SET_LOCKSTEP_MODE_ENABLED      = "setLockstepMode",
+        CHANGE_VIEW_FORMAT_REQUEST     = "changeViewFormat",
 
         /// Frontend service requests, used by {@link FrontendHandler}. Even though these are DAP "requests", they are
         /// actually responses to a previous DAP event that created a dialog (see below). The adapter sends an event telling
@@ -38,7 +40,7 @@ export namespace CustomRequest {
         MULTIELEMENT_SELECTED    = "multiElementSelected",
         THEME_RESOLVED           = "themeResolved",
         LISTWINDOWS_RESOLVED     = "listwindowResolved",
-        GENRIC_DIALOG_RESOLVED   = "genericDialogResolved"
+        GENRIC_DIALOG_RESOLVED   = "genericDialogResolved",
     }
 
     /**
@@ -191,6 +193,21 @@ export namespace CustomRequest {
         if (typeof(obj) === "object") {
             const args = obj as GenericDialogResolvedArgs;
             return args.id !== undefined && args.results !== undefined;
+        }
+        return false;
+    }
+
+    export interface ChangeVariableViewFormatArgs{
+        parentReference?: number;
+        variableReference: number,
+        variable: string,
+        format: VariablesUtils.ViewFormats,
+    }
+
+    export function isChangeVariableViewFormatArgs(obj: unknown): obj is ChangeVariableViewFormatArgs {
+        if (typeof(obj) === "object") {
+            const args = obj as ChangeVariableViewFormatArgs;
+            return args.variableReference !== undefined && args.variable !== undefined && args.format !== undefined ;
         }
         return false;
     }

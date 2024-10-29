@@ -11,6 +11,7 @@ import { Mutex } from "async-mutex";
 import { WindowNames } from "../listWindowConstants";
 import { RegisterInformationService } from "../registerInformationService";
 import { logger } from "@vscode/debugadapter/lib/logger";
+import { VariablesUtils } from "./variablesUtils";
 
 interface RegisterReference {
     group: GroupReference,
@@ -55,6 +56,11 @@ export class RegistersVariablesProvider implements VariablesProvider, Disposable
                 presentationHint: "virtual",
             };
         });
+    }
+
+    ownsVariable(variableReference: number): boolean {
+        const ref = this.variableReferences.get(variableReference);
+        return ref !== undefined;
     }
 
     getSubvariables(variableReference: number): Promise<Variable[]> {
@@ -109,6 +115,17 @@ export class RegistersVariablesProvider implements VariablesProvider, Disposable
         logger.verbose("Switching to " + group.name);
         this.visibleGroup = group.name;
         await this.windowClient.clickContextMenu(group.command);
+    }
+
+    public async setViewFormat(variableName: string, variableReference: number | undefined,  format: VariablesUtils.ViewFormats): Promise<boolean> {
+        if (variableReference === undefined) {
+            return Promise.reject(new Error("No reference specified"));
+        }
+        const ref = this.variableReferences.get(variableReference);
+        if (!ref) {
+            return Promise.reject(new Error("No windows reference found"));
+        }
+        return await this.varProvider.setViewFormat(variableName, ref.windowReference, format);
     }
 
     private async fetchGroups() {

@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import * as Q from "q";
-import { MenuItem, Note, Row, What } from "iar-vsc-common/thrift/bindings/listwindow_types";
+import { MenuItem, Note, Row, SelectionFlags, What } from "iar-vsc-common/thrift/bindings/listwindow_types";
 import * as ListWindowBackend from "iar-vsc-common/thrift/bindings/ListWindowBackend";
 import * as ListWindowFrontend from "iar-vsc-common/thrift/bindings/ListWindowFrontend";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
@@ -157,6 +157,10 @@ export class ListWindowClient implements Disposable.Disposable {
             throw new Error("No value in this column");
         }
         return updatedValue.text;
+    }
+
+    async selectCell(row: Int64, col: number): Promise<void> {
+        return await this.backend.service.click(row, col, SelectionFlags.kReplace);
     }
 
     /**
@@ -324,7 +328,7 @@ export class ListWindowClient implements Disposable.Disposable {
         };
     }
 
-    private async getRowIndex(reference: ListWindowRowReference): Promise<number | undefined> {
+    public async getRowIndex(reference: ListWindowRowReference): Promise<number | undefined> {
         const rows = await this.getRows();
         const path = reference.parentIds.concat([this.getIdForCells(reference.cells)]);
         return this.getRowIndexRecursive(path, rows, 0);

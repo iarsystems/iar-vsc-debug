@@ -368,6 +368,17 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 return { svdContent: await registerInfoGenerator.getSvdXml() };
             });
 
+            // Set up change view formats queries
+            this.customRequestRegistry.registerCommandWithTypeCheck(
+                CustomRequest.Names.CHANGE_VIEW_FORMAT_REQUEST,
+                CustomRequest.isChangeVariableViewFormatArgs,
+                async args => {
+                    if (await contextService.setViewFormat(args)) {
+                        this.sendEvent(new InvalidatedEvent(["variables"]));
+                    }
+                },
+            );
+
             let multicoreExtension: MulticoreProtocolExtension | undefined = undefined;
             if (this.numCores > 1) {
                 multicoreExtension = new MulticoreProtocolExtension(args.multicoreLockstepModeEnabled ?? true, this.customRequestRegistry);
