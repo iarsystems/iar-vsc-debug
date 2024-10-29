@@ -92,7 +92,12 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
     });
     // The contents of STL containers in listwindows can be truncated, and need
     // to be expanded by us to get the full contents. Make sure this works ok.
-    test("Supports STL containers", () => {
+    test("Supports STL containers", function() {
+        if (TestConfiguration.getConfiguration().isHardwareTest) {
+            // The hardware tests do not compile cpp files at the moment
+            this.skip();
+            return;
+        }
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfig()),
