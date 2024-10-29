@@ -20,6 +20,7 @@ import { RegistersVariablesProvider } from "./registersVariablesProvider";
 import { RegisterInformationService } from "../registerInformationService";
 import { CSpyCoresService } from "./cspyCoresService";
 import { DebugEventListenerHandler } from "../debugEventListenerHandler";
+import { CustomRequest } from "../customRequest";
 
 /**
  * Describes a scope, i.e. a C-SPY context used to access the scope,
@@ -300,6 +301,20 @@ export class CSpyContextService implements Disposable.Disposable {
             this.dbgr.service.assignExpression(context, expression, [], expr);
             return { newValue: value, changedAddress: expr.hasLocation ? "0x" + expr.location.address.toOctetString() : undefined };
         });
+    }
+
+    public async setViewFormat(viewformatRequest: CustomRequest.ChangeVariableViewFormatArgs): Promise<boolean | undefined> {
+        if (viewformatRequest.parentReference) {
+            const ref = this.scopeAndVariableHandles.get(viewformatRequest.parentReference);
+            if (ref instanceof ScopeReference) {
+                return await ref.provider?.setViewFormat(viewformatRequest.variable, undefined, viewformatRequest.format);
+            } else if (ref instanceof VariableReference) {
+                return await ref.provider?.setViewFormat(viewformatRequest.variable, ref.variableReference, viewformatRequest.format);
+            } else {
+                throw new Error("No such variable");
+            }
+        }
+        return false;
     }
 
     /**
