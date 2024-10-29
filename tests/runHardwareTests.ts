@@ -57,7 +57,7 @@ async function main() {
             ...TestConfiguration.TEST_CONFIGURATIONS["armSim2"]!.registers,
         },
         dataBreakpointsAreUnreliable: true,
-        isHardwareTest: false,
+        isHardwareTest: true,
     };
     if (cspyArgs.includes("--fpu=None")) {
         config.registers.fpuRegisters = undefined;
