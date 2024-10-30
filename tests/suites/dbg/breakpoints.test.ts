@@ -264,6 +264,7 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                     });
                     Assert(bpRes.success);
                     Assert(bpRes.body.breakpoints[0]);
+                    Assert(bpRes.body.breakpoints[0].verified);
                     Assert(bpRes.body.breakpoints[0].message);
                     Assert.match(bpRes.body.breakpoints[0].message, /TraceStart/);
                 }
@@ -282,6 +283,7 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                     });
                     Assert(bpRes.success);
                     Assert(bpRes.body.breakpoints[0]);
+                    Assert(bpRes.body.breakpoints[0].verified);
                     Assert(bpRes.body.breakpoints[0].message);
                     Assert.match(bpRes.body.breakpoints[0].message, /TraceStart/);
 
@@ -321,8 +323,36 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                     });
                     Assert(bpRes.success);
                     Assert(bpRes.body.breakpoints[0]);
+                    Assert(bpRes.body.breakpoints[0].verified);
                     Assert(bpRes.body.breakpoints[0].message);
                     Assert.match(bpRes.body.breakpoints[0].message, /TraceStart/);
+
+                    // Change back to auto for further testing
+                    const res3 = await dc().customRequest(
+                        CustomRequest.Names.SET_BREAKPOINT_MODE,
+                        CodeBreakpointMode.Auto,
+                    );
+                    Assert(res3.success);
+                }
+
+                // Make sure we fail with an error message if the user chooses
+                // an unsupported mode
+                {
+                    const unsupportedMode = Object.values(CodeBreakpointMode).find(
+                        mode => !supportedModes.includes(mode),
+                    );
+                    if (unsupportedMode) {
+                        const bpRes = await dc().setBreakpointsRequest({
+                            source: { path: utilsFile() },
+                            breakpoints: [
+                                { line: 26, mode: unsupportedMode },
+                            ],
+                        });
+                        Assert(bpRes.success);
+                        Assert(bpRes.body.breakpoints[0]);
+                        Assert(!bpRes.body.breakpoints[0].verified);
+                        Assert(bpRes.body.breakpoints[0].message);
+                    }
                 }
             }),
         ]);
