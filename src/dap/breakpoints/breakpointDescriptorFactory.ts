@@ -170,7 +170,8 @@ export class EmuTimerStartBreakpointDescriptorFactory implements CodeBreakpointD
         return new EmuTimerBreakpointDescriptor([
             BreakpointCategory.EMU_TIMER_START,
             ule,
-            // We have no way to change which timer to use at the moment...
+            // There are 4 different timers that can be started/stopped independently.
+            // We have no way to change which timer instance to use at the moment...
             1,
         ]);
     }
@@ -181,7 +182,8 @@ export class EmuTimerStopBreakpointDescriptorFactory implements CodeBreakpointDe
         return new EmulDataBreakpointDescriptor([
             BreakpointCategory.EMU_TIMER_STOP,
             ule,
-            // We have no way to change which timer to use at the moment...
+            // There are 4 different timers that can be started/stopped independently.
+            // We have no way to change which timer instance to use at the moment...
             1,
         ]);
     }
