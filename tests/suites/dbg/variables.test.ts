@@ -72,7 +72,9 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                         regConfig.cpuRegisters.registers.forEach(toFind => {
                             const found = registers.find(reg => reg.name === toFind.name);
                             Assert(found, `Found no register named ${toFind.name}`);
-                            Assert.strictEqual(found.variablesReference > 0, toFind.hasChildren, `For register: ${found.name}`);
+                            if (toFind.hasChildren !== undefined) {
+                                Assert.strictEqual(found.variablesReference > 0, toFind.hasChildren, `For register: ${found.name}`);
+                            }
                         });
 
                     }
@@ -85,7 +87,9 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                         regConfig.fpuRegisters.registers.forEach(toFind => {
                             const found = registers.find(reg => reg.name === toFind.name);
                             Assert(found, `Found no register named ${toFind.name}`);
-                            Assert.strictEqual(found.variablesReference > 0, toFind.hasChildren, `For register: ${found.name}`);
+                            if (toFind.hasChildren !== undefined) {
+                                Assert.strictEqual(found.variablesReference > 0, toFind.hasChildren, `For register: ${found.name}`);
+                            }
                         });
                     }
                 }

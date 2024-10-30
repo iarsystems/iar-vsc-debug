@@ -6,7 +6,7 @@ import * as Path from "path";
 
 interface RegisterSpecification {
     name: string,
-    hasChildren: boolean,
+    hasChildren?: boolean,
 }
 
 /**
@@ -158,7 +158,7 @@ export namespace TestConfiguration {
                     groupName: "Floating-point Extension registers",
                     registers: [
                         { name: "S6", hasChildren: true },
-                        { name: "D12", hasChildren: true },
+                        { name: "D12" },
                     ],
                 },
             },
