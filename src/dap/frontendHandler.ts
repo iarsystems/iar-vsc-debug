@@ -7,7 +7,7 @@ import * as Thrift from "thrift";
 import * as Path from "path";
 import * as FrontendTypes from "iar-vsc-common/thrift/bindings/frontend_types";
 import * as Frontend from "iar-vsc-common/thrift/bindings/Frontend";
-import { PropertyTreeItem, SourceLocation } from "iar-vsc-common/thrift/bindings/shared_types";
+import { Capabilities, PropertyTreeItem, SourceLocation } from "iar-vsc-common/thrift/bindings/shared_types";
 import * as Q from "q";
 import { CustomEvent, CustomRequest } from "./customRequest";
 import { Event, logger } from "@vscode/debugadapter";
@@ -388,5 +388,9 @@ export class FrontendHandler implements ThriftServiceHandler<Frontend.Client>, D
                 new Event(CustomEvent.Names.THEME_REQUESTED, body),
             );
         });
+    }
+
+    getCapabilities(): Q.Promise<Capabilities> {
+        return Q.resolve(new Capabilities({supportsEditorHighlight: true}));
     }
 }

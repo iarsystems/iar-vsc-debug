@@ -1524,3 +1524,53 @@ PropertyTreeItem.prototype.write = function(output) {
   return;
 };
 
+var Capabilities = module.exports.Capabilities = function(args) {
+  this.supportsEditorHighlight = null;
+  if (args) {
+    if (args.supportsEditorHighlight !== undefined && args.supportsEditorHighlight !== null) {
+      this.supportsEditorHighlight = args.supportsEditorHighlight;
+    }
+  }
+};
+Capabilities.prototype = {};
+Capabilities.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 1:
+      if (ftype == Thrift.Type.BOOL) {
+        this.supportsEditorHighlight = input.readBool().value;
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+Capabilities.prototype.write = function(output) {
+  output.writeStructBegin('Capabilities');
+  if (this.supportsEditorHighlight !== null && this.supportsEditorHighlight !== undefined) {
+    output.writeFieldBegin('supportsEditorHighlight', Thrift.Type.BOOL, 1);
+    output.writeBool(this.supportsEditorHighlight);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+

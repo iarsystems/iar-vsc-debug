@@ -232,3 +232,11 @@ export declare class PropertyTreeItem {
   read(input: Object): void;
   write(input: Object): void;
 }
+
+export declare class Capabilities {
+  supportsEditorHighlight: boolean;
+
+    constructor(args?: { supportsEditorHighlight: boolean; });
+  read(input: Object): void;
+  write(input: Object): void;
+}
