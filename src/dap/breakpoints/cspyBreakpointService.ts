@@ -15,15 +15,8 @@ import { CSpyDriver } from "./cspyDriver";
 import { logger } from "@vscode/debugadapter/lib/logger";
 import { LocEtcDescriptor } from "./descriptors/locEtcDescriptor";
 import { BreakpointDescriptor } from "./descriptors/breakpointDescriptor";
+import { CodeBreakpointMode } from "./breakpointMode";
 import { AccessType } from "./descriptors/accessType";
-
-
-/**
- * Different types of (code) breakpoints. Not all drivers support all breakpoint types.
- */
-export enum BreakpointType {
-    AUTO = "auto", HARDWARE = "hardware", SOFTWARE = "software"
-}
 
 // A breakpoint which has been set in the cspy backend (it isn't necessary valid, just validated and known in the backend)
 interface InstalledBreakpoint<Bp> {
@@ -64,10 +57,14 @@ export class CSpyBreakpointService implements Disposable.Disposable {
     private readonly installedInstrunctionBreakpoints: Array<InstalledInstructionBreakpoint> = [];
     private readonly installedDataBreakpoints: Array<InstalledDataBreakpoint> = [];
 
+    private defaultCodeBreakpointMode: CodeBreakpointMode;
+
     private constructor(private readonly breakpointService: ThriftClient<Breakpoints.Client>,
                 private readonly clientLinesStartAt1: boolean,
                 private readonly clientColumnsStartAt1: boolean,
-                private readonly driver: CSpyDriver) {}
+                private readonly driver: CSpyDriver) {
+        this.defaultCodeBreakpointMode = this.supportedCodeBreakpointModes()[0] ?? CodeBreakpointMode.Auto;
+    }
 
     /**
      * Sets breakpoints for some source file, and removes all other breakpoints in the file.
@@ -75,13 +72,9 @@ export class CSpyBreakpointService implements Disposable.Disposable {
      * @param dapBps The breakpoints to set
      * @returns The actual BPs set, in the same order as input
      */
-    async setBreakpointsFor(source: DebugProtocol.Source, dapBps: DebugProtocol.SourceBreakpoint[], type: BreakpointType): Promise<DebugProtocol.Breakpoint[]> {
+    async setBreakpointsFor(source: DebugProtocol.Source, dapBps: DebugProtocol.SourceBreakpoint[]): Promise<DebugProtocol.Breakpoint[]> {
         if (!source.path) {
             return Promise.reject(new Error("Cannot set breakpoints without a path"));
-        }
-        const bpDescriptorFactory = this.driver.codeBreakpointFactories.get(type);
-        if (!bpDescriptorFactory) {
-            throw new Error("Tried to set breakpoints of unsupported type " + type);
         }
 
         const installedBreakpoints: InstalledSourceBreakpoint[] = this.installedSourceBreakpoints.get(source.path) ?? [];
@@ -96,7 +89,15 @@ export class CSpyBreakpointService implements Disposable.Disposable {
                 if (dapBp.logMessage) {
                     return this.driver.logBreakpointFactory.createOnUle(ule, dapBp.logMessage.trim());
                 } else {
-                    return bpDescriptorFactory.createOnUle(ule);
+                    let mode = this.defaultCodeBreakpointMode;
+                    if (dapBp.mode && Object.values<string>(CodeBreakpointMode).includes(dapBp.mode)) {
+                        mode = dapBp.mode as CodeBreakpointMode;
+                    }
+                    const descriptorFactory = this.driver.codeBreakpointFactories[mode];
+                    if (descriptorFactory) {
+                        return descriptorFactory.createOnUle(ule);
+                    }
+                    return `The driver does not support breakpoint mode '${mode}'`;
                 }
             }),
         );
@@ -138,12 +139,7 @@ export class CSpyBreakpointService implements Disposable.Disposable {
      * @param dapBps The breakpoints to set
      * @returns The actual BPs set, in the same order as input
      */
-    async setInstructionBreakpoints(dapBps: DebugProtocol.InstructionBreakpoint[], type: BreakpointType): Promise<DebugProtocol.Breakpoint[]> {
-        const bpDescriptorFactory = this.driver.codeBreakpointFactories.get(type);
-        if (!bpDescriptorFactory) {
-            throw new Error("Tried to set breakpoints of unsupported type " + type);
-        }
-
+    async setInstructionBreakpoints(dapBps: DebugProtocol.InstructionBreakpoint[]): Promise<DebugProtocol.Breakpoint[]> {
         const bpResults = await this.setBreakpointsAsNeeded(
             dapBps,
             this.installedInstrunctionBreakpoints,
@@ -153,7 +149,16 @@ export class CSpyBreakpointService implements Disposable.Disposable {
                 if (dapBp.offset) {
                     address = `0x${(BigInt(address) + BigInt(dapBp.offset)).toString(16)}`;
                 }
-                return bpDescriptorFactory.createOnUle(address);
+
+                let mode = this.defaultCodeBreakpointMode;
+                if (dapBp.mode && Object.values<string>(CodeBreakpointMode).includes(dapBp.mode)) {
+                    mode = dapBp.mode as CodeBreakpointMode;
+                }
+                const descriptorFactory = this.driver.codeBreakpointFactories[mode];
+                if (descriptorFactory) {
+                    return descriptorFactory.createOnUle(address);
+                }
+                return `The driver does not support breakpoint mode '${mode}'`;
             }),
         );
 
@@ -181,18 +186,17 @@ export class CSpyBreakpointService implements Disposable.Disposable {
      * @returns The actual BPs set, in the same order as input
      */
     async setDataBreakpoints(dapBps: DebugProtocol.DataBreakpoint[]): Promise<DebugProtocol.Breakpoint[]> {
-        const descrFactory = this.driver.dataBreakpointFactory;
-        if (!descrFactory) {
-            throw new Error("Driver does not support data breakpoints");
-        }
         const bpResults = await this.setBreakpointsAsNeeded(
             dapBps,
             this.installedDataBreakpoints,
             CSpyBreakpointService.dataBpsEqual,
             dapBp => { // Constructs descriptor for a breakpoint
+                if (!this.driver.dataBreakpointFactory) {
+                    return "The driver does not support data breakpoints";
+                }
                 const accessType = CSpyBreakpointService.dapAccessTypeToThriftAccessType(dapBp.accessType ?? "readWrite");
                 // The dataId is a memory address, so we can use it as the ule
-                return descrFactory.createOnUle(dapBp.dataId, accessType);
+                return this.driver.dataBreakpointFactory.createOnUle(dapBp.dataId, accessType);
             });
 
         return bpResults.map(([dapBp, result]) => {
@@ -207,17 +211,29 @@ export class CSpyBreakpointService implements Disposable.Disposable {
                     verified: result.valid,
                     instructionReference: result.ule || dapBp.dataId,
                     message: result.description,
+                    mode: "data",
                 };
             }
         });
     }
 
     /**
-     * The supported {@link BreakpointType}s that can be set using the method below.
+     * The supported {@link CodeBreakpointMode}s that can be set using the method below.
      */
-    supportedBreakpointTypes() {
-        return Array.from(this.driver.codeBreakpointFactories.keys());
+    supportedCodeBreakpointModes(): CodeBreakpointMode[] {
+        return Object.keys(this.driver.codeBreakpointFactories) as Array<
+            keyof typeof this.driver.codeBreakpointFactories
+        >;
     }
+
+    /**
+     * Sets the mode to use for source & instruction breakpoints which do not
+     * have an explicit mode set on them.
+     */
+    setDefaultCodeBreakpointMode(mode: CodeBreakpointMode) {
+        this.defaultCodeBreakpointMode = mode;
+    }
+
     /**
      * The supported access types that can be used when setting data breakpoints
      */
@@ -238,7 +254,7 @@ export class CSpyBreakpointService implements Disposable.Disposable {
      * @param wantedBreakpoints The breakpoints we want to be set
      * @param installedBreakpoints The breakpoints currently set in the backend
      * @param bpsEqual Tells whether two breakpoints are equal
-     * @param toDescriptor Converts a DAP breakpoint to a breakpoint descriptor. Common descriptor properties (condition & skipCount) will be filled in by this function.
+     * @param toDescriptor Converts a DAP breakpoint to a breakpoint descriptor, or returns an error string. Common descriptor properties (condition & skipCount) will be filled in by this function.
      * @returns Each wanted breakpoint together with a result. The result is a corresponding C-SPY breakpoint set in the
      *      backend, or a string error message.
      */
@@ -246,14 +262,14 @@ export class CSpyBreakpointService implements Disposable.Disposable {
         wantedBreakpoints: DapBp[],
         installedBreakpoints: InstalledBreakpoint<DapBp>[],
         bpsEqual: (bp1: DapBp, bp2: DapBp) => boolean,
-        toDescriptor: (bp: DapBp) => BreakpointDescriptor): Promise<Array<[DapBp, Thrift.Breakpoint | string]>> {
+        toDescriptor: (bp: DapBp) => BreakpointDescriptor | string): Promise<Array<[DapBp, Thrift.Breakpoint | string]>> {
 
 
         // We want to avoid clearing and recreating breakpoints which haven't changed since the last call.
         // We first figure out which bps have been removed in the frontend, and remove them
         const bpsToRemove = installedBreakpoints.filter(installedBp => !wantedBreakpoints.some(wantedBp => bpsEqual(installedBp.dapBp, wantedBp)) );
         bpsToRemove.forEach(bp => installedBreakpoints.splice(installedBreakpoints.indexOf(bp), 1) );
-        await Promise.all(bpsToRemove.map(bp => this.breakpointService.service.removeBreakpoint(bp.cspyBp.id) ));
+        await Promise.allSettled(bpsToRemove.map(bp => this.breakpointService.service.removeBreakpoint(bp.cspyBp.id) ));
 
         return Promise.all(wantedBreakpoints.map(async wantedBp => {
             const makeError = (msg: string): [DapBp, string] => [wantedBp, msg];
@@ -264,6 +280,9 @@ export class CSpyBreakpointService implements Disposable.Disposable {
             }
 
             const descriptor = toDescriptor(wantedBp);
+            if (typeof descriptor === "string") {
+                return makeError(descriptor);
+            }
             if ((wantedBp.condition || wantedBp.hitCondition) && !(descriptor instanceof LocEtcDescriptor)) {
                 return makeError("The driver does not support conditional breakpoints of this type");
             }
@@ -324,6 +343,7 @@ export class CSpyBreakpointService implements Disposable.Disposable {
     private static sourceBpsEqual(bp1: DebugProtocol.SourceBreakpoint, bp2: DebugProtocol.SourceBreakpoint): boolean {
         return bp1.line === bp2.line &&
             bp1.column === bp2.column &&
+            bp1.mode === bp2.mode &&
             bp1.condition === bp2.condition &&
             bp1.hitCondition === bp2.hitCondition &&
             bp1.logMessage === bp2.logMessage;
@@ -331,6 +351,7 @@ export class CSpyBreakpointService implements Disposable.Disposable {
     private static instructionBpsEqual(bp1: DebugProtocol.InstructionBreakpoint, bp2: DebugProtocol.InstructionBreakpoint): boolean {
         return bp1.instructionReference === bp2.instructionReference &&
             bp1.offset === bp2.offset &&
+            bp1.mode === bp2.mode &&
             bp1.condition === bp2.condition &&
             bp1.hitCondition === bp2.hitCondition;
     }
