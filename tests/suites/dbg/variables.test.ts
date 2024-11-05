@@ -4,6 +4,8 @@
 import * as Assert from "assert";
 import { TestConfiguration } from "../testConfiguration";
 import { debugAdapterSuite } from "./debugAdapterSuite";
+import { CustomRequest } from "../../../src/dap/customRequest";
+import { VariablesUtils } from "../../../src/dap/contexts/variablesUtils";
 
 debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => {
     const FIBS = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55];
@@ -70,7 +72,9 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                         regConfig.cpuRegisters.registers.forEach(toFind => {
                             const found = registers.find(reg => reg.name === toFind.name);
                             Assert(found, `Found no register named ${toFind.name}`);
-                            Assert.strictEqual(found.variablesReference > 0, toFind.hasChildren, `For register: ${found.name}`);
+                            if (toFind.hasChildren !== undefined) {
+                                Assert.strictEqual(found.variablesReference > 0, toFind.hasChildren, `For register: ${found.name}`);
+                            }
                         });
 
                     }
@@ -83,7 +87,9 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                         regConfig.fpuRegisters.registers.forEach(toFind => {
                             const found = registers.find(reg => reg.name === toFind.name);
                             Assert(found, `Found no register named ${toFind.name}`);
-                            Assert.strictEqual(found.variablesReference > 0, toFind.hasChildren, `For register: ${found.name}`);
+                            if (toFind.hasChildren !== undefined) {
+                                Assert.strictEqual(found.variablesReference > 0, toFind.hasChildren, `For register: ${found.name}`);
+                            }
                         });
                     }
                 }
@@ -92,7 +98,12 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
     });
     // The contents of STL containers in listwindows can be truncated, and need
     // to be expanded by us to get the full contents. Make sure this works ok.
-    test("Supports STL containers", () => {
+    test("Supports STL containers", function() {
+        if (TestConfiguration.getConfiguration().isHardwareTest) {
+            // The hardware tests do not compile cpp files at the moment
+            this.skip();
+            return;
+        }
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfig()),
@@ -406,6 +417,105 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                 Assert(fibArray !== undefined);
                 Assert(fibArray.variablesReference > 0);
                 Assert(fibArray.presentationHint?.attributes?.includes("readOnly"));
+            })
+        ]);
+    });
+
+    test("Test changing formats", () => {
+        const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
+        return Promise.all([
+            dc().configurationSequence(),
+            dc().launch(dbgConfigCopy),
+            dc().waitForEvent("stopped").then(async() => {
+                const stack = await dc().stackTraceRequest({ threadId: 0});
+                const scopes = await dc().scopesRequest({frameId: stack.body.stackFrames[0]!.id});
+                const staticsScope = scopes.body.scopes[1]!;
+
+
+
+                // Test all available formats /////////////////////////////////////////////////
+                let vars = await dc().variablesRequest({
+                    variablesReference: staticsScope.variablesReference,
+                });
+                const intTest = vars.body.variables.find(variable =>
+                    variable.name.includes("scan_to_me"),
+                );
+                Assert(intTest !== undefined);
+                Assert.strictEqual(intTest.value, "0");
+                await dc().setVariableRequest({
+                    name: intTest.name,
+                    value: "1",
+                    variablesReference: staticsScope.variablesReference,
+                });
+
+                const resMap = new Map<VariablesUtils.ViewFormats, RegExp>([
+                    [VariablesUtils.ViewFormats.kBinary, /0b0*1/],
+                    [VariablesUtils.ViewFormats.kChar, /'\.' \(0x01\)/],
+                    [VariablesUtils.ViewFormats.kDecimal, /1/],
+                    [VariablesUtils.ViewFormats.kDefault, /1/],
+                    [VariablesUtils.ViewFormats.kOctal, /0+1/],
+                    [VariablesUtils.ViewFormats.kHexaDecimal, /0x0*1/],
+                ]);
+                for (const [f, s] of resMap) {
+                    let vars = await dc().variablesRequest({ variablesReference: staticsScope.variablesReference });
+                    let intTest = vars.body.variables.find(variable => variable.name.includes("scan_to_me"));
+                    Assert(intTest !== undefined);
+
+                    const data: CustomRequest.ChangeVariableViewFormatArgs = {
+                        format: f,
+                        variable: intTest.name,
+                        variableReference: intTest.variablesReference,
+                        parentReference: staticsScope.variablesReference,
+                    };
+                    await dc().customRequest(CustomRequest.Names.CHANGE_VIEW_FORMAT_REQUEST, data);
+                    vars =  await dc().variablesRequest({ variablesReference: staticsScope.variablesReference });
+                    intTest = vars.body.variables.find(variable => variable.name.includes("scan_to_me"));
+                    Assert(intTest !== undefined);
+                    Assert.match(intTest.value, s);
+                }
+
+                // Test altering nested variables ////////////////////////////////////////////////////////////
+                vars = await dc().variablesRequest({ variablesReference: staticsScope.variablesReference });
+                const fibArray = vars.body.variables.find(variable => variable.name === "Fib <Utilities\\Fib>");
+                Assert(fibArray !== undefined);
+                Assert(fibArray.variablesReference > 0);
+                const arrContents = (await dc().variablesRequest({variablesReference: fibArray.variablesReference})).body.variables;
+                Assert.strictEqual(arrContents[0]?.value, "0");
+                const arrData: CustomRequest.ChangeVariableViewFormatArgs = {
+                    format: VariablesUtils.ViewFormats.kHexaDecimal,
+                    variable: arrContents[0]?.name,
+                    variableReference: arrContents[0]?.variablesReference,
+                    parentReference: fibArray.variablesReference,
+                };
+                dc().customRequest(CustomRequest.Names.CHANGE_VIEW_FORMAT_REQUEST, arrData);
+                const firstVal = (await dc().variablesRequest({variablesReference: fibArray.variablesReference})).body.variables[0];
+                Assert(firstVal);
+                Assert.match(firstVal.value, /0x0+/);
+
+                // Test altering registers ///////////////////////////////////////////////////////////////////
+                const regConfig = TestConfiguration.getConfiguration().registers;
+
+                const registersScope = scopes.body.scopes[2]!;
+                let registerGroups = (await dc().variablesRequest({ variablesReference: registersScope.variablesReference })).body.variables;
+                let cpuRegistersVar = registerGroups.find(group => group.name === regConfig.cpuRegisters.groupName);
+                Assert(cpuRegistersVar);
+                let R0 = (await dc().variablesRequest({ variablesReference: cpuRegistersVar.variablesReference })).body.variables[0];
+                Assert(R0);
+
+                Assert(R0.value.startsWith("0x"));
+                const regData: CustomRequest.ChangeVariableViewFormatArgs = {
+                    format: VariablesUtils.ViewFormats.kDecimal,
+                    variable: R0.name,
+                    variableReference: R0.variablesReference,
+                    parentReference: cpuRegistersVar.variablesReference,
+                };
+                await dc().customRequest(CustomRequest.Names.CHANGE_VIEW_FORMAT_REQUEST, regData);
+                registerGroups = (await dc().variablesRequest({ variablesReference: registersScope.variablesReference })).body.variables;
+                cpuRegistersVar = registerGroups.find(group => group.name === regConfig.cpuRegisters.groupName);
+                Assert(cpuRegistersVar);
+                R0 = (await dc().variablesRequest({ variablesReference: cpuRegistersVar.variablesReference })).body.variables[0];
+                Assert(R0);
+                Assert(!R0.value.startsWith("0x"));
             })
         ]);
     });

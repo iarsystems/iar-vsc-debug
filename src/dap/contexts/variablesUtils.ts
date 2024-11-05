@@ -3,8 +3,37 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { BasicExprType, ExprValue } from "iar-vsc-common/thrift/bindings/cspy_types";
+import { MenuItem } from "iar-vsc-common/thrift/bindings/listwindow_types";
 
 export namespace VariablesUtils {
+
+    /**
+     * The set of available view formats when changing the format in the
+     * native vscode variables view.
+     */
+    export enum ViewFormats {
+        kDefault = "Default",
+        kBinary = "Binary",
+        kOctal = "Octal",
+        kDecimal = "Decimal",
+        kHexaDecimal = "Hexadecimal",
+        kChar = "Char",
+        kFloat16 = "[fF]loat16",
+        kFloat = "[fF]loat\\b",
+        kDouble = "[dD]ouble",
+        kAsIs = "As Is",
+    }
+
+    export function findContextEntry(menuEntries: MenuItem[], pattern: string): MenuItem | undefined {
+        for (const item of menuEntries) {
+            const match = item.text.replace("&", "").match(pattern);
+            if (match) {
+                return item;
+            }
+        }
+        return undefined;
+    }
+
     /**
      * Creates a new DAP variable. This method standardises some of the derived properties (such as memoryReference and evaluateName).
      * @param name The variable name

@@ -9,6 +9,7 @@ import { ListWindowClient, ListWindowRowReference } from "../listWindowClient";
 import { Disposable } from "../utils";
 import { VariablesUtils } from "./variablesUtils";
 import { DebugProtocol } from "@vscode/debugprotocol";
+import Int64 = require("node-int64");
 
 /**
  * Provides a list of (expandable) variables. Just like in DAP, expandable variables
@@ -32,6 +33,15 @@ export interface VariablesProvider {
      * @returns The new value of the variable, and the address of the changed variable if any. The value may be in a different format from the passed in value.
      */
     setVariable(name: string, variableReference: number | undefined, value: string): Promise<{newValue: string, changedAddress?: string}>;
+
+    /**
+     * Change the view format for the given variable.
+     * @param variableName
+     * @param format
+     */
+    setViewFormat(variableName: string,  variableReference: number | undefined, format: VariablesUtils.ViewFormats): Promise<boolean>;
+
+    ownsVariable(variableReference: number): boolean;
 }
 
 /**
@@ -50,27 +60,38 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
      * @param varTypeColumn The column containing variable type (may be negative if there is no such column)
      * @param varLocationColumn The column containing variable locations (may be negative if there is no such column)
      */
-    static async instantiate(serviceRegistry: ThriftServiceRegistry,
+    static async instantiate(
+        serviceRegistry: ThriftServiceRegistry,
         windowServiceId: string,
         varNameColumn: number,
         varValueColumn: number,
         varTypeColumn: number,
-        varLocationColumn: number): Promise<ListWindowVariablesProvider> {
-
-        const windowClient = await ListWindowClient.instantiate(serviceRegistry, windowServiceId, [varNameColumn, varTypeColumn]);
-        return new ListWindowVariablesProvider(windowClient, varNameColumn, varValueColumn, varTypeColumn, varLocationColumn);
+        varLocationColumn: number,
+    ): Promise<ListWindowVariablesProvider> {
+        const windowClient = await ListWindowClient.instantiate(serviceRegistry, windowServiceId, [
+            varNameColumn,
+            varTypeColumn,
+        ]);
+        return new ListWindowVariablesProvider(
+            windowClient,
+            varNameColumn,
+            varValueColumn,
+            varTypeColumn,
+            varLocationColumn,
+        );
     }
 
     private readonly variableReferences: Handles<ListWindowRowReference> = new Handles();
     // While this is pending, do not request updates from the listwindow. It is about to update!
     private backendUpdate: Thenable<void>;
 
-    constructor(private readonly windowClient: ListWindowClient,
+    constructor(
+        private readonly windowClient: ListWindowClient,
         private readonly varNameColumn: number,
         private readonly varValueColumn: number,
         private readonly varTypeColumn: number,
-        private readonly varLocationColumn: number) {
-
+        private readonly varLocationColumn: number,
+    ) {
         this.backendUpdate = Promise.resolve();
     }
 
@@ -83,6 +104,10 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
         return topLevelRows.map(row => this.createVariableFromRow(row, true));
     }
 
+    ownsVariable(variableReference: number): boolean {
+        return this.variableReferences.get(variableReference) !== undefined;
+    }
+
     /**
      * Gets all sub-variables from expanding a variable in this window
      */
@@ -91,7 +116,40 @@ export class ListWindowVariablesProvider implements VariablesProvider, Disposabl
         const referencedRow = this.variableReferences.get(variableReference);
         const children = await this.windowClient.getChildrenOf(referencedRow);
         return children.map(row => this.createVariableFromRow(row));
+    }
 
+    public async setViewFormat(variableName: string, variableReference: number | undefined, format: VariablesUtils.ViewFormats): Promise<boolean> {
+        let rows: ListWindowRowReference[];
+        let baseRowIndex = 0;
+
+        if (!variableReference) {
+            rows = await this.windowClient.getTopLevelRows();
+        } else {
+            const parentRow = this.variableReferences.get(variableReference);
+            // Change the base row reference so that we start with the parent.
+            baseRowIndex = (await this.windowClient.getRowIndex(parentRow)?? 0) + 1;
+            rows = await this.windowClient.getChildrenOf(parentRow);
+        }
+
+        const rowIndex = rows.findIndex(
+            row => row.cells[this.varNameColumn]?.value === variableName,
+        );
+        if (rowIndex === -1) {
+            throw new Error("Failed to find row with name " + variableName);
+        }
+        const rowIndexInt64 = new Int64(baseRowIndex + rowIndex);
+        const contextMenu = await this.windowClient.getContextMenu(
+            rowIndexInt64,
+            this.varValueColumn,
+        );
+        const entry = VariablesUtils.findContextEntry(contextMenu, format);
+        if (entry !== undefined) {
+            this.notifyUpdateImminent();
+            await this.windowClient.selectCell(rowIndexInt64, this.varNameColumn);
+            await this.windowClient.clickContextMenu(entry.command);
+            return true;
+        }
+        throw new Error("Failed to set view format");
     }
 
     async setVariable(name: string, variableReference: number | undefined, value: string): Promise<{newValue: string, changedAddress?: string}> {

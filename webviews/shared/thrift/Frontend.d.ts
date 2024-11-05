@@ -224,14 +224,18 @@ export declare class Client extends HeartbeatService.Client {
   openMultipleElementSelectionDialog(title: string, message: string, elements: string[], callback?: (data: number[])=>void): void;
 
   /**
-   * Opens the given file in the eclipse editor
+   * Opens the given file in the eclipse/vscode editor
+   * @param loc The location to open
+   * @param focus If true, also shift focus to the editor
    */
-  editSourceLocation(loc: SourceLocation): Q.Promise<void>;
+  editSourceLocation(loc: SourceLocation, focus?: boolean): Q.Promise<void>;
 
   /**
-   * Opens the given file in the eclipse editor
+   * Opens the given file in the eclipse/vscode editor
+   * @param loc The location to open
+   * @param focus If true, also shift focus to the editor
    */
-  editSourceLocation(loc: SourceLocation, callback?: (data: void)=>void): void;
+  editSourceLocation(loc: SourceLocation, focus?: boolean, callback?: (data: void)=>void): void;
 
   /**
    * Resolves the alias for a specified string. The name of the file to be resolved is sent as
@@ -266,4 +270,16 @@ export declare class Client extends HeartbeatService.Client {
    * Invoke a generic dialog.
    */
   invokeDialog(id: string, title: string, entries: PropertyTreeItem, callback?: (data: GenericDialogResults)=>void): void;
+
+  /**
+   * Handshake before start to establish the set of capabilities in the frontend
+   * and backend. Very similar to the concept in LSP.
+   */
+  getCapabilities(): Q.Promise<Capabilities>;
+
+  /**
+   * Handshake before start to establish the set of capabilities in the frontend
+   * and backend. Very similar to the concept in LSP.
+   */
+  getCapabilities(callback?: (data: Capabilities)=>void): void;
 }

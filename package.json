@@ -39,8 +39,7 @@
 		"Debuggers"
 	],
 	"extensionDependencies": [
-		"ms-vscode.vscode-embedded-tools",
-		"eclipse-cdt.memory-inspector"
+		"ms-vscode.vscode-embedded-tools"
 	],
 	"private": true,
 	"dependencies": {
@@ -53,7 +52,7 @@
 		"async-mutex": "^0.3.2",
 		"await-notify": "1.0.1",
 		"color": "^4.2.3",
-		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#cf3b21d1",
+		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#7404fca7",
 		"thrift": "^0.12.0",
 		"xmlbuilder2": "^3.0.2",
 		"fast-xml-parser": "4.4.1"
@@ -147,6 +146,16 @@
 				}
 			}
 		},
+		"submenus": [
+			{
+				"id": "iar.variableFormat",
+				"label": "Format"
+			},
+			{
+				"id": "iar.showAs",
+				"label": "Show as"
+			}
+		],
 		"menus": {
 			"debug/toolBar": [
 				{
@@ -156,6 +165,72 @@
 				{
 					"command": "iar.disableMulticoreLockstepMode",
 					"when": "debugType == cspy && iar-debug.sessionIsMulticore"
+				}
+			],
+			"debug/variables/context": [
+				{
+					"submenu": "iar.variableFormat",
+					"when": "debugType == cspy"
+				}
+			],
+			"iar.variableFormat":[
+				{
+					"command": "iar.showVariableAsDefault",
+					"when": "debugType == cspy"
+				},
+				{
+					"command": "iar.showVariableAsHex",
+					"when": "debugType == cspy"
+				},
+				{
+					"command": "iar.showVariableAsBinary",
+					"when": "debugType == cspy"
+				},
+				{
+					"command": "iar.showVariableAsOctal",
+					"when": "debugType == cspy"
+				},
+				{
+					"command": "iar.showVariableAsDecimal",
+					"when": "debugType == cspy"
+				},
+				{
+					"command": "iar.showVariableAsChar",
+					"when": "debugType == cspy"
+				},
+				{
+					"command": "iar.showVariableAsFloat16",
+					"when": "!canViewMemory &&debugType == cspy"
+				},
+				{
+					"command": "iar.showVariableAsFloat",
+					"when": "!canViewMemory && debugType == cspy"
+				},
+				{
+					"command": "iar.showVariableAsDouble",
+					"when": "!canViewMemory && debugType == cspy"
+				},
+				{
+					"submenu": "iar.showAs",
+					"when": "canViewMemory && debugType == cspy"
+				}
+			],
+			"iar.showAs":[
+				{
+					"command": "iar.showVariableAsIs",
+					"when": "debugType == cspy"
+				},
+				{
+					"command": "iar.showVariableAsFloat16",
+					"when": "debugType == cspy"
+				},
+				{
+					"command": "iar.showVariableAsFloat",
+					"when": "debugType == cspy"
+				},
+				{
+					"command": "iar.showVariableAsDouble",
+					"when": "debugType == cspy"
 				}
 			]
 		},
@@ -284,6 +359,66 @@
 				"category": "IAR Debug",
 				"title": "Restart the session without running prelaunch tasks",
 				"enablement": "debugType == cspy"
+			},
+			{
+				"command": "iar.showVariableAsDefault",
+				"category": "IAR Debug",
+				"title": "Default",
+				"enablement": "debugType == cspy && focusedView == 'workbench.debug.variablesView'"
+			},
+			{
+				"command": "iar.showVariableAsBinary",
+				"category": "IAR Debug",
+				"title": "Binary",
+				"enablement": "debugType == cspy && focusedView == 'workbench.debug.variablesView'"
+			},
+			{
+				"command": "iar.showVariableAsHex",
+				"category": "IAR Debug",
+				"title": "Hexadecimal",
+				"enablement": "debugType == cspy && focusedView == 'workbench.debug.variablesView'"
+			},
+			{
+				"command": "iar.showVariableAsOctal",
+				"category": "IAR Debug",
+				"title": "Octal",
+				"enablement": "debugType == cspy && focusedView == 'workbench.debug.variablesView'"
+			},
+			{
+				"command": "iar.showVariableAsDecimal",
+				"category": "IAR Debug",
+				"title": "Decimal",
+				"enablement": "debugType == cspy && focusedView == 'workbench.debug.variablesView'"
+			},
+			{
+				"command": "iar.showVariableAsChar",
+				"category": "IAR Debug",
+				"title": "Char",
+				"enablement": "debugType == cspy && focusedView == 'workbench.debug.variablesView'"
+			},
+			{
+				"command": "iar.showVariableAsFloat",
+				"category": "IAR Debug",
+				"title": "Float",
+				"enablement": "debugType == cspy && focusedView == 'workbench.debug.variablesView'"
+			},
+			{
+				"command": "iar.showVariableAsDouble",
+				"category": "IAR Debug",
+				"title": "Double",
+				"enablement": "debugType == cspy && focusedView == 'workbench.debug.variablesView'"
+			},
+			{
+				"command": "iar.showVariableAsFloat16",
+				"category": "IAR Debug",
+				"title": "Float16",
+				"enablement": "debugType == cspy && focusedView == 'workbench.debug.variablesView'"
+			},
+			{
+				"command": "iar.showVariableAsIs",
+				"category": "IAR Debug",
+				"title": "As Is",
+				"enablement": "debugType == cspy && focusedView == 'workbench.debug.variablesView'"
 			}
 		],
 		"viewsContainers": {
@@ -417,7 +552,8 @@
 					"cpp"
 				],
 				"configurationAttributes": {
-					"attach": {"required": [
+					"attach": {
+						"required": [
 						"workbenchPath"
 					],
 					"properties": {

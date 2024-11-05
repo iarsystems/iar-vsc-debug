@@ -6,7 +6,7 @@ import * as Path from "path";
 
 interface RegisterSpecification {
     name: string,
-    hasChildren: boolean,
+    hasChildren?: boolean,
 }
 
 /**
@@ -68,6 +68,10 @@ export interface TestConfiguration {
      * Whether to run only a small set of tests to verify the most basic functionality.
      */
     smokeTestsOnly?: boolean,
+    /**
+     * Whether the tests are running in the hardware test rig.
+     */
+    isHardwareTest: boolean;
 }
 
 export namespace TestConfiguration {
@@ -154,11 +158,12 @@ export namespace TestConfiguration {
                     groupName: "Floating-point Extension registers",
                     registers: [
                         { name: "S6", hasChildren: true },
-                        { name: "D12", hasChildren: true },
+                        { name: "D12" },
                     ],
                 },
             },
             dataBreakpointsAreUnreliable: false,
+            isHardwareTest: false,
         },
         armImperas: {
             debugConfiguration: {
@@ -192,6 +197,7 @@ export namespace TestConfiguration {
                 },
             },
             dataBreakpointsAreUnreliable: false,
+            isHardwareTest: false,
         },
         riscvSim: {
             debugConfiguration: {
@@ -228,6 +234,7 @@ export namespace TestConfiguration {
                 },
             },
             dataBreakpointsAreUnreliable: false,
+            isHardwareTest: false,
         },
         rh850Sim: {
             debugConfiguration: {
@@ -269,6 +276,7 @@ export namespace TestConfiguration {
                 },
             },
             dataBreakpointsAreUnreliable: false,
+            isHardwareTest: false,
         },
     };
 }

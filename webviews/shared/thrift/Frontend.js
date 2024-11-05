@@ -2034,9 +2034,13 @@ Frontend_openMultipleElementSelectionDialog_result.prototype.write = function(ou
 
 var Frontend_editSourceLocation_args = function(args) {
   this.loc = null;
+  this.focus = true;
   if (args) {
     if (args.loc !== undefined && args.loc !== null) {
       this.loc = new shared_ttypes.SourceLocation(args.loc);
+    }
+    if (args.focus !== undefined && args.focus !== null) {
+      this.focus = args.focus;
     }
   }
 };
@@ -2059,9 +2063,13 @@ Frontend_editSourceLocation_args.prototype.read = function(input) {
         input.skip(ftype);
       }
       break;
-      case 0:
+      case 2:
+      if (ftype == Thrift.Type.BOOL) {
+        this.focus = input.readBool().value;
+      } else {
         input.skip(ftype);
-        break;
+      }
+      break;
       default:
         input.skip(ftype);
     }
@@ -2076,6 +2084,11 @@ Frontend_editSourceLocation_args.prototype.write = function(output) {
   if (this.loc !== null && this.loc !== undefined) {
     output.writeFieldBegin('loc', Thrift.Type.STRUCT, 1);
     this.loc.write(output);
+    output.writeFieldEnd();
+  }
+  if (this.focus !== null && this.focus !== undefined) {
+    output.writeFieldBegin('focus', Thrift.Type.BOOL, 2);
+    output.writeBool(this.focus);
     output.writeFieldEnd();
   }
   output.writeFieldStop();
@@ -2441,6 +2454,82 @@ Frontend_invokeDialog_result.prototype.read = function(input) {
 
 Frontend_invokeDialog_result.prototype.write = function(output) {
   output.writeStructBegin('Frontend_invokeDialog_result');
+  if (this.success !== null && this.success !== undefined) {
+    output.writeFieldBegin('success', Thrift.Type.STRUCT, 0);
+    this.success.write(output);
+    output.writeFieldEnd();
+  }
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var Frontend_getCapabilities_args = function(args) {
+};
+Frontend_getCapabilities_args.prototype = {};
+Frontend_getCapabilities_args.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    input.skip(ftype);
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+Frontend_getCapabilities_args.prototype.write = function(output) {
+  output.writeStructBegin('Frontend_getCapabilities_args');
+  output.writeFieldStop();
+  output.writeStructEnd();
+  return;
+};
+
+var Frontend_getCapabilities_result = function(args) {
+  this.success = null;
+  if (args) {
+    if (args.success !== undefined && args.success !== null) {
+      this.success = new shared_ttypes.Capabilities(args.success);
+    }
+  }
+};
+Frontend_getCapabilities_result.prototype = {};
+Frontend_getCapabilities_result.prototype.read = function(input) {
+  input.readStructBegin();
+  while (true) {
+    var ret = input.readFieldBegin();
+    var ftype = ret.ftype;
+    var fid = ret.fid;
+    if (ftype == Thrift.Type.STOP) {
+      break;
+    }
+    switch (fid) {
+      case 0:
+      if (ftype == Thrift.Type.STRUCT) {
+        this.success = new shared_ttypes.Capabilities();
+        this.success.read(input);
+      } else {
+        input.skip(ftype);
+      }
+      break;
+      case 0:
+        input.skip(ftype);
+        break;
+      default:
+        input.skip(ftype);
+    }
+    input.readFieldEnd();
+  }
+  input.readStructEnd();
+  return;
+};
+
+Frontend_getCapabilities_result.prototype.write = function(output) {
+  output.writeStructBegin('Frontend_getCapabilities_result');
   if (this.success !== null && this.success !== undefined) {
     output.writeFieldBegin('success', Thrift.Type.STRUCT, 0);
     this.success.write(output);
@@ -3266,16 +3355,17 @@ FrontendClient.prototype.recv_openMultipleElementSelectionDialog = function() {
   throw 'openMultipleElementSelectionDialog failed: unknown result';
 };
 
-FrontendClient.prototype.editSourceLocation = function(loc, callback) {
-  this.send_editSourceLocation(loc, callback); 
+FrontendClient.prototype.editSourceLocation = function(loc, focus, callback) {
+  this.send_editSourceLocation(loc, focus, callback); 
   if (!callback) {
   this.recv_editSourceLocation();
   }
 };
 
-FrontendClient.prototype.send_editSourceLocation = function(loc, callback) {
+FrontendClient.prototype.send_editSourceLocation = function(loc, focus, callback) {
   var params = {
-    loc: loc
+    loc: loc,
+    focus: focus
   };
   var args = new Frontend_editSourceLocation_args(params);
   try {
@@ -3493,4 +3583,59 @@ FrontendClient.prototype.recv_invokeDialog = function() {
     return result.success;
   }
   throw 'invokeDialog failed: unknown result';
+};
+
+FrontendClient.prototype.getCapabilities = function(callback) {
+  this.send_getCapabilities(callback); 
+  if (!callback) {
+    return this.recv_getCapabilities();
+  }
+};
+
+FrontendClient.prototype.send_getCapabilities = function(callback) {
+  var args = new Frontend_getCapabilities_args();
+  try {
+    this.output.writeMessageBegin('getCapabilities', Thrift.MessageType.CALL, this.seqid);
+    args.write(this.output);
+    this.output.writeMessageEnd();
+    if (callback) {
+      var self = this;
+      this.output.getTransport().flush(true, function() {
+        var result = null;
+        try {
+          result = self.recv_getCapabilities();
+        } catch (e) {
+          result = e;
+        }
+        callback(result);
+      });
+    } else {
+      return this.output.getTransport().flush();
+    }
+  }
+  catch (e) {
+    if (typeof this.output.getTransport().reset === 'function') {
+      this.output.getTransport().reset();
+    }
+    throw e;
+  }
+};
+
+FrontendClient.prototype.recv_getCapabilities = function() {
+  var ret = this.input.readMessageBegin();
+  var mtype = ret.mtype;
+  if (mtype == Thrift.MessageType.EXCEPTION) {
+    var x = new Thrift.TApplicationException();
+    x.read(this.input);
+    this.input.readMessageEnd();
+    throw x;
+  }
+  var result = new Frontend_getCapabilities_result();
+  result.read(this.input);
+  this.input.readMessageEnd();
+
+  if (null !== result.success) {
+    return result.success;
+  }
+  throw 'getCapabilities failed: unknown result';
 };
