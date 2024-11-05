@@ -354,7 +354,7 @@
 				{
 					"icon": "debug",
 					"id": "iar-debug",
-					"title": "iar Debug"
+					"title": "IAR Trace"
 				}
 			]
 		},
