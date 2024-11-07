@@ -217,7 +217,62 @@ export class EmulDataBreakBreakpointDescriptorFactory extends DataBreakpointDesc
 export class StdLog2BreakpointDescriptorFactory implements LogBreakpointDescriptorFactory {
 
     createOnUle(ule: string, message: string): LocOnlyDescriptor {
-        return new LogDescriptor([BreakpointCategory.STD_LOG2, ule, message]);
+        const smessage = this.splitMessage(message).join(",");
+        return new LogDescriptor([BreakpointCategory.STD_LOG2, ule, smessage]);
     }
 
+    // Convert from VS Code's log messages format (which interpolates everything
+    // within curly braces) into a list of c-spy macro expressions (which is
+    // what c-spy expects for log breakpoints that have the 'C-Spy macro
+    // "__message" style' toggle enabled). Essentially, this converts anything
+    // outside of curly braces into a string literal, and anything inside curly
+    // braces is kept as-is. For example, the message "Hello {world}!" would become
+    // ['"Hello "', 'world', '"!"'].
+    private splitMessage(message: string): string[] {
+        const expressions: string[] = [];
+
+        let bracketLevel = 0;
+        let currentPart = "";
+        for (const c of message) {
+            if (c === "{") {
+                if (bracketLevel === 0) {
+                    // We've started a new interpolated part.
+                    if (currentPart.length > 0) {
+                        expressions.push(this.toCspyStringLiteral(currentPart));
+                    }
+                    currentPart = "";
+                } else {
+                    currentPart += c;
+                }
+                bracketLevel++;
+            } else if (c === "}") {
+                // We've finished an interpolated part.
+                if (bracketLevel === 1) {
+                    if (currentPart.length > 0) {
+                        expressions.push(currentPart);
+                        currentPart = "";
+                    }
+                } else {
+                    currentPart += c;
+                }
+                bracketLevel = Math.max(bracketLevel - 1, 0);
+            } else {
+                currentPart += c;
+            }
+        }
+
+        if (currentPart.length > 0) {
+            expressions.push(this.toCspyStringLiteral(currentPart));
+        }
+        return expressions;
+    }
+
+    // Creates an escaped c-spy macro string
+    private toCspyStringLiteral(msg: string): string {
+        // We need to escape '\' and '"' characters
+        const escaped = msg.
+            replaceAll("\\", "\\\\").
+            replaceAll("\"", "\\\"");
+        return `"${escaped}"`;
+    }
 }

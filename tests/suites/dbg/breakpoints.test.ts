@@ -227,7 +227,7 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
         return Promise.all([
             dc().launch(dbgConfig()),
             dc().waitForEvent("stopped").then(async() => {
-                const logMessage = "häj%% %n%c\"'42\\ಠ⌣ಠ";
+                const logMessage = "häj%% %n%c\"42\\ಠ⌣ಠ";
 
                 await dc().setBreakpointsRequest(
                     { source: { path: utilsFile() },
@@ -236,6 +236,37 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                 await Promise.all([
                     dc().assertOutput("console", "[Utilities.c:26.3] #0 " + logMessage, 5000),
                     dc().continueRequest({threadId: 0, singleThread: true}),
+                ]);
+            }),
+        ]);
+    });
+
+    test("Supports log breakpoints with interpolation", () => {
+        return Promise.all([
+            dc().launch(dbgConfig()),
+            dc().waitForEvent("stopped").then(async() => {
+
+                const message1 = "{callCount}";
+                const message2 = "Value: \"{callCount}\"!";
+
+                await dc().setBreakpointsRequest({
+                    source: { path: utilsFile() },
+                    breakpoints: [
+                        { line: 26, logMessage: message1 },
+                        { line: 28, logMessage: message2 },
+                    ],
+                });
+
+                await Promise.all([
+                    dc().assertOutput(
+                        "console",
+                        `[Utilities.c:26.3] #0 ${message1}\n[Utilities.c:28.3] #0 ${message2}`.replaceAll(
+                            "{callCount}",
+                            "0",
+                        ),
+                        5000,
+                    ),
+                    dc().continueRequest({ threadId: 0, singleThread: true }),
                 ]);
             }),
         ]);

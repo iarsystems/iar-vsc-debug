@@ -41,7 +41,7 @@ export class LogDescriptor extends LocOnlyDescriptor {
             this.condition       = "";
             this.triggerWhenTrue = true,
             this.message         = message;
-            this.msgIsArgList    = false;
+            this.msgIsArgList    = true;
             this.threadSpecific  = false;
             this.threadId        = 0;
         }
