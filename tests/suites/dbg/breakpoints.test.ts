@@ -6,6 +6,8 @@ import { debugAdapterSuite } from "./debugAdapterSuite";
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { TestUtils } from "../testUtils";
 import { TestConfiguration } from "../testConfiguration";
+import { CustomRequest } from "../../../src/dap/customRequest";
+import { CodeBreakpointMode } from "../../../src/dap/breakpoints/breakpointMode";
 
 debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
 
@@ -266,6 +268,123 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                     ),
                     dc().continueRequest({ threadId: 0, singleThread: true }),
                 ]);
+            }),
+        ]);
+    });
+
+    test("Supports breakpoint modes", function() {
+        return Promise.all([
+            dc().launch(dbgConfig()),
+            dc().waitForEvent("stopped").then(async() => {
+                const response = await dc().customRequest(CustomRequest.Names.GET_BREAKPOINT_MODES);
+                Assert(response.success);
+                const supportedModes: CustomRequest.GetBreakpointModesResponse = response.body;
+                if (!supportedModes.includes(CodeBreakpointMode.TraceStart)) {
+                    this.skip();
+                    return;
+                }
+
+                // Make sure we can set an explicit mode for breakpoints (e.g.
+                // clicking "Edit breakpoint" in VS Code)
+                {
+                    const bpRes = await dc().setBreakpointsRequest({
+                        source: { path: utilsFile() },
+                        breakpoints: [
+                            { line: 26, mode: CodeBreakpointMode.TraceStart },
+                        ],
+                    });
+                    Assert(bpRes.success);
+                    Assert(bpRes.body.breakpoints[0]);
+                    Assert(bpRes.body.breakpoints[0].verified);
+                    Assert(bpRes.body.breakpoints[0].message);
+                    Assert.match(bpRes.body.breakpoints[0].message, /TraceStart/);
+                }
+
+                // Make sure we can use our custom requests to set the mode
+                {
+                    const res = await dc().customRequest(
+                        CustomRequest.Names.SET_BREAKPOINT_MODE,
+                        CodeBreakpointMode.TraceStart,
+                    );
+                    Assert(res.success);
+
+                    const bpRes = await dc().setBreakpointsRequest({
+                        source: { path: utilsFile() },
+                        breakpoints: [{ line: 26 }],
+                    });
+                    Assert(bpRes.success);
+                    Assert(bpRes.body.breakpoints[0]);
+                    Assert(bpRes.body.breakpoints[0].verified);
+                    Assert(bpRes.body.breakpoints[0].message);
+                    Assert.match(bpRes.body.breakpoints[0].message, /TraceStart/);
+
+                    // Change back to auto for further testing
+                    const res2 = await dc().customRequest(
+                        CustomRequest.Names.SET_BREAKPOINT_MODE,
+                        CodeBreakpointMode.Auto,
+                    );
+                    Assert(res2.success);
+                }
+
+                // Make sure we can use our custom console commands to set the mode
+                {
+                    // First figure out what the command is called
+                    const res = await dc().completionsRequest({
+                        text: "",
+                        column: 0,
+                    });
+                    Assert(res.success);
+                    const command = res.body.targets.find(item =>
+                        item.label.includes("trace_start")
+                    );
+                    Assert(
+                        command,
+                        "Did not find a command to use: " +
+                            res.body.targets.map(item => item.label).join(", "),
+                    );
+                    const res2 = await dc().evaluateRequest({
+                        expression: command.label,
+                        context: "repl",
+                    });
+                    Assert(res2.success);
+
+                    const bpRes = await dc().setBreakpointsRequest({
+                        source: { path: utilsFile() },
+                        breakpoints: [{ line: 26 }],
+                    });
+                    Assert(bpRes.success);
+                    Assert(bpRes.body.breakpoints[0]);
+                    Assert(bpRes.body.breakpoints[0].verified);
+                    Assert(bpRes.body.breakpoints[0].message);
+                    Assert.match(bpRes.body.breakpoints[0].message, /TraceStart/);
+
+                    // Change back to auto for further testing
+                    const res3 = await dc().customRequest(
+                        CustomRequest.Names.SET_BREAKPOINT_MODE,
+                        CodeBreakpointMode.Auto,
+                    );
+                    Assert(res3.success);
+                }
+
+                // Make sure we fail with an error message if the user chooses
+                // an unsupported mode
+                {
+                    const unsupportedMode = Object.values(CodeBreakpointMode).find(
+                        mode => !supportedModes.includes(mode),
+                    );
+                    if (unsupportedMode) {
+                        const bpRes = await dc().setBreakpointsRequest({
+                            source: { path: utilsFile() },
+                            breakpoints: [
+                                { line: 26, mode: unsupportedMode },
+                            ],
+                        });
+                        Assert(bpRes.success);
+                        Assert(bpRes.body.breakpoints[0]);
+                        Assert(!bpRes.body.breakpoints[0].verified);
+                        Assert(bpRes.body.breakpoints[0].message);
+                    }
+                }
             }),
         ]);
     });

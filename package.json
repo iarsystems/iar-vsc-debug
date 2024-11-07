@@ -46,8 +46,8 @@
 		"@emotion/css": "^11.11.2",
 		"@floating-ui/dom": "^1.6.7",
 		"@vscode/codicons": "^0.0.36",
-		"@vscode/debugadapter": "^1.57.0",
-		"@vscode/debugprotocol": "^1.57.0",
+		"@vscode/debugadapter": "^1.68.0",
+		"@vscode/debugprotocol": "^1.68.0",
 		"@vscode/webview-ui-toolkit": "^1.4.0",
 		"async-mutex": "^0.3.2",
 		"await-notify": "1.0.1",
@@ -71,7 +71,7 @@
 		"@typescript-eslint/eslint-plugin": "^5.2.0",
 		"@typescript-eslint/parser": "^5.2.0",
 		"@typescript/lib-dom": "npm:@types/web@^0.0.69",
-		"@vscode/debugadapter-testsupport": "^1.57.0",
+		"@vscode/debugadapter-testsupport": "^1.68.0",
 		"copy-webpack-plugin": "^12.0.2",
 		"eslint": "^8.56.0",
 		"eslint-plugin-deprecation": "^1.3.2",
@@ -120,12 +120,18 @@
 				},
 				"iar-debug.breakpointType": {
 					"default": "Auto",
-					"description": "Whether to set hardware- or software breakpoints. This only affects drivers that support it. Changing this setting will not affect already installed breakpoints in active sessions.",
+					"description": "The breakpoint mode to use when a specific mode has not been set. Note that most breakpoint modes are not supported by all drivers.",
 					"type": "string",
 					"enum": [
 						"Auto",
 						"Hardware",
-						"Software"
+						"Software",
+						"Trace Start",
+						"Trace Stop",
+						"Trace Filter",
+						"Flash",
+						"Timer Start",
+						"Timer Stop"
 					],
 					"enumDescriptions": [
 						"Use the driver's default breakpoint type.",
@@ -245,22 +251,88 @@
 				"title": "Set Breakpoint Type: Software"
 			},
 			{
+				"command": "iar.useTraceStartBreakpoints",
+				"category": "IAR Debug",
+				"title": "Set Breakpoint Type: Trace Start"
+			},
+			{
+				"command": "iar.useTraceStopBreakpoints",
+				"category": "IAR Debug",
+				"title": "Set Breakpoint Type: Trace Stop"
+			},
+			{
+				"command": "iar.useTraceFilterBreakpoints",
+				"category": "IAR Debug",
+				"title": "Set Breakpoint Type: Trace Filter"
+			},
+			{
+				"command": "iar.useFlashBreakpoints",
+				"category": "IAR Debug",
+				"title": "Set Breakpoint Type: Flash"
+			},
+			{
+				"command": "iar.useTimerStartBreakpoints",
+				"category": "IAR Debug",
+				"title": "Set Breakpoint Type: Timer Start"
+			},
+			{
+				"command": "iar.useTimerStopBreakpoints",
+				"category": "IAR Debug",
+				"title": "Set Breakpoint Type: Timer Stop"
+			},
+			{
 				"command": "iar.useAutoBreakpointsActive",
 				"category": "IAR Debug",
 				"title": "Set Breakpoint Type: Auto (Current Session Only)",
-				"enablement": "debugType == cspy && !iar-debug.noAutoBreakpoints"
+				"enablement": "debugType == cspy && iar-debug.autoBreakpointsSupported"
 			},
 			{
 				"command": "iar.useHardwareBreakpointsActive",
 				"category": "IAR Debug",
 				"title": "Set Breakpoint Type: Hardware (Current Session Only)",
-				"enablement": "debugType == cspy && !iar-debug.noHardwareBreakpoints"
+				"enablement": "debugType == cspy && iar-debug.hardwareBreakpointsSupported"
 			},
 			{
 				"command": "iar.useSoftwareBreakpointsActive",
 				"category": "IAR Debug",
 				"title": "Set Breakpoint Type: Software (Current Session Only)",
-				"enablement": "debugType == cspy && !iar-debug.noSoftwareBreakpoints"
+				"enablement": "debugType == cspy && iar-debug.softwareBreakpointsSupported"
+			},
+			{
+				"command": "iar.useTraceStartBreakpointsActive",
+				"category": "IAR Debug",
+				"title": "Set Breakpoint Type: Trace Start (Current Session Only)",
+				"enablement": "debugType == cspy && iar-debug.traceStartBreakpointsSupported"
+			},
+			{
+				"command": "iar.useTraceStopBreakpointsActive",
+				"category": "IAR Debug",
+				"title": "Set Breakpoint Type: Trace Stop (Current Session Only)",
+				"enablement": "debugType == cspy && iar-debug.traceStopBreakpointsSupported"
+			},
+			{
+				"command": "iar.useTraceFilterBreakpointsActive",
+				"category": "IAR Debug",
+				"title": "Set Breakpoint Type: Trace Filter (Current Session Only)",
+				"enablement": "debugType == cspy && iar-debug.traceFilterBreakpointsSupported"
+			},
+			{
+				"command": "iar.useFlashBreakpointsActive",
+				"category": "IAR Debug",
+				"title": "Set Breakpoint Type: Flash (Current Session Only)",
+				"enablement": "debugType == cspy && iar-debug.flashBreakpointsSupported"
+			},
+			{
+				"command": "iar.useTimerStartBreakpointsActive",
+				"category": "IAR Debug",
+				"title": "Set Breakpoint Type: Timer Start (Current Session Only)",
+				"enablement": "debugType == cspy && iar-debug.timerStartBreakpointsSupported"
+			},
+			{
+				"command": "iar.useTimerStopBreakpointsActive",
+				"category": "IAR Debug",
+				"title": "Set Breakpoint Type: Timer Stop (Current Session Only)",
+				"enablement": "debugType == cspy && iar-debug.timerStopBreakpointsSupported"
 			},
 			{
 				"command": "iar.enableMulticoreLockstepMode",
@@ -354,7 +426,7 @@
 				{
 					"icon": "debug",
 					"id": "iar-debug",
-					"title": "iar Debug"
+					"title": "IAR Trace"
 				}
 			]
 		},

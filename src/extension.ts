@@ -6,7 +6,7 @@
 import * as vscode from "vscode";
 import { CSpyDebugSession } from "./dap/cspyDebug";
 import { DebugSessionTracker } from "./debugSessionTracker";
-import { BreakpointTypesFrontend } from "./breakpointTypesFrontend";
+import { BreakpointModesFrontend } from "./breakpointModesFrontend";
 import { DefaultCSpyConfigurationResolver, CSpyConfigurationsProvider, InitialCSpyConfigurationProvider, PartialCSpyConfigurationProvider } from "./configproviders/cspyConfigurationProviders";
 import { CustomRequest } from "./dap/customRequest";
 import { logger } from "iar-vsc-common/logger";
@@ -55,7 +55,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     sessionTracker = new DebugSessionTracker(context);
     MulticoreLockstepModeFrontend.initialize(context, sessionTracker);
-    BreakpointTypesFrontend.initialize(context, sessionTracker);
+    BreakpointModesFrontend.initialize(context, sessionTracker);
     ContextChangedHandler.initialize();
     CustomCommandsFrontend.initialize(context, sessionTracker);
 

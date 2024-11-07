@@ -9,7 +9,6 @@ import * as path from "path";
 import * as fs from "fs";
 import { OsUtils } from "iar-vsc-common/osUtils";
 import { TestUtils } from "../testUtils";
-import { BreakpointType } from "../../../src/dap/breakpoints/cspyBreakpointService";
 import { TestConfiguration } from "../testConfiguration";
 
 suite("Configuration resolution tests", () => {
@@ -49,7 +48,6 @@ suite("Configuration resolution tests", () => {
             target: "arm",
             program: existantFile,
             stopOnSymbol: "main",
-            breakpointType: BreakpointType.AUTO,
             trace: true,
             workbenchPath: workbench,
             projectPath: existantDir,

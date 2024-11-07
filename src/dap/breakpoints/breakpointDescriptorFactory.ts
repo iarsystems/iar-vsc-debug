@@ -10,6 +10,9 @@ import { LocOnlyDescriptor } from "./descriptors/locOnlyDescriptor";
 import { EmulDataBreakpointDescriptor } from "./descriptors/emulDataBreakpointDescriptor";
 import { LogDescriptor } from "./descriptors/logDescriptor";
 import { EmulDataBreakBreakpointDescriptor } from "./descriptors/emulDataBreakBreakpointDescriptor";
+import { EmulTraceBreakpointAccessType, EmulTraceBreakpointDescriptor } from "./descriptors/emulTraceBreakpointDescriptor";
+import { TdlEmulTraceBreakpointAccessType, TdlEmulTraceDescriptor } from "./descriptors/tdlEmulTraceBreakpointDescriptor";
+import { EmuTimerBreakpointDescriptor } from "./descriptors/emuTimerBreakpointDescriptor";
 
 /**
  * Creates code breakpoint descriptors. Does not registers them in the cspy backend.
@@ -72,6 +75,20 @@ export class StdCode2BreakpointDescriptorFactory implements CodeBreakpointDescri
     }
 }
 
+export class StdTraceStart2BreakpointDescriptorFactory implements CodeBreakpointDescriptorFactory {
+
+    createOnUle(ule: string): LocOnlyDescriptor {
+        return new LocOnlyDescriptor([BreakpointCategory.STD_TRACE_START2, ule]);
+    }
+}
+
+export class StdTraceStop2BreakpointDescriptorFactory implements CodeBreakpointDescriptorFactory {
+
+    createOnUle(ule: string): LocOnlyDescriptor {
+        return new LocOnlyDescriptor([BreakpointCategory.STD_TRACE_STOP2, ule]);
+    }
+}
+
 export class HwCodeBreakpointDescriptorFactory implements CodeBreakpointDescriptorFactory {
 
     createOnUle(ule: string): LocOnlyDescriptor {
@@ -90,6 +107,85 @@ export class EmuSwCodeBreakpointDescriptorFactory implements CodeBreakpointDescr
 
     createOnUle(ule: string): LocOnlyDescriptor {
         return new LocOnlyDescriptor([BreakpointCategory.EMUL_SW_CODE, ule]);
+    }
+}
+
+export class EmulFlashBreakpointDescriptorFactory implements CodeBreakpointDescriptorFactory {
+
+    createOnUle(ule: string): LocOnlyDescriptor {
+        return new LocEtcDescriptor([BreakpointCategory.EMUL_FLASH, ule]);
+    }
+}
+
+export class EmulTraceStartBreakpointDescriptorFactory implements CodeBreakpointDescriptorFactory {
+    createOnUle(ule: string): LocOnlyDescriptor {
+        return new EmulTraceBreakpointDescriptor([
+            BreakpointCategory.EMUL_TRACE_START,
+            ule,
+            EmulTraceBreakpointAccessType.Fetch,
+        ]);
+    }
+}
+export class EmulTraceStopBreakpointDescriptorFactory implements CodeBreakpointDescriptorFactory {
+    createOnUle(ule: string): LocOnlyDescriptor {
+        return new EmulTraceBreakpointDescriptor([
+            BreakpointCategory.EMUL_TRACE_STOP,
+            ule,
+            EmulTraceBreakpointAccessType.Fetch,
+        ]);
+    }
+}
+export class EmulTraceFilterBreakpointDescriptorFactory implements CodeBreakpointDescriptorFactory {
+    createOnUle(ule: string): LocOnlyDescriptor {
+        return new EmulTraceBreakpointDescriptor([
+            BreakpointCategory.EMUL_TRACE_FILTER,
+            ule,
+            EmulTraceBreakpointAccessType.Fetch,
+        ]);
+    }
+}
+
+export class TdlEmulTraceStartBreakpointDescriptorFactory implements CodeBreakpointDescriptorFactory {
+    createOnUle(ule: string): LocOnlyDescriptor {
+        return new TdlEmulTraceDescriptor([
+            BreakpointCategory.TDL_EMUL_TRACE_START,
+            ule,
+            TdlEmulTraceBreakpointAccessType.Fetch,
+        ]);
+    }
+}
+
+export class TdlEmulTraceStopBreakpointDescriptorFactory implements CodeBreakpointDescriptorFactory {
+    createOnUle(ule: string): LocOnlyDescriptor {
+        return new TdlEmulTraceDescriptor([
+            BreakpointCategory.TDL_EMUL_TRACE_STOP,
+            ule,
+            TdlEmulTraceBreakpointAccessType.Fetch,
+        ]);
+    }
+}
+
+export class EmuTimerStartBreakpointDescriptorFactory implements CodeBreakpointDescriptorFactory {
+    createOnUle(ule: string): LocOnlyDescriptor {
+        return new EmuTimerBreakpointDescriptor([
+            BreakpointCategory.EMU_TIMER_START,
+            ule,
+            // There are 4 different timers that can be started/stopped independently.
+            // We have no way to change which timer instance to use at the moment...
+            1,
+        ]);
+    }
+}
+
+export class EmuTimerStopBreakpointDescriptorFactory implements CodeBreakpointDescriptorFactory {
+    createOnUle(ule: string): LocOnlyDescriptor {
+        return new EmulDataBreakpointDescriptor([
+            BreakpointCategory.EMU_TIMER_STOP,
+            ule,
+            // There are 4 different timers that can be started/stopped independently.
+            // We have no way to change which timer instance to use at the moment...
+            1,
+        ]);
     }
 }
 

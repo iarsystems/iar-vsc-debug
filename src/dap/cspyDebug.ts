@@ -13,7 +13,7 @@ import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, SessionConfiguration, ModuleLoadingOptions, DkNotifyConstant } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
 import { CSpyContextService } from "./contexts/cspyContextService";
-import { BreakpointType, CSpyBreakpointService } from "./breakpoints/cspyBreakpointService";
+import { CSpyBreakpointService } from "./breakpoints/cspyBreakpointService";
 import { LaunchArgumentConfigurationResolver}  from "./configresolution/launchArgumentConfigurationResolver";
 import { CSpyException, DcResultConstant } from "iar-vsc-common/thrift/bindings/shared_types";
 import { LIBSUPPORT_SERVICE } from "iar-vsc-common/thrift/bindings/libsupport_types";
@@ -37,9 +37,11 @@ import { TIMELINE_FRONTEND_SERVICE } from "iar-vsc-common/thrift/bindings/timeli
 import { CSpyCoresService } from "./contexts/cspyCoresService";
 import { CSpyRunControlService } from "./contexts/cspyRunControlService";
 import { MulticoreProtocolExtension } from "./multicoreProtocolExtension";
-import { BreakpointTypeProtocolExtension } from "./breakpoints/breakpointTypeProtocolExtension";
+import { BreakpointModeProtocolExtension } from "./breakpoints/breakpointModeProtocolExtension";
 import { WorkbenchFeatures} from "iar-vsc-common/workbenchfeatureregistry";
 import { ThriftServiceRegistryProcess } from "iar-vsc-common/thrift/thriftServiceRegistryProcess";
+import { BreakpointModes } from "./breakpoints/breakpointMode";
+import { ExceptionBreakpoints } from "./breakpoints/exceptionBreakpoint";
 
 
 /**
@@ -58,9 +60,9 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
     stopOnEntry?: boolean;
     /** A symbol for the debugger to run to when starting the debug session. Specify true to stop immediately after launch. Specify false to avoid stopping at all. */
     stopOnSymbol?: string | boolean;
-    /** The type of breakpoint to use by default. This is a hidden option; it isn't normally provided directly in the
+    /** The mode of breakpoint to use by default. This is a hidden option; it isn't normally provided directly in the
     * launch.json (it's not declared in package.json). Instead, it is provided from the user's selection in the UI. */
-    breakpointType?: BreakpointType;
+    breakpointMode?: string,
     /** For multicore sessions, whether to enable lockstep mode (i.e. whether continue/step/pause should affect all cores, or
     * just the selected one). Hidden option, see above. */
     multicoreLockstepModeEnabled?: boolean;
@@ -136,7 +138,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
         memoryService: CspyMemoryService;
 
         // Helpers for some of our DAP extensions
-        breakpointTypeExtension: BreakpointTypeProtocolExtension;
+        breakpointModeExtension: BreakpointModeProtocolExtension;
         multicoreExtension?: MulticoreProtocolExtension;
     } = undefined;
 
@@ -193,6 +195,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
         response.body.supportsHitConditionalBreakpoints = true;
         response.body.supportsDataBreakpoints = true;
         response.body.supportsLogPoints = true;
+        response.body.breakpointModes = BreakpointModes.getBreakpointModes();
+        response.body.exceptionBreakpointFilters = ExceptionBreakpoints.getExceptionFilters();
 
         this.clientLinesStartAt1 = args.linesStartAt1 || false;
         this.clientColumnsStartAt1 = args.columnsStartAt1 || false;
@@ -289,6 +293,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.sendEvent(new OutputEvent("Using C-SPY version: " + await cspyDebugger.service.getVersionString() + "\n"));
 
             await cspyDebugger.service.startSession(sessionConfig);
+            if (await cspyDebugger.service.supportsExceptions())
+                await cspyDebugger.service.setBreakOnThrow(true);
 
             if (args.download) {
                 await Utils.loadMacros(cspyDebugger.service, args.download.deviceMacros ?? []);
@@ -362,8 +368,12 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 CustomRequest.Names.GET_REGISTRY_LOCATION,
                 () => cspyProcess.serviceRegistry.registryLocation,
             );
-            const breakpointTypeExtension = new BreakpointTypeProtocolExtension(driver, this, args.breakpointType,
-                this.customRequestRegistry, this.consoleCommandRegistry);
+            const breakpointModeExtension = new BreakpointModeProtocolExtension(
+                breakpointManager,
+                this,
+                args.breakpointMode && BreakpointModes.isBreakpointMode(args.breakpointMode) ? args.breakpointMode : undefined,
+                this.customRequestRegistry,
+                this.consoleCommandRegistry);
             this.customRequestRegistry.registerCommand(CustomRequest.Names.REGISTERS, async(): Promise<CustomRequest.RegistersResponse> => {
                 return { svdContent: await registerInfoGenerator.getSvdXml() };
             });
@@ -422,7 +432,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 disassemblyService: disassemblyManager,
                 memoryService: memoryManager,
                 multicoreExtension,
-                breakpointTypeExtension,
+                breakpointModeExtension: breakpointModeExtension,
             };
             this.teardown.pushFunction(() => (this.services = undefined));
         } catch (e) {
@@ -474,14 +484,14 @@ export class CSpyDebugSession extends LoggingDebugSession {
         }
         if (doStop) {
             if (stopSymbol) {
-                await this.services.runControlService.runToULE(undefined, stopSymbol);
+                await this.services?.runControlService.runToULE(undefined, stopSymbol);
             } else {
                 // Use the initial entry state. Since no coreStopped event will be emitted, we must notify the client
                 // here that all cores are stopped.
                 this.sendStoppedEvent(0, "entry", true);
             }
         } else {
-            await this.services.runControlService.continue(undefined);
+            await this.services?.runControlService.continue(undefined);
         }
     }
 
@@ -568,8 +578,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     protected override async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments) {
         await this.tryWithServices(response, async(services) => {
-            const bps = await services.breakpointService.setBreakpointsFor(args.source, args.breakpoints ?? [],
-                services.breakpointTypeExtension.getBreakpointType());
+            const bps = await services.breakpointService.setBreakpointsFor(args.source, args.breakpoints ?? []);
             response.body = {
                 breakpoints: bps,
             };
@@ -578,8 +587,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
     }
     protected override async setInstructionBreakpointsRequest(response: DebugProtocol.SetInstructionBreakpointsResponse, args: DebugProtocol.SetInstructionBreakpointsArguments) {
         await this.tryWithServices(response, async(services) => {
-            const bps = await services.breakpointService.setInstructionBreakpoints(args.breakpoints,
-                services.breakpointTypeExtension.getBreakpointType());
+            const bps = await services.breakpointService.setInstructionBreakpoints(args.breakpoints);
             response.body = {
                 breakpoints: bps,
             };
@@ -614,6 +622,13 @@ export class CSpyDebugSession extends LoggingDebugSession {
                     canPersist: true,
                 };
             }
+        });
+        this.sendResponse(response);
+    }
+    protected override async setExceptionBreakPointsRequest(response: DebugProtocol.SetExceptionBreakpointsResponse, args: DebugProtocol.SetExceptionBreakpointsArguments) {
+        await this.tryWithServices(response, async services => {
+            await ExceptionBreakpoints.setEnabledExceptionFilters(
+                args.filters, services.cspyDebugger.service);
         });
         this.sendResponse(response);
     }

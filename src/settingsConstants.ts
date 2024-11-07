@@ -10,13 +10,7 @@ export namespace SettingsConstants {
 	// The section all settings use (passed to vscode.workspace.getConfiguration)
 	export const MAIN_SECTION = "iar-debug";
 
-	export const BREAKPOINT_TYPE = "breakpointType";
-	// Ought to match the enum in package.json
-	export enum BreakpointTypeValue {
-		AUTO = "Auto",
-		HARDWARE = "Hardware",
-		SOFTWARE = "Software",
-	}
+	export const BREAKPOINT_MODE = "breakpointType";
 
 	export const LOCKSTEP_MODE_ENABLED = "enableMulticoreLockstepMode";
 
