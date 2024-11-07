@@ -4,7 +4,7 @@
 
 import { DebugProtocol } from "@vscode/debugprotocol";
 import * as vscode from "vscode";
-import { CSpyLaunchRequestArguments } from "./dap/cspyDebug";
+import { PartialCSpyLaunchRequestArguments } from "./dap/cspyDebug";
 import { CustomRequest } from "./dap/customRequest";
 import { DebugSessionTracker } from "./debugSessionTracker";
 import { SettingsConstants } from "./settingsConstants";
@@ -21,7 +21,7 @@ export namespace MulticoreLockstepModeFrontend {
         // When a session starts, we inject the current selection of breakpoint type to the launch config,
         // so that the debugger starts with the correct type.
         context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", {
-            resolveDebugConfiguration(_, config: vscode.DebugConfiguration & Partial<CSpyLaunchRequestArguments>) {
+            resolveDebugConfiguration(_, config: vscode.DebugConfiguration & PartialCSpyLaunchRequestArguments) {
                 // Allow overriding the user setting from launch.json, even if we don't advertise that possibility anywhere
                 if (config.multicoreLockstepModeEnabled === undefined) {
                     const lockstepModeEnabled = vscode.workspace.getConfiguration(SettingsConstants.MAIN_SECTION).get<boolean>(SettingsConstants.LOCKSTEP_MODE_ENABLED);

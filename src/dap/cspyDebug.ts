@@ -43,7 +43,6 @@ import { ThriftServiceRegistryProcess } from "iar-vsc-common/thrift/thriftServic
 import { BreakpointModes } from "./breakpoints/breakpointMode";
 import { ExceptionBreakpoints } from "./breakpoints/exceptionBreakpoint";
 
-
 /**
  * This interface describes the cspy-debug specific launch attributes
  * (which are not part of the Debug Adapter Protocol), which the DAP client
@@ -51,7 +50,7 @@ import { ExceptionBreakpoints } from "./breakpoints/exceptionBreakpoint";
  * The schema for these attributes lives in the package.json of this extension,
  * and this interface should always match that schema.
  */
-export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
+export interface PartialCSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
     /** The name of the target in lower case (e.g. arm) */
     target: string;
     /** An absolute path to the "program" to debug. */
@@ -108,9 +107,26 @@ export interface CSpyLaunchRequestArguments extends DebugProtocol.LaunchRequestA
 }
 
 /**
+ * Fields that are listed as optional in the package.json file and
+ * {@link PartialCSpyLaunchRequestArguments} but must actually be defined to
+ * start a session. This may be because their values may be filled in
+ * automatically by one of the extension's config providers.
+ */
+type RequiredFields = "program" | "driver" | "driverOptions" | "target";
+/**
+ * The minimal arguments to start a debug session. While
+ * {@link CSpyLaunchRequestArguments} represents what VS Code will send us (i.e.
+ * what VS Code's validation will allow), this type is stricter and represents
+ * what we actually *require* to start a debug session.
+ */
+export type CSpyLaunchRequestArguments = PartialCSpyLaunchRequestArguments &
+    Required<Pick<PartialCSpyLaunchRequestArguments, RequiredFields>>;
+
+
+/**
  * The Attach request is basically the same as the launch request, but the not all fields are used.
  */
-type CSpyAttachRequestArguments = Omit<CSpyLaunchRequestArguments, "stopOnEntry" | "stopOnSymbol">;
+type PartialCSpyAttachRequestArguments = Omit<PartialCSpyLaunchRequestArguments, "stopOnEntry" | "stopOnSymbol">;
 
 /**
  * Manages a debugging session between VS Code and C-SPY (via CSpyServer2)
@@ -221,9 +237,34 @@ export class CSpyDebugSession extends LoggingDebugSession {
      * - Connecting to necessary CSpyServer services (for breakpoints, context management and more).
      * - Setting up our DAP extension requests (see {@link CustomRequest}).
      */
-    protected async startDebugSession(response: DebugProtocol.LaunchResponse | DebugProtocol.AttachResponse, args: CSpyLaunchRequestArguments, isAttachRequest: boolean) {
+    protected async startDebugSession(response: DebugProtocol.LaunchResponse | DebugProtocol.AttachResponse, args: PartialCSpyLaunchRequestArguments, isAttachRequest: boolean) {
         logger.init(e => this.sendEvent(e), undefined, true);
         logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop);
+
+        function isDefined<T extends PartialCSpyLaunchRequestArguments, K extends keyof T>(args: T, field: K): args is T & Required<Pick<T, K>> {
+            if (field in args) {
+                return true;
+            }
+            response.success = false;
+            response.message = `Missing required field '${field.toString()}'.`;
+            return false;
+        }
+        if (!isDefined(args, "program")) {
+            this.sendResponse(response);
+            return;
+        }
+        if (!isDefined(args, "driver")) {
+            this.sendResponse(response);
+            return;
+        }
+        if (!isDefined(args, "driverOptions")) {
+            this.sendResponse(response);
+            return;
+        }
+        if (!isDefined(args, "target")) {
+            this.sendResponse(response);
+            return;
+        }
 
         try {
             // -- Launch CSpyServer --
@@ -495,11 +536,11 @@ export class CSpyDebugSession extends LoggingDebugSession {
         }
     }
 
-    protected override async launchRequest(response: DebugProtocol.LaunchResponse, args: CSpyLaunchRequestArguments) {
+    protected override async launchRequest(response: DebugProtocol.LaunchResponse, args: PartialCSpyLaunchRequestArguments) {
         await this.startDebugSession(response, args, false);
     }
 
-    protected override async attachRequest(response: DebugProtocol.AttachResponse, args: CSpyAttachRequestArguments) {
+    protected override async attachRequest(response: DebugProtocol.AttachResponse, args: PartialCSpyAttachRequestArguments) {
         // We convert the attach request into a CSpyLaunchRequestArguments with some special options.
         const launchArgs: CSpyLaunchRequestArguments = {
             ...args,

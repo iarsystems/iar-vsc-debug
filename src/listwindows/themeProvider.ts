@@ -5,7 +5,7 @@
 import * as vscode from "vscode";
 import { CustomEvent, CustomRequest } from "../dap/customRequest";
 import * as Color from "color";
-import { CSpyLaunchRequestArguments } from "../dap/cspyDebug";
+import { PartialCSpyLaunchRequestArguments } from "../dap/cspyDebug";
 
 // A mapping of css variables to their values
 type CssVars = Record<string, string>;
@@ -89,7 +89,7 @@ export class ThemeProvider implements vscode.WebviewViewProvider, vscode.Disposa
             }),
         );
         this.disposables.push(vscode.debug.registerDebugConfigurationProvider("cspy", {
-            resolveDebugConfiguration(_folder, debugConfiguration: vscode.DebugConfiguration & Partial<CSpyLaunchRequestArguments>) {
+            resolveDebugConfiguration(_folder, debugConfiguration: vscode.DebugConfiguration & PartialCSpyLaunchRequestArguments) {
                 // This tells the debug adapter that we can respond to theme requests
                 debugConfiguration.enableThemeLookup ??= true;
                 return debugConfiguration;

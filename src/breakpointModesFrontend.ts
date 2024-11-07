@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import * as vscode from "vscode";
-import { CSpyLaunchRequestArguments } from "./dap/cspyDebug";
+import { PartialCSpyLaunchRequestArguments } from "./dap/cspyDebug";
 import { CustomRequest } from "./dap/customRequest";
 import { DebugSessionTracker } from "./debugSessionTracker";
 import { SettingsConstants } from "./settingsConstants";
@@ -39,7 +39,7 @@ export namespace BreakpointModesFrontend {
         // When a session starts, we inject the current selection of breakpoint mode to the launch config,
         // so that the debugger starts with the correct type.
         context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider("cspy", {
-            resolveDebugConfiguration(_, config: vscode.DebugConfiguration & Partial<CSpyLaunchRequestArguments>) {
+            resolveDebugConfiguration(_, config: vscode.DebugConfiguration & PartialCSpyLaunchRequestArguments) {
                 // Allow overriding the user setting from launch.json, even if we don't advertise that possibility anywhere
                 if (!config.breakpointMode) {
                     const bpModeSetting = vscode.workspace.

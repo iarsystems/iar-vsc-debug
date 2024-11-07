@@ -16,7 +16,7 @@ import { TraceClient } from "./clients/traceLegacyClient";
 import { RegisterClient } from "./clients/registersLegacyClient";
 import { SymbolicMemoryClient } from "./clients/symbolicMemoryLegacyClient";
 import { StackClient } from "./clients/stackLegacyClient";
-import { CSpyLaunchRequestArguments } from "../dap/cspyDebug";
+import { PartialCSpyLaunchRequestArguments } from "../dap/cspyDebug";
 import { FormViewProvider } from "../forms/formViewProvider";
 import { CodeCoverageClient } from "./clients/codeCoverageLegacyClient";
 
@@ -146,7 +146,7 @@ export class ListwindowManager {
         this.formView = new FormViewProvider(context);
 
         vscode.debug.registerDebugConfigurationProvider("cspy", {
-            resolveDebugConfiguration(_folder, debugConfiguration: vscode.DebugConfiguration & Partial<CSpyLaunchRequestArguments>) {
+            resolveDebugConfiguration(_folder, debugConfiguration: vscode.DebugConfiguration & PartialCSpyLaunchRequestArguments) {
                 // This tells the debug adapter that we can respond to listwindow requests.
                 debugConfiguration.enableListWindowLookup ??= true;
                 return debugConfiguration;

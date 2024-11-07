@@ -5,7 +5,7 @@ import { Workbench } from "iar-vsc-common/workbench";
 import * as vscode from "vscode";
 import { CSpyDriver } from "../dap/breakpoints/cspyDriver";
 import { CSpyConfigurationSupplier, CSpyConfigurationSupplier as LaunchConfigurationSupplier } from "./supplier/supplier";
-import { CSpyLaunchRequestArguments } from "../dap/cspyDebug";
+import { PartialCSpyLaunchRequestArguments } from "../dap/cspyDebug";
 
 /**
  * Provides a list of automatic launch.json configurations from a workspace folder containing .ewp projects
@@ -31,7 +31,7 @@ implements vscode.DebugConfigurationProvider {
     async resolveDebugConfigurationWithSubstitutedVariables?(
         _folder: vscode.WorkspaceFolder | undefined,
         debugConfiguration: vscode.DebugConfiguration &
-            Partial<CSpyLaunchRequestArguments>,
+            PartialCSpyLaunchRequestArguments,
         _?: vscode.CancellationToken,
     ): Promise<vscode.DebugConfiguration | null | undefined> {
         if (
