@@ -15,4 +15,16 @@ export namespace SettingsConstants {
 	export const LOCKSTEP_MODE_ENABLED = "enableMulticoreLockstepMode";
 
 	export const FIT_CONTENT_TO_VIEW = "fitContentToViewWidth";
+
+	export const BUILD_BEFORE_DEBUGGING = "buildBeforeDebugging";
+
+	/**
+	 * Possible values for the BUILD_BEFORE_DEBUGGING setting
+	 */
+    export enum BuildBeforeDebuggingValue {
+		Disabled             = "Disabled",
+        AskOnFailure         = "AskOnFailure",
+        AbortOnFailure       = "AbortOnFailure",
+        DebugAnywayOnFailure = "DebugAnywayOnFailure",
+    }
 }

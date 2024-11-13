@@ -6,6 +6,7 @@ import * as Path from "path";
 import { CSpyLaunchRequestArguments } from "../../dap/cspyDebug";
 import { OsUtils } from "iar-vsc-common/osUtils";
 import { CSpyDriver } from "../../dap/breakpoints/cspyDriver";
+import { SettingsConstants } from "../../settingsConstants";
 
 /**
  * Helpers for creating/resolving C-SPY debug configurations
@@ -84,6 +85,10 @@ export namespace ConfigResolutionCommon {
             }
         }
 
+        const buildBeforeDebugging = vscode.workspace.
+            getConfiguration(SettingsConstants.MAIN_SECTION).
+            get<string>(SettingsConstants.BUILD_BEFORE_DEBUGGING);
+
         // Assemble the configuration
         const config: vscode.DebugConfiguration & CSpyLaunchRequestArguments = {
             type: "cspy",
@@ -97,6 +102,7 @@ export namespace ConfigResolutionCommon {
             projectPath: project,
             projectConfiguration: parts.configuration,
             driverOptions: parts.driverOptions,
+            buildBeforeDebugging,
         };
 
         if (parts.setupMacros.length > 0) {

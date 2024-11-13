@@ -94,6 +94,8 @@ export interface PartialCSpyLaunchRequestArguments extends DebugProtocol.LaunchR
     sourceFileMap?: Record<string, string>;
     /** For hardware sessions, ask the driver to not terminate the target when the debug sessions ends. */
     leaveTargetRunning?: boolean
+    /** Not used by the debug adapter, only by the VS Code extension */
+    buildBeforeDebugging?: string;
     /** Hidden option. Allows starting sessions with any target (although it might not work) */
     bypassTargetRestriction?: boolean;
     /** Hidden option. Enables the debug adapter to ask the client for a theme definition. This is

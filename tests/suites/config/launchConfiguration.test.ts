@@ -62,6 +62,9 @@ suite("Configuration tests", () => {
                 }
                 return Promise.resolve(undefined);
             },
+            buildProject(_projectPath, _configuration) {
+                return Promise.resolve();
+            },
         });
     });
 
