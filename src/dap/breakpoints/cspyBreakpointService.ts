@@ -17,6 +17,7 @@ import { LocEtcDescriptor } from "./descriptors/locEtcDescriptor";
 import { BreakpointDescriptor } from "./descriptors/breakpointDescriptor";
 import { CodeBreakpointMode } from "./breakpointMode";
 import { AccessType } from "./descriptors/accessType";
+import { OutputEvent } from "@vscode/debugadapter";
 
 // A breakpoint which has been set in the cspy backend (it isn't necessary valid, just validated and known in the backend)
 interface InstalledBreakpoint<Bp> {
@@ -40,12 +41,14 @@ export class CSpyBreakpointService implements Disposable.Disposable {
     static async instantiate(serviceRegistry: ThriftServiceRegistry,
         clientLinesStartAt1: boolean,
         clientColumnsStartAt1: boolean,
-        driver: CSpyDriver): Promise<CSpyBreakpointService> {
+        driver: CSpyDriver,
+        eventSink: (event: OutputEvent) => void): Promise<CSpyBreakpointService> {
         return new CSpyBreakpointService(
             await serviceRegistry.findService(BREAKPOINTS_SERVICE, Breakpoints.Client),
             clientLinesStartAt1,
             clientColumnsStartAt1,
-            driver
+            driver,
+            eventSink
         );
     }
 
@@ -62,7 +65,8 @@ export class CSpyBreakpointService implements Disposable.Disposable {
     private constructor(private readonly breakpointService: ThriftClient<Breakpoints.Client>,
                 private readonly clientLinesStartAt1: boolean,
                 private readonly clientColumnsStartAt1: boolean,
-                private readonly driver: CSpyDriver) {
+                private readonly driver: CSpyDriver,
+                private readonly eventSink: (event: OutputEvent) => void) {
         this.defaultCodeBreakpointMode = this.supportedCodeBreakpointModes()[0] ?? CodeBreakpointMode.Auto;
     }
 
@@ -269,7 +273,11 @@ export class CSpyBreakpointService implements Disposable.Disposable {
         // We first figure out which bps have been removed in the frontend, and remove them
         const bpsToRemove = installedBreakpoints.filter(installedBp => !wantedBreakpoints.some(wantedBp => bpsEqual(installedBp.dapBp, wantedBp)) );
         bpsToRemove.forEach(bp => installedBreakpoints.splice(installedBreakpoints.indexOf(bp), 1) );
-        await Promise.allSettled(bpsToRemove.map(bp => this.breakpointService.service.removeBreakpoint(bp.cspyBp.id) ));
+        await Promise.allSettled(bpsToRemove.map( bp => {
+            if (!await this.breakpointService.service.removeBreakpoint(bp.cspyBp.id)) {
+                this.eventSink(new OutputEvent(`Failed to remove breakpoint: ${bp.cspyBp.ule}`, "stderr"));
+            }
+        }));
 
         return Promise.all(wantedBreakpoints.map(async wantedBp => {
             const makeError = (msg: string): [DapBp, string] => [wantedBp, msg];
