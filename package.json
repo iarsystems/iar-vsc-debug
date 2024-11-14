@@ -52,7 +52,7 @@
 		"async-mutex": "^0.3.2",
 		"await-notify": "1.0.1",
 		"color": "^4.2.3",
-		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#7404fca7",
+		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#5b5fa578",
 		"thrift": "^0.12.0",
 		"xmlbuilder2": "^3.0.2",
 		"fast-xml-parser": "4.4.1"
@@ -113,6 +113,23 @@
 		"configuration": {
 			"title": "IAR C-SPY Debug",
 			"properties": {
+				"iar-debug.buildBeforeDebugging": {
+					"default": "Disabled",
+					"description": "Build before debugging. Can be overriden in the launch configuration. Requires the IAR Build extension.",
+					"type": "string",
+					"enum": [
+						"Disabled",
+						"AskOnFailure",
+						"AbortOnFailure",
+						"DebugAnywayOnFailure"
+					],
+					"enumDescriptions": [
+						"Do not build before debugging",
+						"Build before debugging, ask what to do if the build fails",
+						"Build before debugging, abort if the build fails",
+						"Build before debugging, debug anyway if the build fails"
+					]
+				},
 				"iar-debug.fitContentToViewWidth": {
 					"default": true,
 					"description": "Automatically resize the contents of IAR debug views to fit the width of the view. When disabled, the width of the content stays the same when the view is resized, and a scrollbar appears if the content is wider than the view.",
@@ -714,6 +731,23 @@
 									}
 								}
 							}
+						},
+						"buildBeforeDebugging": {
+							"type": "string",
+							"description": "Build the given project configuration before debugging. Requires the IAR Build extension.",
+							"default": "Disabled",
+							"enum": [
+								"Disabled",
+								"AskOnFailure",
+								"AbortOnFailure",
+								"DebugAnywayOnFailure"
+							],
+							"enumDescriptions": [
+								"Do not build before debugging",
+								"Build before debugging, ask what to do if the build fails",
+								"Build before debugging, abort if the build fails",
+								"Build before debugging, debug anyway if the build fails"
+							]
 						}
 					}
 				},
@@ -896,6 +930,23 @@
 								"type": "boolean",
 								"description": "Set to false to halt the target when the debugsession ends",
 								"default:": "false"
+							},
+							"buildBeforeDebugging": {
+								"type": "string",
+								"description": "Build the given project configuration before debugging. Requires the IAR Build extension.",
+								"default": "Disabled",
+								"enum": [
+									"Disabled",
+									"AskOnFailure",
+									"AbortOnFailure",
+									"DebugAnywayOnFailure"
+								],
+								"enumDescriptions": [
+									"Do not build before debugging",
+									"Build before debugging, ask what to do if the build fails",
+									"Build before debugging, abort if the build fails",
+									"Build before debugging, debug anyway if the build fails"
+								]
 							}
 						}
 					}
@@ -909,10 +960,10 @@
 							"type": "cspy",
 							"request": "launch",
 							"name": "Debug the active IAR Project with C-SPY",
-							"preLaunchTask": "iar: Build Project",
 							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
 							"projectPath": "^\"\\${command:iar-config.project-file}\"",
-							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\""
+							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
+							"buildBeforeDebugging": "AskOnFailure"
 						}
 					},
 					{
