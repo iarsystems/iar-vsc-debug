@@ -273,7 +273,7 @@ export class CSpyBreakpointService implements Disposable.Disposable {
         // We first figure out which bps have been removed in the frontend, and remove them
         const bpsToRemove = installedBreakpoints.filter(installedBp => !wantedBreakpoints.some(wantedBp => bpsEqual(installedBp.dapBp, wantedBp)) );
         bpsToRemove.forEach(bp => installedBreakpoints.splice(installedBreakpoints.indexOf(bp), 1) );
-        await Promise.allSettled(bpsToRemove.map( bp => {
+        await Promise.allSettled(bpsToRemove.map(async bp => {
             if (!await this.breakpointService.service.removeBreakpoint(bp.cspyBp.id)) {
                 this.eventSink(new OutputEvent(`Failed to remove breakpoint: ${bp.cspyBp.ule}`, "stderr"));
             }
