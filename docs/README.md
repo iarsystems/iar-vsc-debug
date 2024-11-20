@@ -21,7 +21,7 @@ the debug configuration dropdown menu.
 
 * [Run menu](#RunMenu)
 
-* [The Side Bar views](#SideBarViews)
+* [The Side Bar views](#IARBuildTasks)
 
 * [Breakpoint types](#BreakpointTypes)
 
@@ -121,7 +121,7 @@ Removes all defined breakpoints.
 
 Opens the Extensions Marketplace where you can find other debuggers to install.
 
-<h2 id="SideBarViews">The Side Bar views</h2>
+<h2 id="IARBuildTasks">The Side Bar views</h2>
 
 When you debug your project, these views are available in the Side Bar.
 
@@ -243,8 +243,20 @@ Press F1 or Ctrl+Shift+P and start typing `IAR` to find the **IAR Debug: Set Bre
 * **Set Breakpoint Type: Hardware (Current Session Only)** - Makes any new breakpoints set during this debug session use hardware breakpoints. If this is not possible, no breakpoint will be set.
 * **Set Breakpoint Type: Software** - Makes all new breakpoints use software breakpoints, for this and future debug sessions. If this is not possible, no breakpoint will be set.
 * **Set Breakpoint Type: Software (Current Session Only)** - Makes any new breakpoints set during this debug session use software breakpoints. If this is not possible, no breakpoint will be set.
+* **Set Breakpoint Type: Trace Start** - Makes all new breakpoints use trace start breakpoints, for this and future debug sessions. When the breakpoint is triggered, the trace data collection starts. Note that this command is only available if the C-SPY driver you are using supports it.
+* **Set Breakpoint Type: Trace Start (Current Session Only)** - Makes any new breakpoints set during this debug session use trace start breakpoints. When the breakpoint is triggered, the trace data collection starts. Note that this command is only available if the C-SPY driver you are using supports it.
+* **Set Breakpoint Type: Trace Stop** - Makes all new breakpoints use trace stop breakpoints, for this and future debug sessions. When the breakpoint is triggered, the trace data collection stops. Note that this command is only available if the C-SPY driver you are using supports it.
+* **Set Breakpoint Type: Trace Stop (Current Session Only)** - Makes any new breakpoints set during this debug session use trace stop breakpoints. When the breakpoint is triggered, the trace data collection stops. Note that this command is only available if the C-SPY driver you are using supports it.
+* **Set Breakpoint Type: Trace Filter** - Makes all new breakpoints use trace filter breakpoints, for this and future debug sessions. A trace filter specifies conditions that, when fulfilled, activate the trace data collection. Note that this command is only avalable if your setup supports it.
+* **Set Breakpoint Type: Trace Filter (Current Session Only)** - Makes any new breakpoints set during this debug session use trace filter breakpoints. A trace filter specifies conditions that, when fulfilled, activate the trace data collection. Note that this command is only avalable if your setup supports it.
+* **Set Breakpoint Type: Flash** - Makes all new breakpoints use flash breakpoints, for this and future debug sessions. This command is only available for the C-SPY I-jet driver.
+* **Set Breakpoint Type: Flash (Current Session Only)** - Makes any new breakpoints set during this debug session use flash breakpoints. This command is only available for the C-SPY I-jet driver.
+* **Set Breakpoint Type: Timer Start** - Makes all new breakpoints use timer start breakpoints, for this and future debug sessions. When the breakpoint is triggered, a timer is started. This command is only available for RH850.
+* **Set Breakpoint Type: Timer Start (Current Session Only)** - Makes any new breakpoints set during this debug session use timer start breakpoints. When the breakpoint is triggered, a timer is started. This command is only available for RH850.
+* **Set Breakpoint Type: Timer Stop** - Makes all new breakpoints use timer stop breakpoints, for this and future debugging sessions. When the breakpoint is triggered, the running timer is stopped. This command is only available for RH850.
+* **Set Breakpoint Type: Timer Stop (Current Session Only)** - Makes any new breakpoints set during this debug session use timer stop breakpoints. When the breakpoint is triggered, the running timer is stopped. This command is only available for RH850.
 
-Note that these commands do not affect existing breakpoints. To change the type of an existing breakpoint, you must set the breakpoint type globally and then remove and re-add the breakpoint (or disable and reenable it).
+Note that these commands do not affect existing breakpoints. To change the type of an existing breakpoint, right-click the breakpoint and choose **Edit Breakpoint...**. In the **Mode...** drop-down, select the wanted breakpoint type. You can also set the breakpoint type globally and then remove and re-add the breakpoint (or disable and reenable it).
 
 <h2 id="debuggingstandaloneprogram">Debugging a stand-alone application</h2>
 
@@ -315,3 +327,17 @@ For information about each supported attribute, see the autocompletion and toolt
 The `driverOptions` attribute takes C-SPY command line parameters. For reference information, see *The C-SPY command line utility—cspybat* in the *IAR Embedded Workbench C-SPY® Debugging Guide* (PDF).
 
 The current version of the IAR C-SPY Debug extension adds support for leaving the application running after the debug session is closed (`"leaveTargetRunning": true`) and for making the debugger attach to a running application at its current location, without resetting the target system (`"request": "attach"`). You can, for example, use this to create one debug configuration to flash and launch your application in C-SPY, and one configuration to reattach to the application when needed.
+
+If you have installed the [IAR Build](https://marketplace.visualstudio.com/items?itemName=iarsystems.iar-vsc) extension, and have specified a `projectPath` and a `projectConfiguration` in your `launch.json` configuration, you can omitt other `launch.json` fields to have them automatically filled from the referenced project configuration. For example, a `launch.json` configuration where all missing fields are taken from the selected project configuration can look like this:
+
+```json
+{
+    "type": "cspy",
+    "request": "launch",
+    "name": "Debug the active IAR Project with C-SPY",
+    "workbenchPath": "${command:iar-config.toolchain}",
+    "projectPath": "${command:iar-config.project-file}",
+    "projectConfiguration": "${command:iar-config.project-configuration}"
+}
+
+```
