@@ -487,7 +487,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                     variableReference: arrContents[0]?.variablesReference,
                     parentReference: fibArray.variablesReference,
                 };
-                dc().customRequest(CustomRequest.Names.CHANGE_VIEW_FORMAT_REQUEST, arrData);
+                await dc().customRequest(CustomRequest.Names.CHANGE_VIEW_FORMAT_REQUEST, arrData);
                 const firstVal = (await dc().variablesRequest({variablesReference: fibArray.variablesReference})).body.variables[0];
                 Assert(firstVal);
                 Assert.match(firstVal.value, /0x0+/);
