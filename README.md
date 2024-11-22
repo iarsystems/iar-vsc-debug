@@ -48,16 +48,14 @@ For more help, see [Debugging a stand-alone application](https://github.com/IARS
 
 ## Compatibility
 
-This extension is compatible with selected IAR Embedded Workbench (EW) products. The following table decsribes the level of support for your specific product:
+This extension is compatible with selected IAR Embedded Workbench (EW) products. The following table describes the level of support for your specific product:
 
-<details><summary>IAR EW - Compatibility table</summary>
-
-| IAR EW version  | Limitation
-|--------------|---------
-| Arm v9.30 or later<br>RISC-V 3.11.1 or later<br>RL78 v5.10 or later<br>AVR v8.10 or later<br>RX v5.10 or later| None |
-| RISC-V v3.10 | Terminal I/O is not supported |
-| Arm v8.50-9.20.4<br>RH850 v3.10 or later | An initial debug session with EW is required prior to debugging in VSCode |
-| Arm v8.40-8.50 | The variables view is not supported |
+| Target architecture | Product Version | Known Limitation
+|---------------------|-----------------|-------------
+| Arm<br>RISC-V<br>RL78<br>AVR<br>RX | v9.30.1 or later<br>v3.11.1 or later<br>v5.10.1 or later<br>v8.10.1 or later<br>v5.10.1 or later| None
+| RISC-V | v3.10.1 | Terminal I/O is not supported
+| Arm<br>RH850 | v8.50.1-9.20.4<br>v3.10.1 or later | An initial debug session with EW is required prior to debugging in VSCode
+| Arm | v8.40.1-8.50.1 | The variables view is not supported
 
 **Note:** You may experience crashes using multicore debugging with Arm 9.10.2 and earlier, as well as RH850 3.10.2 and earlier.
 
