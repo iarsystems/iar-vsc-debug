@@ -137,7 +137,7 @@ These types of variables are can be inspected in the **Variables** view:
 
 * CPU Registers. The CPU registers are grouped in register groups.
 
-Clicking the **View Binary Data** button opens the **Memory** view, where you can inspect the variable as binary data in memory. See [Memory view](#MemoryView).
+Clicking the **View Binary Data** button opens the **Memory** view, where you can inspect the variable as binary data in memory. With the [Memory Inspector](https://marketplace.visualstudio.com/items?itemName=eclipse-cdt.memory-inspector) extension installed, you can also right click a variable and click **Show in Memory Inspector** to open an alternative memory view implementation. See [Memory view](#MemoryView).
 
 On the context menu are commands for setting or copying the value of the selected variable.
 
@@ -219,9 +219,9 @@ This view is provided by the VS Code and can be opened by right-clicking in the 
 
 <h3 id="MemoryView">Memory view</h3>
 
- This view is a hex editor that can be opened by clicking on the **View Binary Data** icon to the right of a static variable in the **Variables** view. The view opens at the variable's location in memory. Arbitrary memory locations cannot be opened.
+ VS Code's default memory view is a hex editor that can be opened by clicking on the **View Binary Data** icon to the right of a static variable in the **Variables** view. The view opens at the variable's location in memory. Arbitrary memory locations cannot be opened.
 
-This view is provided by the VS Code.
+If you install the [Memory Inspector](https://marketplace.visualstudio.com/items?itemName=eclipse-cdt.memory-inspector) extension, you can use an alternative memory view which provides additional functionality. It can be opened by right clicking a static variable in the **Variables** view and clicking **Show in Memory Inspector**.
 
 ### Peripheral view
 
@@ -230,6 +230,13 @@ This view is provided by the VS Code Embedded Tools extension. See the VS Code d
 ### RTOS view
 
 This view is provided by the VS Code Embedded Tools extension. See the VS Code documentation for more information.
+
+### Views from the IAR Embedded Workbench IDE
+
+This extension provides several views that are identical to ones found in the
+IAR Embedded Workbench IDE. Among others, these include the Live Watch, Trace,
+Profiling and Code Coverage views. For documentation on these views, see the
+*IAR Embedded Workbench C-SPY® Debugging Guide* (PDF).
 
 <h2 id="BreakpointTypes">Breakpoint types</h2>
 
@@ -328,7 +335,7 @@ The `driverOptions` attribute takes C-SPY command line parameters. For reference
 
 The current version of the IAR C-SPY Debug extension adds support for leaving the application running after the debug session is closed (`"leaveTargetRunning": true`) and for making the debugger attach to a running application at its current location, without resetting the target system (`"request": "attach"`). You can, for example, use this to create one debug configuration to flash and launch your application in C-SPY, and one configuration to reattach to the application when needed.
 
-If you have installed the [IAR Build](https://marketplace.visualstudio.com/items?itemName=iarsystems.iar-vsc) extension, and have specified a `projectPath` and a `projectConfiguration` in your `launch.json` configuration, you can omitt other `launch.json` fields to have them automatically filled from the referenced project configuration. For example, a `launch.json` configuration where all missing fields are taken from the selected project configuration can look like this:
+If you have installed the [IAR Build](https://marketplace.visualstudio.com/items?itemName=iarsystems.iar-vsc) extension, and have specified a `projectPath` and a `projectConfiguration` in your `launch.json` configuration, you can omit other `launch.json` fields to have them automatically filled from the referenced project configuration. For example, a `launch.json` configuration where all missing fields are taken from the selected project configuration can look like this:
 
 ```json
 {
