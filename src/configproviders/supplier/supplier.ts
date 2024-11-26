@@ -9,6 +9,7 @@ import { BuildExtensionConfigurationProvider as BuildExtensionConfigurationSuppl
 import { ConfigResolutionCommon } from "./common";
 import { XclConfigurationSupplier as XclConfigurationSupplier } from "./xclConfigurationSupplier";
 import { BuildExtensionApi } from "iar-vsc-common/buildExtension";
+import { SettingsConstants } from "../../settingsConstants";
 
 /**
  * Functions for generating launch.json configurations matching Embedded Workbench projects.
@@ -141,7 +142,7 @@ export namespace CSpyConfigurationSupplier {
                     target,
                 );
             const debugConfig =
-                ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfig, wsDir?.uri.path, workbenchPath);
+                ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfig, wsDir?.uri.path, workbenchPath, getBuildBeforeDebuggingValue());
             return debugConfig;
         } catch (e) {
             logger.debug(
@@ -155,7 +156,7 @@ export namespace CSpyConfigurationSupplier {
                     config,
                 );
             const debugConfig =
-                ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfig);
+                ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfig, wsDir?.uri.path, workbenchPath, getBuildBeforeDebuggingValue());
             return debugConfig;
         } catch (e) {
             logger.debug("Failed to generate config from .xcl files: " + e);
@@ -198,7 +199,8 @@ export namespace CSpyConfigurationSupplier {
                     return ConfigResolutionCommon.toLaunchJsonConfiguration(
                         partialConfig,
                         workspaceFolder?.uri.fsPath,
-                        workbenchPath);
+                        workbenchPath,
+                        getBuildBeforeDebuggingValue());
                 }));
                 generated.forEach(res => {
                     if (res.status === "fulfilled") {
@@ -218,7 +220,8 @@ export namespace CSpyConfigurationSupplier {
                 result = partialConfigs.map(config => ConfigResolutionCommon.toLaunchJsonConfiguration(
                     config,
                     workspaceFolder?.uri.fsPath,
-                    workbenchPath));
+                    workbenchPath,
+                    getBuildBeforeDebuggingValue()));
             } catch (e) {
                 logger.debug("Failed to generate config from .xcl files: " + e);
             }
@@ -277,5 +280,11 @@ export namespace CSpyConfigurationSupplier {
     // Exposed for testing purposes
     export function setMockApi(mock: BuildExtensionApi) {
         api = mock;
+    }
+
+    function getBuildBeforeDebuggingValue(): SettingsConstants.BuildBeforeDebuggingValue | undefined {
+        return vscode.workspace.
+            getConfiguration(SettingsConstants.MAIN_SECTION).
+            get<SettingsConstants.BuildBeforeDebuggingValue>(SettingsConstants.BUILD_BEFORE_DEBUGGING);
     }
 }

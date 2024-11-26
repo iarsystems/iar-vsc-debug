@@ -37,11 +37,13 @@ export namespace ConfigResolutionCommon {
      * @param parts The partial configuration from some configuration provider
      * @param wsDir The workspace folder this configuration will be used in
      * @param workbenchPath The workbench that was used to generate the config, if known
+     * @param buildBeforeDebugging Whether, and how, to build the project before debugging
      */
     export function toLaunchJsonConfiguration(
         parts: PartialConfig,
         wsDir?: string,
         workbenchPath?: string,
+        buildBeforeDebugging?: SettingsConstants.BuildBeforeDebuggingValue,
     ): vscode.DebugConfiguration & CSpyLaunchRequestArguments {
 
         // The driver is usually given as a path to a shared library file (e.g. libarmsim2.so), so remove the
@@ -84,10 +86,6 @@ export namespace ConfigResolutionCommon {
                 parts.flashLoader   = makeRelative(parts.flashLoader);
             }
         }
-
-        const buildBeforeDebugging = vscode.workspace.
-            getConfiguration(SettingsConstants.MAIN_SECTION).
-            get<string>(SettingsConstants.BUILD_BEFORE_DEBUGGING);
 
         // Assemble the configuration
         const config: vscode.DebugConfiguration & CSpyLaunchRequestArguments = {
