@@ -546,8 +546,21 @@
 					"name": "Stack",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-stack-1.enabled"
+				},
+				{
+					"id": "iar-interrupt-log",
+					"contextualTitle": "iar",
+					"name": "Interrupt Log",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-interrupt-log.enabled"
+				},
+				{
+					"id": "iar-interrupt-log-summary",
+					"contextualTitle": "iar",
+					"name": "Interrupt Log Summary",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-interrupt-log-summary.enabled"
 				}
-
 			]
 		},
 		"breakpoints": [
