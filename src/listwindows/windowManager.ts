@@ -53,6 +53,8 @@ export class ListwindowManager {
         { viewId: "iar-find-in-trace", serviceName: "WIN_FIND_IN_SLIDING_TRACE"},
         { viewId: "iar-code-coverage", serviceName: "WIN_CODECOVERAGE", fallback: CodeCoverageClient },
         { viewId: "iar-profiling", serviceName: "WIN_PROFILING2" },
+        { viewId: "iar-interrupt-log", serviceName: "WIN_INTERRUPT_LOG" },
+        { viewId: "iar-interrupt-log-summary", serviceName: "WIN_INTERRUPT_STAT" },
     ];
 
     getBackendHandler(
