@@ -55,6 +55,22 @@ export class ListwindowManager {
         { viewId: "iar-profiling", serviceName: "WIN_PROFILING2" },
         { viewId: "iar-interrupt-log", serviceName: "WIN_INTERRUPT_LOG" },
         { viewId: "iar-interrupt-log-summary", serviceName: "WIN_INTERRUPT_STAT" },
+        { viewId: "iar-rtos-task", serviceName: "WIN_RTOS_TASK" },
+        { viewId: "iar-rtos-mbox", serviceName: "WIN_RTOS_MBOX" },
+        { viewId: "iar-rtos-semaphore", serviceName: "WIN_RTOS_SEMAPHORE" },
+        { viewId: "iar-rtos-mutex", serviceName: "WIN_RTOS_MUTEX" },
+        { viewId: "iar-rtos-bytepool", serviceName: "WIN_RTOS_BYTEPOOL" },
+        { viewId: "iar-rtos-blockpool", serviceName: "WIN_RTOS_BLOCKPOOL" },
+        { viewId: "iar-rtos-timer", serviceName: "WIN_RTOS_TIMER" },
+        { viewId: "iar-rtos-eventflag", serviceName: "WIN_RTOS_EVENTFLAG" },
+        { viewId: "iar-rtos-profile", serviceName: "WIN_RTOS_EXEC_PROFILE" },
+        { viewId: "iar-rtos-com-metrics", serviceName: "WIN_RTOS_COMM_METRICS" },
+        { viewId: "iar-rtos-mem-metrics", serviceName: "WIN_RTOS_MEMORY_METRICS" },
+        { viewId: "iar-rtos-sync-metrics", serviceName: "WIN_RTOS_SYNCH_METRICS" },
+        { viewId: "iar-rtos-thread-metrics", serviceName: "WIN_RTOS_THREAD_METRICS" },
+        { viewId: "iar-rtos-timer-metrics", serviceName: "WIN_RTOS_TIMER_METRICS" },
+        { viewId: "iar-rtos-queue", serviceName: "WIN_RTOS_QUEUE" },
+        { viewId: "iar-rtos-memory-pool", serviceName: "WIN_RTOS_MEMORYPOOL" },
     ];
 
     getBackendHandler(
