@@ -10,7 +10,7 @@ import * as LibSupportService2 from "iar-vsc-common/thrift/bindings/LibSupportSe
 import * as Frontend from "iar-vsc-common/thrift/bindings/Frontend";
 import * as TimelineFrontend from "iar-vsc-common/thrift/bindings/TimelineFrontend";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
-import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, SessionConfiguration, ModuleLoadingOptions, DkNotifyConstant } from "iar-vsc-common/thrift/bindings/cspy_types";
+import { DEBUGEVENT_SERVICE,  DEBUGGER_SERVICE, SessionConfiguration, ModuleLoadingOptions, DkNotifyConstant, ExtraDebugFile } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { DebugEventListenerHandler } from "./debugEventListenerHandler";
 import { CSpyContextService } from "./contexts/cspyContextService";
 import { CSpyBreakpointService } from "./breakpoints/cspyBreakpointService";
@@ -42,6 +42,16 @@ import { WorkbenchFeatures} from "iar-vsc-common/workbenchfeatureregistry";
 import { ThriftServiceRegistryProcess } from "iar-vsc-common/thrift/thriftServiceRegistryProcess";
 import { BreakpointModes } from "./breakpoints/breakpointMode";
 import { ExceptionBreakpoints } from "./breakpoints/exceptionBreakpoint";
+import { toInt64 } from "../utils";
+
+export interface ExtraImage {
+    /** The path to the image to load. */
+    image: string,
+    /** The offset to use.*/
+    offset: string,
+    /** Only download the debug info. */
+    onlyDebugInfo: boolean
+}
 
 /**
  * This interface describes the cspy-debug specific launch attributes
@@ -106,6 +116,8 @@ export interface PartialCSpyLaunchRequestArguments extends DebugProtocol.LaunchR
      * required to render listwindows properly, but can be disabled in tests.
      */
     enableListWindowLookup?: boolean;
+
+    extraImages?: ExtraImage[];
 }
 
 /**
@@ -354,7 +366,14 @@ export class CSpyDebugSession extends LoggingDebugSession {
             // Setup the module loading options, which is basically just
             // based on whether we're attaching or not.
             const moduleOptions = new ModuleLoadingOptions();
-            moduleOptions.extraDebugFiles = []; // Not support atm.
+            moduleOptions.extraDebugFiles = [];
+            args.extraImages?.forEach((extraImage: ExtraImage) => {
+                const extraFile = new ExtraDebugFile();
+                extraFile.offset = toInt64(extraImage.offset);
+                extraFile.doDownload = extraImage.onlyDebugInfo;
+                extraFile.path = extraImage.image;
+                moduleOptions.extraDebugFiles.push(extraFile);
+            });
             moduleOptions.shouldAttach = isAttachRequest;
             moduleOptions.onlyPrefixNotation = false; // Always false.
             moduleOptions.shouldLeaveRunning = args.leaveTargetRunning?? false;

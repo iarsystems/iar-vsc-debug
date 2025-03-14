@@ -1079,6 +1079,29 @@
 									"Build before debugging, abort if the build fails",
 									"Build before debugging, debug anyway if the build fails"
 								]
+							},
+							"extraImages": {
+								"type": "array",
+								"description": "A list of extra images to download",
+								"items": {
+									"type": "object",
+									"properties": {
+										"image": {
+											"type": "string",
+											"description": "Path to the image to load."
+										},
+										"offset": {
+											"type": "string",
+											"description": "The offset to load the image at (hex format)"
+										},
+										"onlyDebugInfo": {
+											"type": "boolean",
+											"description": "Only download the debug info.",
+											"default": false
+										}
+									}
+								},
+								"default": []
 							}
 						}
 					}

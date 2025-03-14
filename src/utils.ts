@@ -28,8 +28,10 @@ export function toBigInt(value: Int64): bigint {
 /**
  * Converts a bigint to an Int64.
  */
-export function toInt64(value: SerializedBigInt | bigint): Int64 {
-    if (typeof value !== "bigint") {
+export function toInt64(value: string | SerializedBigInt | bigint): Int64 {
+    if (typeof value === "string") {
+        value = BigInt(value);
+    } else if (typeof value !== "bigint") {
         value = BigInt(value.value);
     }
 
