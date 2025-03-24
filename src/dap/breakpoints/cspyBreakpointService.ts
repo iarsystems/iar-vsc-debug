@@ -24,6 +24,11 @@ interface InstalledBreakpoint<Bp> {
     dapBp: Bp;
     cspyBp: Thrift.Breakpoint;
 }
+interface ResultingBreakpoints<Bp> {
+    setBp: Array<[Bp, Thrift.Breakpoint | string]>
+    failedRemovals: Bp[];
+}
+
 type InstalledSourceBreakpoint = InstalledBreakpoint<DebugProtocol.SourceBreakpoint>;
 type InstalledInstructionBreakpoint = InstalledBreakpoint<DebugProtocol.InstructionBreakpoint>;
 type InstalledDataBreakpoint = InstalledBreakpoint<DebugProtocol.DataBreakpoint>;
