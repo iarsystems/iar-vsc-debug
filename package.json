@@ -352,6 +352,12 @@
 				"enablement": "debugType == cspy && iar-debug.timerStopBreakpointsSupported"
 			},
 			{
+				"command": "iar.clearAllBreakpoints",
+				"category": "IAR Debug",
+				"title": "Clear all breakpoints",
+				"enablement": "debugType == cspy"
+			},
+			{
 				"command": "iar.enableMulticoreLockstepMode",
 				"category": "IAR Debug",
 				"title": "Set Continue/Step/Pause affects all cores",
