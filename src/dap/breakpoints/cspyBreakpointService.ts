@@ -63,10 +63,10 @@ export class CSpyBreakpointService implements Disposable.Disposable {
     private defaultCodeBreakpointMode: CodeBreakpointMode;
 
     private constructor(private readonly breakpointService: ThriftClient<Breakpoints.Client>,
-                private readonly clientLinesStartAt1: boolean,
-                private readonly clientColumnsStartAt1: boolean,
-                private readonly driver: CSpyDriver,
-                private readonly eventSink: (event: OutputEvent) => void) {
+        private readonly clientLinesStartAt1: boolean,
+        private readonly clientColumnsStartAt1: boolean,
+        private readonly driver: CSpyDriver,
+        private readonly eventSink: (event: OutputEvent) => void) {
         this.defaultCodeBreakpointMode = this.supportedCodeBreakpointModes()[0] ?? CodeBreakpointMode.Auto;
     }
 
@@ -76,7 +76,7 @@ export class CSpyBreakpointService implements Disposable.Disposable {
      * @param dapBps The breakpoints to set
      * @returns The actual BPs set, in the same order as input
      */
-    async setBreakpointsFor(source: DebugProtocol.Source, dapBps: DebugProtocol.SourceBreakpoint[]): Promise<DebugProtocol.Breakpoint[]> {
+    async setBreakpointsFor(source: DebugProtocol.Source, dapBps: DebugProtocol.SourceBreakpoint[]): Promise<[DebugProtocol.Breakpoint[], DebugProtocol.SourceBreakpoint[]]> {
         if (!source.path) {
             return Promise.reject(new Error("Cannot set breakpoints without a path"));
         }
@@ -108,8 +108,8 @@ export class CSpyBreakpointService implements Disposable.Disposable {
         this.installedSourceBreakpoints.set(source.path, installedBreakpoints);
 
         // Map the requested BPs to a DAP result format
-        return bpResults.map(([dapBp, result]) => {
-            if (typeof(result) === "string") {
+        return [bpResults.setBp.map(([dapBp, result]) => {
+            if (typeof (result) === "string") {
                 return {
                     verified: false,
                     line: dapBp.line,
@@ -126,7 +126,7 @@ export class CSpyBreakpointService implements Disposable.Disposable {
                         actualLine = this.convertDebuggerLineToClient(actualLine);
                         actualCol = this.convertDebuggerColumnToClient(actualCol);
                     }
-                } catch (_) {}
+                } catch (_) { }
                 return {
                     verified: result.valid,
                     line: actualLine,
@@ -135,7 +135,7 @@ export class CSpyBreakpointService implements Disposable.Disposable {
                     source,
                 };
             }
-        });
+        }), bpResults.failedRemovals];
     }
 
     /**
@@ -143,7 +143,7 @@ export class CSpyBreakpointService implements Disposable.Disposable {
      * @param dapBps The breakpoints to set
      * @returns The actual BPs set, in the same order as input
      */
-    async setInstructionBreakpoints(dapBps: DebugProtocol.InstructionBreakpoint[]): Promise<DebugProtocol.Breakpoint[]> {
+    async setInstructionBreakpoints(dapBps: DebugProtocol.InstructionBreakpoint[]): Promise<[DebugProtocol.Breakpoint[], DebugProtocol.InstructionBreakpoint[]]> {
         const bpResults = await this.setBreakpointsAsNeeded(
             dapBps,
             this.installedInstrunctionBreakpoints,
@@ -167,8 +167,8 @@ export class CSpyBreakpointService implements Disposable.Disposable {
         );
 
         // Map the requested BPs to a DAP result format, using data from each cspy BP
-        return bpResults.map(([dapBp, result]) => {
-            if (typeof(result) === "string") {
+        return [bpResults.setBp.map(([dapBp, result]) => {
+            if (typeof (result) === "string") {
                 return {
                     verified: false,
                     instructionReference: dapBp.instructionReference,
@@ -181,7 +181,7 @@ export class CSpyBreakpointService implements Disposable.Disposable {
                     message: result.description,
                 };
             }
-        });
+        }), bpResults.failedRemovals];
     }
 
     /**
@@ -189,7 +189,7 @@ export class CSpyBreakpointService implements Disposable.Disposable {
      * @param dapBps The breakpoints to set
      * @returns The actual BPs set, in the same order as input
      */
-    async setDataBreakpoints(dapBps: DebugProtocol.DataBreakpoint[]): Promise<DebugProtocol.Breakpoint[]> {
+    async setDataBreakpoints(dapBps: DebugProtocol.DataBreakpoint[]): Promise<[DebugProtocol.Breakpoint[], DebugProtocol.DataBreakpoint[]]> {
         const bpResults = await this.setBreakpointsAsNeeded(
             dapBps,
             this.installedDataBreakpoints,
@@ -203,8 +203,8 @@ export class CSpyBreakpointService implements Disposable.Disposable {
                 return this.driver.dataBreakpointFactory.createOnUle(dapBp.dataId, accessType);
             });
 
-        return bpResults.map(([dapBp, result]) => {
-            if (typeof(result) === "string") {
+        return [bpResults.setBp.map(([dapBp, result]) => {
+            if (typeof (result) === "string") {
                 return {
                     verified: true,
                     instructionReference: dapBp.dataId,
@@ -218,7 +218,7 @@ export class CSpyBreakpointService implements Disposable.Disposable {
                     mode: "data",
                 };
             }
-        });
+        }), bpResults.failedRemovals];
     }
 
     /**
@@ -262,24 +262,33 @@ export class CSpyBreakpointService implements Disposable.Disposable {
      * @returns Each wanted breakpoint together with a result. The result is a corresponding C-SPY breakpoint set in the
      *      backend, or a string error message.
      */
+
     private async setBreakpointsAsNeeded<DapBp extends DebugProtocol.SourceBreakpoint | DebugProtocol.InstructionBreakpoint | DebugProtocol.DataBreakpoint>(
         wantedBreakpoints: DapBp[],
         installedBreakpoints: InstalledBreakpoint<DapBp>[],
         bpsEqual: (bp1: DapBp, bp2: DapBp) => boolean,
-        toDescriptor: (bp: DapBp) => BreakpointDescriptor | string): Promise<Array<[DapBp, Thrift.Breakpoint | string]>> {
+        toDescriptor: (bp: DapBp) => BreakpointDescriptor | string): Promise<ResultingBreakpoints<DapBp>> {
 
 
         // We want to avoid clearing and recreating breakpoints which haven't changed since the last call.
         // We first figure out which bps have been removed in the frontend, and remove them
-        const bpsToRemove = installedBreakpoints.filter(installedBp => !wantedBreakpoints.some(wantedBp => bpsEqual(installedBp.dapBp, wantedBp)) );
-        bpsToRemove.forEach(bp => installedBreakpoints.splice(installedBreakpoints.indexOf(bp), 1) );
+        const bpsToRemove = installedBreakpoints.filter(installedBp => !wantedBreakpoints.some(wantedBp => bpsEqual(installedBp.dapBp, wantedBp)));
+        bpsToRemove.forEach(bp => installedBreakpoints.splice(installedBreakpoints.indexOf(bp), 1));
+
+        const missingBps: DapBp[] = [];
         await Promise.allSettled(bpsToRemove.map(async bp => {
             if (!await this.breakpointService.service.removeBreakpoint(bp.cspyBp.id)) {
+                missingBps.push(bp.dapBp);
                 this.eventSink(new OutputEvent(`Failed to remove breakpoint: ${bp.cspyBp.ule}`, "stderr"));
             }
         }));
 
-        return Promise.all(wantedBreakpoints.map(async wantedBp => {
+        const resultingBreakpoints: ResultingBreakpoints<DapBp> = {
+            failedRemovals: missingBps,
+            setBp: [],
+        };
+
+        resultingBreakpoints.setBp = await Promise.all(wantedBreakpoints.map(async wantedBp => {
             const makeError = (msg: string): [DapBp, string] => [wantedBp, msg];
 
             const existingBp = installedBreakpoints.find(installedBp => bpsEqual(installedBp.dapBp, wantedBp));
@@ -322,6 +331,7 @@ export class CSpyBreakpointService implements Disposable.Disposable {
                 return makeError("An unknown error occured");
             }
         }));
+        return resultingBreakpoints;
     }
 
     private parseSourceUle(ule: string): [path: string, line: number, col: number] {

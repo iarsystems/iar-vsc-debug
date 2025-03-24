@@ -639,33 +639,64 @@ export class CSpyDebugSession extends LoggingDebugSession {
         });
         this.sendResponse(response);
     }
-
     protected override async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments) {
+        let failedRemovals: DebugProtocol.SourceBreakpoint[] = [];
         await this.tryWithServices(response, async(services) => {
-            const bps = await services.breakpointService.setBreakpointsFor(args.source, args.breakpoints ?? []);
+            const [bps, fbps] = await services.breakpointService.setBreakpointsFor(args.source, args.breakpoints ?? []);
+            failedRemovals = fbps;
             response.body = {
                 breakpoints: bps,
             };
         });
+
         this.sendResponse(response);
+
+        if (failedRemovals.length > 0 && args.source.path) {
+            const body: CustomEvent.MissingBreakpoints = {
+                srcPath: args.source.path,
+                breakpoints: failedRemovals,
+                type: "source"
+            };
+            this.sendEvent(new Event(CustomEvent.Names.MISSING_BREAKPOINTS, body));
+        }
     }
     protected override async setInstructionBreakpointsRequest(response: DebugProtocol.SetInstructionBreakpointsResponse, args: DebugProtocol.SetInstructionBreakpointsArguments) {
+        let failedRemovals: DebugProtocol.InstructionBreakpoint[] = [];
         await this.tryWithServices(response, async(services) => {
-            const bps = await services.breakpointService.setInstructionBreakpoints(args.breakpoints);
+            const [bps, fbps]  = await services.breakpointService.setInstructionBreakpoints(args.breakpoints);
+            failedRemovals = fbps;
             response.body = {
                 breakpoints: bps,
             };
         });
         this.sendResponse(response);
+
+        if (failedRemovals.length > 0) {
+            const body: CustomEvent.MissingBreakpoints = {
+                breakpoints: failedRemovals,
+                type: "instruction"
+            };
+            this.sendEvent(new Event(CustomEvent.Names.MISSING_BREAKPOINTS, body));
+        }
     }
     protected override async setDataBreakpointsRequest(response: DebugProtocol.SetDataBreakpointsResponse, args: DebugProtocol.SetDataBreakpointsArguments) {
+        let failedRemovals: DebugProtocol.DataBreakpoint[] = [];
         await this.tryWithServices(response, async services => {
-            const bps = await services.breakpointService.setDataBreakpoints(args.breakpoints);
+            const [bps, fbps]  = await services.breakpointService.setDataBreakpoints(args.breakpoints);
+            failedRemovals = fbps;
             response.body = {
                 breakpoints: bps,
             };
         });
         this.sendResponse(response);
+
+        if (failedRemovals.length > 0) {
+            const body: CustomEvent.MissingBreakpoints = {
+                breakpoints: failedRemovals,
+                type: "data"
+            };
+            this.sendEvent(new Event(CustomEvent.Names.MISSING_BREAKPOINTS, body));
+        }
     }
     protected override async dataBreakpointInfoRequest(response: DebugProtocol.DataBreakpointInfoResponse, args: DebugProtocol.DataBreakpointInfoArguments) {
         await this.tryWithServices(response, async services => {

@@ -9,6 +9,7 @@ import { Source } from "@vscode/debugadapter";
 import { Serializable } from "../../webviews/shared/protocol";
 import { PropertyTreeItem } from "iar-vsc-common/thrift/bindings/shared_types";
 import { VariablesUtils } from "./contexts/variablesUtils";
+import { DebugProtocol } from "@vscode/debugprotocol";
 
 /**
  * Custom requests can be sent from a DAP client to the DAP server. Basically, these are C-SPY specific extensions to
@@ -248,7 +249,8 @@ export namespace CustomEvent {
         THEME_REQUESTED             = "themeRequested",
         LISTWINDOWS_REQUESTED       = "listwindowRequested",
         SHOW_VIEW_REQUEST           = "showView",
-        DO_GENERIC_DIALOG_REQUEST   = "showGenericDialog"
+        DO_GENERIC_DIALOG_REQUEST   = "showGenericDialog",
+        MISSING_BREAKPOINTS         = "missingBreakpoints"
     }
 
     export interface ContextChangedData {
@@ -340,5 +342,12 @@ export namespace CustomEvent {
     }
     export interface ShowViewRequestData{
         viewId: string;
+    }
+
+    export interface MissingBreakpoints {
+        condition?: string;
+        srcPath?: string;
+        breakpoints: DebugProtocol.SourceBreakpoint[] | DebugProtocol.DataBreakpoint[] | DebugProtocol.InstructionBreakpoint[];
+        type: "source" | "data" | "instruction";
     }
 }

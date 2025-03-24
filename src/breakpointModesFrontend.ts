@@ -3,10 +3,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import * as vscode from "vscode";
 import { PartialCSpyLaunchRequestArguments } from "./dap/cspyDebug";
-import { CustomRequest } from "./dap/customRequest";
+import { CustomEvent, CustomRequest } from "./dap/customRequest";
 import { DebugSessionTracker } from "./debugSessionTracker";
 import { SettingsConstants } from "./settingsConstants";
 import { CodeBreakpointMode } from "./dap/breakpoints/breakpointMode";
+import { DebugProtocol } from "@vscode/debugprotocol";
 
 /**
  * Manages the frontend (client) side of the breakpoint mode selection (see
@@ -54,6 +55,37 @@ export namespace BreakpointModesFrontend {
             }
         }));
 
+        context.subscriptions.push(vscode.debug.onDidReceiveDebugSessionCustomEvent(ev => {
+            if (ev.event === CustomEvent.Names.MISSING_BREAKPOINTS) {
+                // Map the breakpoints from dap to vscode.
+                const bps: vscode.Breakpoint[] = [];
+                const body = ev.body as CustomEvent.MissingBreakpoints;
+
+                // Map all breakpoints from the protocol type to vscode ones.
+                switch (body.type) {
+                    case "source": {
+                        const sourceBps = body.breakpoints as DebugProtocol.SourceBreakpoint[];
+                        const fileUri = vscode.Uri.file(body.srcPath?? "");
+                        sourceBps.forEach(bp => {
+                            const pos = new vscode.Position(bp.line - 1, bp.column ?? 0);
+                            const location = new vscode.Location(fileUri, pos);
+                            const vscBp = new vscode.SourceBreakpoint(location, true, bp.condition);
+                            bps.push(vscBp);
+                        });
+                        break;
+                    }
+                    // VsCode does not currently support settings these two, so just ignore them for now.
+                    case "data":
+                    case "instruction":
+                    {
+                        break;
+                    }
+                }
+
+                vscode.debug.addBreakpoints(bps);
+            }
+        }));
+
         const registerCommand = (commandName: string, breakpointMode: CodeBreakpointMode, settingValue: string) => {
             context.subscriptions.push(vscode.commands.registerCommand(commandName, () => {
                 // Tell all active sessions to change breakpoint mode, and then store the choice in user settings
@@ -71,6 +103,21 @@ export namespace BreakpointModesFrontend {
                 }
             }));
         };
+
+        context.subscriptions.push(vscode.commands.registerCommand("iar.clearAllBreakpoints", () => {
+            // Clear all breakpoints using the vscode API's
+            vscode.debug.removeBreakpoints(vscode.debug.breakpoints);
+
+            // For each session, try to remove any remaining ones. This tries to delete all breakpoints
+            // from the backend as well.
+            sessionTracker.runningSessions.forEach(session => {
+                session.customRequest("setBreakpoints", {arguments: {breakpoints: []}});
+                session.customRequest("setDataBreakpoints", {arguments: {breakpoints: []}});
+                session.customRequest("setInstructionBreakpoints", {arguments: {breakpoints: []}});
+                session.customRequest("setFunctionBreakpoints", {arguments: {breakpoints: []}});
+            });
+        }));
+
 
         const registerSessionLocalCommand = (commandName: string, breakpointMode: CodeBreakpointMode) => {
             context.subscriptions.push(vscode.commands.registerCommand(commandName, () => {
