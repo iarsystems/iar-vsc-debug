@@ -15,7 +15,7 @@ import { SettingsConstants } from "../../settingsConstants";
  * Functions for generating launch.json configurations matching Embedded Workbench projects.
  */
 export namespace CSpyConfigurationSupplier {
-    export type CspyLaunchJsonConfiguration = vscode.DebugConfiguration & CSpyLaunchRequestArguments;
+    export type CspyLaunchJsonConfiguration = vscode.DebugConfiguration & Partial<CSpyLaunchRequestArguments>;
 
     export enum ErrorReason {
         /** The IAR Build extension API could not be reached */
