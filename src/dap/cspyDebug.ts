@@ -129,7 +129,7 @@ export interface PartialCSpyLaunchRequestArguments extends DebugProtocol.LaunchR
 type RequiredFields = "program" | "driver" | "driverOptions" | "target";
 /**
  * The minimal arguments to start a debug session. While
- * {@link CSpyLaunchRequestArguments} represents what VS Code will send us (i.e.
+ * {@link PartialCSpyLaunchRequestArguments} represents what VS Code will send us (i.e.
  * what VS Code's validation will allow), this type is stricter and represents
  * what we actually *require* to start a debug session.
  */
