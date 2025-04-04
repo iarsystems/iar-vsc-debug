@@ -47,8 +47,8 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
 
         const partialValues = await this.resolveLaunchArgumentsPartial(launchArguments);
         // The name of the libsupport dll/so has changed over the years, so we need to check for all of them.
-        const libsupportNames = ["LibSupport", "LibSupportUniversal", "LibSupportEclipse"];
-        let libsupportPath = undefined;
+        const libsupportNames = ["LibSupportUniversal", "LibSupportEclipse", "LibSupport"];
+        let libsupportPath: string | undefined = undefined;
         for (const libsupportName of libsupportNames) {
             libsupportPath = IarOsUtils.resolveTargetLibrary(launchArguments.workbenchPath, partialValues.target, libsupportName);
             if (libsupportPath !== undefined) {
