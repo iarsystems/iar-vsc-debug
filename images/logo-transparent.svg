@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="1024" height="1024" viewBox="0 0 1024 1024" xml:space="preserve">
+	<g id="Layer_6"  transform="scale(0.93, 0.93)" transform-origin="512 512">
+		<path style="stroke: rgb(255,255,255); stroke-width: 72; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;"
+			d="M791.6773071,1.800566H232.8428802C105.525383,1.800566,2.315284,105.0119019,2.315284,232.3293915
+				v558.8331299c0,127.3175049,103.2100983,230.5288696,230.5276031,230.5288696h558.8344116
+				c127.3174438,0,230.5275879-103.2113647,230.5275879-230.5288696V232.3293915
+				C1022.204895,105.0119019,918.994751,1.800566,791.6773071,1.800566z"/>
+		<path fill="white"
+				d="M668.475647,663.9638672L353.7385864,850.0708618
+				l-139.0922241-76.232666L668.475647,505.4812927V663.9638672z
+				M810.5010376,584.3217773L214.0191498,253.0879517
+				l132.2300262-79.6693115l464.2518616,257.8291626V584.3217773z"
+		/>
+	</g>
+</svg>
