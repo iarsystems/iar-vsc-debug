@@ -447,12 +447,12 @@
 		"viewsContainers": {
 			"panel": [
 				{
-					"icon": "debug",
+					"icon": "images/logo-transparent.svg",
 					"id": "iar-debug",
 					"title": "IAR Trace"
 				},
 				{
-					"icon": "debug",
+					"icon": "images/logo-transparent.svg",
 					"id": "iar-rtos-debug",
 					"title": "IAR RTOS Views"
 				}
@@ -464,6 +464,7 @@
 					"id": "iar-trace",
 					"contextualTitle": "iar trace",
 					"name": "Trace",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-trace.enabled"
 				},
@@ -471,6 +472,7 @@
 					"id": "iar-code-coverage",
 					"contextualTitle": "iar code coverage",
 					"name": "Code Coverage",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-code-coverage.enabled"
 				},
@@ -478,6 +480,7 @@
 					"id": "iar-profiling",
 					"contextualTitle": "iar profiling",
 					"name": "Profiling",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-profiling.enabled"
 				}
@@ -487,6 +490,7 @@
 					"id": "iar-rtos-task",
 					"contextualTitle": "iar",
 					"name": "RTOS Task",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-rtos-task.enabled"
 				},
@@ -494,6 +498,7 @@
 					"id": "iar-rtos-mbox",
 					"contextualTitle": "iar",
 					"name": "RTOS Mbox",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-rtos-mbox.enabled"
 				},
@@ -501,6 +506,7 @@
 					"id": "iar-rtos-semaphore",
 					"contextualTitle": "iar",
 					"name": "RTOS Semaphore",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-rtos-semaphore.enabled"
 				},
@@ -508,6 +514,7 @@
 					"id": "iar-rtos-mutex",
 					"contextualTitle": "iar",
 					"name": "RTOS Mutex",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-rtos-mutex.enabled"
 				},
@@ -515,6 +522,7 @@
 					"id": "iar-rtos-bytepool",
 					"contextualTitle": "iar",
 					"name": "RTOS Bytepool",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-rtos-bytepool.enabled"
 				},
@@ -522,6 +530,7 @@
 					"id": "iar-rtos-blockpool",
 					"contextualTitle": "iar",
 					"name": "RTOS Blockpool",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-rtos-blockpool.enabled"
 				},
@@ -529,6 +538,7 @@
 					"id": "iar-rtos-timer",
 					"contextualTitle": "iar",
 					"name": "RTOS Timer",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-rtos-timer.enabled"
 				},
@@ -536,6 +546,7 @@
 					"id": "iar-rtos-eventflag",
 					"contextualTitle": "iar",
 					"name": "RTOS Eventflag",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-rtos-eventflag.enabled"
 				},
@@ -543,6 +554,7 @@
 					"id": "iar-rtos-profile",
 					"contextualTitle": "iar",
 					"name": "RTOS Profile",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-rtos-profile.enabled"
 				},
@@ -550,6 +562,7 @@
 					"id": "iar-rtos-com-metrics",
 					"contextualTitle": "iar",
 					"name": "RTOS Communication Metrics",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-rtos-com-metrics.enabled"
 				},
@@ -557,6 +570,7 @@
 					"id": "iar-rtos-mem-metrics",
 					"contextualTitle": "iar",
 					"name": "RTOS Memory Metrics",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-rtos-mem-metrics.enabled"
 				},
@@ -564,6 +578,7 @@
 					"id": "iar-rtos-sync-metrics",
 					"contextualTitle": "iar",
 					"name": "RTOS Synchronization Metrics",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-rtos-sync-metrics.enabled"
 				},
@@ -571,6 +586,7 @@
 					"id": "iar-rtos-thread-metrics",
 					"contextualTitle": "iar",
 					"name": "RTOS Thread Metrics",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-rtos-thread-metrics.enabled"
 				},
@@ -578,6 +594,7 @@
 					"id": "iar-rtos-timer-metrics",
 					"contextualTitle": "iar",
 					"name": "RTOS Timer Metrics",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-rtos-timer-metrics.enabled"
 				},
@@ -585,6 +602,7 @@
 					"id": "iar-rtos-queue",
 					"contextualTitle": "iar",
 					"name": "RTOS Queue",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-rtos-queue.enabled"
 				},
@@ -592,6 +610,7 @@
 					"id": "iar-rtos-memory-pool",
 					"contextualTitle": "iar",
 					"name": "RTOS Memory Pool",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-rtos-memory-pool.enabled"
 				}
@@ -600,12 +619,14 @@
 				{
 					"id": "iar-theme-detector",
 					"name": "Theme Detector",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "iar-debug.showThemeDetector"
 				},
 				{
 					"id": "iar-test-listwindow",
 					"name": "Test Listwindow (for running tests only)",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "iar-test-listwindow.enabled"
 				},
@@ -613,6 +634,7 @@
 					"id": "iar-mock-listwindow",
 					"contextualTitle": "iar",
 					"name": "Mock Listwindow (dev only)",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "iar-mock-listwindow.enabled"
 				},
@@ -620,6 +642,7 @@
 					"id": "iar-autos",
 					"contextualTitle": "Autos",
 					"name": "Autos",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-autos.enabled"
 				},
@@ -627,6 +650,7 @@
 					"id": "iar-find-in-trace",
 					"contextualTitle": "Find In Trace",
 					"name": "Find In Trace",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-find-in-trace.enabled"
 				},
@@ -634,6 +658,7 @@
 					"id": "iar-quick-watch",
 					"contextualTitle": "iar",
 					"name": "Quick Watch",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-quick-watch.enabled"
 				},
@@ -641,6 +666,7 @@
 					"id": "iar-live-watch",
 					"contextualTitle": "iar",
 					"name": "Live Watch",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-live-watch.enabled"
 				},
@@ -648,6 +674,7 @@
 					"id": "iar-reg-2",
 					"contextualTitle": "iar",
 					"name": "Registers",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-reg-2.enabled"
 				},
@@ -655,6 +682,7 @@
 					"id": "iar-reg-groups",
 					"contextualTitle": "iar",
 					"name": "Register User Groups Setup",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-reg-groups.enabled"
 				},
@@ -662,6 +690,7 @@
 					"id": "iar-symbolic-memory",
 					"contextualTitle": "iar",
 					"name": "Symbolic Memory",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-symbolic-memory.enabled"
 				},
@@ -669,6 +698,7 @@
 					"id": "iar-stack-1",
 					"contextualTitle": "iar",
 					"name": "Stack",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-stack-1.enabled"
 				},
@@ -676,6 +706,7 @@
 					"id": "iar-interrupt-log",
 					"contextualTitle": "iar",
 					"name": "Interrupt Log",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-interrupt-log.enabled"
 				},
@@ -683,6 +714,7 @@
 					"id": "iar-interrupt-log-summary",
 					"contextualTitle": "iar",
 					"name": "Interrupt Log Summary",
+					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-interrupt-log-summary.enabled"
 				}
