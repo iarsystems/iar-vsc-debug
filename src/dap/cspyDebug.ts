@@ -253,7 +253,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
      */
     protected async startDebugSession(response: DebugProtocol.LaunchResponse | DebugProtocol.AttachResponse, args: PartialCSpyLaunchRequestArguments, isAttachRequest: boolean) {
         logger.init(e => this.sendEvent(e), undefined, true);
-        logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop);
+        logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Warn);
 
         function isDefined<T extends PartialCSpyLaunchRequestArguments, K extends keyof T>(args: T, field: K): args is T & Required<Pick<T, K>> {
             if (field in args) {

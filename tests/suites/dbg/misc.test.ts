@@ -72,8 +72,14 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
-            // The name of the frame is *usually* __exit_0, but it varies between devices and targets
-            TestUtils.assertStoppedLocation(dc(), "exit", 0, undefined, /__exit|__iar_get_ttio_0|__DebugBreak/),
+            dc().waitForEvent("stopped").then(async ev => {
+                Assert.strictEqual(ev.body?.reason, "exit");
+                const stack = await dc().stackTraceRequest({threadId: 0});
+                const topStack = stack.body.stackFrames[0]?.name;
+                Assert(topStack);
+                // The name of the frame is *usually* __exit_0, but it varies between devices and targets
+                Assert.match(topStack, /__exit|__iar_get_ttio_0|__DebugBreak/);
+            }),
         ]);
     });
 

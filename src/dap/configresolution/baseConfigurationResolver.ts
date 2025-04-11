@@ -46,18 +46,21 @@ export abstract class BaseConfigurationResolver implements ConfigurationResolver
         }
 
         const partialValues = await this.resolveLaunchArgumentsPartial(launchArguments);
-        const libsupportUniversalPath = IarOsUtils.resolveTargetLibrary(launchArguments.workbenchPath, partialValues.target, "LibSupportUniversal");
-        // Older workbenches have a cspyserver-specific libsupport plugin
-        const libsupportEclipsePath = IarOsUtils.resolveTargetLibrary(launchArguments.workbenchPath, partialValues.target, "LibSupportEclipse");
-        if (libsupportUniversalPath !== undefined) {
-            logger.verbose("Using LibSupportUniversal");
-            partialValues.plugins.push(libsupportUniversalPath);
-        } else if (libsupportEclipsePath !== undefined) {
-            logger.verbose("Using LibSupportEclipse");
-            partialValues.plugins.push(libsupportEclipsePath);
+        // The name of the libsupport dll/so has changed over the years, so we need to check for all of them.
+        const libsupportNames = ["LibSupportUniversal", "LibSupportEclipse", "LibSupport"];
+        let libsupportPath: string | undefined = undefined;
+        for (const libsupportName of libsupportNames) {
+            libsupportPath = IarOsUtils.resolveTargetLibrary(launchArguments.workbenchPath, partialValues.target, libsupportName);
+            if (libsupportPath !== undefined) {
+                logger.verbose(`Using ${libsupportPath}`);
+                break;
+            }
+        }
+        if (libsupportPath !== undefined) {
+            partialValues.plugins.push(libsupportPath);
         } else {
             // Don't abort here: we can still launch the session, but e.g. terminal i/o won't work
-            logger.error("Compatible LibSupport plugin is missing from " + launchArguments.workbenchPath);
+            logger.error(`No Libsupport library found for target ${partialValues.target}. Terminal I/O and other features may not work.`);
         }
 
         // Do the work on the project path which may be an ewp-file or a directory.
