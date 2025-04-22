@@ -936,7 +936,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 } else {
                     response.message = `Error: ${DcResultConstant[e.code]?.substring(3)}, method: ${e.method}, culprit: ${e.culprit}`;
                 }
-                logger.error(response.message);
             } else if (typeof e === "string" || e instanceof Error) {
                 response.message = e.toString();
                 logger.error(e.toString());
