@@ -2,11 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import * as Q from "q";
-import { MenuItem, Note, Row, SelectionFlags, What } from "iar-vsc-common/thrift/bindings/listwindow_types";
+import { MenuItem, Note, Row, SelectionFlags, ToolbarNote, What } from "iar-vsc-common/thrift/bindings/listwindow_types";
 import * as ListWindowBackend from "iar-vsc-common/thrift/bindings/ListWindowBackend";
 import * as ListWindowFrontend from "iar-vsc-common/thrift/bindings/ListWindowFrontend";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { ThriftServiceRegistry } from "iar-vsc-common/thrift/thriftServiceRegistry";
+import { ThriftServiceHandler } from "iar-vsc-common/thrift/thriftUtils";
 import { Int64 } from "thrift";
 import { Disposable } from "./utils";
 import { logger } from "@vscode/debugadapter/lib/logger";
@@ -31,7 +32,7 @@ export interface ListWindowRowReference {
  * Getting around this limitation is *possible*, but way too complicated to be worth doing until we actually need it.
  * NOTE 2: This class **only** works with non-sliding list windows.
  */
-export class ListWindowClient implements Disposable.Disposable {
+export class ListWindowClient implements ThriftServiceHandler<ListWindowFrontend.Client>, Disposable.Disposable {
     // IMPLEMENTATION NOTE: We always expand all rows as far as possible when fetching window contents from the backend
     // (as opposed to only expanding them when needed). This removes a lot of complexity in keeping track of rows' positions,
     // but may be a little slow sometimes.
@@ -203,6 +204,10 @@ export class ListWindowClient implements Disposable.Disposable {
                 this.updateAllRows();
                 break;
         }
+        return Q.resolve();
+    }
+
+    notifyToolbar(_: ToolbarNote): Q.Promise<void> {
         return Q.resolve();
     }
 
