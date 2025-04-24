@@ -120,12 +120,58 @@ export namespace TestConfiguration {
         return { ...TEST_CONFIGURATIONS["armSim2"]!, smokeTestsOnly };
     }
 
+    const ARM_SIM2_CONFIG: TestConfiguration = {
+        debugConfiguration: {
+            target: "arm",
+            driver: "Simulator",
+            driverOptions: [
+                "--endian=little",
+                "--cpu=Cortex-A9",
+                "--fpu=VFPv3Neon",
+                "--device=Zynq 7020",
+                "--semihosting",
+                "-p",
+                "$TOOLKIT_DIR$/config/debugger/AMD/Zynq 7020.ddf",
+            ],
+        },
+        testProgram: {
+            project: Path.join(
+                __dirname,
+                "../../../tests/TestProjects/GettingStarted/sim2.ewp",
+            ),
+            projectConfiguration: "Debug",
+            variant: "doBuild",
+        },
+        multicoreNrOfCores: 2,
+        registers: {
+            expectPeripherals: true,
+            cpuRegisters: {
+                groupName: "Current CPU Registers",
+                registers: [
+                    { name: "R4", hasChildren: false },
+                    { name: "SP", hasChildren: false },
+                    { name: "PC", hasChildren: false },
+                    { name: "APSR", hasChildren: true },
+                ],
+                size: 32,
+            },
+            fpuRegisters: {
+                groupName: "Floating-point Extension registers",
+                registers: [{ name: "S6", hasChildren: true }, { name: "D12" }],
+            },
+        },
+        dataBreakpointsAreUnreliable: false,
+        isHardwareTest: false,
+    };
+
     /// Standard test configurations below
     export const TEST_CONFIGURATIONS: { [id: string]: TestConfiguration } = {
-        armSim2: {
+        armSim2: ARM_SIM2_CONFIG,
+        // For EWARM 8.50, uses a different ddf file
+        armSim2v850: {
+            ...ARM_SIM2_CONFIG,
             debugConfiguration: {
-                target: "arm",
-                driver: "Simulator",
+                ...ARM_SIM2_CONFIG.debugConfiguration,
                 driverOptions: [
                     "--endian=little",
                     "--cpu=Cortex-A9",
@@ -133,46 +179,27 @@ export namespace TestConfiguration {
                     "--device=Zynq 7020",
                     "--semihosting",
                     "-p",
-                    "$TOOLKIT_DIR$/config/debugger/AMD/Zynq 7020.ddf",
+                    "$TOOLKIT_DIR$/config/debugger/xilinx/Zynq 7020.ddf",
                 ],
             },
-            testProgram: {
-                project: Path.join(__dirname, "../../../tests/TestProjects/GettingStarted/sim2.ewp"),
-                projectConfiguration: "Debug",
-                variant: "doBuild",
-            },
-            multicoreNrOfCores: 2,
-            registers: {
-                expectPeripherals: true,
-                cpuRegisters: {
-                    groupName: "Current CPU Registers",
-                    registers: [
-                        { name: "R4", hasChildren: false },
-                        { name: "SP", hasChildren: false },
-                        { name: "PC", hasChildren: false },
-                        { name: "APSR", hasChildren: true },
-                    ],
-                    size: 32,
-                },
-                fpuRegisters: {
-                    groupName: "Floating-point Extension registers",
-                    registers: [
-                        { name: "S6", hasChildren: true },
-                        { name: "D12" },
-                    ],
-                },
-            },
-            dataBreakpointsAreUnreliable: false,
-            isHardwareTest: false,
         },
         armImperas: {
             debugConfiguration: {
                 target: "arm",
                 driver: "64-bit Simulator",
-                driverOptions: ["--endian=little", "--cpu=Cortex-A53", "--abi=ilp32", "--fpu=None", "--semihosting"],
+                driverOptions: [
+                    "--endian=little",
+                    "--cpu=Cortex-A53",
+                    "--abi=ilp32",
+                    "--fpu=None",
+                    "--semihosting",
+                ],
             },
             testProgram: {
-                project: Path.join(__dirname, "../../../tests/TestProjects/GettingStarted/Imperas.ewp"),
+                project: Path.join(
+                    __dirname,
+                    "../../../tests/TestProjects/GettingStarted/Imperas.ewp",
+                ),
                 projectConfiguration: "Imperas",
                 variant: "doBuild",
             },
@@ -212,7 +239,10 @@ export namespace TestConfiguration {
                 ],
             },
             testProgram: {
-                project: Path.join(__dirname, "../../../tests/TestProjects/GettingStarted/riscv.ewp"),
+                project: Path.join(
+                    __dirname,
+                    "../../../tests/TestProjects/GettingStarted/riscv.ewp",
+                ),
                 projectConfiguration: "Debug",
                 variant: "doBuild",
             },
@@ -228,9 +258,7 @@ export namespace TestConfiguration {
                 },
                 fpuRegisters: {
                     groupName: "FPU Status Registers",
-                    registers: [
-                        { name: "fflags", hasChildren: true },
-                    ],
+                    registers: [{ name: "fflags", hasChildren: true }],
                 },
             },
             dataBreakpointsAreUnreliable: false,
@@ -252,7 +280,10 @@ export namespace TestConfiguration {
                 ],
             },
             testProgram: {
-                project: Path.join(__dirname, "../../../tests/TestProjects/GettingStarted/rh850.ewp"),
+                project: Path.join(
+                    __dirname,
+                    "../../../tests/TestProjects/GettingStarted/rh850.ewp",
+                ),
                 projectConfiguration: "Debug",
                 variant: "doBuild",
             },
