@@ -16,6 +16,7 @@ import { Source } from "@vscode/debugadapter";
 import { OsUtils } from "iar-vsc-common/osUtils";
 import { debugAdapterSuite } from "./debugAdapterSuite";
 import { DebugProtocol } from "@vscode/debugprotocol";
+import { TestConfiguration } from "../testConfiguration";
 
 /**
  * Uses mock disassembly and source lookup services to test disassembly requests.
@@ -200,8 +201,10 @@ debugAdapterSuite("Disassembly with real service", (dc, dbgConfig, fibonacciFile
                 const instr = disAsm.body.instructions[0];
                 Assert(instr);
                 Assert.strictEqual(instr.address, stackFrames[0]?.instructionPointerReference);
-                Assert.strictEqual(instr.line, 43);
-                Assert.strictEqual(instr.endLine, 44);
+                const startLine = TestConfiguration.getConfiguration().stopsAfterMain ? 45 : 43;
+                const endLine = TestConfiguration.getConfiguration().stopsAfterMain ? 45 : 44;
+                Assert.strictEqual(instr.line, startLine);
+                Assert.strictEqual(instr.endLine, endLine);
 
                 Assert(instr.location);
                 Assert(instr.location.path);

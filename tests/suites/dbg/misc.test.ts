@@ -8,6 +8,7 @@ import { debugAdapterSuite } from "./debugAdapterSuite";
 import { TestUtils } from "../testUtils";
 import { mkdirSync, renameSync } from "fs";
 import { DebugProtocol } from "@vscode/debugprotocol";
+import { TestConfiguration } from "../testConfiguration";
 
 /**
  * Tests directly against the debug adapter, using the DAP.
@@ -34,10 +35,11 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
     });
 
     test("Stops on main", () => {
+        const startLine = TestConfiguration.getConfiguration().stopsAfterMain ? 45 : 43;
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfig()),
-            TestUtils.assertStoppedLocation(dc(), "entry", 43, fibonacciFile(), /main/),
+            TestUtils.assertStoppedLocation(dc(), "entry", startLine, fibonacciFile(), /main/),
         ]);
     });
 
@@ -205,8 +207,11 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
         ]);
     });
 
-    test("Supports read and write memory", () => {
+    test("Supports read and write memory", function() {
         /// This test assumes ints are 4 bytes, which may not be true in all cases
+        if (TestConfiguration.getConfiguration().registers.cpuRegisters.size === 16) {
+            this.skip();
+        }
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfig()),

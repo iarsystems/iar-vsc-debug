@@ -3,6 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import * as vscode from "vscode";
 import { TestUtils } from "../testUtils";
+import { TestConfiguration } from "../testConfiguration";
 
 
 /**
@@ -43,15 +44,19 @@ suite("New tests", () =>{
     });
 
     test("Test launch", async()=>{
-        await TestUtils.assertCurrentLineIs(activeSession, "", 43, 1);
+        const startLine = TestConfiguration.getConfiguration().stopsAfterMain ? 45 : 43;
+        const column = TestConfiguration.getConfiguration().stopsAfterMain ? 3 : 1;
+        await TestUtils.assertCurrentLineIs(activeSession, "", startLine, column);
     });
 
 
     test("Test step", async()=>{
-        await TestUtils.assertCurrentLineIs(activeSession, "", 43, 1);
+        const startLine = TestConfiguration.getConfiguration().stopsAfterMain ? 45 : 43;
+        const column = TestConfiguration.getConfiguration().stopsAfterMain ? 3 : 1;
+        await TestUtils.assertCurrentLineIs(activeSession, "", startLine, column);
         await activeSession.customRequest("next", {granularity: ""});
         await TestUtils.wait(1000);
-        await TestUtils.assertCurrentLineIs(activeSession, "", 45, 3);
+        await TestUtils.assertCurrentLineIs(activeSession, "", startLine + 2, 3);
     });
 
 });

@@ -372,7 +372,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
 
                 // First set new value
                 const regName = regConfig.cpuRegisters.registers[0]!.name;
-                const regVal = regConfig.cpuRegisters.size === 64 ?  "0xDEADBEEFDEADBEEF" : "0xDEADBEEF";
+                const regVal = regConfig.cpuRegisters.size  === 64 ?  "0xDEADBEEFDEADBEEF" : regConfig.cpuRegisters.size === 32 ? "0xDEADBEEF" : "0xDEAD";
                 dc().setVariableRequest({name: regName, value: regVal, variablesReference: cpuRegisters.variablesReference});
 
                 // Now check that the values changed
