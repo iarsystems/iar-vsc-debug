@@ -30,8 +30,7 @@ export class PartialCSpyConfigurationProvider
 implements vscode.DebugConfigurationProvider {
     async resolveDebugConfigurationWithSubstitutedVariables?(
         _folder: vscode.WorkspaceFolder | undefined,
-        debugConfiguration: vscode.DebugConfiguration &
-            PartialCSpyLaunchRequestArguments,
+        debugConfiguration: LaunchConfigurationSupplier.CspyLaunchJsonConfiguration,
         _?: vscode.CancellationToken,
     ): Promise<vscode.DebugConfiguration | null | undefined> {
         if (
@@ -71,8 +70,10 @@ export class InitialCSpyConfigurationProvider implements vscode.DebugConfigurati
         if (typeof supplierResult === "number") {
             vscode.window.showErrorMessage(LaunchConfigurationSupplier.toErrorMessage(supplierResult));
         } else {
+            // The build extension is installed, so we can suggest the "minimal" configuration.
+            options.push({ label: "Debug the active IAR project", description: "Use the selection from the IAR Build extension", launchConfig: MINIMAL_CONFIG });
             if (supplierResult.length > 0) {
-                options.push({ label: "Auto-generated", kind: vscode.QuickPickItemKind.Separator });
+                options.push({ label: "Auto-generated from project", kind: vscode.QuickPickItemKind.Separator });
                 supplierResult.forEach(launchConfig => {
                     options.push({ label: launchConfig.name, description: launchConfig.driver, launchConfig });
                 });
@@ -81,7 +82,15 @@ export class InitialCSpyConfigurationProvider implements vscode.DebugConfigurati
         }
         if (relevantTemplates.length > 0) {
             options.push({ label: "Templates", kind: vscode.QuickPickItemKind.Separator });
-            relevantTemplates.forEach(template => options.push({ label: template.name, description: Workbench.getTargetDisplayName(template.target) + " template", launchConfig: template }));
+            relevantTemplates.forEach(template =>
+                options.push({
+                    label: template.name,
+                    description:
+                        Workbench.getTargetDisplayName(template.target) +
+                        " template",
+                    launchConfig: template,
+                }),
+            );
         }
 
         const choice = await vscode.window.showQuickPick(options, { title: "Select initial launch.json configuration" });
@@ -121,7 +130,17 @@ export class DefaultCSpyConfigurationResolver implements vscode.DebugConfigurati
     }
 }
 
-const TEMPLATES: LaunchConfigurationSupplier.CspyLaunchJsonConfiguration[] = [
+const MINIMAL_CONFIG: LaunchConfigurationSupplier.CspyLaunchJsonConfiguration = {
+    type: "cspy",
+    request: "launch",
+    name: "Debug the active IAR Project",
+    workbenchPath: "${command:iar-config.toolchain}",
+    projectPath: "${command:iar-config.project-file}",
+    projectConfiguration: "${command:iar-config.project-configuration}",
+    buildBeforeDebugging: "AskOnFailure"
+};
+
+const TEMPLATES: Array<vscode.DebugConfiguration & PartialCSpyLaunchRequestArguments> = [
     {
         type: "cspy",
         request: "launch",
