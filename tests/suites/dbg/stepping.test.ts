@@ -5,6 +5,7 @@ import * as Assert from "assert";
 import { debugAdapterSuite } from "./debugAdapterSuite";
 import { TestUtils } from "../testUtils";
 import { OsUtils } from "iar-vsc-common/osUtils";
+import { TestConfiguration } from "../testConfiguration";
 
 debugAdapterSuite("Stepping", (dc, dbgConfig, fibonacciFile, utilsFile) => {
 
@@ -13,10 +14,12 @@ debugAdapterSuite("Stepping", (dc, dbgConfig, fibonacciFile, utilsFile) => {
             dc().configurationSequence(),
             dc().launch(dbgConfig()),
             dc().waitForEvent("stopped").then(async() => {
-                for (let i = 0; i < 4; i++) {
+                const count = TestConfiguration.getConfiguration().stopsAfterMain ? 3 : 4;
+                const startLine = TestConfiguration.getConfiguration().stopsAfterMain ? 45 : 43;
+                for (let i = 1; i <= count; i++) {
                     await Promise.all([
                         dc().nextRequest({threadId: 0, singleThread: true}),
-                        TestUtils.assertStoppedLocation(dc(), "step", 45 + i*2,
+                        TestUtils.assertStoppedLocation(dc(), "step", startLine + i*2,
                             fibonacciFile(), /main/),
                     ]);
                 }
@@ -101,13 +104,14 @@ debugAdapterSuite("Stepping", (dc, dbgConfig, fibonacciFile, utilsFile) => {
     });
 
     test("Supports restarting", () => {
+        const startLine = TestConfiguration.getConfiguration().stopsAfterMain ? 45 : 43;
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfig()),
             dc().waitForEvent("stopped").then(async() => {
                 await Promise.all([
                     dc().restartRequest({}),
-                    TestUtils.assertStoppedLocation(dc(), "entry", 43, fibonacciFile(), /main/),
+                    TestUtils.assertStoppedLocation(dc(), "entry", startLine, fibonacciFile(), /main/),
                 ]);
 
             }),

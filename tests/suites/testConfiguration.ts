@@ -49,7 +49,7 @@ export interface TestConfiguration {
             /** Registers that should be present in the fpu group. */
             registers: RegisterSpecification[],
             /** The bit width of a typical register */
-            size: 32 | 64;
+            size: 16 | 32 | 64;
         },
         fpuRegisters?: {
             /** The name of the register group containing the main fpu registers. */
@@ -72,6 +72,12 @@ export interface TestConfiguration {
      * Whether the tests are running in the hardware test rig.
      */
     isHardwareTest: boolean;
+    /**
+     * Most targets stop *exactly* at the declaration() of main() at the start
+     * of a session, but some stop on the first statement in main() (those
+     * targets should set this to true).
+     */
+    stopsAfterMain: boolean;
 }
 
 export namespace TestConfiguration {
@@ -162,6 +168,7 @@ export namespace TestConfiguration {
         },
         dataBreakpointsAreUnreliable: false,
         isHardwareTest: false,
+        stopsAfterMain: false,
     };
 
     /// Standard test configurations below
@@ -225,6 +232,7 @@ export namespace TestConfiguration {
             },
             dataBreakpointsAreUnreliable: false,
             isHardwareTest: false,
+            stopsAfterMain: false,
         },
         riscvSim: {
             debugConfiguration: {
@@ -263,6 +271,7 @@ export namespace TestConfiguration {
             },
             dataBreakpointsAreUnreliable: false,
             isHardwareTest: false,
+            stopsAfterMain: false,
         },
         rh850Sim: {
             debugConfiguration: {
@@ -308,6 +317,52 @@ export namespace TestConfiguration {
             },
             dataBreakpointsAreUnreliable: false,
             isHardwareTest: false,
+            stopsAfterMain: false,
+        },
+        rl78Sim: {
+            debugConfiguration: {
+                target: "rl78",
+                driver: "Simulator",
+                driverOptions: [
+                    "--core",
+                    "s3",
+                    "--near_const_location",
+                    "rom0",
+                    "--near_const_start",
+                    "0xF3000",
+                    "--near_const_size",
+                    "27.749",
+                    "-p",
+                    "$TOOLKIT_DIR$/config/debugger/iorl78_s3.ddf",
+                    "--double=32",
+                    "-d",
+                    "sim",
+                    "--multicore_nr_of_cores=1",
+                ],
+            },
+            testProgram: {
+                project: Path.join(
+                    __dirname,
+                    "../../../tests/TestProjects/GettingStarted/rl78.ewp",
+                ),
+                projectConfiguration: "Debug",
+                variant: "doBuild",
+            },
+            registers: {
+                expectPeripherals: true,
+                cpuRegisters: {
+                    groupName: "CPU Registers",
+                    registers: [
+                        { name: "AX", hasChildren: true },
+                        { name: "PC", hasChildren: false },
+                        { name: "PSW", hasChildren: true },
+                    ],
+                    size: 16,
+                },
+            },
+            dataBreakpointsAreUnreliable: false,
+            isHardwareTest: false,
+            stopsAfterMain: true,
         },
     };
 }
