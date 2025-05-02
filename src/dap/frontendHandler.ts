@@ -267,7 +267,7 @@ export class FrontendHandler implements ThriftServiceHandler<Frontend.Client>, D
         });
     }
 
-    editSourceLocation(loc: SourceLocation): Q.Promise<void> {
+    editSourceLocation(loc: SourceLocation, _focus?: boolean): Q.Promise<void> {
         const body: CustomEvent.FileOpenedData = { path: loc.filename, line: loc.line, col: loc.col };
         this.eventSink.sendEvent(new Event(CustomEvent.Names.FILE_OPENED, body));
         return Q.resolve();
