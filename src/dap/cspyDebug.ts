@@ -611,7 +611,18 @@ export class CSpyDebugSession extends LoggingDebugSession {
 
     protected override async restartRequest(response: DebugProtocol.RestartResponse, _args: DebugProtocol.RestartArguments) {
         await this.tryWithServices(response, async services => {
-            await services.runControlService.reset();
+            try {
+                await services.runControlService.reset();
+            } catch (e) {
+                // For VS Code, returning an error from the restart request will
+                // cause the session to break, so we just log it, pretend it
+                // worked and hope nothing else breaks as a result.
+                // See VSC-527 and https://github.com/microsoft/vscode/issues/237414
+                logger.error(
+                    "Failed to reset the target: " +
+                        (e instanceof Error ? e.message : String(e)),
+                );
+            }
         });
         this.sendResponse(response);
     }
