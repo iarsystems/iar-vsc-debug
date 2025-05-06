@@ -621,6 +621,30 @@
 					"icon": "images/logo-transparent.svg",
 					"type": "webview",
 					"when": "inDebugMode && debugType == cspy && iar-rtos-memory-pool.enabled"
+				},
+				{
+					"id": "iar-zephyr-task",
+					"contextualTitle": "iar",
+					"name": "Task List",
+					"icon": "images/logo-transparent.svg",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-zephyr-task.enabled"
+				},
+				{
+					"id": "iar-zephyr-mutex",
+					"contextualTitle": "iar",
+					"name": "Mutex List",
+					"icon": "images/logo-transparent.svg",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-zephyr-mutex.enabled"
+				},
+				{
+					"id": "iar-zephyr-semaphore",
+					"contextualTitle": "iar",
+					"name": "Semaphore List",
+					"icon": "images/logo-transparent.svg",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-zephyr-semaphore.enabled"
 				}
 			],
 			"debug": [
