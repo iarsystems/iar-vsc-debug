@@ -72,6 +72,9 @@ export class ListwindowManager {
         { viewId: "iar-rtos-timer-metrics", serviceName: "WIN_RTOS_TIMER_METRICS" },
         { viewId: "iar-rtos-queue", serviceName: "WIN_RTOS_QUEUE" },
         { viewId: "iar-rtos-memory-pool", serviceName: "WIN_RTOS_MEMORYPOOL" },
+        { viewId: "iar-zephyr-task", serviceName: "WIN_ZEPHYR_TASK" },
+        { viewId: "iar-zephyr-mutex", serviceName: "WIN_ZEPHYR_MUTEX" },
+        { viewId: "iar-zephyr-semaphore", serviceName: "WIN_ZEPHYR_SEMAPHORE" },
     ];
 
     getBackendHandler(
