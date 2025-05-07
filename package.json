@@ -907,6 +907,29 @@
 										"items": {
 											"type": "string"
 										}
+									},
+									"extraImages": {
+										"type": "array",
+										"description": "A list of extra images to download",
+										"items": {
+											"type": "object",
+											"properties": {
+												"image": {
+													"type": "string",
+													"description": "Path to the image to load."
+												},
+												"offset": {
+													"type": ["string", "number"],
+                          "description": "The offset to load the image at, as a decimal number or a hex (0xff), octal (0377) or decimal (255) string."
+												},
+												"suppressDownload": {
+													"type": "boolean",
+													"description": "Whether to suppress the download of the image.",
+													"default": false
+												}
+											}
+										},
+										"default": []
 									}
 								}
 							},
@@ -1077,6 +1100,29 @@
 										"items": {
 											"type": "string"
 										}
+									},
+									"extraImages": {
+										"type": "array",
+										"description": "A list of extra images to download",
+										"items": {
+											"type": "object",
+											"properties": {
+												"image": {
+													"type": "string",
+													"description": "Path to the image to load."
+												},
+												"offset": {
+													"type": ["string", "number"],
+                          "description": "The offset to load the image at, as a decimal number or a hex (0xff), octal (0377) or decimal (255) string."
+												},
+												"suppressDownload": {
+													"type": "boolean",
+													"description": "Whether to suppress the download of the image.",
+													"default": false
+												}
+											}
+										},
+										"default": []
 									}
 								}
 							},

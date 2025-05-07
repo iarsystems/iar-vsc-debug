@@ -13,6 +13,7 @@ import { BuildExtensionConfigurationProvider } from "../../../src/configprovider
 import { CSpyConfigurationSupplier } from "../../../src/configproviders/supplier/supplier";
 import { TestConfiguration } from "../testConfiguration";
 import { ProjectConfiguration } from "iar-vsc-common/buildExtension";
+import { ExtraImage } from "../../../src/dap/cspyDebug";
 
 /**
  * This test suite tests our ability to generate a launch configuration based on the xcl files
@@ -227,6 +228,14 @@ suite("Configuration tests", () => {
         assert.deepStrictEqual(configTest["download"]?.["deviceMacros"], ["devmacro1"]);
         assert.deepStrictEqual(configTest["download"]?.["flashLoader"], "flash.ddf");
 
+        // Ensure that we can collect extra images
+        const opts4 = ["/runto", "main", "/driver", "arm/bin/libriscvSIM.so", "/extradebugfilenodownload", "0x20000", "foo",  "/extradebugfile", "20000", "bar"];
+        partialConfigTest = BuildExtensionConfigurationProvider.provideDebugConfigurationFor(opts4.concat(programOpt), projectName, config, target);
+        configTest = ConfigResolutionCommon.toLaunchJsonConfiguration(partialConfigTest, wsDir);
+
+        const image1: ExtraImage = {image: "foo", offset: "0x20000", suppressDownload:true};
+        const image2: ExtraImage = {image: "bar", offset: "20000", suppressDownload:false};
+        assert.deepStrictEqual(configTest["download"]?.["extraImages"], [image1, image2]);
     });
 
 
