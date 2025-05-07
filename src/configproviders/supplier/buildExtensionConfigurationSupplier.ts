@@ -1,6 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+import { ExtraImage } from "../../dap/cspyDebug";
 import { ConfigResolutionCommon } from "./common";
 
 /**
@@ -35,11 +36,13 @@ export namespace BuildExtensionConfigurationProvider {
         const deviceMacros: string[] = [];
         let flashLoader: string | undefined;
         const driverOptions: string[] = [];
+        const extraImages: ExtraImage[] = [];
 
         cspyCommands = cspyCommands.map(stripQuotes);
 
         while (cspyCommands.length > 0) {
             let val: string | undefined;
+            let pair: [string, string] | undefined;
             if ((val = consumeArg1("/file", cspyCommands)) !== undefined) {
                 program = val;
             } else if ((val = consumeArg1("/runto", cspyCommands)) !== undefined) {
@@ -56,6 +59,10 @@ export namespace BuildExtensionConfigurationProvider {
                 deviceMacros.push(val);
             } else if ((val = consumeArg1("/flashboard", cspyCommands)) !== undefined) {
                 flashLoader = val;
+            } else if ((pair = consumeArg2("/extradebugfile", cspyCommands)) !== undefined) {
+                extraImages.push({image: pair[1], offset: pair[0], suppressDownload: false});
+            } else if ((pair = consumeArg2("/extradebugfilenodownload", cspyCommands)) !== undefined) {
+                extraImages.push({image: pair[1], offset: pair[0], suppressDownload: true});
             } else {
                 // other args are not supported
                 // ignore other cspy commands, they are not supported for now
@@ -63,9 +70,7 @@ export namespace BuildExtensionConfigurationProvider {
                     consumeArg1("/kernel", cspyCommands) ||
                     consumeArg1("/proc", cspyCommands) ||
                     consumeArg1("/args", cspyCommands) ||
-                    consumeArg0("/ilink", cspyCommands) ||
-                    consumeArg2("/extradebugfile", cspyCommands) ||
-                    consumeArg2("/extradebugfilenodownload", cspyCommands);
+                    consumeArg0("/ilink", cspyCommands);
                 if (!ignored) {
                     val = cspyCommands.shift();
                     if (val) {
@@ -94,6 +99,7 @@ export namespace BuildExtensionConfigurationProvider {
             deviceMacros,
             flashLoader,
             driverOptions,
+            extraImages
         };
     }
 

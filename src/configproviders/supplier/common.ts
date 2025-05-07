@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import * as vscode from "vscode";
 import * as Path from "path";
-import { CSpyLaunchRequestArguments } from "../../dap/cspyDebug";
+import { CSpyLaunchRequestArguments, ExtraImage } from "../../dap/cspyDebug";
 import { OsUtils } from "iar-vsc-common/osUtils";
 import { CSpyDriver } from "../../dap/breakpoints/cspyDriver";
 import { SettingsConstants } from "../../settingsConstants";
@@ -28,6 +28,7 @@ export namespace ConfigResolutionCommon {
         deviceMacros: string[];
         flashLoader: string | undefined;
         driverOptions: string[];
+        extraImages: ExtraImage[];
     }
 
     /**
@@ -107,13 +108,13 @@ export namespace ConfigResolutionCommon {
             config.setupMacros = parts.setupMacros;
         }
 
-        if (parts.deviceMacros.length > 0 || parts.flashLoader !== undefined) {
+        if (parts.deviceMacros.length > 0 || parts.flashLoader !== undefined || parts.extraImages.length > 0) {
             config.download = {
-                flashLoader: parts.flashLoader,
+                extraImages: parts.extraImages,
                 deviceMacros: parts.deviceMacros,
+                flashLoader: parts.flashLoader,
             };
         }
-
 
         // Remove libsupport plugin(s), since we use our own, and e.g armbat
         parts.plugins = parts.plugins.filter(plugin => {

@@ -43,14 +43,15 @@ import { ThriftServiceRegistryProcess } from "iar-vsc-common/thrift/thriftServic
 import { BreakpointModes } from "./breakpoints/breakpointMode";
 import { ExceptionBreakpoints } from "./breakpoints/exceptionBreakpoint";
 import { toInt64 } from "../utils";
+import { Int64 } from "thrift";
 
 export interface ExtraImage {
     /** The path to the image to load. */
     image: string,
     /** The offset to use.*/
-    offset: string,
+    offset: string | number,
     /** Only download the debug info. */
-    onlyDebugInfo: boolean
+    suppressDownload: boolean
 }
 
 /**
@@ -97,6 +98,8 @@ export interface PartialCSpyLaunchRequestArguments extends DebugProtocol.LaunchR
         flashLoader?: string;
         /** A list of devices macros to load before flashing */
         deviceMacros?: string[];
+        /** A list of extra images to load */
+        extraImages?: ExtraImage[];
     }
     /** A list of plugins to load */
     plugins?: string[];
@@ -116,8 +119,6 @@ export interface PartialCSpyLaunchRequestArguments extends DebugProtocol.LaunchR
      * required to render listwindows properly, but can be disabled in tests.
      */
     enableListWindowLookup?: boolean;
-
-    extraImages?: ExtraImage[];
 }
 
 /**
@@ -367,13 +368,21 @@ export class CSpyDebugSession extends LoggingDebugSession {
             // based on whether we're attaching or not.
             const moduleOptions = new ModuleLoadingOptions();
             moduleOptions.extraDebugFiles = [];
-            args.extraImages?.forEach((extraImage: ExtraImage) => {
+            args.download?.extraImages?.forEach((extraImage: ExtraImage) => {
                 const extraFile = new ExtraDebugFile();
-                extraFile.offset = toInt64(extraImage.offset);
-                extraFile.doDownload = extraImage.onlyDebugInfo;
+
+                // Handle based on type as offset can be a number or an string.
+                if (typeof(extraImage.offset) === "string") {
+                    extraFile.offset = toInt64(extraImage.offset);
+                } else {
+                    extraFile.offset = new Int64(extraImage.offset);
+                }
+
+                extraFile.doDownload = !extraImage.suppressDownload;
                 extraFile.path = extraImage.image;
                 moduleOptions.extraDebugFiles.push(extraFile);
             });
+
             moduleOptions.shouldAttach = isAttachRequest;
             moduleOptions.onlyPrefixNotation = false; // Always false.
             moduleOptions.shouldLeaveRunning = args.leaveTargetRunning?? false;

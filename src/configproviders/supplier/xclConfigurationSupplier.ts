@@ -6,6 +6,7 @@ import * as path from "path";
 import * as fs from "fs";
 import { OsUtils } from "iar-vsc-common/osUtils";
 import { ConfigResolutionCommon } from "./common";
+import { ExtraImage } from "../../dap/cspyDebug";
 
 /**
  * Provides automatic debug configurations from the .xcl files in a project folder
@@ -118,6 +119,7 @@ export namespace XclConfigurationSupplier {
         const deviceMacros: string[] = [];
         let flashLoader: string | undefined;
         const driverOptions: string[] = [];
+        const extraImages: ExtraImage[] = [];
 
         // Read the content from the general file
         if (generalCommands.length < 3) {
@@ -182,6 +184,7 @@ export namespace XclConfigurationSupplier {
             deviceMacros,
             flashLoader,
             driverOptions,
+            extraImages
         };
     }
 
