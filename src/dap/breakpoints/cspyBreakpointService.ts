@@ -40,8 +40,11 @@ export class CSpyBreakpointService implements Disposable.Disposable {
 
     /**
      * Creates and returns a new breakpoint manager
+     * @param clientLinesStartAt1 Whether the frontend uses 1-based line numbers
+     * @param clientColumnsStartAt1 Whether the frontend uses 1-based column numbers
      * @param serviceRegistry The service manager handling the debug session
      * @param driver The driver running the debug session
+     * @param eventSink A function to send output events to the frontend
      */
     static async instantiate(serviceRegistry: ThriftServiceRegistry,
         clientLinesStartAt1: boolean,
@@ -409,4 +412,5 @@ export class CSpyBreakpointService implements Disposable.Disposable {
         logger.warn("Cspy to dap access mapping is not exhaustive!");
         return "readWrite";
     }
+
 }
