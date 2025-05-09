@@ -431,7 +431,8 @@ export class CSpyDebugSession extends LoggingDebugSession {
             const breakpointManager = await CSpyBreakpointService.instantiate(cspyProcess.serviceRegistry,
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1,
-                driver, (event: OutputEvent) => {
+                driver,
+                (event: OutputEvent) => {
                     this.sendEvent(event);
                 });
             this.teardown.pushDisposable(breakpointManager);

@@ -17,6 +17,7 @@ import { ThriftServiceHandler } from "iar-vsc-common/thrift/thriftUtils";
 import { ColorSchema, ThriftDisplayElement } from "iar-vsc-common/thrift/bindings/themes_types";
 import { GenericDialogResults } from "iar-vsc-common/thrift/bindings/frontend_types";
 import { unpackTree } from "../utils";
+import { OsUtils } from "iar-vsc-common/osUtils";
 
 /**
  * A (handler for a) thrift service that provides various types dialogs to C-SPY. These may be used e.g. to display
@@ -44,7 +45,7 @@ export class FrontendHandler implements ThriftServiceHandler<Frontend.Client>, D
      * Creates a new handler for the frontend service. The caller is responsible for launching the service with this
      * handler.
      * @param eventSink Used to send DAP events to the frontend
-     * @param sourceFileMap A set of path mappings/translations to use to resolve nonexistent source files
+     * @param sourceFileMap A set of folder aliases, i.e. a map of source file paths to their corresponding paths in the debug info
      * @param clientSupportsThemes Whether the client can handle the {@link CustomEvent.Names.THEME_REQUESTED} request from the debug adapter
      * @param requestRegistry The registry where this handler should register the DAP requests it can handle
      */
@@ -273,8 +274,32 @@ export class FrontendHandler implements ThriftServiceHandler<Frontend.Client>, D
         return Q.resolve();
     }
 
+    handlesAliasStorage(): Q.Promise<boolean> {
+        return Q.resolve(true);
+    }
+
+    loadAliases(): Q.Promise<Record<string, string>> {
+        // The cspy kernel works on *file* aliases, not folders, so we create
+        // mappings for dummy files. The kernel can use this to derive mappings
+        // for other files in nearby folders, so effectively this is equivalent
+        // to a folder alias.
+        const fileAliases: Record<string, string> = {};
+        for (const [sourcePath, diPath] of Object.entries(this.sourceFileMap)) {
+            fileAliases[Path.join(sourcePath, "dummy.txt")] = Path.join(diPath, "dummy.txt");
+        }
+        return Q.resolve(fileAliases);
+    }
+
     resolveAliasForFile(fileName: string, suggestedFile: string): Q.Promise<string> {
-        for (const sourcePath in this.sourceFileMap) {
+        if (OsUtils.OsType.Linux === OsUtils.detectOsType()) {
+            // This may be a windows path, treat backslashes as directory separators
+            fileName = fileName.replace(/\\/g, "/");
+        }
+        for (let sourcePath in this.sourceFileMap) {
+            if (OsUtils.OsType.Linux === OsUtils.detectOsType()) {
+                // This may be a windows path, treat backslashes as directory separators
+                sourcePath = sourcePath.replace(/\\/g, "/");
+            }
             const rel = Path.relative(sourcePath, fileName);
             if (!rel.startsWith("..") && !Path.isAbsolute(rel)) {
                 const targetPath = this.sourceFileMap[sourcePath];
@@ -284,7 +309,10 @@ export class FrontendHandler implements ThriftServiceHandler<Frontend.Client>, D
                 }
             }
         }
-        logger.verbose(`Could not resolve source path '${fileName}'`);
+
+        logger.warn(
+            `The source file '${fileName}' was not found. To use an alias for this file, add a "sourceFileMap" to your launch.json config.`,
+        );
         return Q.resolve(suggestedFile);
     }
 
