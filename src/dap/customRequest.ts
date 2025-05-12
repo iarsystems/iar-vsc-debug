@@ -333,6 +333,7 @@ export namespace CustomEvent {
     }
     export interface ListWindowsRequestedData {
         supportsToolbars: boolean;
+        supportsGenericDialogs: boolean;
     }
     export interface ShowGenericDialogRequestData{
         id: number,

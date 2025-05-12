@@ -29,6 +29,9 @@ interface ViewDefinition {
     serviceName: string;
     // The fallback class for toolbars
     fallback?: new () => AbstractListwindowClient<ListWindowBackend.Client>;
+    // Local override to still use fallback client. Undefined value
+    // is interpreterd as false.
+    usesGenericDialogs?: boolean
 }
 
 /**
@@ -43,7 +46,7 @@ export class ListwindowManager {
     // prettier-ignore
     private static readonly VIEW_DEFINITIONS: ViewDefinition[] = [
         { viewId: "iar-autos", serviceName: "WIN_AUTO" },
-        { viewId: "iar-trace", serviceName: "WIN_SLIDING_TRACE_WINDOW", fallback: TraceClient },
+        { viewId: "iar-trace", serviceName: "WIN_SLIDING_TRACE_WINDOW", fallback: TraceClient, usesGenericDialogs: true },
         { viewId: "iar-trace-non-sliding", serviceName: "WIN_TRACE" },
         { viewId: "iar-quick-watch", serviceName: "WIN_QUICK_WATCH", fallback: QuickWatchClient },
         { viewId: "iar-live-watch", serviceName: "WIN_STATIC_WATCH" },
@@ -91,6 +94,12 @@ export class ListwindowManager {
         })?.viewId;
     }
 
+    public getViewDefinitionFromServiceName(serviceName: string): ViewDefinition | undefined {
+        return ListwindowManager.VIEW_DEFINITIONS.find(val => {
+            return val.serviceName === serviceName;
+        });
+    }
+
     private readonly windows: ListWindowBackendHandler<ListWindowBackend.Client>[];
     private readonly sessions: Map<string, ThriftServiceRegistry> = new Map();
     private activeSession: string | undefined = undefined;
@@ -126,7 +135,7 @@ export class ListwindowManager {
     // From a given vscode debug session, connect a listwindows to
     // the registry assigned to the session. If the given session is
     // the active session, this call does nothing.
-    private async connectToSession(session: vscode.DebugSession, supportsGenericToolbars: boolean) {
+    private async connectToSession(session: vscode.DebugSession, supportsGenericToolbars: boolean, supportsGenericDialogs: boolean) {
         if (session.type !== "cspy") {
             return;
         }
@@ -145,8 +154,14 @@ export class ListwindowManager {
         // It's normal for 'connect' to fail, since not all windows are
         // supported by all drivers.
         await Promise.allSettled(
-            this.windows.map(window =>
-                window.connect(session, registry, supportsGenericToolbars),
+            this.windows.map(window => {
+                // If the backend don't support generic dialogs and the view uses it, use the fallback strategy.
+                if (!supportsGenericDialogs && (this.getViewDefinitionFromServiceName(window.serviceName)?.usesGenericDialogs ?? false)) {
+                    return window.connect(session, registry, false);
+                } else {
+                    return window.connect(session, registry, supportsGenericToolbars);
+                }
+            },
             ),
         );
     }
@@ -186,6 +201,7 @@ export class ListwindowManager {
                         this.connectToSession(
                             ev.session,
                             ev.body.supportsToolbars,
+                            ev.body.supportsGenericDialogs
                         ),
                     ]);
                     connectingTask.finally(() => {

@@ -44,6 +44,7 @@ import { BreakpointModes } from "./breakpoints/breakpointMode";
 import { ExceptionBreakpoints } from "./breakpoints/exceptionBreakpoint";
 import { toInt64 } from "../utils";
 import { Int64 } from "thrift";
+import { OsUtils } from "iar-vsc-common/osUtils";
 
 export interface ExtraImage {
     /** The path to the image to load. */
@@ -486,6 +487,11 @@ export class CSpyDebugSession extends LoggingDebugSession {
                     WorkbenchFeatures.GenericToolbars,
                     args.target,
                 ),
+                supportsGenericDialogs: WorkbenchFeatures.supportsFeature(
+                    workbench,
+                    WorkbenchFeatures.GenericDialogsOnLinux,
+                    args.target,
+                ) || OsUtils.detectOsType() === OsUtils.OsType.Windows,
             };
             this.sendEvent(
                 new Event(CustomEvent.Names.LISTWINDOWS_REQUESTED, body),
