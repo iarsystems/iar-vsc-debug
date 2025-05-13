@@ -32,7 +32,7 @@ debugAdapterSuite("Stepping", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                 await Promise.all([
                     dc().continueRequest({threadId: 0, singleThread: true}),
                     TestUtils.assertStoppedLocation(dc(), "breakpoint", 54, utilsFile(), /PutFib/).then(async() => {
-                        const stack = (await dc().stackTraceRequest({threadId: 0})).body.stackFrames;
+                        const stack = (await dc().stackTraceRequest({ threadId: 0 })).body.stackFrames;
                         Assert(stack.length >= 3);
                         Assert.strictEqual(stack[1]!.name, "DoForegroundProcess");
                         Assert.strictEqual(stack[1]!.line, 38);
@@ -40,8 +40,10 @@ debugAdapterSuite("Stepping", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                         Assert(stack[1]!.source.path);
                         Assert(OsUtils.pathsEqual(stack[1]!.source?.path, fibonacciFile()));
 
-                        const res = await dc().scopesRequest({frameId: stack[1]!.id});
-                        const vars = (await dc().variablesRequest({variablesReference: res.body.scopes[0]!.variablesReference})).body.variables;
+                        const res = await dc().scopesRequest({ frameId: stack[1]!.id });
+                        const vars =
+                            (await dc().variablesRequest({ variablesReference: res.body.scopes[0]!.variablesReference })).body.variables;
+
                         Assert.strictEqual(vars.length, 1, `Found variables: ${vars.map(v => v.name).join(", ")}`);
                         Assert.strictEqual(vars[0]!.name, "fib");
                         Assert(vars[0]!.value === "<unavailable>" || vars[0]!.value === "1");

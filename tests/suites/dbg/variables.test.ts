@@ -12,7 +12,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
 
     test("Shows variable values", () => {
         const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnSymbol = false;
+        dbgConfigCopy.stopOnSymbol = "__exit";
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
@@ -41,9 +41,11 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                     Assert(fibArray !== undefined);
                     Assert.strictEqual(fibArray.value, "<array>");
                     Assert(fibArray.type !== undefined);
-                    Assert.match(fibArray.type, /uint32_t\[10\] @ 0x/);
+                    // msp430 has a blankspace here
+                    Assert.match(fibArray.type, /uint32_t\s?\[10\] @ 0x/);
                     Assert(fibArray.variablesReference > 0); // Should be nested
-                    const arrContents = (await dc().variablesRequest({variablesReference: fibArray.variablesReference})).body.variables;
+                    const content = await dc().variablesRequest({variablesReference: fibArray.variablesReference});
+                    const arrContents = content.body.variables;
                     Assert.strictEqual(arrContents.length, 10);
                     for (let i = 0; i < 10; i++) {
                         Assert.strictEqual(arrContents[i]!.name, `[${i}]`);
@@ -99,7 +101,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
     // The contents of STL containers in listwindows can be truncated, and need
     // to be expanded by us to get the full contents. Make sure this works ok.
     test("Supports STL containers", function() {
-        if (TestConfiguration.getConfiguration().isHardwareTest) {
+        if (TestConfiguration.getConfiguration().isHardwareTest || TestConfiguration.getConfiguration().debugConfiguration.target === "msp430") {
             // The hardware tests do not compile cpp files at the moment
             this.skip();
             return;
@@ -117,7 +119,11 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
                     const stlVector = statics.find(variable => variable.name === "LargeVector <Stl\\LargeVector>");
                     Assert(stlVector !== undefined);
                     Assert(stlVector.type !== undefined);
-                    Assert.match(stlVector.type, /std::vector<float>/);
+                    if (TestConfiguration.getConfiguration().usesEmbeddedCpp) {
+                        Assert.match(stlVector.type, /vector<float>/);
+                    } else {
+                        Assert.match(stlVector.type, /std::vector<float>/);
+                    }
                     Assert(stlVector.variablesReference > 0); // Should be nested
                     const vecContents = (await dc().variablesRequest({variablesReference: stlVector.variablesReference})).body.variables;
                     Assert(vecContents.length >= 25, "Length: " + vecContents.length + " " + JSON.stringify(vecContents));
@@ -135,7 +141,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
     });
     test("Supports deeply nested variables", () => {
         const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnSymbol = false;
+        dbgConfigCopy.stopOnSymbol = "__exit";
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
@@ -213,7 +219,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
     });
     test("Supports cyclic variables", () => {
         const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnSymbol = false;
+        dbgConfigCopy.stopOnSymbol = "__exit";
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
@@ -249,7 +255,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
     // VSC-424
     test("Supports anonymous siblings", () => {
         const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnSymbol = false;
+        dbgConfigCopy.stopOnSymbol = "__exit";
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),
@@ -324,7 +330,13 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
 
                 // Now check that the values changed
                 const locals = (await dc().variablesRequest({variablesReference: scopes.body.scopes[0]!.variablesReference})).body.variables;
-                Assert(locals.some(variable => variable.name === "fib" && variable.value === "42" && variable.type?.match(/uint32_t volatile @ 0x/)), JSON.stringify(locals));
+                console.log(JSON.stringify(locals));
+                const fibVar = locals.find(val => val.name === "fib");
+                Assert(fibVar);
+                Assert.strictEqual(fibVar.value, "42");
+                Assert(fibVar.type);
+                Assert.match(fibVar.type, /uint32_t volatile @ 0x/);
+
                 const statics = (await dc().variablesRequest({variablesReference: staticsScope.variablesReference})).body.variables;
                 {
                     const nestedStruct = statics.find(variable => variable.name === "nested_struct <Fibonacci\\nested_struct>");
@@ -377,7 +389,11 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
 
                 // Now check that the values changed
                 const regs = (await dc().variablesRequest({variablesReference: cpuRegisters.variablesReference})).body.variables;
-                Assert(regs.some(reg => reg.name === regName && reg.value.replace(/'/g, "") === regVal.toLowerCase()), JSON.stringify(regs));
+                if (TestConfiguration.getConfiguration().debugConfiguration.target === "msp430") {
+                    Assert(regs.some(reg => reg.name === regName && reg.value === "0x0'dead"), JSON.stringify(regs));
+                } else {
+                    Assert(regs.some(reg => reg.name === regName && reg.value.replace(/'/g, "") === regVal.toLowerCase()), JSON.stringify(regs));
+                }
             }),
         ]);
     });
@@ -386,7 +402,7 @@ debugAdapterSuite("Shows and sets variables", (dc, dbgConfig, fibonacciFile) => 
     // rather than the address of the pointer itself.
     test("Pointer memoryReference uses value", () => {
         const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
-        dbgConfigCopy.stopOnSymbol = false;
+        dbgConfigCopy.stopOnSymbol = "__exit";
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfigCopy),

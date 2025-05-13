@@ -68,7 +68,12 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
         ]);
     });
 
-    test("Stops on end", () => {
+    test("Stops on end", function() {
+        if (TestConfiguration.getConfiguration().debugConfiguration.target === "msp430") {
+            // MSP430 does not stop on end.
+            this.skip();
+        }
+
         const dbgConfigCopy = JSON.parse(JSON.stringify(dbgConfig()));
         dbgConfigCopy.stopOnSymbol = false;
         return Promise.all([
@@ -85,7 +90,11 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
         ]);
     });
 
-    test("Shows stdout", () => {
+    test("Shows stdout", function() {
+        if (TestConfiguration.getConfiguration().debugConfiguration.target === "msp430") {
+            this.skip();
+        }
+
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfig()),
@@ -118,7 +127,8 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
                     dc().continueRequest({threadId: 0, singleThread: true}),
                     dc().waitForEvent("stopped"),
                 ]);
-                const res = await dc().stackTraceRequest({threadId: 0});
+
+                const res = await dc().stackTraceRequest({ threadId: 0 });
                 Assert.strictEqual(res.body.stackFrames.length, 4);
 
                 Assert(res.body.stackFrames[0]?.source?.path);
@@ -153,8 +163,13 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
             dc().waitForEvent("stopped").then(async() => {
                 let res = await dc().evaluateRequest({expression: "2"});
                 Assert.strictEqual(res.body.result, "2");
-                res = await dc().evaluateRequest({expression: "callCount"});
-                Assert.strictEqual(res.body.result, "-1");
+                res = await dc().evaluateRequest({ expression: "callCount" });
+                if (TestConfiguration.getConfiguration().debugConfiguration.target === "msp430") {
+                    // msp430 shows int8 as 'char' in default mode.
+                    Assert.match(res.body.result, /\(0xFF\)/);
+                } else {
+                    Assert.strictEqual(res.body.result, "-1");
+                }
                 res = await dc().evaluateRequest({expression: "str"});
                 Assert.match(res.body.result, /"This is a sträng"$/);
                 try {
@@ -167,7 +182,7 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
                 const fibArray = (await dc().evaluateRequest({expression: "Fib"})).body;
                 Assert.strictEqual(fibArray.result, "<array>");
                 Assert(fibArray.type !== undefined);
-                Assert.match(fibArray.type, /uint32_t\[10\] @ 0x/);
+                Assert.match(fibArray.type, /uint32_t\s?\[10\] @ 0x/);
                 Assert(fibArray.variablesReference > 0); // Should be nested
                 const arrContents = (await dc().variablesRequest({variablesReference: fibArray.variablesReference})).body.variables;
                 Assert.strictEqual(arrContents.length, 10);
@@ -268,7 +283,11 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
         ]);
     });
 
-    test("Supports terminal input", () => {
+    test("Supports terminal input", function() {
+        if (TestConfiguration.getConfiguration().debugConfiguration.target === "msp430") {
+            this.skip();
+        }
+
         return Promise.all([
             dc().configurationSequence(),
             dc().launch(dbgConfig()),

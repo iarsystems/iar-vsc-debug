@@ -20,18 +20,21 @@ export class LaunchArgumentConfigurationResolver extends BaseConfigurationResolv
             return Promise.reject(new Error("No driver lib specified"));
         }
 
+        // The libraries for msp430 lack the msp prefix...
+        const target = args.target === "msp430" ? "430" : args.target;
+
         const plugins = args.plugins ?? [];
         // eslint-disable-next-line deprecation/deprecation
         const macros = args.setupMacros ?? args.macros ?? [];
 
-        const driver = CSpyDriver.driverFromName(args.driver, args.target, args.driverOptions);
+        const driver = CSpyDriver.driverFromName(args.driver, target, args.driverOptions);
         const driverFile = driver.libraryBaseNames.
-            map(baseName => IarOsUtils.resolveTargetLibrary(args.workbenchPath, args.target, baseName)).
+            map(baseName => IarOsUtils.resolveTargetLibrary(args.workbenchPath, target, baseName)).
             find(driverFile => driverFile !== undefined);
         if (driverFile === undefined) {
             throw new Error(`Could not find driver file(s) '${driver.libraryBaseNames.join(",")}' for '${args.workbenchPath}'.`);
         }
-        const proc = IarOsUtils.resolveTargetLibrary(args.workbenchPath, args.target, "proc");
+        const proc = IarOsUtils.resolveTargetLibrary(args.workbenchPath, target, "proc");
         if (proc === undefined) {
             throw new Error(`Could not find library 'proc' for '${args.workbenchPath}'.`);
         }
@@ -44,7 +47,7 @@ export class LaunchArgumentConfigurationResolver extends BaseConfigurationResolv
             options: (args.driverOptions? args.driverOptions : []),
             plugins: plugins,
             setupMacros: macros,
-            target: args.target
+            target: target
         };
 
         return Promise.resolve(config);

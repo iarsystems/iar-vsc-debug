@@ -143,6 +143,21 @@ class Rh850EmuDriver implements CSpyDriver {
         return false;
     }
 }
+
+// Emulator for Msp430.
+class Msp430EmuDriver implements CSpyDriver {
+    readonly codeBreakpointFactories = {
+        [CodeBreakpointMode.Auto]:     new StdCode2BreakpointDescriptorFactory(),
+    };
+    readonly logBreakpointFactory = new StdLog2BreakpointDescriptorFactory();
+
+    constructor(public readonly libraryBaseNames: string[]) {}
+
+    isSimulator(): boolean {
+        return false;
+    }
+}
+
 // Emulator for rl78.
 class Rl78EmuDriver implements CSpyDriver {
     readonly codeBreakpointFactories = {
@@ -224,7 +239,8 @@ export namespace CSpyDriver {
         JTAGEICE3 = "JTAGICE3",
         JTAGICEMK2 = "JTAGICE mkII",
         DRAGON = "Dragon",
-        POWERDEBUGGER = "Power Debugger"
+        POWERDEBUGGER = "Power Debugger",
+        FETDEBUGGER = "FET Debugger"
     }
 
     /**
@@ -270,6 +286,9 @@ export namespace CSpyDriver {
         { name: DriverNames.DRAGON,        driver: new AvrEmuDriver(["jtagice-mkii"]), driverArgument: "--drv_dragon" },
         { name: DriverNames.JTAGICEMK2,    driver: new AvrEmuDriver(["jtagice-mkii"]), },
         { name: DriverNames.JTAGEICE3,     driver: new AvrEmuDriver(["jtagice3"]), },
+        // The msp driver needs both msp430 and 430 listed as targets, as the target presents itself as msp430
+        // but all the drivers only use 430 as prefix.
+        { name: DriverNames.FETDEBUGGER,   driver: new Msp430EmuDriver(["fet"]), targets: ["msp430", "430"]},
     ];
     /**
      * Returns a driver from a driver display name (e.g. a name returned from {@link getDriverName}).

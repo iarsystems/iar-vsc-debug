@@ -76,7 +76,23 @@ export namespace TestUtils {
     // Finds a workbench to test with, compatible with the current test configuration
     export function getEwPath(): string | undefined {
         const installDirs = getEwPaths();
-        const targetId = TestConfiguration.getConfiguration().debugConfiguration.target;
+        let targetId = TestConfiguration.getConfiguration().debugConfiguration.target;
+
+        // Remap if msp430
+        if (targetId === "msp430") {
+            targetId = "430";
+        }
+
+        console.log(`Current target: ${targetId}`);
+        console.log(`Available installations:`);
+        installDirs.forEach(installed => {
+            console.log(`--> ${installed}`);
+            Workbench.create(installed)?.targetIds.forEach(element => {
+                console.log(`  - ${element}`);
+            });
+            console.log(`<--`);
+        });
+
         // Assumes each entry points directly to a top-level ew directory
         return installDirs.find(wbPath =>
             Workbench.create(wbPath)?.targetIds.includes(targetId));

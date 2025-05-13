@@ -59,6 +59,7 @@ async function main() {
         dataBreakpointsAreUnreliable: true,
         isHardwareTest: true,
         stopsAfterMain: false,
+        usesEmbeddedCpp: false
     };
     if (cspyArgs.includes("--fpu=None")) {
         config.registers.fpuRegisters = undefined;

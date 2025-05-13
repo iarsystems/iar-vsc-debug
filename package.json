@@ -786,7 +786,8 @@
 									"rh850",
 									"rl78",
 									"avr",
-									"rx"
+									"rx",
+									"msp430"
 								]
 							},
 							"program": {
@@ -846,10 +847,11 @@
 									"JTAGICE3",
 									"JTAGICE mkII",
 									"Dragon",
-									"Power Debugger"
+									"Power Debugger",
+									"FET Debugger"
 								],
 								"enumDescriptions": [
-									"Arm/AVR/RH850/RISC-V/RL78/RX",
+									"Arm/AVR/RH850/RISC-V/RL78/RX/MSP430",
 									"Arm",
 									"Arm/RISC-V",
 									"Arm",
@@ -876,7 +878,8 @@
 									"AVR",
 									"AVR",
 									"AVR",
-									"AVR"
+									"AVR",
+									"MSP430"
 								]
 							},
 							"driverOptions": {
@@ -991,7 +994,8 @@
 									"rh850",
 									"rl78",
 									"avr",
-									"rx"
+									"rx",
+									"msp430"
 								]
 							},
 							"program": {
@@ -1064,10 +1068,11 @@
 									"JTAGICE3",
 									"JTAGICE mkII",
 									"Dragon",
-									"Power Debugger"
+									"Power Debugger",
+									"FET Debugger"
 								],
 								"enumDescriptions": [
-									"Arm/AVR/RH850/RISC-V/RL78/RX",
+									"Arm/AVR/RH850/RISC-V/RL78/RX/MSP430",
 									"Arm",
 									"Arm/RISC-V",
 									"Arm",
@@ -1094,7 +1099,8 @@
 									"AVR",
 									"AVR",
 									"AVR",
-									"AVR"
+									"AVR",
+									"MSP430"
 								]
 							},
 							"driverOptions": {

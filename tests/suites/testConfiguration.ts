@@ -78,6 +78,12 @@ export interface TestConfiguration {
      * targets should set this to true).
      */
     stopsAfterMain: boolean;
+
+    /**
+     * As some older target lacks full c++ support, the use something called
+     * embedded c++ which, e.g., removes std:: from all stl calls.
+     */
+    usesEmbeddedCpp: boolean
 }
 
 export namespace TestConfiguration {
@@ -169,6 +175,7 @@ export namespace TestConfiguration {
         dataBreakpointsAreUnreliable: false,
         isHardwareTest: false,
         stopsAfterMain: false,
+        usesEmbeddedCpp: false
     };
 
     /// Standard test configurations below
@@ -233,6 +240,7 @@ export namespace TestConfiguration {
             dataBreakpointsAreUnreliable: false,
             isHardwareTest: false,
             stopsAfterMain: false,
+            usesEmbeddedCpp: false
         },
         riscvSim: {
             debugConfiguration: {
@@ -272,6 +280,7 @@ export namespace TestConfiguration {
             dataBreakpointsAreUnreliable: false,
             isHardwareTest: false,
             stopsAfterMain: false,
+            usesEmbeddedCpp: false
         },
         rh850Sim: {
             debugConfiguration: {
@@ -318,6 +327,7 @@ export namespace TestConfiguration {
             dataBreakpointsAreUnreliable: false,
             isHardwareTest: false,
             stopsAfterMain: false,
+            usesEmbeddedCpp: false
         },
         rl78Sim: {
             debugConfiguration: {
@@ -363,6 +373,58 @@ export namespace TestConfiguration {
             dataBreakpointsAreUnreliable: false,
             isHardwareTest: false,
             stopsAfterMain: true,
+            usesEmbeddedCpp: false
+        },
+        msp430Sim: {
+            debugConfiguration: {
+                target: "msp430",
+                driver: "Simulator",
+                driverOptions: [
+                    "--hwmul_base",
+                    "0x4C0",
+                    "--hardware_multiplier",
+                    "32",
+                    "--hwmult_type",
+                    "8",
+                    "-p",
+                    "$TOOLKIT_DIR$/config/debugger/msp430fr6047.ddf",
+                    "--core=430Xv2",
+                    "--data_model=small",
+                    "--iv_base",
+                    "0xFF90",
+                    "--energytrace",
+                    "--odd_word_check",
+                    "-d",
+                    "sim",
+                    "--derivativeSim",
+                    "MSP430FR6047"
+                ],
+            },
+            testProgram: {
+                project: Path.join(
+                    __dirname,
+                    "../../../tests/TestProjects/GettingStarted/msp430.ewp",
+                ),
+                projectConfiguration: "Debug",
+                variant: "doBuild",
+            },
+            registers: {
+                expectPeripherals: true,
+                cpuRegisters: {
+                    groupName: "CPU Registers",
+                    registers: [
+                        { name: "PC", hasChildren: false },
+                        { name: "R4", hasChildren: false },
+                        { name: "SR", hasChildren: true },
+                    ],
+                    size: 16,
+                },
+            },
+            dataBreakpointsAreUnreliable: false,
+            isHardwareTest: false,
+            stopsAfterMain: false,
+            usesEmbeddedCpp: true,
+            multicoreNrOfCores: 1,
         },
     };
 }
