@@ -11,6 +11,20 @@ import { CodeBreakpointMode } from "../../../src/dap/breakpoints/breakpointMode"
 
 debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
 
+    let expressionToIntString: (expr: string) => string = (expr) => {
+        return expr;
+    };
+
+    suiteSetup(() =>{
+        if (TestConfiguration.getConfiguration().debugConfiguration.target === "msp430") {
+            expressionToIntString = (actual: string): string => {
+                const indexFirst = actual.indexOf("(");
+                const indexLast = actual.indexOf(")", indexFirst + 1);
+                return parseInt(actual.substring(indexFirst + 1, indexLast)).toString();
+            };
+        }
+    });
+
     test("Hits breakpoint", () => {
         return Promise.all([
             dc().launch(dbgConfig()),
@@ -111,7 +125,7 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                     dc().continueRequest({threadId: 0, singleThread: true}),
                     dc().assertStoppedLocation("breakpoint", { path: fibonacciFile(), line: 51}).then(async() => {
                         const callCount = await dc().evaluateRequest({ expression: "callCount" });
-                        Assert.strictEqual(callCount.body.result, "5");
+                        Assert.strictEqual(expressionToIntString(callCount.body.result), "5");
                     }),
                 ]);
             }),
@@ -122,13 +136,15 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
             dc().launch(dbgConfig()),
             dc().waitForEvent("stopped").then(async() => {
                 await dc().setBreakpointsRequest(
-                    { source: { path: fibonacciFile() },
-                        breakpoints: [{line: 51, hitCondition: "3"}] });
+                    {
+                        source: { path: fibonacciFile() },
+                        breakpoints: [{ line: 51, hitCondition: "3" }]
+                    });
                 await Promise.all([
-                    dc().continueRequest({threadId: 0, singleThread: true}),
-                    dc().assertStoppedLocation("breakpoint", { path: fibonacciFile(), line: 51}).then(async() => {
+                    dc().continueRequest({ threadId: 0, singleThread: true }),
+                    dc().assertStoppedLocation("breakpoint", { path: fibonacciFile(), line: 51 }).then(async() => {
                         const callCount = await dc().evaluateRequest({ expression: "callCount" });
-                        Assert.strictEqual(callCount.body.result, "3");
+                        Assert.strictEqual(expressionToIntString(callCount.body.result), "3");
                     }),
                 ]);
             }),
@@ -166,7 +182,7 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                             Assert.strictEqual(ev.body["reason"], "breakpoint");
                             const callCount = await getCallCountVariable();
                             Assert(callCount);
-                            Assert.strictEqual(callCount.value, "0");
+                            Assert.strictEqual(expressionToIntString(callCount.value), "0");
                         }),
                     ]);
                     await Promise.all([
@@ -176,7 +192,7 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                             Assert.strictEqual(ev.body["reason"], "breakpoint");
                             const callCount = await getCallCountVariable();
                             Assert(callCount);
-                            Assert.strictEqual(callCount.value, "1");
+                            Assert.strictEqual(expressionToIntString(callCount.value), "1");
                         }),
                     ]);
 
@@ -257,12 +273,13 @@ debugAdapterSuite("Breakpoints", (dc, dbgConfig, fibonacciFile, utilsFile) => {
                     ],
                 });
 
+                // msp430 uses char as output and 0 is represented as \0.
                 await Promise.all([
                     dc().assertOutput(
                         "console",
                         `[Utilities.c:26.3] #0 ${message1}\n[Utilities.c:28.3] #0 ${message2}`.replaceAll(
                             "{callCount}",
-                            "0",
+                            TestConfiguration.getConfiguration().debugConfiguration.target === "msp430" ? "" : "0",
                         ),
                         5000,
                     ),

@@ -93,7 +93,7 @@ export namespace ConfigResolutionCommon {
             type: "cspy",
             request: "launch",
             name: projectName + "." + parts.configuration.replace(/ /g, "_"),
-            target: parts.target.toLowerCase(),
+            target: parts.target === "430" ? "msp430" : parts.target.toLowerCase(),
             program: program,
             driver: driverName,
             stopOnSymbol: parts.stopOnSymbol,
