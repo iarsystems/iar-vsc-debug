@@ -1388,6 +1388,43 @@
 						}
 					},
 					{
+						"label": "C-SPY Arm: ST-LINK launch configuration",
+						"description": "A new configuration for debugging an .ewp project with an ST-LINK probe.",
+						"body": {
+							"type": "cspy",
+							"request": "launch",
+							"name": "${1:Debug with C-SPY ST-LINK}",
+							"target": "arm",
+							"program": "^\"\\${workspaceFolder}/Debug/Exe/${2:ewproj.out}\"",
+							"stopOnSymbol": "main",
+							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
+							"projectPath": "^\"\\${command:iar-config.project-file}\"",
+							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
+							"driver": "ST-LINK",
+							"driverOptions": [
+								"--endian=little",
+								"--cpu=${3:Cortex-M4}",
+								"--fpu=${4:VFPv4_SP}",
+								"-p",
+								"^\"\\${command:iar-config.toolchain}/arm/config/debugger/ST/${5:STM32L4R5ZI.ddf}\"",
+								"--device=${6:STM32L4R5ZI}",
+								"--semihosting",
+								"--drv_interface=SWD",
+								"--stlink_reset_strategy=0,0",
+								"--drv_swo_clock_setup=120000000,1,2000000",
+								"--drv_catch_exceptions=0x000",
+								"--drv_debug_ap=0",
+								"--stlink_probe_supplied_power=3.3"
+							],
+							"download": {
+								"deviceMacros": [
+									"^\"\\${command:iar-config.toolchain}/arm/config/debugger/ST/${8:STM32L4xx.dmac}\""
+								],
+								"flashLoader" : "^\"\\${command:iar-config.toolchain}/arm/config/flashloader/ST/${9:FlashSTM32L4SxxI.board}\""
+							}
+						}
+					},
+					{
 						"label": "C-SPY RISC-V: Simulator launch configuration",
 						"description": "A new configuration for debugging an .ewp project with the simulator.",
 						"body": {
@@ -1620,6 +1657,93 @@
 								"debugging",
 								"--cspybat_inifile",
 								"^\"\\${workspaceFolder}/settings/${6:MyProjectName}.dnx\""
+							]
+						}
+					},
+					{
+						"label": "C-SPY MSP430: Simulator launch configuration",
+						"description": "A new configuration for debugging an .ewp project with the simulator.",
+						"body": {
+							"type": "cspy",
+							"request": "launch",
+							"name": "${1:Debug with C-SPY Simulator}",
+							"target": "msp430",
+							"program": "^\"\\${workspaceFolder}/Debug/Exe/${2:ewproj.out}\"",
+							"stopOnSymbol": "main",
+							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
+							"projectPath": "^\"\\${command:iar-config.project-file}\"",
+							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
+							"driver": "Simulator",
+							"driverOptions": [
+								"--hwmul_base",
+								"0x130",
+								"--hardware_multiplier",
+								"16",
+								"--hwmult_type",
+								"1",
+								"-p",
+								"^\"\\${command:iar-config.toolchain}/430/config/debugger/${3:msp430f149.ddf}\"",
+								"--iv_base",
+								"0xFFE0",
+								"--odd_word_check",
+								"-d",
+								"sim",
+								"--derivativeSim",
+								"${4:MSP430F149}"
+							]
+						}
+					},
+					{
+						"label": "C-SPY MSP430: FET Debugger launch configuration",
+						"description": "A new configuration for debugging an .ewp project with the FET Debugger.",
+						"body": {
+							"type": "cspy",
+							"request": "launch",
+							"name": "${1:Debug with C-SPY FET Debugger}",
+							"target": "msp430",
+							"program": "^\"\\${workspaceFolder}/Debug/Exe/${2:ewproj.out}\"",
+							"stopOnSymbol": "main",
+							"workbenchPath": "^\"\\${command:iar-config.toolchain}\"",
+							"projectPath": "^\"\\${command:iar-config.project-file}\"",
+							"projectConfiguration": "^\"\\${command:iar-config.project-configuration}\"",
+							"driver": "FET Debugger",
+							"driverOptions": [
+								"--hwmul_base",
+								"0x130",
+								"--hardware_multiplier",
+								"16",
+								"--hwmult_type",
+								"1",
+								"-p",
+								"^\"\\${command:iar-config.toolchain}/430/config/debugger/${3:msp430f149.ddf}\"",
+								"--iv_base",
+								"0xFFE0",
+								"--odd_word_check",
+								"-d",
+								"fet",
+								"--erase_main",
+								"--derivative",
+								"${4:MSP430F149}",
+								"--protocol",
+								"4wire",
+								"--eem",
+								"EMEX_MEDIUM",
+								"--port",
+								"Automatic",
+								"--connection",
+								"ti_usb",
+								"--use_emulated_breakpoints",
+								"--settlingtime=0",
+								"--msp430_dll",
+								"msp430.dll",
+								"--vccDefault",
+								"3.3",
+								"--jtag_speed",
+								"slow",
+								"--memtype",
+								"F",
+								"--cycleCounter",
+								"0"
 							]
 						}
 					}
