@@ -54,7 +54,7 @@ This extension is compatible with selected versions of the IAR Embedded Workbenc
 | Arm | v9.60.2 or later | None.
 | Arm | v9.50.1-9.50.2   | IAR Build Tools on Linux and IAR Embedded Workbench only.
 | Arm<br>RISC-V<br>AVR<br>RH850<br>RL78<br>RX<br>MSP430| v8.40.1-9.40.2 <br>v3.10.1 or later <br>v8.10.1 or later <br>v3.10.1 or later <br>v5.10.1 or later <br>v5.10.1 or later <br>v8.10.2 | IAR Embedded Workbench on Windows only.
-| MSP430 | v8.10.2 | Debugging instabilitly, leading to potential crashes
+| MSP430 | v8.10.2 | Debugging instability, leading to potential crashes
 | RISC-V | v3.10.1 | Terminal I/O is not supported.
 | Arm<br>RH850 | v8.50.1-9.20.4 <br>v3.10.1 or later | A prior debug session launched from EW is initially required<br>before launching a debug session in VS Code.
 | Arm<br>RH850 | v8.40.1-9.10.2 <br>v3.10.1-3.10.2 | Multicore debugging instability, leading to potential crashes.
