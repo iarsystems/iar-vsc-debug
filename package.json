@@ -39,7 +39,8 @@
 		"Debuggers"
 	],
 	"extensionDependencies": [
-		"ms-vscode.vscode-embedded-tools"
+		"ms-vscode.vscode-embedded-tools",
+		"iarsystems.iar-login"
 	],
 	"private": true,
 	"dependencies": {
@@ -52,7 +53,7 @@
 		"async-mutex": "^0.3.2",
 		"await-notify": "1.0.1",
 		"color": "^4.2.3",
-		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#d77fdae9",
+		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#45feffc2",
 		"thrift": "^0.12.0",
 		"xmlbuilder2": "^3.0.2",
 		"fast-xml-parser": "4.4.1"
