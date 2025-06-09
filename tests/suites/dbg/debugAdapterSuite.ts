@@ -65,8 +65,7 @@ export function debugAdapterSuite(title: string, runner: DebugAdapterSuiteRunner
                 console.log("ERR: " + dat.toString().replace(/^\s+|\s+$/g, ""));
             });
             // Need to wait a bit for the adapter to start
-            await TestUtils.wait(4000);
-
+            return TestUtils.waitForAdapterStart(debugAdapter);
         });
         suiteTeardown(() => {
             debugAdapter.kill();

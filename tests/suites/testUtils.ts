@@ -5,7 +5,7 @@ import assert = require("assert")
 import * as vscode from "vscode";
 import * as Path from "path";
 import { IarOsUtils, OsUtils } from "iar-vsc-common/osUtils";
-import { spawnSync } from "child_process";
+import { ChildProcess, spawnSync } from "child_process";
 import { TestSandbox } from "iar-vsc-common/testutils/testSandbox";
 import { CSpyLaunchRequestArguments } from "../../src/dap/cspyDebug";
 import { TestConfiguration } from "./testConfiguration";
@@ -152,5 +152,50 @@ export namespace TestUtils {
      */
     export function escapeRegex(str: string): string {
         return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    /** Wait for the debug adapter to be started and ready to receive connections */
+    export async function waitForAdapterStart(debugAdapter: ChildProcess): Promise<void> {
+        let listener: ((data: Buffer) => void) | undefined = undefined;
+        try {
+            return await Promise.race([
+                new Promise<void>(resolve => {
+                    listener = data => {
+                        if (data.toString().startsWith("waiting for debug protocol on port")) {
+                            resolve();
+                        }
+                    };
+                    debugAdapter.stderr?.on("data", listener);
+                }),
+                TestUtils.wait(4000).then(() => Promise.reject(new Error("Timed out waiting for adapter to start"))),
+            ]);
+        } finally {
+            if (listener) {
+                debugAdapter.stderr?.off("data", listener);
+            }
+        }
+    }
+
+    /** Stop the given session and wait for the adapter to be ready to receive a new connection */
+    export async function stopSession(debugAdapter: ChildProcess, debugClient: DebugClient): Promise<void> {
+        let listener: ((data: Buffer) => void) | undefined = undefined;
+        try {
+            return await Promise.race([
+                new Promise<void>(resolve => {
+                    listener = data => {
+                        if (data.toString().includes("client connection closed")) {
+                            resolve();
+                        }
+                    };
+                    debugAdapter.stderr?.on("data", listener);
+                    debugClient.stop();
+                }),
+                TestUtils.wait(18000).then(() => Promise.reject(new Error("Timed out waiting for session to close"))),
+            ]);
+        } finally {
+            if (listener) {
+                debugAdapter.stderr?.off("data", listener);
+            }
+        }
     }
 }
