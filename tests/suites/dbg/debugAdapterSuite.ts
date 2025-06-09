@@ -68,14 +68,15 @@ export function debugAdapterSuite(title: string, runner: DebugAdapterSuiteRunner
                 // If cspyserver crashes, we throw so that this is visible in the test results
                 if (dat.toString().includes("CSpyServer exited with code")) {
                     hasCrashed = true;
-                    throw new Error(dat.toString());
+                    this.test?.emit("error", new Error(dat.toString()));
                 }
             });
             // Need to wait a bit for the adapter to start
             return TestUtils.waitForAdapterStart(debugAdapter);
         });
-        suiteTeardown(() => {
+        suiteTeardown(async() => {
             debugAdapter.kill();
+            await new Promise(resolve => debugAdapter.once("exit", resolve));
         });
 
         setup(async function() {

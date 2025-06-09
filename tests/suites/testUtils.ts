@@ -167,17 +167,17 @@ export namespace TestUtils {
             return await Promise.race([
                 new Promise<void>(resolve => {
                     listener = data => {
-                        if (data.toString().startsWith("waiting for debug protocol on port")) {
+                        if (data.toString().includes("ready to accept connections")) {
                             resolve();
                         }
                     };
-                    debugAdapter.stderr?.on("data", listener);
+                    debugAdapter.stdout?.on("data", listener);
                 }),
                 TestUtils.wait(4000).then(() => Promise.reject(new Error("Timed out waiting for adapter to start"))),
             ]);
         } finally {
             if (listener) {
-                debugAdapter.stderr?.off("data", listener);
+                debugAdapter.stdout?.off("data", listener);
             }
         }
     }

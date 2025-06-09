@@ -9,3 +9,4 @@ import { DebugSession } from "@vscode/debugadapter";
 import { CSpyDebugSession } from "./cspyDebug";
 
 DebugSession.run(CSpyDebugSession);
+console.log("ready to accept connections");
