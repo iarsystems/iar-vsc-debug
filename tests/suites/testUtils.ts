@@ -94,8 +94,14 @@ export namespace TestUtils {
         });
 
         // Assumes each entry points directly to a top-level ew directory
-        return installDirs.find(wbPath =>
-            Workbench.create(wbPath)?.targetIds.includes(targetId));
+        const candidates = installDirs.
+            map(wbPath => Workbench.create(wbPath)).
+            filter((wb): wb is Workbench => !!wb). // removes `undefined`
+            filter(wb => wb.targetIds.includes(targetId));
+        // Prioritize newer workbench versions
+        const candidatesPrioritized = candidates.sort((wb1, wb2) =>
+            (wb2.version.major - wb1.version.major) || (wb2.version.minor - wb1.version.minor) || (wb2.version.patch - wb1.version.patch));
+        return candidatesPrioritized[0]?.path;
     }
 
     export function assertCurrentLineIs(session: vscode.DebugSession, _path: string, line: number, column: number) {
