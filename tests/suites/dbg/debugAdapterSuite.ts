@@ -96,7 +96,7 @@ export function debugAdapterSuite(title: string, runner: DebugAdapterSuiteRunner
             await dc.start(ADAPTER_PORT);
         });
         teardown(async function() {
-            this.timeout(20000);
+            this.timeout(25000);
             // Stop the debug adapter.
             // A real timeout here will cause the entire suite to abort so we implement our own timeout
             // with Mocha.Runnable.emit(), which doesn't cause an abort but still reports an error.

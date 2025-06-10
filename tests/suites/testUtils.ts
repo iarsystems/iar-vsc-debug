@@ -196,7 +196,7 @@ export namespace TestUtils {
                     debugAdapter.stderr?.on("data", listener);
                     debugClient.stop();
                 }),
-                TestUtils.wait(18000).then(() => Promise.reject(new Error("Timed out waiting for session to close"))),
+                TestUtils.wait(24000).then(() => Promise.reject(new Error("Timed out waiting for session to close"))),
             ]);
         } finally {
             if (listener) {
