@@ -65,7 +65,7 @@ export function debugAdapterSuite(title: string, runner: DebugAdapterSuiteRunner
             });
             debugAdapter.stderr?.on("data", dat => {
                 console.log("ERR: " + dat.toString().replace(/^\s+|\s+$/g, ""));
-                // If cspyserver crashes, we throw so that this is visible in the test results
+                // If cspyserver crashes, we want that to be visible in the test results
                 if (dat.toString().includes("CSpyServer exited with code")) {
                     hasCrashed = true;
                     this.test?.emit("error", new Error(dat.toString()));
