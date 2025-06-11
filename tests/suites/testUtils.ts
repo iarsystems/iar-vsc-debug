@@ -5,7 +5,7 @@ import assert = require("assert")
 import * as vscode from "vscode";
 import * as Path from "path";
 import { IarOsUtils, OsUtils } from "iar-vsc-common/osUtils";
-import { spawnSync } from "child_process";
+import { ChildProcess, spawnSync } from "child_process";
 import { TestSandbox } from "iar-vsc-common/testutils/testSandbox";
 import { CSpyLaunchRequestArguments } from "../../src/dap/cspyDebug";
 import { TestConfiguration } from "./testConfiguration";
@@ -94,8 +94,14 @@ export namespace TestUtils {
         });
 
         // Assumes each entry points directly to a top-level ew directory
-        return installDirs.find(wbPath =>
-            Workbench.create(wbPath)?.targetIds.includes(targetId));
+        const candidates = installDirs.
+            map(wbPath => Workbench.create(wbPath)).
+            filter((wb): wb is Workbench => !!wb). // removes `undefined`
+            filter(wb => wb.targetIds.includes(targetId));
+        // Prioritize newer workbench versions
+        const candidatesPrioritized = candidates.sort((wb1, wb2) =>
+            (wb2.version.major - wb1.version.major) || (wb2.version.minor - wb1.version.minor) || (wb2.version.patch - wb1.version.patch));
+        return candidatesPrioritized[0]?.path;
     }
 
     export function assertCurrentLineIs(session: vscode.DebugSession, _path: string, line: number, column: number) {
@@ -152,5 +158,50 @@ export namespace TestUtils {
      */
     export function escapeRegex(str: string): string {
         return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    /** Wait for the debug adapter to be started and ready to receive connections */
+    export async function waitForAdapterStart(debugAdapter: ChildProcess): Promise<void> {
+        let listener: ((data: Buffer) => void) | undefined = undefined;
+        try {
+            return await Promise.race([
+                new Promise<void>(resolve => {
+                    listener = data => {
+                        if (data.toString().includes("ready to accept connections")) {
+                            resolve();
+                        }
+                    };
+                    debugAdapter.stdout?.on("data", listener);
+                }),
+                TestUtils.wait(4000).then(() => Promise.reject(new Error("Timed out waiting for adapter to start"))),
+            ]);
+        } finally {
+            if (listener) {
+                debugAdapter.stdout?.off("data", listener);
+            }
+        }
+    }
+
+    /** Stop the given session and wait for the adapter to be ready to receive a new connection */
+    export async function stopSession(debugAdapter: ChildProcess, debugClient: DebugClient): Promise<void> {
+        let listener: ((data: Buffer) => void) | undefined = undefined;
+        try {
+            return await Promise.race([
+                new Promise<void>(resolve => {
+                    listener = data => {
+                        if (data.toString().includes("client connection closed")) {
+                            resolve();
+                        }
+                    };
+                    debugAdapter.stderr?.on("data", listener);
+                    debugClient.stop();
+                }),
+                TestUtils.wait(24000).then(() => Promise.reject(new Error("Timed out waiting for session to close"))),
+            ]);
+        } finally {
+            if (listener) {
+                debugAdapter.stderr?.off("data", listener);
+            }
+        }
     }
 }

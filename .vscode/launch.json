@@ -23,6 +23,9 @@
 				"--extensionDevelopmentPath=${workspaceFolder}",
 				"--extensionTestsPath=${workspaceFolder}/out/tests/suites/dbg/index"
 			],
+			"env": {
+				"CSPYSERVER_CRASH_DUMP_DIR": "${workspaceFolder}/cspyserver-crashdumps"
+			},
 			"outFiles": [ "${workspaceFolder}/out/**/*.js" ],
 			"preLaunchTask": "npm: test-compile",
             "presentation": {

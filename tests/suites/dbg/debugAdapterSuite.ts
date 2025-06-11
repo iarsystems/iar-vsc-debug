@@ -45,7 +45,9 @@ export function debugAdapterSuite(title: string, runner: DebugAdapterSuiteRunner
         let fibonacciFile = "";
         let utilsFile = "";
 
-        suiteSetup(async function() {
+        let hasCrashed = false;
+
+        suiteSetup(function() {
             this.timeout(40000);
             dbgConfig = TestUtils.doSetup();
             fibonacciFile = Path.join(dbgConfig.projectPath!, "Fibonacci.c");
@@ -63,18 +65,24 @@ export function debugAdapterSuite(title: string, runner: DebugAdapterSuiteRunner
             });
             debugAdapter.stderr?.on("data", dat => {
                 console.log("ERR: " + dat.toString().replace(/^\s+|\s+$/g, ""));
+                // If cspyserver crashes, we want that to be visible in the test results
+                if (dat.toString().includes("CSpyServer exited with code")) {
+                    hasCrashed = true;
+                    this.test?.emit("error", new Error(dat.toString()));
+                }
             });
             // Need to wait a bit for the adapter to start
-            await TestUtils.wait(4000);
-
+            return TestUtils.waitForAdapterStart(debugAdapter);
         });
-        suiteTeardown(() => {
+        suiteTeardown(async() => {
             debugAdapter.kill();
+            await new Promise(resolve => debugAdapter.once("exit", resolve));
         });
 
         setup(async function() {
             this.timeout(60000);
             console.log("\n==========================================================" + this.currentTest!.title + "==========================================================\n");
+            hasCrashed = false;
             dc = new DebugClient("node", "", "cspy");
             dc.on("output", ev => {
                 console.log("CONSOLE OUT: " + ev.body.output.replace(/^\s+|\s+$/g, ""));
@@ -87,23 +95,19 @@ export function debugAdapterSuite(title: string, runner: DebugAdapterSuiteRunner
             });
             await dc.start(ADAPTER_PORT);
         });
-        teardown(function() {
-            this.timeout(20000);
+        teardown(async function() {
+            this.timeout(25000);
             // Stop the debug adapter.
             // A real timeout here will cause the entire suite to abort so we implement our own timeout
             // with Mocha.Runnable.emit(), which doesn't cause an abort but still reports an error.
-            let done = false;
-            return Promise.race([
-                // The debug adapter needs some time after stopping to be ready for new connections
-                dc!.stop().then(() => {
-                    done = true; return TestUtils.wait(1500);
-                }),
-                TestUtils.wait(18000).then(() => {
-                    if (!done) {
-                        this.test?.emit("error", new Error("Timed out waiting for adapter to exit"));
-                    }
-                }),
-            ]);
+            try {
+                return await TestUtils.stopSession(debugAdapter, dc!);
+            } catch (err) {
+                // If we've crashed this is expected to fail
+                if (!hasCrashed) {
+                    return this.test?.emit("error", err);
+                }
+            }
         });
 
         runner(() => dc!, () => dbgConfig!, () => fibonacciFile, () => utilsFile);

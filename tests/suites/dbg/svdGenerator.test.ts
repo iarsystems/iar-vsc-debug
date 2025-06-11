@@ -90,7 +90,7 @@ suite("Specific device SVD Tests", () => {
             console.log("ERR: " + dat.toString().replace(/^\s+|\s+$/g, ""));
         });
         // Need to wait a bit for the adapter to start
-        await TestUtils.wait(4000);
+        await TestUtils.waitForAdapterStart(debugAdapter);
         const dc = new DebugClient("node", "", "cspy");
         dc.on("output", ev => {
             console.log("CONSOLE OUT: " + ev.body.output.replace(/^\s+|\s+$/g, ""));
@@ -114,9 +114,7 @@ suite("Specific device SVD Tests", () => {
         ]);
 
         // Restart the session and test that it works now that we have it cached
-        await dc.stop();
-        // Need to wait a bit for the adapter to be ready again
-        await TestUtils.wait(1000);
+        await TestUtils.stopSession(debugAdapter, dc);
         await dc.start(ADAPTER_PORT);
 
         await Promise.all([
@@ -129,8 +127,7 @@ suite("Specific device SVD Tests", () => {
             }),
         ]);
 
-        await dc.stop();
-        await TestUtils.wait(1500);
+        await TestUtils.stopSession(debugAdapter, dc);
         debugAdapter.kill();
     });
 
