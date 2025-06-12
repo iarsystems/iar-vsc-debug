@@ -50,7 +50,7 @@ export class LibSupportHandler implements ThriftServiceHandler<LibSupportService
 
     public sendInput(val: Buffer) {
         // Add new input and shave off what we've already used
-        this.inputBuffer = Buffer.concat([this.inputBuffer.slice(this.bufferPosition), val]);
+        this.inputBuffer = Buffer.concat([this.inputBuffer.subarray(this.bufferPosition), val]);
         this.bufferPosition = 0;
         // See if we can resolve any waiting requests
         let resolved = 0;
@@ -58,7 +58,7 @@ export class LibSupportHandler implements ThriftServiceHandler<LibSupportService
             if (this.inputBuffer.length - this.bufferPosition < request.len) {
                 break;
             }
-            request.resolve(this.inputBuffer.slice(this.bufferPosition, this.bufferPosition + request.len).toString());
+            request.resolve(this.inputBuffer.subarray(this.bufferPosition, this.bufferPosition + request.len).toString());
             this.bufferPosition += request.len;
             resolved++;
         }
@@ -77,7 +77,7 @@ export class LibSupportHandler implements ThriftServiceHandler<LibSupportService
         logger.verbose("Debugee requested input of length " + len);
         // Can we serve the request immediately?
         if (this.inputBuffer.length - this.bufferPosition >= len) {
-            const response = this.inputBuffer.slice(this.bufferPosition, this.bufferPosition + len).toString();
+            const response = this.inputBuffer.subarray(this.bufferPosition, this.bufferPosition + len).toString();
             this.bufferPosition += len;
             return Q.resolve(response);
         } else {
