@@ -15,6 +15,27 @@
 			"debugWebviews": true
 		},
 		{
+ 			"type": "extensionHost",
+ 			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+ 			"name": "iar-debug & iar-build & iar-login",
+			"sourceMaps": true,
+			"debugWebviews": true,
+			"env": {
+				"log-to-console": "true"
+			},
+ 			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"--extensionDevelopmentPath=${workspaceFolder}/../iar-vsc-build",
+				"--extensionDevelopmentPath=${workspaceFolder}/../iar-vsc-login"
+ 			],
+			"outFiles": [
+				"${workspaceFolder}/out/**/*.js",
+				"${workspaceFolder}/../iar-vsc-build/out/src/extension/main.js",
+				"${workspaceFolder}/../iar-vsc-login/out/**/*.js"
+			],
+		},
+		{
 			"name": "Run Debugger Tests",
 			"type": "extensionHost",
 			"request": "launch",
