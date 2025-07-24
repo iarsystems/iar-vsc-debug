@@ -147,7 +147,7 @@ export namespace TestUtils {
     export function buildProject(workbenchPath: string, ewpPath: string, configuration: string) {
         const iarBuildPath = Path.join(workbenchPath, "common/bin/iarbuild" + IarOsUtils.executableExtension());
         console.log("Building " + ewpPath);
-        const proc = spawnSync(iarBuildPath, [ewpPath, "-build", configuration]);
+        const proc = spawnSync(iarBuildPath, [ewpPath, "-build", configuration], { stdio: "inherit" });
         if (proc.status !== 0) {
             throw new Error(`Failed building test project (code ${proc.status}), iarbuild output: ${proc.stdout.toString()}`);
         }
