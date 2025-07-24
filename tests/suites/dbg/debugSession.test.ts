@@ -27,8 +27,8 @@ suite("New tests", () =>{
         activeSession = session;
     });
 
-    suiteSetup(() => {
-        dbgConfig = TestUtils.doSetup();
+    suiteSetup(async() => {
+        dbgConfig = await TestUtils.doSetup();
     });
 
     setup(async function() {

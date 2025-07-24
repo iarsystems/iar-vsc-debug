@@ -56,7 +56,7 @@ suite("Specific device SVD Tests", () => {
         const workbench = TestUtils.getEwPath();
         Assert(workbench, "No workbench found to use for debugging");
 
-        TestUtils.buildProject(workbench, project, "Debug");
+        await TestUtils.buildProject(workbench, project, "Debug");
 
         const svdFile = Path.join(workbench, "arm/config/debugger/ST/STM32F401.svd");
         const dbgConfig: CSpyLaunchRequestArguments = {

@@ -36,7 +36,7 @@ suite("Listwindow-Controller", () => {
         assert(ext, "Extension is not installed, did its name change?");
         await ext.activate();
 
-        dbgConfig = TestUtils.doSetup();
+        dbgConfig = await TestUtils.doSetup();
     });
 
     setup(async function() {

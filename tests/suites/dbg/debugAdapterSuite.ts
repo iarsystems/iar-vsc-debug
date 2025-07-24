@@ -47,9 +47,9 @@ export function debugAdapterSuite(title: string, runner: DebugAdapterSuiteRunner
 
         let hasCrashed = false;
 
-        suiteSetup(function() {
+        suiteSetup(async function() {
             this.timeout(40000);
-            dbgConfig = TestUtils.doSetup();
+            dbgConfig = await TestUtils.doSetup();
             fibonacciFile = Path.join(dbgConfig.projectPath!, "Fibonacci.c");
             utilsFile = Path.join(dbgConfig.projectPath!, "Utilities.c");
 
