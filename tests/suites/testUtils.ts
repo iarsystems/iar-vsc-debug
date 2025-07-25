@@ -5,7 +5,7 @@ import assert = require("assert")
 import * as vscode from "vscode";
 import * as Path from "path";
 import { IarOsUtils, OsUtils } from "iar-vsc-common/osUtils";
-import { ChildProcess, spawnSync } from "child_process";
+import { ChildProcess, spawn } from "child_process";
 import { TestSandbox } from "iar-vsc-common/testutils/testSandbox";
 import { CSpyLaunchRequestArguments } from "../../src/dap/cspyDebug";
 import { TestConfiguration } from "./testConfiguration";
@@ -25,7 +25,7 @@ export namespace TestUtils {
      * * Builds the project
      * * Returns a launch config using the determined project and driver
      */
-    export function doSetup(parameters: TestConfiguration = TestConfiguration.getConfiguration()): vscode.DebugConfiguration & CSpyLaunchRequestArguments {
+    export async function doSetup(parameters: TestConfiguration = TestConfiguration.getConfiguration()): Promise<vscode.DebugConfiguration & CSpyLaunchRequestArguments> {
         const workbench = getEwPath();
         assert(workbench, "Found no workbench to build with");
 
@@ -40,7 +40,7 @@ export namespace TestUtils {
             const project = Path.join(projectDir, Path.basename(targetProject));
             configuration = parameters.testProgram.projectConfiguration;
             program = Path.join(Path.dirname(project), configuration, "Exe", Path.basename(project, ".ewp") + ".out");
-            buildProject(workbench, project, configuration);
+            await buildProject(workbench, project, configuration);
         } else { // use a prebuilt binary
             projectDir = parameters.testProgram.sourceDir;
             program = parameters.testProgram.binaryPath;
@@ -147,10 +147,19 @@ export namespace TestUtils {
     export function buildProject(workbenchPath: string, ewpPath: string, configuration: string) {
         const iarBuildPath = Path.join(workbenchPath, "common/bin/iarbuild" + IarOsUtils.executableExtension());
         console.log("Building " + ewpPath);
-        const proc = spawnSync(iarBuildPath, [ewpPath, "-build", configuration]);
-        if (proc.status !== 0) {
-            throw new Error(`Failed building test project (code ${proc.status}), iarbuild output: ${proc.stdout.toString()}`);
-        }
+        return new Promise<void>((resolve, reject) => {
+            const proc = spawn(iarBuildPath, [ewpPath, "-build", configuration], { stdio: "inherit" });
+            proc.on("error", (err) => {
+                reject(new Error(`Failed to spawn iarbuild: ${err.message}`));
+            });
+            proc.on("exit", code => {
+                if (code !== 0) {
+                    reject(new Error(`iarbuild exited with code ${code}`));
+                } else {
+                    resolve();
+                }
+            });
+        });
     }
 
     /**
