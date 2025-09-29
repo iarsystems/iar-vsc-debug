@@ -218,6 +218,7 @@ export namespace CSpyDriver {
         JLINK = "J-Link/J-Trace",
         GDBSERV = "GDB Server",
         CADI = "CADI",
+        CMSISDAP = "CMSIS DAP",
         STELLARIS = "TI Stellaris",
         PEMICRO = "PE micro",
         STLINK = "ST-LINK",
@@ -255,6 +256,7 @@ export namespace CSpyDriver {
     const driverMap: Array<{ name: string, driver: CSpyDriver, targets?: string[], driverArgument?: string }> = [
         { name: DriverNames.SIMULATOR,     driver: new SimulatorDriver(["sim", "sim2"]) },
         { name: DriverNames.IMPERAS,       driver: new ImperasDriver(["imperas"]) },
+        { name: DriverNames.CMSISDAP,      driver: new IJetDriver(["ijet", "jet"]), driverArgument: "--jet_probe=cmsisdap"},
         { name: DriverNames.IJET,          driver: new IJetDriver(["ijet", "jet"]) },
         { name: DriverNames.JLINK,         driver: new ArmJLinkDriver(["jlink", "jlink2"]), targets: ["arm"] },
         { name: DriverNames.GDBSERV,       driver: new GenericHardwareDriver(["gdbserv"]) },
