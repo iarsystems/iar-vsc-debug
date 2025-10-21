@@ -270,7 +270,11 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
                 if (isBigEndian) {
                     toWrite.reverse();
                 }
-                await dc().customRequest("writeMemory", { memoryReference: callCount.memoryReference, data: Buffer.from(toWrite).toString("base64")});
+                await Promise.all([
+                    // Variables should be invalidated after writing to memory
+                    dc().waitForEvent("invalidated"),
+                    dc().customRequest("writeMemory", { memoryReference: callCount.memoryReference, data: Buffer.from(toWrite).toString("base64")}),
+                ]);
 
                 {
                     // Make sure the variable value now matches what we set

@@ -546,6 +546,13 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.sendEvent(new Event(CustomEvent.Names.CONTEXT_CHANGED, body));
         });
 
+        this.cspyEventHandler.observeDebugEvents(DkNotifyConstant.kDkMemoryChanged, () => {
+            // VSC-547 For the UI to refresh *all* variables when any memory
+            // changes. This handles cases like aliased pointers, writeMemory
+            // requests to variables and variables being changed in listwindows.
+            this.sendEvent(new InvalidatedEvent(["variables"]));
+        });
+
         // Perform any initial run-to action if needed
         let doStop: boolean;
         let stopSymbol: string | undefined = undefined;
@@ -817,8 +824,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
             }
         });
         this.sendResponse(response);
-        // When changing a variable, other variables pointing to the same memory may change, so force the UI to reload all variables
-        this.sendEvent(new InvalidatedEvent(["variables"]));
     }
 
 
@@ -869,8 +874,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
             }
         });
         this.sendResponse(response);
-        // When changing a variable, other variables pointing to the same memory may change, so force the UI to reload all variables
-        this.sendEvent(new InvalidatedEvent(["variables"]));
     }
 
     protected override async disassembleRequest(response: DebugProtocol.DisassembleResponse, args: DebugProtocol.DisassembleArguments, _request?: DebugProtocol.Request) {
@@ -915,8 +918,6 @@ export class CSpyDebugSession extends LoggingDebugSession {
             };
         });
         this.sendResponse(response);
-        // This memory may be used by a variable, so refresh all variables
-        this.sendEvent(new InvalidatedEvent(["variables"]));
     }
 
     protected override async customRequest(command: string, response: DebugProtocol.Response, args: unknown) {
