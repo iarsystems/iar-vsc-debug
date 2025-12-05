@@ -152,6 +152,12 @@ export namespace TestUtils {
             proc.on("error", (err) => {
                 reject(new Error(`Failed to spawn iarbuild: ${err.message}`));
             });
+            proc.stdout?.on("data", data => {
+                console.log(`iarbuild: ${data}`);
+            });
+            proc.stderr?.on("data", data => {
+                console.log(`iarbuild: ${data}`);
+            });
             proc.on("exit", code => {
                 if (code !== 0) {
                     reject(new Error(`iarbuild exited with code ${code}`));
