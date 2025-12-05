@@ -148,7 +148,7 @@ export namespace TestUtils {
         const iarBuildPath = Path.join(workbenchPath, "common/bin/iarbuild" + IarOsUtils.executableExtension());
         console.log("Building " + ewpPath);
         return new Promise<void>((resolve, reject) => {
-            const proc = spawn(iarBuildPath, [ewpPath, "-build", configuration], { stdio: "inherit" });
+            const proc = spawn(iarBuildPath, [ewpPath, "-build", configuration]);
             proc.on("error", (err) => {
                 reject(new Error(`Failed to spawn iarbuild: ${err.message}`));
             });
@@ -156,7 +156,7 @@ export namespace TestUtils {
                 console.log(`iarbuild: ${data}`);
             });
             proc.stderr?.on("data", data => {
-                console.log(`iarbuild: ${data}`);
+                console.error(`iarbuild: ${data}`);
             });
             proc.on("exit", code => {
                 if (code !== 0) {
