@@ -1,6 +1,6 @@
 # IAR C-SPY Debug&mdash;Debugging projects
 
-The IAR C-SPY Debug extension lets you perform basic debugging of an existing IAR Embedded Workbench project or a stand-alone application. It supports most of the IAR C-SPY Debug drivers that IAR Embedded Workbench supports, and uses the **Disassembly**, **Memory**, **Peripheral**, and **RTOS** views provided by VS Code or the VS Code Embedded Tools extension.
+The IAR C-SPY Debug extension lets you perform basic debugging of an existing IAR Embedded Workbench project or a stand-alone application. It supports most of the IAR C-SPY Debug drivers that IAR Embedded Workbench supports, and uses the **Disassembly** and **Memory** views provided by VS Code.
 
 For more information about debugging a stand-alone application, see [Debugging a stand-alone application](#debuggingstandaloneprogram).
 
@@ -222,14 +222,6 @@ This view is provided by the VS Code and can be opened by right-clicking in the 
  VS Code's default memory view is a hex editor that can be opened by clicking on the **View Binary Data** icon to the right of a static variable in the **Variables** view. The view opens at the variable's location in memory. Arbitrary memory locations cannot be opened.
 
 If you install the [Memory Inspector](https://marketplace.visualstudio.com/items?itemName=eclipse-cdt.memory-inspector) extension, you can use an alternative memory view which provides additional functionality. It can be opened by right clicking a static variable in the **Variables** view and clicking **Show in Memory Inspector**.
-
-### Peripheral view
-
-This view is provided by the VS Code Embedded Tools extension. See the VS Code documentation for more information.
-
-### RTOS view
-
-This view is provided by the VS Code Embedded Tools extension. See the VS Code documentation for more information.
 
 ### Views from the IAR Embedded Workbench IDE
 
