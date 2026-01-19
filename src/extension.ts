@@ -62,6 +62,8 @@ export function activate(context: vscode.ExtensionContext) {
     BuildBeforeDebugging.initialize(context);
 
     // Generate and locate an svd for the session, so that the register view is populated
+    // NOTE: The vscode-embedded-tools extension has been removed from marketplace, but
+    // we keep this code for a while for users who already have it installed.
     vscode.debug.onDidChangeActiveDebugSession(async(session) => {
         if (session?.type === "cspy") {
 
