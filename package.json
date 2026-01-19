@@ -38,8 +38,7 @@
 		"Debuggers"
 	],
 	"extensionDependencies": [
-		"iarsystems.iar-login",
-		"ms-vscode.vscode-embedded-tools"
+		"iarsystems.iar-login"
 	],
 	"private": true,
 	"dependencies": {
