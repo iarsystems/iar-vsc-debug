@@ -62,6 +62,9 @@ export class ListWindowBackendHandler<T extends ListWindowBackend.Client> {
             // immediately, since it affects how they respond to notifications
             // in the background.
             if (msg.subject === "viewportChanged") {
+                if (this.numberOfVisibleRows === msg.rowsInPage) {
+                    return;
+                }
                 this.numberOfVisibleRows = msg.rowsInPage;
                 for (const controller of this.sessions.values()) {
                     controller.handleMessageFromView(msg);
