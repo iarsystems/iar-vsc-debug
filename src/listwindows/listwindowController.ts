@@ -435,6 +435,7 @@ implements ThriftServiceHandler<ListWindowFrontend.Client> {
             // First update the data according to what the note says.
             await this.scheduleCall(async() => {
                 await this.proxy.notify(note);
+                await this.updateNumberOfRows();
                 await this.postUpdate(note);
             });
 
