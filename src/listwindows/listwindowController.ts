@@ -465,6 +465,10 @@ implements ThriftServiceHandler<ListWindowFrontend.Client> {
 
     protected async updateAfterScroll() {
         this.proxy.invalidateAllRows();
+        this.backend.service.setVisibleRows(
+            toInt64(this.offset),
+            toInt64(this.offset + BigInt(Math.floor(this.numberOfVisibleRows))),
+        );
         await this.redraw();
     }
 
