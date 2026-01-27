@@ -491,6 +491,7 @@ implements ThriftServiceHandler<ListWindowFrontend.Client> {
             return;
         }
 
+        await this.updateNumberOfRows();
         const contents = await this.proxy.updateRenderParameters(
             this.offset,
             Math.min(this.numberOfVisibleRows, Number(this.numberOfRows)),
