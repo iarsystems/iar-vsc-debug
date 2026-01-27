@@ -6,6 +6,11 @@ import { ChunkInfo, KeyNavOperation, Note, ScrollOperation, SelRange } from "iar
 import { ListwindowController } from "./listwindowController";
 import { toBigInt, toInt64 } from "../utils";
 
+enum ShiftToWhere {
+    kTopOfWindow,
+    kMiddleOfWindow,
+}
+
 /**
  * Controller for sliding listwindows.
  * The scrolling code is fairly complex... It's almost completely copied from
@@ -121,6 +126,7 @@ export class SlidingListwindowController extends ListwindowController {
             await this.shiftIntoView(
                 result.chunkPos,
                 false,
+                ShiftToWhere.kTopOfWindow,
             );
         }
 
@@ -204,11 +210,16 @@ export class SlidingListwindowController extends ListwindowController {
     private async shiftIntoView(
         rowToShow: number,
         allowAdd: boolean,
+        toWhere: ShiftToWhere = ShiftToWhere.kMiddleOfWindow,
     ) {
         const fullRowsInPage = Math.floor(this.numberOfVisibleRows);
         let scroll = Number(this.offset);
         if (rowToShow < scroll || rowToShow >= scroll + fullRowsInPage) {
-            scroll = Math.floor(rowToShow - fullRowsInPage / 2);
+            if (toWhere === ShiftToWhere.kTopOfWindow) {
+                scroll = rowToShow;
+            } else if (toWhere === ShiftToWhere.kMiddleOfWindow) {
+                scroll = Math.floor(rowToShow - fullRowsInPage / 2);
+            }
         }
         const shiftAmount = await this.shiftAfterScroll(scroll, allowAdd);
         return rowToShow + shiftAmount;
