@@ -29,11 +29,11 @@ export class ListwindowViewProvider implements vscode.WebviewViewProvider, vscod
 
     /**
      * Creates a new view and registers it.
-     * @param extensionUri The uri of the extension's root directory
      * @param viewId The id to register the view as. Must match the view id in package.json.
+     * @param extensionUri The uri of the extension's root directory
      */
-    constructor(private readonly extensionUri: vscode.Uri,
-        private readonly viewId: string,
+    constructor(public readonly viewId: string,
+        private readonly extensionUri: vscode.Uri,
     ) {
         logger.debug(`Registering listwindow '${viewId}'`);
         this.disposables.push(

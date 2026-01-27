@@ -25,8 +25,9 @@ import { CodeCoverageClient } from "./clients/codeCoverageLegacyClient";
 interface ViewDefinition {
     // The vscode view id to attach to
     viewId: string;
-    // The cspyserver service name
-    serviceName: string;
+    // The cspyserver service name(s). If multiple names are given, the first
+    // one that can be connected to will be used.
+    serviceNames: string[];
     // The fallback class for toolbars
     fallback?: new () => AbstractListwindowClient<ListWindowBackend.Client>;
     // Local override to still use fallback client. Undefined value
@@ -41,62 +42,61 @@ interface ViewDefinition {
  * listwindows which cspyserver instance to use.
  */
 export class ListwindowManager {
-    // Each entry is a supported listwindow, consisting of a vscode view id and
-    // a cspyserver service name
+
     // prettier-ignore
     private static readonly VIEW_DEFINITIONS: ViewDefinition[] = [
-        { viewId: "iar-autos", serviceName: "WIN_AUTO" },
-        { viewId: "iar-trace", serviceName: "WIN_SLIDING_TRACE_WINDOW", fallback: TraceClient, usesGenericDialogs: true },
-        { viewId: "iar-trace-non-sliding", serviceName: "WIN_TRACE" },
-        { viewId: "iar-quick-watch", serviceName: "WIN_QUICK_WATCH", fallback: QuickWatchClient },
-        { viewId: "iar-live-watch", serviceName: "WIN_STATIC_WATCH" },
-        { viewId: "iar-reg-2", serviceName: "WIN_REGISTER_2", fallback: RegisterClient },
-        { viewId: "iar-reg-groups", serviceName: "WIN_REGISTER_GROUPS" },
-        { viewId: "iar-symbolic-memory", serviceName: "WIN_SYMBOLIC_MEMORY", fallback: SymbolicMemoryClient },
-        { viewId: "iar-stack-1", serviceName: "WIN_STACK_1", fallback: StackClient },
-        { viewId: "iar-find-in-trace", serviceName: "WIN_FIND_IN_SLIDING_TRACE"},
-        { viewId: "iar-code-coverage", serviceName: "WIN_CODECOVERAGE", fallback: CodeCoverageClient },
-        { viewId: "iar-profiling", serviceName: "WIN_PROFILING2" },
-        { viewId: "iar-interrupt-log", serviceName: "WIN_INTERRUPT_LOG" },
-        { viewId: "iar-interrupt-log-summary", serviceName: "WIN_INTERRUPT_STAT" },
-        { viewId: "iar-rtos-task", serviceName: "WIN_RTOS_TASK" },
-        { viewId: "iar-rtos-mbox", serviceName: "WIN_RTOS_MBOX" },
-        { viewId: "iar-rtos-semaphore", serviceName: "WIN_RTOS_SEMAPHORE" },
-        { viewId: "iar-rtos-mutex", serviceName: "WIN_RTOS_MUTEX" },
-        { viewId: "iar-rtos-bytepool", serviceName: "WIN_RTOS_BYTEPOOL" },
-        { viewId: "iar-rtos-blockpool", serviceName: "WIN_RTOS_BLOCKPOOL" },
-        { viewId: "iar-rtos-timer", serviceName: "WIN_RTOS_TIMER" },
-        { viewId: "iar-rtos-eventflag", serviceName: "WIN_RTOS_EVENTFLAG" },
-        { viewId: "iar-rtos-profile", serviceName: "WIN_RTOS_EXEC_PROFILE" },
-        { viewId: "iar-rtos-com-metrics", serviceName: "WIN_RTOS_COMM_METRICS" },
-        { viewId: "iar-rtos-mem-metrics", serviceName: "WIN_RTOS_MEMORY_METRICS" },
-        { viewId: "iar-rtos-sync-metrics", serviceName: "WIN_RTOS_SYNCH_METRICS" },
-        { viewId: "iar-rtos-thread-metrics", serviceName: "WIN_RTOS_THREAD_METRICS" },
-        { viewId: "iar-rtos-timer-metrics", serviceName: "WIN_RTOS_TIMER_METRICS" },
-        { viewId: "iar-rtos-queue", serviceName: "WIN_RTOS_QUEUE" },
-        { viewId: "iar-rtos-memory-pool", serviceName: "WIN_RTOS_MEMORYPOOL" },
-        { viewId: "iar-zephyr-task", serviceName: "WIN_ZEPHYR_TASK" },
-        { viewId: "iar-zephyr-mutex", serviceName: "WIN_ZEPHYR_MUTEX" },
-        { viewId: "iar-zephyr-semaphore", serviceName: "WIN_ZEPHYR_SEMAPHORE" },
+        { viewId: "iar-autos", serviceNames: ["WIN_AUTO"] },
+        { viewId: "iar-trace", serviceNames: ["WIN_SLIDING_TRACE_WINDOW"], fallback: TraceClient, usesGenericDialogs: true },
+        { viewId: "iar-trace-non-sliding", serviceNames: ["WIN_TRACE"] },
+        { viewId: "iar-quick-watch", serviceNames: ["WIN_QUICK_WATCH"], fallback: QuickWatchClient },
+        { viewId: "iar-live-watch", serviceNames: ["WIN_STATIC_WATCH"] },
+        { viewId: "iar-reg-2", serviceNames: ["WIN_REGISTER_2"], fallback: RegisterClient },
+        { viewId: "iar-reg-groups", serviceNames: ["WIN_REGISTER_GROUPS"] },
+        { viewId: "iar-symbolic-memory", serviceNames: ["WIN_SYMBOLIC_MEMORY"], fallback: SymbolicMemoryClient },
+        { viewId: "iar-stack-1", serviceNames: ["WIN_STACK_1"], fallback: StackClient },
+        { viewId: "iar-find-in-trace", serviceNames: ["WIN_FIND_IN_SLIDING_TRACE"]},
+        { viewId: "iar-code-coverage", serviceNames: ["WIN_CODECOVERAGE"], fallback: CodeCoverageClient },
+        { viewId: "iar-profiling", serviceNames: ["WIN_PROFILING2"] },
+        { viewId: "iar-interrupt-log", serviceNames: ["WIN_SLIDING_INTERRUPT_LOG", "WIN_INTERRUPT_LOG"]},
+        { viewId: "iar-interrupt-log-summary", serviceNames: ["WIN_INTERRUPT_STAT"] },
+        { viewId: "iar-rtos-task", serviceNames: ["WIN_RTOS_TASK"] },
+        { viewId: "iar-rtos-mbox", serviceNames: ["WIN_RTOS_MBOX"] },
+        { viewId: "iar-rtos-semaphore", serviceNames: ["WIN_RTOS_SEMAPHORE"] },
+        { viewId: "iar-rtos-mutex", serviceNames: ["WIN_RTOS_MUTEX"] },
+        { viewId: "iar-rtos-bytepool", serviceNames: ["WIN_RTOS_BYTEPOOL"] },
+        { viewId: "iar-rtos-blockpool", serviceNames: ["WIN_RTOS_BLOCKPOOL"] },
+        { viewId: "iar-rtos-timer", serviceNames: ["WIN_RTOS_TIMER"] },
+        { viewId: "iar-rtos-eventflag", serviceNames: ["WIN_RTOS_EVENTFLAG"] },
+        { viewId: "iar-rtos-profile", serviceNames: ["WIN_RTOS_EXEC_PROFILE"] },
+        { viewId: "iar-rtos-com-metrics", serviceNames: ["WIN_RTOS_COMM_METRICS"] },
+        { viewId: "iar-rtos-mem-metrics", serviceNames: ["WIN_RTOS_MEMORY_METRICS"] },
+        { viewId: "iar-rtos-sync-metrics", serviceNames: ["WIN_RTOS_SYNCH_METRICS"] },
+        { viewId: "iar-rtos-thread-metrics", serviceNames: ["WIN_RTOS_THREAD_METRICS"] },
+        { viewId: "iar-rtos-timer-metrics", serviceNames: ["WIN_RTOS_TIMER_METRICS"] },
+        { viewId: "iar-rtos-queue", serviceNames: ["WIN_RTOS_QUEUE"] },
+        { viewId: "iar-rtos-memory-pool", serviceNames: ["WIN_RTOS_MEMORYPOOL"] },
+        { viewId: "iar-zephyr-task", serviceNames: ["WIN_ZEPHYR_TASK"] },
+        { viewId: "iar-zephyr-mutex", serviceNames: ["WIN_ZEPHYR_MUTEX"] },
+        { viewId: "iar-zephyr-semaphore", serviceNames: ["WIN_ZEPHYR_SEMAPHORE"] },
     ];
 
     getBackendHandler(
         serviceName: string,
     ): ListWindowBackendHandler<ListWindowBackend.Client> | undefined {
         return this.windows.find(client => {
-            return client.serviceName === serviceName;
+            return client.serviceNames.includes(serviceName);
         });
     }
 
     public getViewId(serviceName: string): string | undefined {
         return ListwindowManager.VIEW_DEFINITIONS.find(val => {
-            return val.serviceName === serviceName;
+            return val.serviceNames.includes(serviceName);
         })?.viewId;
     }
 
-    public getViewDefinitionFromServiceName(serviceName: string): ViewDefinition | undefined {
+    public getViewDefinition(viewId: string): ViewDefinition | undefined {
         return ListwindowManager.VIEW_DEFINITIONS.find(val => {
-            return val.serviceName === serviceName;
+            return val.viewId === viewId;
         });
     }
 
@@ -156,7 +156,7 @@ export class ListwindowManager {
         await Promise.allSettled(
             this.windows.map(window => {
                 // If the backend don't support generic dialogs and the view uses it, use the fallback strategy.
-                if (!supportsGenericDialogs && (this.getViewDefinitionFromServiceName(window.serviceName)?.usesGenericDialogs ?? false)) {
+                if (!supportsGenericDialogs && (this.getViewDefinition(window.view.viewId)?.usesGenericDialogs ?? false)) {
                     return window.connect(session, registry, false);
                 } else {
                     return window.connect(session, registry, supportsGenericToolbars);
@@ -169,13 +169,13 @@ export class ListwindowManager {
     constructor(context: vscode.ExtensionContext) {
         this.windows = ListwindowManager.VIEW_DEFINITIONS.map(definition => {
             const view = new ListwindowViewProvider(
-                context.extensionUri,
                 definition.viewId,
+                context.extensionUri,
             );
             return new ListWindowBackendHandler(
                 context,
                 view,
-                definition.serviceName,
+                definition.serviceNames,
                 definition.fallback ?? NullClient,
             );
         });
@@ -217,9 +217,7 @@ export class ListwindowManager {
                     );
                 } else if (ev.event === CustomEvent.Names.SHOW_VIEW_REQUEST) {
                     // Translate the backend name into the vs-code id.
-                    const id = ListwindowManager.VIEW_DEFINITIONS.find(val => {
-                        return val.serviceName === ev.body.viewId;
-                    })?.viewId;
+                    const id = this.getViewId(ev.body.viewId);
                     if (id) {
                         await vscode.commands.executeCommand(`${id}.focus`);
                     }

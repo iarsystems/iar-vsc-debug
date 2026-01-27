@@ -34,7 +34,7 @@ import {AbstractListwindowClient} from "./clients/listwindowBackendClient";
  */
 export class ListWindowBackendHandler<T extends ListWindowBackend.Client> {
     public readonly view: ListwindowViewProvider;
-    public readonly serviceName: string;
+    public readonly serviceNames: string[];
 
     private numberOfVisibleRows = 0;
 
@@ -48,11 +48,11 @@ export class ListWindowBackendHandler<T extends ListWindowBackend.Client> {
     constructor(
         private readonly context: vscode.ExtensionContext,
         view: ListwindowViewProvider,
-        serviceName: string,
+        serviceNames: string[],
         cf: CTor<AbstractListwindowClient<T>> | undefined,
     ) {
         this.view = view;
-        this.serviceName = serviceName;
+        this.serviceNames = serviceNames;
         this.clientFactory = cf;
 
         // Connect the messages from this view to the the handler, which
@@ -88,14 +88,35 @@ export class ListWindowBackendHandler<T extends ListWindowBackend.Client> {
         supportsGenericToolbars: boolean,
     ): Promise<void> {
         // Connect to the backend to allow for calls to cspyserver
-        const [backendClient, toolbarInterface] =
-            await ServiceClientFactory.createServices(
-                this.serviceName,
-                serviceRegistry,
-                supportsGenericToolbars ? undefined : this.clientFactory,
+        let backendClient = undefined;
+        let toolbarInterface = undefined;
+        let serviceName = undefined;
+        for (const name of this.serviceNames) {
+            try {
+                [backendClient, toolbarInterface] =
+                await ServiceClientFactory.createServices(
+                    name,
+                    serviceRegistry,
+                    supportsGenericToolbars ? undefined : this.clientFactory,
+                );
+                serviceName = name;
+                break;
+            } catch (e) {
+                // Ignore and try next
+            }
+        }
+        if (
+            backendClient === undefined ||
+            toolbarInterface === undefined ||
+            serviceName === undefined
+        ) {
+            throw new Error(
+                `Could not connect to any of the services: ${this.serviceNames.join(", ")}`,
             );
+        }
+
         await backendClient.service.setContentStorageFile(
-            await this.getContentStorageFile(session),
+            await this.getContentStorageFile(session, serviceName),
         );
 
         let controller: ListwindowController;
@@ -115,7 +136,7 @@ export class ListWindowBackendHandler<T extends ListWindowBackend.Client> {
 
         // Connect to the frontend to allow for notifications.
         const frontendLocation = await serviceRegistry.startService(
-            this.serviceName + ".frontend",
+            serviceName + ".frontend",
             ListWindowFrontend,
             controller,
         );
@@ -183,13 +204,13 @@ export class ListWindowBackendHandler<T extends ListWindowBackend.Client> {
 
     }
 
-    private async getContentStorageFile(session: vscode.DebugSession) {
+    private async getContentStorageFile(session: vscode.DebugSession, serviceName: string) {
         await fs.mkdir(this.context.globalStorageUri.fsPath, { recursive: true });
         // Use a file unique to the debug configuration name. For e.g. quick
         // watch history, we probably don't want the data to be shared between
         // debug sessions.
         const sessionName = session.name.replace(ILLEGAL_PATH_CHARS, "");
-        const filename = "content-storage-" + this.serviceName + "-" + sessionName + ".json";
+        const filename = "content-storage-" + serviceName + "-" + sessionName + ".json";
         return path.join(this.context.globalStorageUri.fsPath, filename);
     }
 }
