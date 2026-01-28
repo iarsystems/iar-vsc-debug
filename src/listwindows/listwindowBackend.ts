@@ -63,6 +63,7 @@ export class ListWindowBackendHandler<T extends ListWindowBackend.Client> {
             // in the background.
             if (msg.subject === "viewportChanged") {
                 if (this.numberOfVisibleRows === msg.rowsInPage) {
+                    // No change, so no need to do anything
                     return;
                 }
                 this.numberOfVisibleRows = msg.rowsInPage;
