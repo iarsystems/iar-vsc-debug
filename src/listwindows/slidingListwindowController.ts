@@ -6,6 +6,11 @@ import { ChunkInfo, KeyNavOperation, Note, ScrollOperation, SelRange } from "iar
 import { ListwindowController } from "./listwindowController";
 import { toBigInt, toInt64 } from "../utils";
 
+enum ShiftToWhere {
+    kTopOfWindow,
+    kMiddleOfWindow,
+}
+
 /**
  * Controller for sliding listwindows.
  * The scrolling code is fairly complex... It's almost completely copied from
@@ -99,6 +104,8 @@ export class SlidingListwindowController extends ListwindowController {
                 true,
             );
         } else if (note.anonPos !== "") {
+            // Navigate to the given position and place it in the middle
+            // of the window.
             const chunkPos = Number(fullRowsInPage / 2n);
             const result = await this.backend.service.navigateTo(
                 note.anonPos,
@@ -111,6 +118,9 @@ export class SlidingListwindowController extends ListwindowController {
                 false,
             );
         } else {
+            // An update without position change - just re-fetch the current chunk
+            // and try to keep the same position. We do this by "navigating" to
+            // the same offset as before.
             const chunkPos = Number(this.offset);
             const result = await this.backend.service.navigateTo(
                 note.anonPos,
@@ -118,9 +128,12 @@ export class SlidingListwindowController extends ListwindowController {
                 this.MIN_CHUNK_SIZE,
             );
             this.chunk = result.chunkInfo;
+            // result.chunkPos should match the previous offset in the new chunk,
+            // so we try to shift to that position.
             await this.shiftIntoView(
                 result.chunkPos,
                 false,
+                ShiftToWhere.kTopOfWindow,
             );
         }
 
@@ -204,11 +217,16 @@ export class SlidingListwindowController extends ListwindowController {
     private async shiftIntoView(
         rowToShow: number,
         allowAdd: boolean,
+        toWhere: ShiftToWhere = ShiftToWhere.kMiddleOfWindow,
     ) {
         const fullRowsInPage = Math.floor(this.numberOfVisibleRows);
         let scroll = Number(this.offset);
         if (rowToShow < scroll || rowToShow >= scroll + fullRowsInPage) {
-            scroll = Math.floor(rowToShow - fullRowsInPage / 2);
+            if (toWhere === ShiftToWhere.kTopOfWindow) {
+                scroll = rowToShow;
+            } else if (toWhere === ShiftToWhere.kMiddleOfWindow) {
+                scroll = Math.floor(rowToShow - fullRowsInPage / 2);
+            }
         }
         const shiftAmount = await this.shiftAfterScroll(scroll, allowAdd);
         return rowToShow + shiftAmount;

@@ -72,12 +72,12 @@ export class StandardListwindowController extends ListwindowController {
 
     override postUpdate(note: Note) {
         const row = toBigInt(note.ensureVisible);
-        const offset = this.adjustOffset(this.offset);
+        this.offset = this.adjustOffset(this.offset);
 
         if (row !== -1n) {
             if (
-                row < offset ||
-                row >= offset + BigInt(Math.floor(this.numberOfVisibleRows))
+                row < this.offset ||
+                row >= this.offset + BigInt(Math.floor(this.numberOfVisibleRows))
             ) {
                 const fullRowsInPage = BigInt(Math.floor(this.numberOfVisibleRows));
                 this.offset = this.adjustOffset(row - fullRowsInPage / 2n);

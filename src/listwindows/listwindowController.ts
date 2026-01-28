@@ -435,6 +435,7 @@ implements ThriftServiceHandler<ListWindowFrontend.Client> {
             // First update the data according to what the note says.
             await this.scheduleCall(async() => {
                 await this.proxy.notify(note);
+                await this.updateNumberOfRows();
                 await this.postUpdate(note);
             });
 
@@ -465,6 +466,10 @@ implements ThriftServiceHandler<ListWindowFrontend.Client> {
 
     protected async updateAfterScroll() {
         this.proxy.invalidateAllRows();
+        this.backend.service.setVisibleRows(
+            toInt64(this.offset),
+            toInt64(this.offset + BigInt(Math.floor(this.numberOfVisibleRows))),
+        );
         await this.redraw();
     }
 
@@ -487,6 +492,7 @@ implements ThriftServiceHandler<ListWindowFrontend.Client> {
             return;
         }
 
+        await this.updateNumberOfRows();
         const contents = await this.proxy.updateRenderParameters(
             this.offset,
             Math.min(this.numberOfVisibleRows, Number(this.numberOfRows)),
