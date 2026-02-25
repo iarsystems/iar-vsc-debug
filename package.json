@@ -51,10 +51,10 @@
 		"async-mutex": "^0.3.2",
 		"await-notify": "1.0.1",
 		"color": "^4.2.3",
+		"fast-xml-parser": "^5.4.1",
 		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#64f4c7a3",
 		"thrift": "^0.12.0",
-		"xmlbuilder2": "^3.0.2",
-		"fast-xml-parser": "4.4.1"
+		"xmlbuilder2": "^4.0.3"
 	},
 	"devDependencies": {
 		"@testing-library/dom": "^10.3.2",
@@ -77,7 +77,7 @@
 		"husky": "^7.0.4",
 		"jsdom": "^19.0.0",
 		"lint-staged": "^15.2.9",
-		"markdownlint-cli": "^0.35.0",
+		"markdownlint-cli": "^0.47.0",
 		"mocha": "^10.0.1",
 		"prettier": "^3.3.2",
 		"prettier-eslint": "^16.3.0",
@@ -955,8 +955,11 @@
 													"description": "Path to the image to load."
 												},
 												"offset": {
-													"type": ["string", "number"],
-                          "description": "The offset to load the image at, as a decimal number or a hex (0xff), octal (0377) or decimal (255) string."
+													"type": [
+														"string",
+														"number"
+													],
+													"description": "The offset to load the image at, as a decimal number or a hex (0xff), octal (0377) or decimal (255) string."
 												},
 												"suppressDownload": {
 													"type": "boolean",
@@ -1153,8 +1156,11 @@
 													"description": "Path to the image to load."
 												},
 												"offset": {
-													"type": ["string", "number"],
-                          "description": "The offset to load the image at, as a decimal number or a hex (0xff), octal (0377) or decimal (255) string."
+													"type": [
+														"string",
+														"number"
+													],
+													"description": "The offset to load the image at, as a decimal number or a hex (0xff), octal (0377) or decimal (255) string."
 												},
 												"suppressDownload": {
 													"type": "boolean",
@@ -1431,7 +1437,7 @@
 								"deviceMacros": [
 									"^\"\\${command:iar-config.toolchain}/arm/config/debugger/ST/${8:STM32L4xx.dmac}\""
 								],
-								"flashLoader" : "^\"\\${command:iar-config.toolchain}/arm/config/flashloader/ST/${9:FlashSTM32L4SxxI.board}\""
+								"flashLoader": "^\"\\${command:iar-config.toolchain}/arm/config/flashloader/ST/${9:FlashSTM32L4SxxI.board}\""
 							}
 						}
 					},
