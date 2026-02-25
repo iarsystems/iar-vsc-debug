@@ -476,6 +476,14 @@
 					"when": "inDebugMode && debugType == cspy && iar-trace-non-sliding.enabled"
 				},
 				{
+					"id": "iar-trace-extra",
+					"contextualTitle": "iar trace",
+					"name": "Trace (SWO)",
+					"icon": "images/logo-transparent.svg",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-trace-extra.enabled"
+				},
+				{
 					"id": "iar-code-coverage",
 					"contextualTitle": "iar code coverage",
 					"name": "Code Coverage",
