@@ -19,6 +19,7 @@ import {
     Target,
     TextStyle,
 } from "iar-vsc-common/thrift/bindings/listwindow_types";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 import Int64 = require("node-int64");
 import { EditInfo, MenuItem, SelectionFlags } from "../../webviews/shared/thrift/listwindow_types";
 import { ListwindowViewProvider } from "./listwindowViewProvider";
@@ -367,7 +368,7 @@ function getMockRenderParams(selectionStart = 1, selectionEnd = selectionStart) 
     params.listSpec.showCheckBoxes = true;
     params.listSpec.canClickColumns = true;
     for (let i = 0; i < 10; i++) {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
         params.rows.push(new Row({
             cells: [
                 new Cell({ text: `[${i}]`, format, drop: Target.kTargetRow}),

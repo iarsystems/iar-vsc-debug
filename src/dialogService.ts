@@ -73,7 +73,7 @@ class DialogServiceInstance implements vscode.Disposable {
                 });
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 options[options.length - 1]!.isCloseAffordance = true;
-                let result: vscode.MessageItem | undefined = undefined;
+                let result: vscode.MessageItem | undefined;
                 switch (body.icon) {
                     case MsgIcon.kMsgIconInfo:
                     case MsgIcon.kMsgIconQuestion:

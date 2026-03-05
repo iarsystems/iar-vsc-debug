@@ -230,7 +230,7 @@ suite("Listwindow-Controller", () => {
         });
 
         msgs.length = 0; // Clear the msg-array
-        const [_, toolbarTree] = await getState(controller);
+        const [, toolbarTree] = await getState(controller);
 
         // Enter a into the toolbar item.
         msgs.length = 0; // Clear the msg-array

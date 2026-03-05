@@ -47,6 +47,6 @@ export namespace SharedStyles {
     export enum ZIndices {
         Toolbar = 2,
         Tooltip = 3,
-        ContextMenu = 3,
+        ContextMenu = 4,
     }
 }

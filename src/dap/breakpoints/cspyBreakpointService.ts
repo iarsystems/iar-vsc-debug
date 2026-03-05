@@ -134,7 +134,7 @@ export class CSpyBreakpointService implements Disposable.Disposable {
                         actualLine = this.convertDebuggerLineToClient(actualLine);
                         actualCol = this.convertDebuggerColumnToClient(actualCol);
                     }
-                } catch (_) { }
+                } catch { }
                 return {
                     verified: result.valid,
                     line: actualLine,

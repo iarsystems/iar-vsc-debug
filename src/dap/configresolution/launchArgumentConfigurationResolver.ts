@@ -24,7 +24,7 @@ export class LaunchArgumentConfigurationResolver extends BaseConfigurationResolv
         const target = args.target === "msp430" ? "430" : args.target;
 
         const plugins = args.plugins ?? [];
-        // eslint-disable-next-line deprecation/deprecation
+        // eslint-disable-next-line @typescript-eslint/no-deprecated
         const macros = args.setupMacros ?? args.macros ?? [];
 
         const driver = CSpyDriver.driverFromName(args.driver, target, args.driverOptions);

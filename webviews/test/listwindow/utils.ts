@@ -15,6 +15,7 @@ import {
     Target,
 } from "iar-vsc-common/thrift/bindings/listwindow_types";
 import { RenderParameters, Serializable } from "../../shared/protocol";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 import Int64 = require("node-int64");
 import { MockVSCodeApi } from "./testEnvironment";
 import { waitFor } from "@testing-library/dom";

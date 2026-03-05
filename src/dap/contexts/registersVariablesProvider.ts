@@ -6,6 +6,7 @@ import { Disposable } from "../utils";
 import { ListWindowVariablesProvider, VariablesProvider } from "./variablesProvider";
 import { ThriftServiceRegistry } from "iar-vsc-common/thrift/thriftServiceRegistry";
 import { ListWindowClient } from "../listWindowClient";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 import Int64 = require("node-int64");
 import { Mutex } from "async-mutex";
 import { WindowNames } from "../listWindowConstants";

@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
+
 
 import * as Assert from "assert";
 import { TreeData } from "../../shared/rendering/toolbar/toolbarConstants";
@@ -97,7 +97,7 @@ suite("Listwindow Toolbar", () => {
         user.click(button);
         item = await api.waitForMessage("toolbarItemInteraction");
         Assert.strictEqual(item.id, "button2");
-    }),
+    });
     test("Edits...", async() => {
         const { api, dom } = await setupTestEnvironment();
         await TestUtils.renderToolbar(
@@ -114,7 +114,7 @@ suite("Listwindow Toolbar", () => {
         fireEvent.keyDown(edit, { key: "Enter" });
         const item = await pending;
         Assert.strictEqual(item.id, "edit");
-    }),
+    });
     test("Checkboxes...", async() => {
         const { api, dom, user } = await setupTestEnvironment();
         await TestUtils.renderToolbar(
@@ -149,7 +149,7 @@ suite("Listwindow Toolbar", () => {
         user.click(label);
         item = await api.waitForMessage("toolbarItemInteraction");
         Assert.strictEqual(item.id, "check2");
-    }),
+    });
     test("Dropdown...", async() => {
         const { api, dom, user } = await setupTestEnvironment();
         await TestUtils.renderToolbar(
@@ -185,7 +185,7 @@ suite("Listwindow Toolbar", () => {
         Assert.ok(!item.properties.children[1]?.value.includes("item1"));
         Assert.ok(item.properties.children[1]?.value.includes("item2"));
         Assert.strictEqual(item.properties.children[0]?.value, "1");
-    }),
+    });
     test("Icon dropdown...", async() => {
         const { api, dom, user } = await setupTestEnvironment();
         await TestUtils.renderToolbar(

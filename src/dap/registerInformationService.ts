@@ -9,6 +9,7 @@ import { create } from "xmlbuilder2";
 import { tmpdir } from "os";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { NamedLocation } from "iar-vsc-common/thrift/bindings/cspy_types";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 import Int64 = require("node-int64");
 
 // SVD format specification: https://www.keil.com/pack/doc/CMSIS/SVD/html/svd_Format_pg.html

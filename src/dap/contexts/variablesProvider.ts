@@ -9,6 +9,7 @@ import { ListWindowClient, ListWindowRowReference } from "../listWindowClient";
 import { Disposable } from "../utils";
 import { VariablesUtils } from "./variablesUtils";
 import { DebugProtocol } from "@vscode/debugprotocol";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 import Int64 = require("node-int64");
 
 /**

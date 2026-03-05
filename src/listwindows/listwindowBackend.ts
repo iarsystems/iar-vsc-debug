@@ -105,7 +105,7 @@ export class ListWindowBackendHandler<T extends ListWindowBackend.Client> {
                 );
                 serviceName = name;
                 break;
-            } catch (e) {
+            } catch {
                 // Ignore and try next
             }
         }
