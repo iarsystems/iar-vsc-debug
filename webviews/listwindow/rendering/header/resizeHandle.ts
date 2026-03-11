@@ -11,14 +11,14 @@ import { customElement } from "../../../shared/utils";
  */
 export type ResizeHandleDragBeginEvent = CustomEvent<ResizeHandleDragBeginEvent.Detail>;
 export namespace ResizeHandleDragBeginEvent {
-    export interface Detail { }
+    export type Detail = unknown
 }
 /**
  * Emitted when the resize handle is dropped (by releasing the mouse)
  */
 export type ResizeHandleDragEndEvent = CustomEvent<ResizeHandleDragEndEvent.Detail>;
 export namespace ResizeHandleDragEndEvent {
-    export interface Detail { }
+    export type Detail = unknown
 }
 
 /**

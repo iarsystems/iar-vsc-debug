@@ -176,7 +176,7 @@ export class CSpyRunControlService implements Disposable.Disposable {
         const nCores = await this.dbgr.service.getNumberOfCores();
         const coreIds = Array.from({ length: nCores }, (_, i) => i);
         const stoppedCores = await Promise.all(coreIds.map(async i => {
-            let isStopped = false;
+            let isStopped: boolean;
             // VSC-367 If there is only a single core, we know it is the one that stopped. This lets us avoid
             // calling getCoreState, which behaves poorly on some older EWs.
             if (nCores === 1) {

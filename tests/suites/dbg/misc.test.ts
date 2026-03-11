@@ -21,7 +21,7 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
         try {
             await dc().send("illegal");
             Assert.fail("Unknown request did not prduce an error");
-        } catch (_) {
+        } catch {
         }
     });
 
@@ -175,7 +175,7 @@ debugAdapterSuite("Test basic debug adapter functionality", (dc, dbgConfig, fibo
                 try {
                     res = await dc().evaluateRequest({expression: "illegal"});
                     Assert.fail("Does not fail when evaluating nonexistent symbol");
-                } catch (e) {
+                } catch {
                 }
 
                 // Evaling nested variables

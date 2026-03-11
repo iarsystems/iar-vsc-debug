@@ -142,7 +142,7 @@ class ListwindowController {
             case "renderToolbar": {
                 this.toolbarRenderParams = msg.params;
                 this.renderToolbar();
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
                 if (this.toolbar) {
                     this.messageService.sendMessage({
                         subject: "toolbarRendered",

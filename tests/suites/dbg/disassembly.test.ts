@@ -1,7 +1,8 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-import thrift = require("thrift");
+import * as thrift from "thrift";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 import Int64 = require("node-int64");
 import * as Assert from "assert";
 import Q = thrift.Q;
@@ -11,7 +12,7 @@ import { CspyDisassemblyService } from "../../../src/dap/cspyDisassemblyService"
 import { ContextRef, Location, SourceLocation, SourceRange } from "iar-vsc-common/thrift/bindings/shared_types";
 import { ThriftClient } from "iar-vsc-common/thrift/thriftClient";
 import { DisassembledLocation } from "iar-vsc-common/thrift/bindings/disassembly_types";
-import EventEmitter = require("events");
+import * as EventEmitter from "events";
 import { Source } from "@vscode/debugadapter";
 import { OsUtils } from "iar-vsc-common/osUtils";
 import { debugAdapterSuite } from "./debugAdapterSuite";

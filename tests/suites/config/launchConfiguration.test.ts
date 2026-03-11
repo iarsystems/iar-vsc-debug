@@ -150,7 +150,7 @@ suite("Configuration tests", () => {
         try {
             XclConfigurationSupplier.generateDebugConfiguration(projectName, config, [], driverOpts);
             assert.fail("Running with empty commands should have thrown an error");
-        } catch (_) {}
+        } catch {}
 
         // Test that the driver and target can be extracted.
         const genOpt = ["skipMe", "arm/bin/libarmsim2.so", path.resolve(path.join(wsDir, program))];
@@ -193,7 +193,7 @@ suite("Configuration tests", () => {
         try {
             BuildExtensionConfigurationProvider.provideDebugConfigurationFor([], projectName, config, target);
             assert.fail("Running with empty commands should have thrown an error");
-        } catch (_) {}
+        } catch {}
 
         const programOpt = ["/file", path.join(wsDir, program)];
         // Test that the driver and target can be extracted.

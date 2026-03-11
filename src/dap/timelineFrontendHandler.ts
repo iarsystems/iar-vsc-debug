@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import * as Q from "q";
-import ttypes = require("iar-vsc-common/thrift/bindings/timeline_types");
+import * as ttypes from "iar-vsc-common/thrift/bindings/timeline_types";
 import DbuTimelineDataAvailableNotification = ttypes.DbuTimelineDataAvailableNotification
 import DbuTimelineChannelAvailableNotification = ttypes.DbuTimelineChannelAvailableNotification
 import DbuTimelineChannelRemovedNotification = ttypes.DbuTimelineChannelRemovedNotification

@@ -115,7 +115,7 @@ export class DragDropService {
             this.setFeedback(DragDropFeedback.none());
 
             if (ev.dataTransfer) {
-                let dropText = "";
+                let dropText: string | undefined;
                 if (ev.dataTransfer.getData(DRAG_SOURCE_FORMAT) === "") {
                     dropText = ev.dataTransfer.getData("text/plain");
                 } else {

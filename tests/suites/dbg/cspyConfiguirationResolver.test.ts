@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-/* eslint-disable @typescript-eslint/no-empty-function */
+
 import { LaunchArgumentConfigurationResolver } from "../../../src/dap/configresolution/launchArgumentConfigurationResolver";
 import { CSpyLaunchRequestArguments } from "../../../src/dap/cspyDebug";
 import * as assert from "assert";

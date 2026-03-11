@@ -44,6 +44,7 @@ type CustomEventMap = {
 declare global {
     // Extending GlobalEventHandlersEventMap makes the event types available
     // in HTMLElement.addListener calls.
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
     interface GlobalEventHandlersEventMap extends CustomEventMap {}
 }
 

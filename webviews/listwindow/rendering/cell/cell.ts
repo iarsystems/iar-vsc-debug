@@ -64,7 +64,7 @@ export namespace CellHoveredEvent {
 /** Emitted when the the user left clicks an editable cell */
 export type CellEditRequestedEvent = CustomEvent<CellEditRequestedEvent.Detail>;
 export namespace CellEditRequestedEvent {
-    export interface Detail extends CellPosition {}
+    export type Detail = CellPosition
 }
 
 /** Emitted when the the user clicks a checkbox */

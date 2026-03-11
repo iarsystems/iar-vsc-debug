@@ -17,6 +17,7 @@ import {
     SelRange,
 } from "iar-vsc-common/thrift/bindings/listwindow_types";
 import { queries } from "@testing-library/dom";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 import Int64 = require("node-int64");
 
 // For now this serves as a smoke test that we can activate and communicate with

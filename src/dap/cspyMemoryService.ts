@@ -1,6 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 import Int64 = require("node-int64");
 import * as Memory from "iar-vsc-common/thrift/bindings/CSpyMemory";
 import { MEMORY_SERVICE } from "iar-vsc-common/thrift/bindings/cspy_types";

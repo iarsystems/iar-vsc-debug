@@ -12,7 +12,7 @@ import { PropertyTreeItem } from "./thrift/shared_types";
  * provider running in the extension.
  */
 
-// eslint-disable-next-line @typescript-eslint/ban-types
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 type Unserializable = Function | bigint | symbol;
 /**
  * Recursively strips everything that is not JSON-serializable from T (most

@@ -349,6 +349,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
             this.teardown.pushFunction(() => cspyDebugger.close());
             this.sendEvent(new OutputEvent("Using C-SPY version: " + await cspyDebugger.service.getVersionString() + "\n"));
 
+            // eslint-disable-next-line @typescript-eslint/no-deprecated
             await cspyDebugger.service.startSession(sessionConfig);
             if (await cspyDebugger.service.supportsExceptions())
                 await cspyDebugger.service.setBreakOnThrow(true);

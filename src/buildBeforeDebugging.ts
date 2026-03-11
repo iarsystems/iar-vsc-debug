@@ -72,7 +72,7 @@ export namespace BuildBeforeDebugging {
                 case SettingsConstants.BuildBeforeDebuggingValue.
                     AbortOnFailure:
                     throw new Error(
-                        `Failed to build project: ${errMsg}`,
+                        `Failed to build project: ${errMsg}`
                     );
                 case SettingsConstants.BuildBeforeDebuggingValue.
                     DebugAnywayOnFailure:

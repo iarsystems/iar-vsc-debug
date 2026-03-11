@@ -85,12 +85,7 @@ class FormViewController {
 
     closeForm(isCanceled: boolean) {
         if (this.formContent) {
-            let content: Serializable<PropertyTreeItem> = {
-                key: "",
-                value: "",
-                children: [],
-            };
-            content =
+            const content =
                 this.formContent.elements?.collectContent() as Serializable<PropertyTreeItem>;
             this.messageService.sendMessage({
                 subject: "formClosed",

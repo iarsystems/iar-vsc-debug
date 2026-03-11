@@ -6,6 +6,7 @@ import * as Debugger from "iar-vsc-common/thrift/bindings/Debugger";
 import { ThriftServiceRegistry } from "iar-vsc-common/thrift/thriftServiceRegistry";
 import { DEBUGGER_SERVICE } from "iar-vsc-common/thrift/bindings/cspy_types";
 import { Mutex } from "async-mutex";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 import Int64 = require("node-int64");
 import { ListWindowClient } from "../listWindowClient";
 import { WindowNames } from "../listWindowConstants";
