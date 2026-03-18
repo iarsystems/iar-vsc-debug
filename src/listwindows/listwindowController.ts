@@ -548,6 +548,10 @@ implements ThriftServiceHandler<ListWindowFrontend.Client> {
         } else {
             rows = toBigInt(await this.backend.service.getNumberOfRows());
         }
+        if (rows === 0n) {
+            // We usually get 0 rows while the view is frozen. Ignore it, since it would reset the scroll to the top.
+            return;
+        }
         this.numberOfRows = rows;
     }
 
