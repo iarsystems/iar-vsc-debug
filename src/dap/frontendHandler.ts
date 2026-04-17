@@ -419,6 +419,6 @@ export class FrontendHandler implements ThriftServiceHandler<Frontend.Client>, D
     }
 
     getCapabilities(): Q.Promise<Capabilities> {
-        return Q.resolve(new Capabilities({supportsEditorHighlight: true}));
+        return Q.resolve(new Capabilities({supportsEditorHighlight: false}));
     }
 }
