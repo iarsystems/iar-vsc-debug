@@ -90,6 +90,7 @@ export class ToolbarElement extends HTMLElement {
                     newItem = new Items.ToolbarItemCheckBox(item);
                     break;
                 }
+                case ToolbarItemType.kKindFindFile: // A file picker would be complex to implement, so just use a text edit
                 case ToolbarItemType.kKindEditText: {
                     newItem = new Items.ToolbarItemText(
                         item,

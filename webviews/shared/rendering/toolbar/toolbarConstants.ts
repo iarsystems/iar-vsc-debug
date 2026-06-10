@@ -27,6 +27,7 @@ export enum ToolbarItemType {
     kKindIconCheck = "ICONCHECK",
     kKindEditText = "EDITTEXT",
     kKindEditTextDyn = "EDITTEXTDYN",
+    kKindFindFile = "FINDFILE",
     kKindDisplayText = "DISPLAYTEXT",
     kKindDisplayTextDyn = "DISPLAYTEXTDYN",
     kKindTextMenu = "TEXTMENU",
