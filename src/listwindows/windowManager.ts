@@ -49,6 +49,7 @@ export class ListwindowManager {
         { viewId: "iar-trace", serviceNames: ["WIN_SLIDING_TRACE_WINDOW"], fallback: TraceClient, usesGenericDialogs: true },
         { viewId: "iar-trace-non-sliding", serviceNames: ["WIN_TRACE"] },
         { viewId: "iar-trace-extra", serviceNames: ["WIN_EXTRA_TRACE"] },
+        { viewId: "iar-sliding-trace-extra", serviceNames: ["WIN_SLIDING_TRACE_WINDOW_EXTRA"] },
         { viewId: "iar-quick-watch", serviceNames: ["WIN_QUICK_WATCH"], fallback: QuickWatchClient },
         { viewId: "iar-live-watch", serviceNames: ["WIN_STATIC_WATCH"] },
         { viewId: "iar-reg-2", serviceNames: ["WIN_REGISTER_2"], fallback: RegisterClient },
