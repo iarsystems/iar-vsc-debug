@@ -491,6 +491,14 @@
 					"when": "inDebugMode && debugType == cspy && iar-trace-extra.enabled"
 				},
 				{
+					"id": "iar-sliding-trace-extra",
+					"contextualTitle": "iar trace",
+					"name": "ITM Trace",
+					"icon": "images/logo-transparent.svg",
+					"type": "webview",
+					"when": "inDebugMode && debugType == cspy && iar-sliding-trace-extra.enabled"
+				},
+				{
 					"id": "iar-code-coverage",
 					"contextualTitle": "iar code coverage",
 					"name": "Code Coverage",
