@@ -1,7 +1,7 @@
 {
 	"name": "iar-debug",
 	"displayName": "IAR C-SPY Debug",
-	"version": "1.42.3",
+	"version": "1.42.4",
 	"publisher": "iarsystems",
 	"icon": "images/logo.png",
 	"galleryBanner": {
@@ -51,7 +51,7 @@
 		"async-mutex": "^0.3.2",
 		"await-notify": "1.0.1",
 		"color": "^4.2.3",
-		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#c0d8b6e8",
+		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#019df9fb",
 		"thrift": "^0.12.0",
 		"xmlbuilder2": "^4.0.3"
 	},
