@@ -51,7 +51,6 @@
 		"async-mutex": "^0.3.2",
 		"await-notify": "1.0.1",
 		"color": "^4.2.3",
-		"fast-xml-parser": "^5.4.1",
 		"iar-vsc-common": "git@github.com:IARSystems/iar-vsc-common.git#019df9fb",
 		"thrift": "^0.12.0",
 		"xmlbuilder2": "^4.0.3"
