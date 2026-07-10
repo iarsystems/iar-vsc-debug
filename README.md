@@ -1,4 +1,4 @@
-# IAR C-SPY Debug
+GG# IAR C-SPY Debug
 
 Debug your applications with the IAR C-SPY Debugger in Visual Studio Code with the IAR C-SPY Debug extension. The IAR C-SPY Debugger features support for a wide range of embedded devices and debug probes. This extension can be used for debugging programs created from IAR Embedded Workbench projects (`*.ewp`, `*.ewd`), or from 3<sup>rd</sup> party build systems such as CMake.
 
@@ -45,15 +45,16 @@ For more help, see [Debugging a stand-alone application](https://github.com/iars
 
 [Click here](https://github.com/iarsystems/iar-vsc-debug/blob/master/docs/README.md) to view the full documentation.
 
-## Compatibility
+<h2 id="compatibility">Compatibility</h2>
 
 This extension is compatible with selected versions of the IAR Embedded Workbench (EW) or IAR Build Tools (BX) installations. The table below lists known limitations of this extension concerning earlier versions of both IAR products for each supported target architecture:
 
 | Target architecture    | Product Version | Known Limitation
 |------------------------|-----------------|-----------
-| Arm | v9.60.2 or later | None.
+| Arm | v10.10.1 or later | None.
+| Arm | v9.60.2-9.70.4 | The `device` launch.json field is not supported.
 | Arm | v9.50.1-9.50.2   | IAR Build Tools on Linux and IAR Embedded Workbench only.
-| Arm<br>RISC-V<br>AVR<br>RH850<br>RL78<br>RX<br>MSP430| v8.40.1-9.40.2 <br>v3.10.1 or later <br>v8.10.1 or later <br>v3.10.1 or later <br>v5.10.1 or later <br>v5.10.1 or later <br>v8.10.2 | IAR Embedded Workbench on Windows only.
+| Arm<br>RISC-V<br>AVR<br>RH850<br>RL78<br>RX<br>MSP430| v8.40.1-9.40.2 <br>v3.10.1 or later <br>v8.10.1 or later <br>v3.10.1 or later <br>v5.10.1 or later <br>v5.10.1 or later <br>v8.10.2 | IAR Embedded Workbench on Windows only. The `device` launch.json field is not supported.
 | MSP430 | v8.10.2 | Debugging instability, leading to potential crashes
 | RISC-V | v3.10.1 | Terminal I/O is not supported.
 | Arm<br>RH850 | v8.50.1-9.20.4 <br>v3.10.1 or later | A prior debug session launched from EW is initially required<br>before launching a debug session in VS Code.

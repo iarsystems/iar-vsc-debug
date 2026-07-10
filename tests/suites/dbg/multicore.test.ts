@@ -28,10 +28,10 @@ debugAdapterSuite("Test multicore debugging", function(dc, dbgConfig, fibonacciF
             this.skip();
         }
         nCores = numCores;
-        config = {
-            ...dbgConfig(),
-            driverOptions: dbgConfig().driverOptions.concat(["--multicore_nr_of_cores=" + nCores]),
-        };
+        config = JSON.parse(JSON.stringify(dbgConfig()));
+        config.driverOptions ??= [];
+        config.driverOptions.push("--multicore_nr_of_cores=" + nCores);
+
         dbgConfig = () => {
             throw new Error("Tried to use the standard debug config in a multicore test, use the modified config instead");
         };
