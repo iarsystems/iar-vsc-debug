@@ -200,7 +200,6 @@ export class ListWindowClient implements ThriftServiceHandler<ListWindowFrontend
                 });
             case What.kNormalUpdate:
             case What.kFullUpdate:
-            case What.kThaw:
                 this.updateAllRows();
                 break;
         }

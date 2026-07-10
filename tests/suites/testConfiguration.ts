@@ -181,6 +181,15 @@ export namespace TestConfiguration {
     /// Standard test configurations below
     export const TEST_CONFIGURATIONS: { [id: string]: TestConfiguration } = {
         armSim2: ARM_SIM2_CONFIG,
+        // Like armSim2, but uses a device name instead of driverOptions (requires LaunchConfiguration support)
+        armSim2Device: {
+            ...ARM_SIM2_CONFIG,
+            debugConfiguration: {
+                target: "arm",
+                driver: "Simulator",
+                device: "Zynq 7020",
+            },
+        },
         // For EWARM 8.50, uses a different ddf file
         armSim2v850: {
             ...ARM_SIM2_CONFIG,

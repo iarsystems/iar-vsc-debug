@@ -44,11 +44,16 @@ export class CSpyRunControlService implements Disposable.Disposable {
     // in the stack view).
     private readonly expectedStoppingReason: Map<number, StoppingReason> = new Map();
 
+    // Upper bound on how long to wait for the backend to settle (distribute
+    // kDkInspectionContextChanged) after a stop before reporting it to the
+    // client anyway. See handleCoreStopped.
+    private static readonly STOP_SETTLE_TIMEOUT = 500;
+
     private constructor(
         private readonly dbgr: ThriftClient<Debugger.Client>,
         private readonly nCores: number,
         private readonly coresService: CSpyCoresService,
-        eventListener: DebugEventListenerHandler,
+        private readonly eventListener: DebugEventListenerHandler,
         libSupportHandler: LibSupportHandler,
     ) {
         eventListener.observeDebugEvents(DkNotifyConstant.kDkCoreStopped, this.handleCoreStopped.bind(this));
@@ -173,6 +178,14 @@ export class CSpyRunControlService implements Disposable.Disposable {
 
     // In reponse to a coreStopped event, figures out which core(s) stopped and sends out events for them.
     private async handleCoreStopped() {
+        // The backend reports kDkCoreStopped *before* it has finished updating
+        // the variable windows for the new location.
+        // To avoid seeing stale values for variables/registers, we wait
+        // for the backend to send a kDkInspectionContextChanged, which signals
+        // that the variable windows have started updating for the new location.
+        const contextSettled = this.eventListener.waitForNextDebugEvent(
+            DkNotifyConstant.kDkInspectionContextChanged);
+
         const nCores = await this.dbgr.service.getNumberOfCores();
         const coreIds = Array.from({ length: nCores }, (_, i) => i);
         const stoppedCores = await Promise.all(coreIds.map(async i => {
@@ -200,6 +213,14 @@ export class CSpyRunControlService implements Disposable.Disposable {
             return undefined;
         }));
         const actualStoppedCores = stoppedCores.filter((ev): ev is CoreStoppedEvent => !!ev);
+
+        if (actualStoppedCores.length > 0) {
+            await Promise.race([
+                contextSettled,
+                new Promise(resolve => setTimeout(resolve, CSpyRunControlService.STOP_SETTLE_TIMEOUT)),
+            ]);
+        }
+
         this.coresStoppedCallbacks.forEach(cb => cb(actualStoppedCores));
     }
 }

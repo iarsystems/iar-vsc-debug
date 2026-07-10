@@ -88,7 +88,7 @@ export interface PartialCSpyLaunchRequestArguments extends DebugProtocol.LaunchR
     /** The name of the driver library to use.*/
     driver: string;
     /** The driver options as a list of string*/
-    driverOptions: string[];
+    driverOptions?: string[];
     /** A list of macros to load*/
     setupMacros?: string[];
     /** @deprecated Legacy alias for setupMacros, see VSC-306 */
@@ -101,13 +101,29 @@ export interface PartialCSpyLaunchRequestArguments extends DebugProtocol.LaunchR
         deviceMacros?: string[];
         /** A list of extra images to load */
         extraImages?: ExtraImage[];
-    }
+        /** Whether to suppress downloads of the program and all extra images. */
+        suppressAllDownloads?: boolean;
+        /** Whether to suppress the download of the program. */
+        suppressProgramDownload?: boolean;
+        /** Verifies that the downloaded code images contain the correct content by reading them back from target memory. */
+        verifyAllDownloads?: boolean;
+        /** Whether to perform a mass erase, if supported, before flashing. */
+        performMassErase?: boolean;
+    },
+    /** The macro parameters and their values represented as key-value pairs. */
+    macroParams?: Record<string, string>;
+    /** Whether to configure C-Spy to handle C-Run events. */
+    handleCRunEvents?: boolean;
     /** A list of plugins to load */
     plugins?: string[];
     /** A set of path mappings to use when resolving nonexistent source files */
     sourceFileMap?: Record<string, string>;
     /** For hardware sessions, ask the driver to not terminate the target when the debug sessions ends. */
     leaveTargetRunning?: boolean
+    /** The arguments passed to the launched program. */
+    args?: string[];
+    /** The identifier of the device to be debugged. */
+    device?: string;
     /** Not used by the debug adapter, only by the VS Code extension */
     buildBeforeDebugging?: string;
     /** Hidden option. Allows starting sessions with any target (although it might not work) */
@@ -128,7 +144,7 @@ export interface PartialCSpyLaunchRequestArguments extends DebugProtocol.LaunchR
  * start a session. This may be because their values may be filled in
  * automatically by one of the extension's config providers.
  */
-type RequiredFields = "program" | "driver" | "driverOptions" | "target";
+type RequiredFields = "program" | "driver" | "target";
 /**
  * The minimal arguments to start a debug session. While
  * {@link PartialCSpyLaunchRequestArguments} represents what VS Code will send us (i.e.
@@ -142,7 +158,7 @@ export type CSpyLaunchRequestArguments = PartialCSpyLaunchRequestArguments &
 /**
  * The Attach request is basically the same as the launch request, but the not all fields are used.
  */
-type PartialCSpyAttachRequestArguments = Omit<PartialCSpyLaunchRequestArguments, "stopOnEntry" | "stopOnSymbol">;
+type PartialCSpyAttachRequestArguments = Omit<PartialCSpyLaunchRequestArguments, "stopOnEntry" | "stopOnSymbol" | "args">;
 
 /**
  * Manages a debugging session between VS Code and C-SPY (via CSpyServer2)
@@ -265,25 +281,9 @@ export class CSpyDebugSession extends LoggingDebugSession {
             response.message = `Missing required field '${field.toString()}'.`;
             return false;
         }
-        if (!isDefined(args, "program")) {
-            this.sendResponse(response);
-            return;
-        }
-        if (!isDefined(args, "driver")) {
-            this.sendResponse(response);
-            return;
-        }
-        if (!isDefined(args, "driverOptions")) {
-            this.sendResponse(response);
-            return;
-        }
-        if (!isDefined(args, "target")) {
-            this.sendResponse(response);
-            return;
-        }
 
         try {
-            // -- Launch CSpyServer --
+            // -- Initialize workbench --
             const workbench = Workbench.create(args.workbenchPath);
             if (workbench === undefined) {
                 throw new Error(`'${args.workbenchPath}' does not point to a valid IAR Embedded Workbench installation.`);
@@ -291,12 +291,30 @@ export class CSpyDebugSession extends LoggingDebugSession {
             if (workbench.type === WorkbenchType.LEGACY_BX) {
                 throw new Error(`'${workbench.name}' is an IAR Build Tools installation without debugging capabilities. Please use a newer IAR Build Tools version or a full IAR Embedded Workbench installation.`);
             }
-            if (!WorkbenchFeatures.supportsFeature(workbench, WorkbenchFeatures.Debugging)) {
-                const minVersions = WorkbenchFeatures.getMinProductVersions(workbench, WorkbenchFeatures.Debugging);
-                this.sendEvent(new OutputEvent(`${workbench.name} does not officially support VS Code debugging. Please upgrade to ${minVersions.join(", ")} or later`, "stderr"));
+
+            if (!isDefined(args, "target")) {
+                this.sendResponse(response);
+                return;
             }
+            this.doFeatureCheck(workbench, args);
+            const supportsLaunchConfiguration = WorkbenchFeatures.supportsFeature(workbench, WorkbenchFeatures.LaunchConfiguration, args.target);
+
+            if (!isDefined(args, "program")) {
+                this.sendResponse(response);
+                return;
+            }
+            if (!isDefined(args, "driver")) {
+                this.sendResponse(response);
+                return;
+            }
+            if (!supportsLaunchConfiguration && !isDefined(args, "driverOptions")) {
+                this.sendResponse(response);
+                return;
+            }
+
+            // -- Launch CSpyServer --
             // Cspyserver requires that we specify the number of cores as a command line argument, so we need to know it early
-            const match = args.driverOptions.map(opt => opt.match(/--multicore_nr_of_cores=(\d+)/)).find(match => !!match);
+            const match = args.driverOptions?.map(opt => opt.match(/--multicore_nr_of_cores=(\d+)/)).find(match => !!match);
             if (match && match[1]) {
                 this.numCores = Number(match[1]);
             }
@@ -344,64 +362,30 @@ export class CSpyDebugSession extends LoggingDebugSession {
             cspyProcess.serviceRegistry.startService(TIMELINE_FRONTEND_SERVICE, TimelineFrontend, timelineFrontendHandler);
 
             // -- Start the CSpyServer session (incl. loading macros & flashing) --
-            const sessionConfig: SessionConfiguration = await new LaunchArgumentConfigurationResolver().resolveLaunchArguments(args);
             const cspyDebugger = await cspyProcess.serviceRegistry.findService(DEBUGGER_SERVICE, Debugger);
             this.teardown.pushFunction(() => cspyDebugger.close());
             this.sendEvent(new OutputEvent("Using C-SPY version: " + await cspyDebugger.service.getVersionString() + "\n"));
 
-            // eslint-disable-next-line @typescript-eslint/no-deprecated
-            await cspyDebugger.service.startSession(sessionConfig);
-            if (await cspyDebugger.service.supportsExceptions())
-                await cspyDebugger.service.setBreakOnThrow(true);
-
-            if (args.download) {
-                await Utils.loadMacros(cspyDebugger.service, args.download.deviceMacros ?? []);
-                if (!isAttachRequest && args.download.flashLoader) {
-                    await cspyDebugger.service.flashModule(args.download.flashLoader, sessionConfig.executable, [], []);
+            let driverOptions: string[];
+            if (supportsLaunchConfiguration) {
+                const config = await cspyDebugger.service.resolveLaunchConfiguration(JSON.stringify(args));
+                await cspyDebugger.service.configureSession(config);
+                if (await cspyDebugger.service.supportsExceptions()) {
+                    await cspyDebugger.service.setBreakOnThrow(true);
                 }
+                await cspyDebugger.service.startSMPSession();
+                driverOptions = config.driverOptions;
+            } else {
+                await this.runLegacyInitSequence(cspyDebugger, args, isAttachRequest);
+                driverOptions = args.driverOptions ?? []; // args.driverOptions is guaranteed to be defined, since we check for it earlier in this function.
             }
-
-
-            if (args.leaveTargetRunning && !WorkbenchFeatures.supportsFeature(workbench, WorkbenchFeatures.LeaveTargetRunning, args.target)) {
-                this.sendEvent(new OutputEvent("Leave target running requires C-SPY version " + WorkbenchFeatures.LeaveTargetRunning.baseVersion.join(".") + "\n"));
-            }
-
-            // Setup the module loading options, which is basically just
-            // based on whether we're attaching or not.
-            const moduleOptions = new ModuleLoadingOptions();
-            moduleOptions.extraDebugFiles = [];
-            args.download?.extraImages?.forEach((extraImage: ExtraImage) => {
-                const extraFile = new ExtraDebugFile();
-
-                // Handle based on type as offset can be a number or an string.
-                if (typeof(extraImage.offset) === "string") {
-                    extraFile.offset = toInt64(extraImage.offset);
-                } else {
-                    extraFile.offset = new Int64(extraImage.offset);
-                }
-
-                extraFile.doDownload = !extraImage.suppressDownload;
-                extraFile.path = extraImage.image;
-                moduleOptions.extraDebugFiles.push(extraFile);
-            });
-
-            moduleOptions.shouldAttach = isAttachRequest;
-            moduleOptions.onlyPrefixNotation = false; // Always false.
-            moduleOptions.shouldLeaveRunning = args.leaveTargetRunning?? false;
-
-            moduleOptions.callUserMacros = !isAttachRequest;
-            moduleOptions.resetAfterLoad = !isAttachRequest;
-            moduleOptions.suppressDownload = isAttachRequest;
-
-            await Utils.loadMacros(cspyDebugger.service, sessionConfig.setupMacros);
-            await cspyDebugger.service.loadModuleWithOptions(args.program, moduleOptions);
 
             // -- Connect to CSpyServer services --
             // note that some services (most listwindows) are launched by loadModule, so we *have* to do this afterwards
             const coresService = await CSpyCoresService.instantiate(cspyProcess.serviceRegistry);
             this.teardown.pushDisposable(coresService);
 
-            const registerInfoGenerator = new RegisterInformationService(args.driverOptions, await cspyProcess.serviceRegistry.findService(DEBUGGER_SERVICE, Debugger));
+            const registerInfoGenerator = new RegisterInformationService(driverOptions, await cspyProcess.serviceRegistry.findService(DEBUGGER_SERVICE, Debugger));
             const contextService = await CSpyContextService.instantiate(cspyProcess.serviceRegistry, coresService, registerInfoGenerator, this.cspyEventHandler);
             this.teardown.pushDisposable(contextService);
 
@@ -429,7 +413,7 @@ export class CSpyDebugSession extends LoggingDebugSession {
                 this.clientColumnsStartAt1);
             this.teardown.pushDisposable(disassemblyManager);
 
-            const driver = CSpyDriver.driverFromName(args.driver, args.target, args.driverOptions);
+            const driver = CSpyDriver.driverFromName(args.driver, args.target, driverOptions);
             const breakpointManager = await CSpyBreakpointService.instantiate(cspyProcess.serviceRegistry,
                 this.clientLinesStartAt1,
                 this.clientColumnsStartAt1,
@@ -580,6 +564,41 @@ export class CSpyDebugSession extends LoggingDebugSession {
             }
         } else {
             await this.services?.runControlService.continue(undefined);
+        }
+    }
+
+    private doFeatureCheck(workbench: Workbench, args: PartialCSpyLaunchRequestArguments) {
+        const supports = (feature: WorkbenchFeatures.FeatureRequirement) => WorkbenchFeatures.supportsFeature(workbench, feature, args.target);
+        if (!supports(WorkbenchFeatures.Debugging)) {
+            const minVersions = WorkbenchFeatures.getMinProductVersions(workbench, WorkbenchFeatures.Debugging);
+            this.sendEvent(new OutputEvent(`${workbench.name} does not officially support VS Code debugging. Please upgrade to ${minVersions.join(", ")} or later`, "stderr"));
+        }
+        if (args.leaveTargetRunning && !supports(WorkbenchFeatures.LeaveTargetRunning)) {
+            this.sendEvent(new OutputEvent("Leave target running requires C-SPY version " + WorkbenchFeatures.LeaveTargetRunning.baseVersion.join(".") + "\n"));
+        }
+        if (args.args && !supports(WorkbenchFeatures.ProgramArgs)) {
+            this.sendEvent(new OutputEvent("Setting program args requires C-SPY version " + WorkbenchFeatures.ProgramArgs.baseVersion.join(".") + "\n"));
+        }
+        if (args.macroParams && !supports(WorkbenchFeatures.MacroParams)) {
+            this.sendEvent(new OutputEvent("Setting macro parameters requires C-SPY version " + WorkbenchFeatures.MacroParams.baseVersion.join(".") + "\n"));
+        }
+        if (args.device && !supports(WorkbenchFeatures.Device)) {
+            this.sendEvent(new OutputEvent("Setting the device requires C-SPY version " + WorkbenchFeatures.Device.baseVersion.join(".") + "\n"));
+        }
+        if (args.handleCRunEvents && !supports(WorkbenchFeatures.HandleCRunEvents)) {
+            this.sendEvent(new OutputEvent("Handle C-RUN events requires C-SPY version " + WorkbenchFeatures.HandleCRunEvents.baseVersion.join(".") + "\n"));
+        }
+        if (args.download?.suppressAllDownloads && !supports(WorkbenchFeatures.SuppressAllDownloads)) {
+            this.sendEvent(new OutputEvent("Suppressing all downloads requires C-SPY version " + WorkbenchFeatures.SuppressAllDownloads.baseVersion.join(".") + "\n"));
+        }
+        if (args.download?.suppressProgramDownload && !supports(WorkbenchFeatures.SuppressProgramDownload)) {
+            this.sendEvent(new OutputEvent("Suppressing program download requires C-SPY version " + WorkbenchFeatures.SuppressProgramDownload.baseVersion.join(".") + "\n"));
+        }
+        if (args.download?.verifyAllDownloads && !supports(WorkbenchFeatures.VerifyAllDownloads)) {
+            this.sendEvent(new OutputEvent("Verifying all downloads requires C-SPY version " + WorkbenchFeatures.VerifyAllDownloads.baseVersion.join(".") + "\n"));
+        }
+        if (args.download?.performMassErase && !supports(WorkbenchFeatures.PerformMassErase)) {
+            this.sendEvent(new OutputEvent("Performing mass erase requires C-SPY version " + WorkbenchFeatures.PerformMassErase.baseVersion.join(".") + "\n"));
         }
     }
 
@@ -983,5 +1002,55 @@ export class CSpyDebugSession extends LoggingDebugSession {
             allThreadsStopped,
         };
         this.sendEvent(new Event("stopped", eventBody));
+    }
+
+    /**
+     * In EW version 9.5.0, the LaunchConfiguration struct was introduced, allowing C-SPY to handle
+     * most session configuration itself given a launch.json-like input. This is the initialization
+     * sequence for older workbenches that lack that support.
+     */
+    private async runLegacyInitSequence(cspyDebugger: ThriftClient<Debugger.Client>, args: PartialCSpyLaunchRequestArguments, isAttachRequest: boolean) {
+        const sessionConfig: SessionConfiguration = await new LaunchArgumentConfigurationResolver().resolveLaunchArguments(args);
+        // eslint-disable-next-line @typescript-eslint/no-deprecated
+        await cspyDebugger.service.startSession(sessionConfig);
+        if (await cspyDebugger.service.supportsExceptions())
+            await cspyDebugger.service.setBreakOnThrow(true);
+
+        if (args.download) {
+            await Utils.loadMacros(cspyDebugger.service, args.download.deviceMacros ?? []);
+            if (!isAttachRequest && args.download.flashLoader) {
+                await cspyDebugger.service.flashModule(args.download.flashLoader, sessionConfig.executable, [], []);
+            }
+        }
+
+        // Setup the module loading options, which is basically just
+        // based on whether we're attaching or not.
+        const moduleOptions = new ModuleLoadingOptions();
+        moduleOptions.extraDebugFiles = [];
+        args.download?.extraImages?.forEach((extraImage: ExtraImage) => {
+            const extraFile = new ExtraDebugFile();
+
+            // Handle based on type as offset can be a number or an string.
+            if (typeof(extraImage.offset) === "string") {
+                extraFile.offset = toInt64(extraImage.offset);
+            } else {
+                extraFile.offset = new Int64(extraImage.offset);
+            }
+
+            extraFile.doDownload = !extraImage.suppressDownload;
+            extraFile.path = extraImage.image;
+            moduleOptions.extraDebugFiles.push(extraFile);
+        });
+
+        moduleOptions.shouldAttach = isAttachRequest;
+        moduleOptions.onlyPrefixNotation = false; // Always false.
+        moduleOptions.shouldLeaveRunning = args.leaveTargetRunning?? false;
+
+        moduleOptions.callUserMacros = !isAttachRequest;
+        moduleOptions.resetAfterLoad = !isAttachRequest;
+        moduleOptions.suppressDownload = isAttachRequest;
+
+        await Utils.loadMacros(cspyDebugger.service, sessionConfig.setupMacros);
+        await cspyDebugger.service.loadModuleWithOptions(args.program, moduleOptions);
     }
 }

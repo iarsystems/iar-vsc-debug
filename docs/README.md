@@ -283,9 +283,9 @@ The easiest way to generate a `launch.json` configuration is from an IAR Embedde
             "name": "My I-jet Config",
             "target": "arm",
             "program": "${workspaceFolder}/Debug/Exe/BasicDebugging.out",
-            "driver": "jet",
+            "driver": "I-jet",
             "stopOnSymbol": "main",
-            "workbenchPath": "${command:iar-settings.toolchain}",
+            "workbenchPath": "${command:iar-config.toolchain}",
             "projectPath": "${workspaceFolder}",
             "projectConfiguration": "Debug",
             "leaveTargetRunning": false,
@@ -296,7 +296,7 @@ The easiest way to generate a `launch.json` configuration is from an IAR Embedde
                 "--cpu=Cortex-M4",
                 "--fpu=VFPv4_SP",
                 "-p",
-                "${command:iar-settings.toolchain}/arm/CONFIG/debugger/ST/STM32F429II.ddf",
+                "$TOOLKIT_DIR$/arm/CONFIG/debugger/ST/STM32F429II.ddf",
                 "--semihosting",
                 "--device=STM32F429II",
                 "--multicore_nr_of_cores=1",
@@ -313,12 +313,27 @@ The easiest way to generate a `launch.json` configuration is from an IAR Embedde
                 "--drv_catch_exceptions=0xff0"
             ],
             "download": {
-                "flashLoader": "${command:iar-settings.toolchain}/arm/config/flashloader/ST/FlashSTM32F427xI.board",
+                "flashLoader": "$TOOLKIT_DIR$/arm/config/flashloader/ST/FlashSTM32F427xI.board",
                 "deviceMacros": [
-                    "${command:iar-settings.toolchain}/arm/config/debugger/ST/STM32F4xx.dmac"
+                    "$TOOLKIT_DIR$/arm/config/debugger/ST/STM32F4xx.dmac"
                 ]
             }
         }
+```
+
+If you want to use the default `driverOptions` and `download` settings for a specific device, you can omit these and specify a `device` instead (note that this requires a compatible version of Embedded Workbench, see [Compatibility](../README.md#compatibility)). A minimal launch.json configuration can look like this:
+
+```json
+{
+    "type": "cspy",
+    "request": "launch",
+    "name": "My I-jet Config",
+    "target": "arm",
+    "program": "${workspaceFolder}/Debug/Exe/BasicDebugging.out",
+    "driver": "I-jet",
+    "workbenchPath": "${command:iar-settings.toolchain}",
+    "device": "STM32F429II"
+}
 ```
 
 For information about each supported attribute, see the autocompletion and tooltips in the `launch.json` file.

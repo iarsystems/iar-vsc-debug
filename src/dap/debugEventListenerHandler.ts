@@ -28,6 +28,24 @@ export class DebugEventListenerHandler implements ThriftServiceHandler<DebugEven
     }
 
     /**
+     * Returns a promise that resolves the next time a debug event of the given
+     * type is received.
+     */
+    public waitForNextDebugEvent(type: DkNotifyConstant): Promise<DebugEvent> {
+        return new Promise(resolve => {
+            const callback = (event: DebugEvent) => {
+                const callbacks = this.debugEventCallbacks.get(type);
+                const index = callbacks?.indexOf(callback) ?? -1;
+                if (callbacks && index !== -1) {
+                    callbacks.splice(index, 1);
+                }
+                resolve(event);
+            };
+            this.observeDebugEvents(type, callback);
+        });
+    }
+
+    /**
      * Register a callback to be called when receiving log events.
      */
     public observeLogEvents(callback: EventCallback<LogEvent>) {
@@ -40,7 +58,11 @@ export class DebugEventListenerHandler implements ThriftServiceHandler<DebugEven
      * Called whenever a debug event happens. See DkNotifySubscriber#Notify.
      */
     postDebugEvent(event: DebugEvent): Q.Promise<void> {
-        this.debugEventCallbacks.get(event.note)?.forEach((callback: EventCallback<DebugEvent>) => callback(event));
+        const callbacks = this.debugEventCallbacks.get(event.note);
+        if (callbacks) {
+            // Iterate over a copy to allow callbacks to add/remove themselves while iterating
+            [...callbacks].forEach((callback: EventCallback<DebugEvent>) => callback(event));
+        }
         return Q.resolve();
     }
 

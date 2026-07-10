@@ -907,7 +907,7 @@
 							},
 							"driverOptions": {
 								"type": "array",
-								"description": "The command line to use when launching the debugger. For reference, see \"Summary of C-SPY command line options\" in the C-SPY Debugging Guide: https://wwwfiles.iar.com/arm/webic/doc/EWARM_DebuggingGuide.ENU.pdf",
+								"description": "The command line to use when launching the debugger. Use this field when full control over driver configuration is required. For using the default options, specifying the \"device\" field is sufficient. For reference, see \"Summary of C-SPY command line options\" in the C-SPY Debugging Guide: https://wwwfiles.iar.com/arm/webic/doc/EWARM_DebuggingGuide.ENU.pdf",
 								"items": {
 									"type": "string"
 								},
@@ -918,8 +918,8 @@
 									"--semihosting"
 								]
 							},
-							"type": "array",
 							"plugins": {
+								"type": "array",
 								"description": "The set of plugins to be loaded during the debug session. Provided as full paths to .dll/.so, e.g.,\"D:\\iar\\ewarm-9.60.3\\arm\\plugins\\rtos\\FreeRTOS\\FreeRTOSArmPlugin.dll\"",
 								"items": {
 									"type": "string",
@@ -942,14 +942,27 @@
 									"<source-path>": "<target-path>"
 								}
 							},
+							"device": {
+								"type": "string",
+								"description": "The identifier of the device to be debugged, e.g., STM32C011D6."
+							},
+							"macroParams": {
+								"type": "object",
+								"description": "The macro parameters and their values, represented as key-value pairs."
+							},
+							"handleCRunEvents": {
+								"type": "boolean",
+								"description": "Whether to configure C-Spy to handle C-Run events.",
+								"default": false
+							},
 							"leaveTargetRunning": {
 								"type": "boolean",
 								"description": "Set to false to halt the target when the debugsession ends",
-								"default:": "false"
+								"default:": false
 							},
 							"download": {
 								"type": "object",
-								"description": "Options for downloading to hardware. Can be omitted.",
+								"description": "Options for downloading to hardware. Can be omitted. Use this field when full control over download configuration is required. For using the default options, specifying the \"device\" field is sufficient.",
 								"properties": {
 									"deviceMacros": {
 										"type": "array",
@@ -1029,6 +1042,7 @@
 								"description": "Absolute path to a .out file to debug.",
 								"default": "${workspaceFolder}/Debug/Exe/ewproj.out"
 							},
+
 							"stopOnEntry": {
 								"type": "boolean",
 								"description": "!DEPRECATED, use stopOnSymbol instead!\nAutomatically stop after launch.",
@@ -1133,7 +1147,7 @@
 							},
 							"driverOptions": {
 								"type": "array",
-								"description": "The command line to use when launching the debugger. For reference, see \"Summary of C-SPY command line options\" in the C-SPY Debugging Guide: https://wwwfiles.iar.com/arm/webic/doc/EWARM_DebuggingGuide.ENU.pdf",
+								"description": "The command line to use when launching the debugger. Use this field when full control over driver configuration is required. For using the default options, specifying the \"device\" field is sufficient. For reference, see \"Summary of C-SPY command line options\" in the C-SPY Debugging Guide: https://wwwfiles.iar.com/arm/webic/doc/EWARM_DebuggingGuide.ENU.pdf",
 								"items": {
 									"type": "string"
 								},
@@ -1146,7 +1160,7 @@
 							},
 							"download": {
 								"type": "object",
-								"description": "Options for downloading to hardware. Can be omitted.",
+								"description": "Options for downloading to hardware. Can be omitted. Use this field when full control over download configuration is required. For using the default options, specifying the \"device\" field is sufficient.",
 								"properties": {
 									"flashLoader": {
 										"type": "string",
@@ -1184,6 +1198,26 @@
 											}
 										},
 										"default": []
+									},
+									"suppressAllDownloads": {
+										"type": "boolean",
+										"description": "Whether to suppress downloads of the program and all extra images.",
+										"default": false
+									},
+									"suppressProgramDownload": {
+										"type": "boolean",
+										"description": "Whether to suppress the download of the program.",
+										"default": false
+									},
+									"verifyAllDownloads": {
+										"type": "boolean",
+										"description": "Verifies that the downloaded code images contain the correct content by reading them back from target memory.",
+										"default": false
+									},
+									"performMassErase": {
+										"type": "boolean",
+										"description": "Whether to perform a mass erase if supported before flashing.",
+										"default": false
 									}
 								}
 							},
@@ -1211,10 +1245,30 @@
 									"<source-path>": "<target-path>"
 								}
 							},
+							"args": {
+								"type": "array",
+								"description": "The arguments passed to the launched program.",
+								"items": {
+									"type": "string"
+								}
+							},
+							"device": {
+								"type": "string",
+								"description": "The identifier of the device to be debugged, e.g., STM32C011D6."
+							},
+							"macroParams": {
+								"type": "object",
+								"description": "The macro parameters and their values, represented as key-value pairs."
+							},
+							"handleCRunEvents": {
+								"type": "boolean",
+								"description": "Whether to configure C-Spy to handle C-Run events.",
+								"default": false
+							},
 							"leaveTargetRunning": {
 								"type": "boolean",
 								"description": "Set to false to halt the target when the debugsession ends",
-								"default:": "false"
+								"default:": false
 							},
 							"buildBeforeDebugging": {
 								"type": "string",

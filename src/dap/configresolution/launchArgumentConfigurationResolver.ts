@@ -19,7 +19,9 @@ export class LaunchArgumentConfigurationResolver extends BaseConfigurationResolv
         if (!args.driver) {
             return Promise.reject(new Error("No driver lib specified"));
         }
-
+        if (args.driverOptions === undefined) {
+            return Promise.reject(new Error("No driver options specified"));
+        }
         // The libraries for msp430 lack the msp prefix...
         const target = args.target === "msp430" ? "430" : args.target;
 
